@@ -101,10 +101,18 @@ class TMCCommandHelper:
         for reg_name, val in self.fields.registers.items():
             self.mcu_tmc.set_register(reg_name, val, print_time)
     def _handle_connect(self):
-        try:
-            self._init_registers(0.)
-        except self.printer.command_error as e:
-            raise self.printer.config_error(str(e))
+        retry_count = 0
+        while 1:
+            try:
+                self._init_registers(0.)
+                return
+            except self.printer.command_error as e:
+                logging.exception("TMC init error")
+                retry_count += 1
+                if retry_count > 5:
+                    raise self.printer.config_error(str(e))
+                reactor = self.printer.get_reactor()
+                reactor.pause(reactor.monotonic() + 1.)
     cmd_INIT_TMC_help = "Initialize TMC stepper driver registers"
     def cmd_INIT_TMC(self, params):
         logging.info("INIT_TMC %s", self.name)
@@ -219,7 +227,7 @@ class TMCMicrostepHelper:
             field_name = "MSTEP"
         reg = self.mcu_tmc.get_register(self.fields.lookup_register(field_name))
         mscnt = self.fields.get_field(field_name, reg)
-        return mscnt >> self.fields.get_field("MRES")
+        return (1023 - mscnt) >> self.fields.get_field("MRES")
 
 # Helper to configure "stealthchop" mode
 def TMCStealthchopHelper(config, mcu_tmc, tmc_freq):
