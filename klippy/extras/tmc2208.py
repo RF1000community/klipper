@@ -187,9 +187,11 @@ class TMC2208:
         # Setup mcu communication
         self.fields = tmc.FieldHelper(Fields, SignedFields, FieldFormatters)
         self.mcu_tmc = tmc_uart.MCU_TMC_uart(config, Registers, self.fields)
+        # Allow virtual pins to be created
+        tmc.TMCVirtualPinHelper(config, self.mcu_tmc)
         # Register commands
         cmdhelper = tmc.TMCCommandHelper(config, self.mcu_tmc)
-        cmdhelper.setup_register_dump(self.query_registers)
+        cmdhelper.setup_register_dump(ReadRegisters, self.read_translate)
         # Setup basic register values
         self.fields.set_field("pdn_disable", True)
         self.fields.set_field("mstep_reg_select", True)
@@ -205,7 +207,6 @@ class TMC2208:
         set_config_field(config, "hstrt", 5)
         set_config_field(config, "hend", 0)
         set_config_field(config, "TBL", 2)
-        set_config_field(config, "intpol", True, "interpolate")
         set_config_field(config, "IHOLDDELAY", 8)
         set_config_field(config, "TPOWERDOWN", 20)
         set_config_field(config, "PWM_OFS", 36)
@@ -215,17 +216,11 @@ class TMC2208:
         set_config_field(config, "pwm_autograd", True)
         set_config_field(config, "PWM_REG", 8)
         set_config_field(config, "PWM_LIM", 12)
-    def query_registers(self, print_time=0.):
-        out = []
-        for reg_name in ReadRegisters:
-            val = self.mcu_tmc.get_register(reg_name)
-            # IOIN has different mappings depending on the driver type
-            # (SEL_A field of IOIN reg)
-            if reg_name == "IOIN":
-                drv_type = self.fields.get_field("SEL_A", val)
-                reg_name = "IOIN@TMC220x" if drv_type else "IOIN@TMC222x"
-            out.append((reg_name, val))
-        return out
+    def read_translate(self, reg_name, val):
+        if reg_name == "IOIN":
+            drv_type = self.fields.get_field("SEL_A", val)
+            reg_name = "IOIN@TMC220x" if drv_type else "IOIN@TMC222x"
+        return reg_name, val
 
 def load_config_prefix(config):
     return TMC2208(config)

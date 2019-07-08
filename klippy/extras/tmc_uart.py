@@ -57,6 +57,7 @@ class MCU_analog_mux:
 class MCU_TMC_uart_bitbang:
     def __init__(self, rx_pin_params, tx_pin_params, select_pins_desc):
         self.mcu = rx_pin_params['chip']
+        self.mutex = self.mcu.get_printer().get_reactor().mutex()
         self.pullup = rx_pin_params['pullup']
         self.rx_pin = rx_pin_params['pin']
         self.tx_pin = tx_pin_params['pin']
@@ -149,8 +150,10 @@ class MCU_TMC_uart_bitbang:
         params = self.tmcuart_send_cmd.send_with_response(
             [self.oid, msg, 10], 'tmcuart_response', self.oid)
         return self._decode_read(reg, params['read'])
-    def reg_write(self, instance_id, addr, reg, val, print_time=0.):
-        minclock = self.mcu.print_time_to_clock(print_time)
+    def reg_write(self, instance_id, addr, reg, val, print_time=None):
+        minclock = 0
+        if print_time is not None:
+            minclock = self.mcu.print_time_to_clock(print_time)
         if self.analog_mux is not None:
             self.analog_mux.activate(instance_id)
         msg = self._encode_write(0xf5, 0x00, reg | 0x80, val)
@@ -190,9 +193,10 @@ class MCU_TMC_uart:
         self.ifcnt = None
         self.addr = 0
         self.instance_id, self.mcu_uart = lookup_tmc_uart_bitbang(config)
+        self.mutex = self.mcu_uart.mutex
     def get_fields(self):
         return self.fields
-    def get_register(self, reg_name):
+    def _do_get_register(self, reg_name):
         reg = self.name_to_reg[reg_name]
         if self.printer.get_start_args().get('debugoutput') is not None:
             return 0
@@ -202,18 +206,22 @@ class MCU_TMC_uart:
                 return val
         raise self.printer.command_error(
             "Unable to read tmc2208 '%s' register %s" % (self.name, reg_name))
-    def set_register(self, reg_name, val, print_time=0.):
+    def get_register(self, reg_name):
+        with self.mutex:
+            return self._do_get_register(reg_name)
+    def set_register(self, reg_name, val, print_time=None):
         reg = self.name_to_reg[reg_name]
         if self.printer.get_start_args().get('debugoutput') is not None:
             return
-        for retry in range(5):
-            ifcnt = self.ifcnt
-            if ifcnt is None:
-                self.ifcnt = ifcnt = self.get_register("IFCNT")
-            self.mcu_uart.reg_write(self.instance_id, self.addr, reg, val,
-                                    print_time)
-            self.ifcnt = self.get_register("IFCNT")
-            if self.ifcnt == (ifcnt + 1) & 0xff:
-                return
+        with self.mutex:
+            for retry in range(5):
+                ifcnt = self.ifcnt
+                if ifcnt is None:
+                    self.ifcnt = ifcnt = self._do_get_register("IFCNT")
+                self.mcu_uart.reg_write(self.instance_id, self.addr, reg, val,
+                                        print_time)
+                self.ifcnt = self._do_get_register("IFCNT")
+                if self.ifcnt == (ifcnt + 1) & 0xff:
+                    return
         raise self.printer.command_error(
             "Unable to write tmc2208 '%s' register %s" % (self.name, reg_name))

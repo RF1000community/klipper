@@ -430,6 +430,10 @@ is enabled:
   - `RESUME [VELOCITY=<value>]`: Resumes the print from a pause, first restoring
   the previously captured position.  The VELOCITY parameter determines the speed
   at which the tool should return to the original captured position.
+  - `CLEAR_PAUSE`:  Clears the current paused state without resuming the print.
+  This is useful if one decides to cancel a print after a PAUSE.  It is recommended
+  to add this to your start gcode to make sure the paused state is fresh for each
+  print.
 
 ## Filament Sensor
 
@@ -468,3 +472,40 @@ of retraction required.
    parameters.
  - `G11`: Unretracts the extruder using the currently configured
    parameters.
+
+## Skew Correction
+
+The following commands are available when the "skew_correction" config
+section is enabled.
+  - `SET_SKEW [XY=<ac_length,bd_length,ad_length>] [XZ=<ac,bd,ad>]
+    [YZ=<ac,bd,ad>] [CLEAR=<0|1>]`:  Configures the [skew_correction] module
+    with measurements (in mm) taken from a calibration print.  One may
+    enter measurements for any combination of planes, planes not entered will
+    retain their current value.  If `CLEAR=1` is entered then all skew
+    correction will be disabled.
+  - `GET_CURRENT_SKEW`: Reports the current printer skew for each plane in
+    both radians and degrees.  The skew is calculated based on parameters
+    provided via the `SET_SKEW` gcode.
+  - `CALC_MEASURED_SKEW [AC=<ac_length>] [BD=<bd_length>] [AD=<ad_length>]`:
+    Calculates and reports the skew (in radians and degrees) based on a
+    measured print.  This can be useful for determining the printer's current
+    skew after correction has been applied.  It may also be useful before
+    correction is applied to determine if skew correction is necessary.   See
+    skew_correction.md for details on skew calibration objects and
+    measurements.
+  - `SKEW_PROFILE [LOAD=<name>] [SAVE=<name>] [REMOVE=<name>]`: Profile
+    management for skew_correction.  LOAD will restore skew state from the
+    profile matching the supplied name. SAVE will save the current skew state
+    to a profile matching the supplied name.  Remove will delete the profile
+    matching the supplied name from persistent memory.  Note that after SAVE
+    or REMOVE operations have been run the SAVE_CONFIG gcode must be run
+    to make the changes to peristent memory permanent.
+
+## Delayed GCode
+
+The following command is enabled if a [delayed_gcode] config section has
+been enabled:
+  - `UPDATE_DELAYED_GCODE [ID=<name>] [DURATION=<seconds>]`:  Updates the
+    delay duration for the identified [delayed_gcode] and starts the timer
+    for gcode execution.  A value of 0 will cancel a pending delayed gcode
+    from executing.

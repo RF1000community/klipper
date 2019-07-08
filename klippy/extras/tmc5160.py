@@ -291,12 +291,12 @@ class TMC5160:
         # Setup mcu communication
         self.fields = tmc.FieldHelper(Fields, SignedFields, FieldFormatters)
         self.mcu_tmc = tmc2130.MCU_TMC_SPI(config, Registers, self.fields)
-        # Allow virtual endstop to be created
+        # Allow virtual pins to be created
         diag1_pin = config.get('diag1_pin', None)
-        tmc.TMCEndstopHelper(config, self.mcu_tmc, diag1_pin)
+        tmc.TMCVirtualPinHelper(config, self.mcu_tmc, diag1_pin)
         # Register commands
         cmdhelper = tmc.TMCCommandHelper(config, self.mcu_tmc)
-        cmdhelper.setup_register_dump(self.query_registers)
+        cmdhelper.setup_register_dump(ReadRegisters)
         # Setup basic register values
         mh = tmc.TMCMicrostepHelper(config, self.mcu_tmc)
         self.get_microsteps = mh.get_microsteps
@@ -314,7 +314,6 @@ class TMC5160:
         set_config_field(config, "vhighfs", 0)
         set_config_field(config, "vhighchm", 0)
         set_config_field(config, "tpfd", 4)
-        set_config_field(config, "intpol", True, "interpolate")
         set_config_field(config, "diss2g", 0)
         set_config_field(config, "diss2vs", 0)
         #   COOLCONF
@@ -339,9 +338,6 @@ class TMC5160:
         set_config_field(config, "PWM_LIM", 12)
         #   TPOWERDOWN
         set_config_field(config, "TPOWERDOWN", 10)
-    def query_registers(self, print_time=0.):
-        return [(reg_name, self.mcu_tmc.get_register(reg_name))
-                for reg_name in ReadRegisters]
 
 def load_config_prefix(config):
     return TMC5160(config)

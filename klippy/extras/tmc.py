@@ -48,10 +48,9 @@ class FieldHelper:
         new_value = (reg_value & ~mask) | ((field_value << ffs(mask)) & mask)
         self.registers[reg_name] = new_value
         return new_value
-    def set_config_field(self, config, field_name, default, config_name=None):
+    def set_config_field(self, config, field_name, default):
         # Allow a field to be set from the config file
-        if config_name is None:
-            config_name = "driver_" + field_name.upper()
+        config_name = "driver_" + field_name.upper()
         reg_name = self.field_to_register[field_name]
         mask = self.all_fields[reg_name][field_name]
         maxval = mask >> ffs(mask)
@@ -86,7 +85,7 @@ class TMCCommandHelper:
         self.name = config.get_name().split()[-1]
         self.mcu_tmc = mcu_tmc
         self.fields = mcu_tmc.get_fields()
-        self.query_registers = None
+        self.read_registers = self.read_translate = None
         self.gcode = self.printer.lookup_object("gcode")
         self.gcode.register_mux_command(
             "SET_TMC_FIELD", "STEPPER", self.name,
@@ -96,7 +95,7 @@ class TMCCommandHelper:
             self.cmd_INIT_TMC, desc=self.cmd_INIT_TMC_help)
         self.printer.register_event_handler("klippy:connect",
                                             self._handle_connect)
-    def _init_registers(self, print_time):
+    def _init_registers(self, print_time=None):
         # Send registers
         for reg_name, val in self.fields.registers.items():
             self.mcu_tmc.set_register(reg_name, val, print_time)
@@ -104,7 +103,7 @@ class TMCCommandHelper:
         retry_count = 0
         while 1:
             try:
-                self._init_registers(0.)
+                self._init_registers()
                 return
             except self.printer.command_error as e:
                 logging.exception("TMC init error")
@@ -131,8 +130,9 @@ class TMCCommandHelper:
         print_time = self.printer.lookup_object('toolhead').get_last_move_time()
         self.mcu_tmc.set_register(reg_name, reg_val, print_time)
     # DUMP_TMC support
-    def setup_register_dump(self, query_registers):
-        self.query_registers = query_registers
+    def setup_register_dump(self, read_registers, read_translate=None):
+        self.read_registers = read_registers
+        self.read_translate = read_translate
         self.gcode.register_mux_command(
             "DUMP_TMC", "STEPPER", self.name,
             self.cmd_DUMP_TMC, desc=self.cmd_DUMP_TMC_help)
@@ -140,20 +140,21 @@ class TMCCommandHelper:
     def cmd_DUMP_TMC(self, params):
         logging.info("DUMP_TMC %s", self.name)
         print_time = self.printer.lookup_object('toolhead').get_last_move_time()
-        read_regs = self.query_registers(print_time)
-        read_regs_by_name = { reg_name: val for reg_name, val in read_regs }
         self.gcode.respond_info("========== Write-only registers ==========")
         for reg_name, val in self.fields.registers.items():
-            if reg_name not in read_regs_by_name:
+            if reg_name not in self.read_registers:
                 self.gcode.respond_info(
                     self.fields.pretty_format(reg_name, val))
         self.gcode.respond_info("========== Queried registers ==========")
-        for reg_name, val in read_regs:
+        for reg_name in self.read_registers:
+            val = self.mcu_tmc.get_register(reg_name)
+            if self.read_translate is not None:
+                reg_name, val = self.read_translate(reg_name, val)
             self.gcode.respond_info(self.fields.pretty_format(reg_name, val))
 
 
 ######################################################################
-# TMC virtual endstops
+# TMC virtual pins
 ######################################################################
 
 # Endstop wrapper that enables "sensorless homing"
@@ -185,8 +186,30 @@ class TMCVirtualEndstop:
         self.mcu_tmc.set_register("TCOOLTHRS", 0)
         self.mcu_endstop.home_finalize()
 
-class TMCEndstopHelper:
-    def __init__(self, config, mcu_tmc, diag_pin):
+# Digital output wrapper for virtual enable
+class TMCVirtualEnable:
+    def __init__(self, printer, mcu_tmc):
+        self.reactor = printer.get_reactor()
+        self.mcu_tmc = mcu_tmc
+        self.fields = mcu_tmc.get_fields()
+        self.toff = self.fields.get_field("toff")
+        self.fields.set_field("toff", 0)
+    def setup_max_duration(self, max_duration):
+        pass
+    def _do_set_digital(self, print_time, value):
+        toff_val = 0
+        if value:
+            toff_val = self.toff
+            print_time -= 0.100 # Schedule slightly before deadline
+        val = self.fields.set_field("toff", toff_val)
+        reg_name = self.fields.lookup_register("toff")
+        self.mcu_tmc.set_register(reg_name, val, print_time)
+    def set_digital(self, print_time, value):
+        self.reactor.register_callback(
+            (lambda ev: self._do_set_digital(print_time, value)))
+
+class TMCVirtualPinHelper:
+    def __init__(self, config, mcu_tmc, diag_pin=None):
         self.printer = config.get_printer()
         self.mcu_tmc = mcu_tmc
         self.diag_pin = diag_pin
@@ -195,12 +218,18 @@ class TMCEndstopHelper:
         ppins.register_chip("%s_%s" % (name_parts[0], name_parts[-1]), self)
     def setup_pin(self, pin_type, pin_params):
         ppins = self.printer.lookup_object('pins')
+        if pin_params['pin'] not in ('virtual_endstop', 'virtual_enable'):
+            raise ppins.error("Unknown tmc virtual pin")
+        if pin_params['invert'] or pin_params['pullup']:
+            raise ppins.error("Can not pullup/invert tmc virtual pin")
+        if pin_params['pin'] == 'virtual_enable':
+            if pin_type != 'digital_out':
+                raise ppins.error("tmc virtual enable only useful for enable")
+            return TMCVirtualEnable(self.printer, self.mcu_tmc)
         if self.diag_pin is None:
             raise ppins.error("tmc virtual endstop requires diag pin config")
-        if pin_type != 'endstop' or pin_params['pin'] != 'virtual_endstop':
+        if pin_type != 'endstop':
             raise ppins.error("tmc virtual endstop only useful as endstop")
-        if pin_params['invert'] or pin_params['pullup']:
-            raise ppins.error("Can not pullup/invert tmc virtual endstop")
         mcu_endstop = ppins.setup_pin('endstop', self.diag_pin)
         return TMCVirtualEndstop(self.mcu_tmc, mcu_endstop)
 
@@ -218,6 +247,7 @@ class TMCMicrostepHelper:
                  '8': 5, '4': 6, '2': 7, '1': 8}
         mres = config.getchoice('microsteps', steps)
         self.fields.set_field("MRES", mres)
+        self.fields.set_field("intpol", config.getboolean("interpolate", True))
     def get_microsteps(self):
         return 256 >> self.fields.get_field("MRES")
     def get_phase(self):

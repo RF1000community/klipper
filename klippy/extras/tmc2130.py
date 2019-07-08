@@ -173,6 +173,7 @@ class TMCCurrentHelper:
 class MCU_TMC_SPI:
     def __init__(self, config, name_to_reg, fields):
         self.printer = config.get_printer()
+        self.mutex = self.printer.get_reactor().mutex()
         self.spi = bus.MCU_SPI_from_config(config, 3, default_speed=4000000)
         self.name_to_reg = name_to_reg
         self.fields = fields
@@ -180,18 +181,22 @@ class MCU_TMC_SPI:
         return self.fields
     def get_register(self, reg_name):
         reg = self.name_to_reg[reg_name]
-        self.spi.spi_send([reg, 0x00, 0x00, 0x00, 0x00])
-        if self.printer.get_start_args().get('debugoutput') is not None:
-            return 0
-        params = self.spi.spi_transfer([reg, 0x00, 0x00, 0x00, 0x00])
+        with self.mutex:
+            self.spi.spi_send([reg, 0x00, 0x00, 0x00, 0x00])
+            if self.printer.get_start_args().get('debugoutput') is not None:
+                return 0
+            params = self.spi.spi_transfer([reg, 0x00, 0x00, 0x00, 0x00])
         pr = bytearray(params['response'])
         return (pr[1] << 24) | (pr[2] << 16) | (pr[3] << 8) | pr[4]
-    def set_register(self, reg_name, val, print_time=0.):
-        min_clock = self.spi.get_mcu().print_time_to_clock(print_time)
+    def set_register(self, reg_name, val, print_time=None):
+        minclock = 0
+        if print_time is not None:
+            minclock = self.spi.get_mcu().print_time_to_clock(print_time)
         reg = Registers[reg_name]
         data = [(reg | 0x80) & 0xff, (val >> 24) & 0xff, (val >> 16) & 0xff,
                 (val >> 8) & 0xff, val & 0xff]
-        self.spi.spi_send(data, min_clock)
+        with self.mutex:
+            self.spi.spi_send(data, minclock)
 
 
 ######################################################################
@@ -203,12 +208,12 @@ class TMC2130:
         # Setup mcu communication
         self.fields = tmc.FieldHelper(Fields, SignedFields, FieldFormatters)
         self.mcu_tmc = MCU_TMC_SPI(config, Registers, self.fields)
-        # Allow virtual endstop to be created
+        # Allow virtual pins to be created
         diag1_pin = config.get('diag1_pin', None)
-        tmc.TMCEndstopHelper(config, self.mcu_tmc, diag1_pin)
+        tmc.TMCVirtualPinHelper(config, self.mcu_tmc, diag1_pin)
         # Register commands
         cmdhelper = tmc.TMCCommandHelper(config, self.mcu_tmc)
-        cmdhelper.setup_register_dump(self.query_registers)
+        cmdhelper.setup_register_dump(ReadRegisters)
         # Setup basic register values
         TMCCurrentHelper(config, self.mcu_tmc)
         mh = tmc.TMCMicrostepHelper(config, self.mcu_tmc)
@@ -221,7 +226,6 @@ class TMC2130:
         set_config_field(config, "hstrt", 0)
         set_config_field(config, "hend", 7)
         set_config_field(config, "TBL", 1)
-        set_config_field(config, "intpol", True, "interpolate")
         set_config_field(config, "IHOLDDELAY", 8)
         set_config_field(config, "TPOWERDOWN", 0)
         set_config_field(config, "PWM_AMPL", 128)
@@ -229,9 +233,6 @@ class TMC2130:
         set_config_field(config, "pwm_freq", 1)
         set_config_field(config, "pwm_autoscale", True)
         set_config_field(config, "sgt", 0)
-    def query_registers(self, print_time=0.):
-        return [(reg_name, self.mcu_tmc.get_register(reg_name))
-                for reg_name in ReadRegisters]
 
 def load_config_prefix(config):
     return TMC2130(config)
