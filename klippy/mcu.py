@@ -1,6 +1,6 @@
 # Interface to Klipper micro-controller code
 #
-# Copyright (C) 2016-2018  Kevin O'Connor <kevin@koconnor.net>
+# Copyright (C) 2016-2019  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import sys, os, zlib, logging, math
@@ -8,8 +8,6 @@ import serialhdl, pins, chelper, clocksync
 
 class error(Exception):
     pass
-
-STEPCOMPRESS_ERROR_RET = -989898989
 
 class MCU_stepper:
     def __init__(self, mcu, pin_params):
@@ -104,15 +102,7 @@ class MCU_stepper:
         else:
             self._itersolve_gen_steps = self._ffi_lib.itersolve_gen_steps
         return was_ignore
-    def note_homing_start(self, homing_clock):
-        ret = self._ffi_lib.stepcompress_set_homing(
-            self._stepqueue, homing_clock)
-        if ret:
-            raise error("Internal error in stepcompress")
     def note_homing_end(self, did_trigger=False):
-        ret = self._ffi_lib.stepcompress_set_homing(self._stepqueue, 0)
-        if ret:
-            raise error("Internal error in stepcompress")
         ret = self._ffi_lib.stepcompress_reset(self._stepqueue, 0)
         if ret:
             raise error("Internal error in stepcompress")
@@ -145,12 +135,13 @@ class MCU_endstop:
         self._pin = pin_params['pin']
         self._pullup = pin_params['pullup']
         self._invert = pin_params['invert']
+        self._reactor = mcu.get_printer().get_reactor()
         self._oid = self._home_cmd = self._query_cmd = None
         self._mcu.register_config_callback(self._build_config)
-        self._homing = False
-        self._min_query_time = 0.
-        self._next_query_print_time = 0.
-        self._last_state = {}
+        self._min_query_time = self._last_sent_time = 0.
+        self._next_query_print_time = self._end_home_time = 0.
+        self._trigger_completion = self._home_completion = None
+        self._trigger_notify = None
     def get_mcu(self):
         return self._mcu
     def add_stepper(self, stepper):
@@ -164,83 +155,88 @@ class MCU_endstop:
     def _build_config(self):
         self._oid = self._mcu.create_oid()
         self._mcu.add_config_cmd(
-            "config_end_stop oid=%d pin=%s pull_up=%d stepper_count=%d" % (
+            "config_endstop oid=%d pin=%s pull_up=%d stepper_count=%d" % (
                 self._oid, self._pin, self._pullup, len(self._steppers)))
         self._mcu.add_config_cmd(
-            "end_stop_home oid=%d clock=0 sample_ticks=0 sample_count=0"
+            "endstop_home oid=%d clock=0 sample_ticks=0 sample_count=0"
             " rest_ticks=0 pin_value=0" % (self._oid,), is_init=True)
         for i, s in enumerate(self._steppers):
             self._mcu.add_config_cmd(
-                "end_stop_set_stepper oid=%d pos=%d stepper_oid=%d" % (
+                "endstop_set_stepper oid=%d pos=%d stepper_oid=%d" % (
                     self._oid, i, s.get_oid()), is_init=True)
         cmd_queue = self._mcu.alloc_command_queue()
         self._home_cmd = self._mcu.lookup_command(
-            "end_stop_home oid=%c clock=%u sample_ticks=%u sample_count=%c"
+            "endstop_home oid=%c clock=%u sample_ticks=%u sample_count=%c"
             " rest_ticks=%u pin_value=%c", cq=cmd_queue)
         self._query_cmd = self._mcu.lookup_command(
-            "end_stop_query_state oid=%c", cq=cmd_queue)
-        self._mcu.register_response(self._handle_end_stop_state,
-                                    "end_stop_state", self._oid)
+            "endstop_query_state oid=%c", cq=cmd_queue)
     def home_prepare(self):
         pass
     def home_start(self, print_time, sample_time, sample_count, rest_time,
-                   triggered=True):
+                   triggered=True, notify=None):
         clock = self._mcu.print_time_to_clock(print_time)
         rest_ticks = int(rest_time * self._mcu.get_adjusted_freq())
-        self._homing = True
-        self._min_query_time = self._mcu.monotonic()
+        self._trigger_notify = notify
         self._next_query_print_time = print_time + self.RETRY_QUERY
+        self._min_query_time = self._reactor.monotonic()
+        self._last_sent_time = 0.
+        self._home_end_time = self._reactor.NEVER
+        self._trigger_completion = self._reactor.completion()
+        self._home_completion = self._reactor.completion()
+        self._mcu.register_response(self._handle_endstop_state,
+                                    "endstop_state", self._oid)
         self._home_cmd.send(
             [self._oid, clock, self._mcu.seconds_to_clock(sample_time),
              sample_count, rest_ticks, triggered ^ self._invert],
             reqclock=clock)
-        for s in self._steppers:
-            s.note_homing_start(clock)
+        self._home_completion = self._reactor.register_callback(
+            self._home_retry)
+    def _handle_endstop_state(self, params):
+        logging.debug("endstop_state %s", params)
+        if params['#sent_time'] >= self._min_query_time:
+            if params['homing']:
+                self._last_sent_time = params['#sent_time']
+            else:
+                self._min_query_time = self._reactor.NEVER
+                self._reactor.async_complete(self._trigger_completion, params)
+    def _home_retry(self, eventtime):
+        if self._mcu.is_fileoutput():
+            return True
+        while 1:
+            params = self._trigger_completion.wait(eventtime + 0.100)
+            if params is not None:
+                # Homing completed successfully
+                if self._trigger_notify is not None:
+                    self._trigger_notify()
+                return True
+            # Check for timeout
+            last = self._mcu.estimated_print_time(self._last_sent_time)
+            if last > self._home_end_time or self._mcu.is_shutdown():
+                return False
+            # Check for resend
+            eventtime = self._reactor.monotonic()
+            est_print_time = self._mcu.estimated_print_time(eventtime)
+            if est_print_time >= self._next_query_print_time:
+                self._next_query_print_time = est_print_time + self.RETRY_QUERY
+                self._query_cmd.send([self._oid])
     def home_wait(self, home_end_time):
-        eventtime = self._mcu.monotonic()
-        while self._check_busy(eventtime, home_end_time):
-            eventtime = self._mcu.pause(eventtime + 0.1)
+        self._home_end_time = home_end_time
+        did_trigger = self._home_completion.wait()
+        self._mcu.register_response(None, "endstop_state", self._oid)
+        self._home_cmd.send([self._oid, 0, 0, 0, 0, 0])
+        for s in self._steppers:
+            s.note_homing_end(did_trigger=did_trigger)
+        if not did_trigger:
+            raise self.TimeoutError("Timeout during endstop homing")
     def home_finalize(self):
         pass
-    def _handle_end_stop_state(self, params):
-        logging.debug("end_stop_state %s", params)
-        self._last_state = params
-    def _check_busy(self, eventtime, home_end_time=0.):
-        # Check if need to send an end_stop_query command
-        last_sent_time = self._last_state.get('#sent_time', -1.)
-        if last_sent_time >= self._min_query_time or self._mcu.is_fileoutput():
-            if not self._homing:
-                return False
-            if not self._last_state.get('homing', 0):
-                for s in self._steppers:
-                    s.note_homing_end(did_trigger=True)
-                self._homing = False
-                return False
-            last_sent_print_time = self._mcu.estimated_print_time(
-                last_sent_time)
-            if last_sent_print_time > home_end_time:
-                # Timeout - disable endstop checking
-                for s in self._steppers:
-                    s.note_homing_end()
-                self._homing = False
-                self._home_cmd.send([self._oid, 0, 0, 0, 0, 0])
-                raise self.TimeoutError("Timeout during endstop homing")
-        if self._mcu.is_shutdown():
-            raise error("MCU is shutdown")
-        est_print_time = self._mcu.estimated_print_time(eventtime)
-        if est_print_time >= self._next_query_print_time:
-            self._next_query_print_time = est_print_time + self.RETRY_QUERY
-            self._query_cmd.send([self._oid])
-        return True
     def query_endstop(self, print_time):
-        self._homing = False
-        self._min_query_time = self._mcu.monotonic()
-        self._next_query_print_time = print_time
-    def query_endstop_wait(self):
-        eventtime = self._mcu.monotonic()
-        while self._check_busy(eventtime):
-            eventtime = self._mcu.pause(eventtime + 0.1)
-        return self._last_state.get('pin_value', self._invert) ^ self._invert
+        clock = self._mcu.print_time_to_clock(print_time)
+        if self._mcu.is_fileoutput():
+            return 0
+        params = self._query_cmd.send_with_response(
+            [self._oid], "endstop_state", self._oid, minclock=clock)
+        return params['pin_value'] ^ self._invert
 
 class MCU_digital_out:
     def __init__(self, mcu, pin_params):
@@ -443,11 +439,10 @@ class CommandWrapper:
         if minclock:
             minsystime = self._clocksync.estimate_clock_systime(minclock)
         cmd = self._cmd.encode(data)
+        src = serialhdl.SerialRetryCommand(self._serial, response, response_oid)
         try:
-            src = serialhdl.SerialRetryCommand(
-                self._serial, [cmd], self._cmd_queue, response, response_oid,
-                minclock=minclock, minsystime=minsystime)
-            return src.get_response()
+            return src.get_response([cmd], self._cmd_queue,
+                                    minclock=minclock, minsystime=minsystime)
         except serialhdl.error as e:
             raise error(str(e))
 
@@ -697,7 +692,7 @@ class MCU:
             self._config_cmds.append(cmd)
     def get_query_slot(self, oid):
         slot = self.seconds_to_clock(oid * .01)
-        t = int(self.estimated_print_time(self.monotonic()) + 1.5)
+        t = int(self.estimated_print_time(self._reactor.monotonic()) + 1.5)
         return self.print_time_to_clock(t) + slot
     def register_stepqueue(self, stepqueue):
         self._stepqueues.append(stepqueue)
@@ -742,10 +737,6 @@ class MCU:
         return self._clocksync.get_adjusted_freq()
     def clock32_to_clock64(self, clock32):
         return self._clocksync.clock32_to_clock64(clock32)
-    def pause(self, waketime):
-        return self._reactor.pause(waketime)
-    def monotonic(self):
-        return self._reactor.monotonic()
     # Restarts
     def _disconnect(self):
         self._serial.disconnect()

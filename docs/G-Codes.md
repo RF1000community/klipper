@@ -191,6 +191,18 @@ The following command is available when an "output_pin" config section
 is enabled:
 - `SET_PIN PIN=config_name VALUE=<value>`
 
+## Neopixel Commands
+
+The following command is available when a "neopixel" config section
+is enabled:
+- `SET_NEOPIXEL NEOPIXEL=<config_name> INDEX=<index> RED=<value>
+  GREEN=<value> BLUE=<value>`: This sets the Neopixel LED output. Each
+  color <value> must be between 0.0 and 1.0. If multiple Neopixel
+  chips are daisy-chained then one may specify INDEX to alter the
+  color of just the given Neopixel chip (1 for the first Neopixel, 2
+  for the second, etc.). If INDEX is not provided then all Neopixels
+  in the daisy-chain will be set to the provided color.
+
 ## Servo Commands
 
 The following commands are available when a "servo" config section is
@@ -231,10 +243,12 @@ enabled:
   for details).
 - `QUERY_PROBE`: Report the current status of the probe ("triggered"
   or "open").
-- `PROBE_ACCURACY [REPEAT=<times>] [SPEED=<speed mm/s>] [X=<x pos>]
-  [Y=<y pos>] [Z=<z height>]`: Calculate the maximum, minimum, average,
-  median and standard deviation. The default values are: REPEAT=10,
-  SPEED=probe config speed, X=current X, Y=current Y and Z=10.
+- `PROBE_ACCURACY [PROBE_SPEED=<mm/s>] [SAMPLES=<count>]
+  [SAMPLE_RETRACT_DIST=<mm>]`: Calculate the maximum, minimum,
+  average, median, and standard deviation of multiple probe
+  samples. By default, 10 SAMPLES are taken. Otherwise the optional
+  parameters default to their equivalent setting in the probe config
+  section.
 - `PROBE_CALIBRATE [SPEED=<speed>] [<probe_parameter>=<value>]`: Run a
   helper script useful for calibrating the probe's z_offset. See the
   PROBE command for details on the optional probe parameters. See the
@@ -442,6 +456,9 @@ section is enabled.
  - `QUERY_FILAMENT_SENSOR SENSOR=<sensor_name>`: Queries the current status of
   the filament sensor.  The data displayed on the terminal will depend on the
   sensor type defined in the confguration.
+ - `SET_FILAMENT_SENSOR SENSOR=<sensor_name> ENABLE=[0|1]`:  Sets the
+   filament sensor on/off.  If ENABLE is set to 0, the filament sensor will
+   be disabled, if set to 1 it is enabled.
 
 ## Firmware Retraction
 
@@ -452,18 +469,15 @@ stringing during non-extrusion moves from one part of the print to
 another.  Appropriately configuring pressure advance reduces the length
 of retraction required.
  - `SET_RETRACTION [RETRACT_LENGTH=<mm>] [RETRACT_SPEED=<mm/s>]
-   [UNRETRACT_EXTRA_LENGTH=<mm>] [UNRETRACT_SPEED=<mm/s>] [Z_HOP=<mm>]`:
-   Adjust the parameters used by firmware retraction.  RETRACT_LENGTH
-   determines the length of filament to retract and unretract.  The
-   speed of retraction is adjusted via RETRACT_SPEED, and is typically
-   set relatively high.  The speed of unretraction is adjusted via
+   [UNRETRACT_EXTRA_LENGTH=<mm>] [UNRETRACT_SPEED=<mm/s>]`: Adjust the
+   parameters used by firmware retraction. RETRACT_LENGTH determines
+   the length of filament to retract and unretract. The speed of
+   retraction is adjusted via RETRACT_SPEED, and is typically set
+   relatively high. The speed of unretraction is adjusted via
    UNRETRACT_SPEED, and is not particularly critical, although often
-   lower than RETRACT_SPEED.  In some cases it is useful to add a small
+   lower than RETRACT_SPEED. In some cases it is useful to add a small
    amount of additional length on unretraction, and this is set via
-   UNRETRACT_EXTRA_LENGTH.  It is possible to lift the Z axis by a small
-   amount when in retracted state by setting Z_HOP, although this is
-   more commonly used for printers where fast Z movements are supported,
-   such as delta printers. SET_RETRACTION is commonly set as part of
+   UNRETRACT_EXTRA_LENGTH. SET_RETRACTION is commonly set as part of
    slicer per-filament configuration, as different filaments require
    different parameter settings.
  - `GET_RETRACTION`: Queries the current parameters used by firmware
