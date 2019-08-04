@@ -1,0 +1,6 @@
+{
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylamaEnabled": false,
+    "python.linting.enabled": true,
+    "python.pythonPath": "C:\\Users\\Boss\\.platformio\\penv\\Scripts\\python.exe"
+}
