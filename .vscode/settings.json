@@ -2,5 +2,5 @@
     "python.linting.pylintEnabled": true,
     "python.linting.pylamaEnabled": false,
     "python.linting.enabled": true,
-    "python.pythonPath": "C:\\Users\\Boss\\.platformio\\penv\\Scripts\\python.exe"
+    "python.pythonPath": "C:\\Users\\Konstantin\\AppData\\Local\\Programs\\Python\\Python27\\python.exe"
 }
