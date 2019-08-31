@@ -1,0 +1,16 @@
+Raspian buster lite without desktop env.
+
+
+add new 'ssh' file with no extension to boot folder to enable ssh
+
+sudo apt-get install git
+
+
+
+sudo rm -rf LCD-show
+git clone https://github.com/goodtft/LCD-show.git
+chmod -R 755 LCD-show
+cd LCD-show/
+sudo ./LCD7C-show 90
+
+

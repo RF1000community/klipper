@@ -1,0 +1,113 @@
+#:kivy 1.8.0
+Tabs:
+   
+<Tabs>:
+    do_default_tab: False
+    
+
+   
+    Home:
+        HomeScreenManager:
+            
+            HomeScreen:
+                
+            PrintingScreen:
+            
+    Files:
+    Setting:
+<HomeScreenManager>:
+<HomeScreen>:
+    size: root.size
+    name: "homescreen"
+    Background:
+
+
+    Label:
+        id:k
+        text: "HomeScreen"
+        position: 'bottom_left'
+
+<PrintingScreen>:
+    name: "printingscreen"
+    Label:
+        id:l
+        text: "PrintingScreen"
+
+<Files>:
+    
+    FC:
+        filters: '*.gco', '*.gcode'
+        rootpath: '/'
+        id: fc
+        multiselect: 'False'
+        
+<FC>:
+    canvas.before:         
+        Color:
+            rgba: 0.1, 0.1, 0.1, 1 
+        Rectangle:
+            pos: 0,0 #seems to use relative positioning to its screen put 0,0 instead of self.pos
+            size: 600,924
+
+#    layout: layout
+#    FileChooserIconLayout:
+#        id: layout
+#        controller: root
+<Setting>:
+    Background:
+<Background@Widget>:
+    canvas.before:
+        Color:
+            rgba: 0.1, 0.1, 0.1, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    
+<TabbedPanelStrip>:
+    canvas:
+        Color:
+            rgba: (0, 0, 0, 1) # black colour of the strip behind all 3 tab buttons
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+
+
+<StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
+    padding: [0,0,0,0]
+
+
+
+<Home@TabbedPanelItem>:
+    canvas:
+        Rectangle:
+            source: 'Logos/HomeIcon.png'
+            size: 100, 100
+            pos: 50, 0
+    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
+    background_normal: 'Logos/Black.png'
+    background_color: [0.1,0.1,0.1,1]
+<Files@TabbedPanelItem>:
+    canvas:
+        Rectangle:
+            source: 'Logos/FilesIcon.png'
+            size: 100,100
+            pos: 250, 0
+    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
+    background_normal: 'Logos/Black.png'
+    background_color: [0.1,0.1,0.1,1]
+<Setting@TabbedPanelItem>:
+    canvas:
+        Rectangle:
+            source: 'Logos/SettingsIcon.png'
+            size: 100, 100
+            pos: 450, 0
+    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
+    background_normal: 'Logos/Black.png'
+    background_color: [0.1,0.1,0.1,1]
+
+
+
+
+
+    
