@@ -1,47 +1,47 @@
 #:kivy 1.8.0
 Tabs:
    
-<Tabs>:
+<Tabs@TabbedPanel>:
+    tab_pos: 'bottom_mid'
+    tab_width: 200
+    tab_height: 100
     do_default_tab: False
-    
-
-   
     Home:
-        HomeScreenManager:
-            
+        HomeScreenManager:    
             HomeScreen:
-                
-            PrintingScreen:
-            
+            PrintingScreen:            
     Files:
     Setting:
-<HomeScreenManager>:
-<HomeScreen>:
+
+<HomeScreenManager@ScreenManager>:
+
+
+
+
+<HomeScreen@Screen>:
     size: root.size
     name: "homescreen"
     Background:
-
-
     Label:
         id:k
         text: "HomeScreen"
         position: 'bottom_left'
 
-<PrintingScreen>:
+<PrintingScreen@Screen>:
     name: "printingscreen"
     Label:
         id:l
         text: "PrintingScreen"
 
 <Files>:
-    
     FC:
-        filters: '*.gco', '*.gcode'
-        rootpath: '/'
-        id: fc
-        multiselect: 'False'
+        
         
 <FC>:
+    filters: '*.gco', '*.gcode'
+    rootpath: '/'
+    id: fc
+    multiselect: 'False'
     canvas.before:         
         Color:
             rgba: 0.1, 0.1, 0.1, 1 
@@ -53,8 +53,55 @@ Tabs:
 #    FileChooserIconLayout:
 #        id: layout
 #        controller: root
+
+<SettingItem@Widget>:
+    size_hint_y: None
+    height: 120
+    width: 600
+<SettingDivider@Widget>:
+    size_hint_y: None
+    height: 10
+    width: 600
+    canvas:
+        Color:
+            rgb: .25, .25, .25
+        Rectangle:
+            pos: self.x+15, self.y
+            size: self.width -30, 10
+
+<SettingLight@SettingItem>:
+    height: 120
+
+<SettingAlwaysCalibrate@SettingItem>:
+<SettingAcceleration@SettingItem>:
+<SettingWifi@SettingItem>:
+<SettingUpdate@SettingItem>:
+<SettingSystemInfo@SettingItem>:
+
+
+
 <Setting>:
     Background:
+    StackLayout:
+        orientation: 'lr-tb'
+        SettingDivider:
+        
+
+
+
+<StackLayout>:
+    canvas:
+        Color:
+            rgb: 0.1, 0.1, 0.1#set Background colour for settings
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+
+
+
+
+
 <Background@Widget>:
     canvas.before:
         Color:

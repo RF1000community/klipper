@@ -28,20 +28,6 @@ Config.set('graphics', 'fullscreen', '0')#set to 1 or 'auto' for raspi
 def modification_date_sort(files, filesystem):#sortierfunktion fuer Filechooser
     return (sorted(f for f in files if filesystem.is_dir(f)) 
     + sorted((f for f in files if not filesystem.is_dir(f)), key = lambda F: os.path.getmtime(F)))
-
-
-class Tabs(TabbedPanel):
-    tab_pos = 'bottom_mid'
-    tab_width = 200
-    tab_height = 100
-
-class HomeScreenManager(ScreenManager):
-    pass  
-class HomeScreen(Screen):
-    pass
-class PrintingScreen(Screen):
-    pass
-
 class FC(FileChooserIconView):
     sort_func = ObjectProperty(modification_date_sort)
     #is orig. defined in FileChooserController, which FileCHooserIc.. is a child from
@@ -50,8 +36,8 @@ class FC(FileChooserIconView):
 
 
 mainkv = Builder.load_file("main.kv")
-
 Builder.load_file("style.kv")
+
 #Clock.schedule_interval(FC._update_files, 1)
 class KlipperGui(App):
     def build(self):
