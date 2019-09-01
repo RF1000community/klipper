@@ -6,17 +6,29 @@ Tabs:
     tab_width: 200
     tab_height: 100
     do_default_tab: False
-    Home:
-        HomeScreenManager:    
-            HomeScreen:
-            PrintingScreen:            
-    Files:
-    Setting:
+    HomeTab:
+        HomeScreenManager:           
+    FileTab:
+    SettingTab:
+
+
+
+
+
+# HOME -------------------------------------------------------------
+<HomeTab@TabbedPanelItem>:
+    canvas:
+        Rectangle:
+            source: 'Logos/HomeIcon.png'
+            size: 100, 100
+            pos: 50, 0
+    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
+    background_normal: 'Logos/Black.png'
+    background_color: [0.1,0.1,0.1,1]
 
 <HomeScreenManager@ScreenManager>:
-
-
-
+    HomeScreen:
+    PrintingScreen: 
 
 <HomeScreen@Screen>:
     size: root.size
@@ -33,10 +45,20 @@ Tabs:
         id:l
         text: "PrintingScreen"
 
-<Files>:
+
+
+# FILE -------------------------------------------------------------
+<FileTab@TabbedPanelItem>:
+    canvas:
+        Rectangle:
+            source: 'Logos/FilesIcon.png'
+            size: 100,100
+            pos: 250, 0
+    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
+    background_normal: 'Logos/Black.png'
+    background_color: [0.1,0.1,0.1,1]
+
     FC:
-        
-        
 <FC>:
     filters: '*.gco', '*.gcode'
     rootpath: '/'
@@ -53,6 +75,25 @@ Tabs:
 #    FileChooserIconLayout:
 #        id: layout
 #        controller: root
+
+
+
+# SETTING ----------------------------------------------------------
+<SettingTab@TabbedPanelItem>:
+    canvas:
+        Rectangle:
+            source: 'Logos/SettingsIcon.png'
+            size: 100, 100
+            pos: 450, 0
+    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
+    background_normal: 'Logos/Black.png'
+    background_color: [0.1,0.1,0.1,1]
+
+    Background:
+    StackLayout:
+        orientation: 'lr-tb'
+        SettingDivider:
+        
 
 <SettingItem@Widget>:
     size_hint_y: None
@@ -77,16 +118,6 @@ Tabs:
 <SettingWifi@SettingItem>:
 <SettingUpdate@SettingItem>:
 <SettingSystemInfo@SettingItem>:
-
-
-
-<Setting>:
-    Background:
-    StackLayout:
-        orientation: 'lr-tb'
-        SettingDivider:
-        
-
 
 
 <StackLayout>:
@@ -122,36 +153,7 @@ Tabs:
 
 <StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
     padding: [0,0,0,0]
-
-
-
-<Home@TabbedPanelItem>:
-    canvas:
-        Rectangle:
-            source: 'Logos/HomeIcon.png'
-            size: 100, 100
-            pos: 50, 0
-    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
-    background_normal: 'Logos/Black.png'
-    background_color: [0.1,0.1,0.1,1]
-<Files@TabbedPanelItem>:
-    canvas:
-        Rectangle:
-            source: 'Logos/FilesIcon.png'
-            size: 100,100
-            pos: 250, 0
-    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
-    background_normal: 'Logos/Black.png'
-    background_color: [0.1,0.1,0.1,1]
-<Setting@TabbedPanelItem>:
-    canvas:
-        Rectangle:
-            source: 'Logos/SettingsIcon.png'
-            size: 100, 100
-            pos: 450, 0
-    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
-    background_normal: 'Logos/Black.png'
-    background_color: [0.1,0.1,0.1,1]
+        
 
 
 
