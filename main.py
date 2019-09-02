@@ -32,7 +32,6 @@ class FC(FileChooserIconView):
     sort_func = ObjectProperty(modification_date_sort)
     #is orig. defined in FileChooserController, which FileCHooserIc.. is a child from
     
-    
 
 
 mainkv = Builder.load_file("main.kv")

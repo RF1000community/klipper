@@ -88,7 +88,14 @@ Tabs:
     background_normal: 'Logos/Black.png'
     background_color: [0.1,0.1,0.1,1]
 
-    Background: # needs to be before the rest
+    ScreenManager:
+        name: 'SettingScreenManager'
+
+        SettingScreen:
+        WifiScreen:
+<SettingScreen@Screen>:
+
+    name: 'SettingScreen'
     ScrollView:
         canvas.before:
             Color:
@@ -96,17 +103,13 @@ Tabs:
             Rectangle:
                 pos: self.pos
                 size: self.size
-        
-
         BoxLayout:
-
             canvas:
                 Color:
                     rgb: 0.1, 0.1, 0.1#set Background colour for settings
                 Rectangle:
                     size: self.size
                     pos: self.pos
-
             orientation:'vertical'
             height: self.minimum_height
             pos: 0, root.height - self.minimum_height
@@ -117,8 +120,44 @@ Tabs:
             SettingAlwaysCalibrate:
             SettingDivider:  
             SettingWifi:
+            
+                Button:
+                    pos_hint: {'x':0, 'y':0}
+                    background_color: [0.1,0.1,0.1, 0]
+                    on_press: root.manager.current = 'WifiScreen'
 
-<SetItem@Widget>:
+<WifiScreen@Screen>:
+    name: 'WifiScreen'
+    ScrollView:
+        canvas.before:
+            Color:
+                rgba: 0.1, 0.1, 0.1, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        BoxLayout:
+            canvas:
+                Color:
+                    rgb: 0.1, 0.1, 0.1#set Background colour for settings
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+            orientation:'vertical'
+            height: self.minimum_height
+            pos: 0, root.height - self.minimum_height
+            size_hint_y: None
+
+            WifiBack:
+                Button:
+                    size: root.height, root.height
+                    size_hint: None, None 
+            SettingDivider:
+            SettingWifi:
+            SettingDivider:  
+            
+            
+            
+<SetItem@FloatLayout>:
     size_hint_y: None
 
     height: 120
@@ -145,8 +184,9 @@ Tabs:
         padding_x: 50
     Switch:
         id: knopf
-        center: root.x + 500, root.center_y
-
+        size_hint: None, None
+        pos_hint: {'center_y': 0.5}
+        right: 600-50
 <SettingAlwaysCalibrate@SetItem>:
     Label:
         id: calibrate
@@ -159,7 +199,9 @@ Tabs:
         padding_x: 50
     Switch:
         id: knopf
-        center: root.x + 500, root.center_y
+        size_hint: None, None
+        pos_hint: {'center_y': 0.5}
+        right: 600-50
 
 <SettingAcceleration@SetItem>:
 <SettingWifi@SetItem>:
@@ -179,12 +221,19 @@ Tabs:
         text_size: self.size
         color: 0.7, 0.7, 0.7, 1
         size: 200, root.height
+        size_hint: None, None
         valign: 'middle'
         halign: 'right'
         y: root.y
         right: 600
         padding_x: 50
 
+<WifiBack@SetItem>:
+    
+
+
+
+    
 
 
 
