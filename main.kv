@@ -29,15 +29,14 @@ Tabs:
 <HomeScreenManager@ScreenManager>:
     HomeScreen:
     PrintingScreen: 
-
+#LABELS: try putting the label inside a widget if it does shit e.g. setting size doesnt work
+# size: outer dimensions of the label widget, available space, can be set to texture_size to show everything SYNTAX!!! size: '137.5dp', '31sp'
+# text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits, 
+# texture_size: size of the actual text not cut off(outer dimensions), can set font_size
 <HomeScreen@Screen>:
     size: root.size
     name: "homescreen"
     Background:
-    Label:
-        id:k
-        text: "HomeScreen"
-        position: 'bottom_left'
 
 <PrintingScreen@Screen>:
     name: "printingscreen"
@@ -89,44 +88,114 @@ Tabs:
     background_normal: 'Logos/Black.png'
     background_color: [0.1,0.1,0.1,1]
 
-    Background:
-    StackLayout:
-        orientation: 'lr-tb'
-        SettingDivider:
+    Background: # needs to be before the rest
+    ScrollView:
+        canvas.before:
+            Color:
+                rgba: 0.1, 0.1, 0.1, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
         
 
-<SettingItem@Widget>:
+        BoxLayout:
+
+            canvas:
+                Color:
+                    rgb: 0.1, 0.1, 0.1#set Background colour for settings
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+
+            orientation:'vertical'
+            height: self.minimum_height
+            pos: 0, root.height - self.minimum_height
+            size_hint_y: None
+
+            SettingLight:
+            SettingDivider:
+            SettingAlwaysCalibrate:
+            SettingDivider:  
+            SettingWifi:
+
+<SetItem@Widget>:
     size_hint_y: None
+
     height: 120
     width: 600
 <SettingDivider@Widget>:
     size_hint_y: None
-    height: 10
+    height: 1
     width: 600
     canvas:
         Color:
-            rgb: .25, .25, .25
+            rgb: .2, .2, .2
         Rectangle:
             pos: self.x+15, self.y
-            size: self.width -30, 10
+            size: self.width -30, 1
+<SettingLight@SetItem>:
+    Label:
+        id: light
+        text: "Light"
+        font_size: '20sp'
+        text_size: self.size
+        size: root.size
+        valign: 'middle'
+        pos: root.pos
+        padding_x: 50
+    Switch:
+        id: knopf
+        center: root.x + 500, root.center_y
 
-<SettingLight@SettingItem>:
-    height: 120
+<SettingAlwaysCalibrate@SetItem>:
+    Label:
+        id: calibrate
+        text: "Calibrate for every printjob"
+        font_size: '20sp'
+        text_size: self.size
+        size: root.size
+        valign: 'middle'
+        pos: root.pos
+        padding_x: 50
+    Switch:
+        id: knopf
+        center: root.x + 500, root.center_y
 
-<SettingAlwaysCalibrate@SettingItem>:
-<SettingAcceleration@SettingItem>:
-<SettingWifi@SettingItem>:
-<SettingUpdate@SettingItem>:
-<SettingSystemInfo@SettingItem>:
+<SettingAcceleration@SetItem>:
+<SettingWifi@SetItem>:
+    Label:
+        id: wifi
+        text: "Wifi"
+        font_size: '20sp'
+        text_size: self.size
+        size: root.size
+        valign: 'middle'
+        pos: root.pos
+        padding_x: 50
+    Label:
+        id: current_wifi
+        text: "Das WLAN"
+        font_size: '20sp'
+        text_size: self.size
+        color: 0.7, 0.7, 0.7, 1
+        size: 200, root.height
+        valign: 'middle'
+        halign: 'right'
+        y: root.y
+        right: 600
+        padding_x: 50
 
 
-<StackLayout>:
-    canvas:
-        Color:
-            rgb: 0.1, 0.1, 0.1#set Background colour for settings
-        Rectangle:
-            size: self.size
-            pos: self.pos
+
+
+
+
+
+
+<SettingUpdate@SetItem>:
+<SettingSystemInfo@SetItem>:
+
+
 
 
 
@@ -148,8 +217,6 @@ Tabs:
         Rectangle:
             size: self.size
             pos: self.pos
-
-
 
 <StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
     padding: [0,0,0,0]
