@@ -83,6 +83,7 @@ Tabs:
     background_color: [0.1,0.1,0.1,1]
 
     ScreenManager:
+        id: set_mgr
         name: 'SettingScreenManager'
         SettingScreen:
         WifiScreen:
@@ -105,13 +106,11 @@ Tabs:
                     pos: self.pos
             orientation:'vertical'
             height: self.minimum_height
-            pos: 0, root.height - self.minimum_height
+            pos: 0, root.height - self.height
             size_hint_y: None
 
             SettingLight:
-            SettingDivider:
             SettingAlwaysCalibrate:
-            SettingDivider:  
             SettingWifi:
                 Button:
                     pos_hint: {'x':0, 'y':0}
@@ -123,9 +122,10 @@ Tabs:
                         root.manager.current = 'WifiScreen'
                     
 
-<WifiScreen@Screen>:
+<WifiScreen>:
     name: 'WifiScreen'
     ScrollView:
+        do_scroll_x: False
         canvas.before:
             Color:
                 rgba: 0.1, 0.1, 0.1, 1
@@ -141,48 +141,60 @@ Tabs:
                     pos: self.pos
             orientation:'vertical'
             height: self.minimum_height
-            pos: 0, root.height - self.minimum_height
             size_hint_y: None
 
             WifiBack:
+                id: wifi_back
                 Button:
-                    canvas:
-                        Rectangle:
-                            source: 'Logos/BackButton.png'
-                            size: 110,110
-                            pos: 10, 110
-                    background_normal: 'Logos/Transparent.png'
+                    #canvas:
+                    #    Rectangle:
+                    #        source: 'Logos/BackButton.png'
+                    #        size: 110,110
+                    #        pos: 10, 110
+                    background_normal: 'Logos/BackButton.png'
                     background_down: ''
-                    background_color: [1,1,1,0.1]
+                    #background_color: [1,1,1,0.1]
                     pos_hint: {'x':0, 'y': 0}
                     size_hint_x: None
-                    width: 200
+                    width: 110
                     on_press:
                         root.manager.transition.direction = 'right'
                         root.manager.current = 'SettingScreen'
                 Label:
-                    text: "Wifi"
+                    text: "Wifimenu"
                     font_size: '30sp'
                     text_size: self.size
                     size_hint: 1, 1
                     pos_hint: {'x': 0, 'y': 0}
                     valign: 'middle'
                     halign: 'center'
+            BoxLayout:
+                canvas:
+                    Color:
+                        rgb: 0.1, 0.1, 0.1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                id: wifi_box
+                orientation: 'vertical'
+                height: self.minimum_height
+                size_hint_y: None
+                
 
-            SettingDivider:
-            SettingWifi:
-            SettingDivider:  
             
             
             
-<SetItem@FloatLayout>:
+<SetItem>:
     size_hint_y: None
     height: 110
     width: 600
+    SettingDivider:
+
 <SettingDivider@Widget>:
     size_hint_y: None
     height: 1
     width: 600
+    pos_hint: {'x': 0, 'y': 0}
     canvas:
         Color:
             rgb: .2, .2, .2
@@ -221,7 +233,7 @@ Tabs:
         right: 600-50
 
 <SettingAcceleration@SetItem>:
-<SettingWifi@SetItem>:
+<SettingWifi>:
     Label:
         id: wifi
         text: "Wifi"
@@ -233,7 +245,7 @@ Tabs:
         padding_x: 50
     Label:
         id: current_wifi
-        text: "Das WLAN"
+        text: root.ssid
         font_size: '20sp'
         text_size: self.size
         color: 0.7, 0.7, 0.7, 1

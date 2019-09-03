@@ -1,3 +1,6 @@
+#!/usr/bin/env python2
+
+
 from time import time
 from os.path import dirname, join
 from kivy.properties import NumericProperty, StringProperty, BooleanProperty, ListProperty, ObjectProperty, OptionProperty
@@ -16,6 +19,7 @@ from kivy.uix.filechooser import FileChooser, FileChooserIconView, FileChooserCo
 from kivy.resources import resource_add_path
 import os
 import subprocess
+from settings import *
 
 Config.set('graphics', 'resizable', '0') 
 Config.set('graphics', 'width', 600)
