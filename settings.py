@@ -1,7 +1,7 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.screenmanager import Screen#, Screenmanager
+from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.properties import ListProperty, StringProperty
@@ -27,7 +27,8 @@ class WifiScreen(Screen):
         for i in self.ssid_list:
             entry = SettingWifi()
             entry.ssid = i
-            self.ids['wifi_box'].add_widget(entry)
+            entry.title = 'WIFI'
+            self.ids.wifi_box.add_widget(entry)
 
 
 

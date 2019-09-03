@@ -105,15 +105,13 @@ Tabs:
                     pos: self.pos
             orientation:'vertical'
             height: self.minimum_height
-            pos: 0, root.height - self.minimum_height
+            pos: 0, root.height - self.height
             size_hint_y: None
 
             SettingSwitch:
                 title: "Light"
-            SettingDivider:
             SettingSwitch:
                 title: "Calibrate for every printjob"
-            SettingDivider:  
             SettingWifi:
                 title: 'Wifi'
                 Button:
@@ -124,14 +122,13 @@ Tabs:
                     on_press:
                         root.manager.transition.direction = 'left'
                         root.manager.current = 'WifiScreen'
-            SettingDivider:
             SettingValueSlider:
-                title: "Max. printhead Acceleration"
-            SettingDivider:
+                title: "Max. printhead Acceleration" 
 
-<WifiScreen@Screen>:
+<WifiScreen>:
     name: 'WifiScreen'
     ScrollView:
+        do_scroll_x: False
         canvas.before:
             Color:
                 rgba: 0.1, 0.1, 0.1, 1
@@ -147,41 +144,47 @@ Tabs:
                     pos: self.pos
             orientation:'vertical'
             height: self.minimum_height
-            pos: 0, root.height - self.minimum_height
             size_hint_y: None
 
             WifiBack:
+                id: wifi_back
                 Button:
                     canvas:
                         Rectangle:
                             source: 'Logos/BackButton.png'
-                            size:70,70
+                            size: 70, 70
                             pos: 30, self.y+20
                     background_normal: 'Logos/Transparent.png'
                     background_down: ''
-                    background_color: [1,1,1,0.1]
+                    background_color: 1,1,1,0.1
                     pos_hint: {'x':0, 'y': 0}
                     size_hint_x: None
-                    width: 200
+                    width: 110
                     on_press:
                         root.manager.transition.direction = 'right'
                         root.manager.current = 'SettingScreen'
                 Label:
-                    text: "Wifi"
+                    text: "Wifimenu"
                     font_size: '30sp'
                     text_size: self.size
                     size_hint: 1, 1
                     pos_hint: {'x': 0, 'y': 0}
                     valign: 'middle'
                     halign: 'center'
-
-            SettingDivider:
-            SettingWifi:
-            SettingDivider:  
+            BoxLayout:
+                canvas:
+                    Color:
+                        rgb: 0.1, 0.1, 0.1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                id: wifi_box
+                orientation: 'vertical'
+                height: self.minimum_height
+                size_hint_y: None
+                
             
-            
-            
-<SetItem@FloatLayout>:
+<SetItem>:
     size_hint_y: None
     height: 110
     width: 600
@@ -195,27 +198,33 @@ Tabs:
         valign: 'middle'
         pos: root.pos
         padding_x: 50
+    SettingDivider:
+
 <SettingDivider@Widget>:
     size_hint_y: None
     height: 1
     width: 600
+    pos_hint: {'x': 0, 'y': 0}
     canvas:
         Color:
             rgb: .2, .2, .2
         Rectangle:
             pos: self.x+15, self.y
             size: self.width -30, 1
+
 <SettingSwitch@SetItem>:
     Switch:
         id: knopf
         size_hint: None, None
         pos_hint: {'center_y': 0.5}
         right: 600-50
+
 <SettingValueSlider@SetItem>:
-<SettingWifi@SetItem>:
+
+<SettingWifi>:
     Label:
         id: current_wifi
-        text: "Das WLAN"
+        text: root.ssid
         font_size: '20sp'
         text_size: self.size
         color: 0.7, 0.7, 0.7, 1
@@ -257,5 +266,9 @@ Tabs:
 <StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
     padding: [0,0,0,0]
         
+
+
+
+
 
     
