@@ -115,7 +115,7 @@ Tabs:
                 title: "Calibrate for every printjob"
             SettingDivider:  
             SettingWifi:
-                title: 'Wifi'
+                title: "Wifi"
                 Button:
                     pos_hint: {'x':0, 'y':0}
                     background_normal: 'Logos/Transparent.png'
@@ -150,7 +150,7 @@ Tabs:
             pos: 0, root.height - self.minimum_height
             size_hint_y: None
 
-            WifiBack:
+            SetItem:
                 Button:
                     canvas:
                         Rectangle:
@@ -227,7 +227,6 @@ Tabs:
         right: 600
         padding_x: 50
 
-<WifiBack@SetItem>:
 <SettingUpdate@SetItem>:
 <SettingSystemInfo@SetItem>:
 
