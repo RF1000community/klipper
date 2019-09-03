@@ -12,8 +12,10 @@ Tabs:
     SettingTab:
 
 
-
-
+#LABELS: try putting the label inside a widget or set hints to None if it does shit e.g. setting size doesnt work
+# size: outer dimensions of the label widget, available space, can be set to texture_size to show everything SYNTAX!!! size: '137.5dp', '31sp'
+# text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits, 
+# texture_size: size of the actual text not cut off(outer dimensions), can set font_size
 
 # HOME -------------------------------------------------------------
 <HomeTab@TabbedPanelItem>:
@@ -22,17 +24,14 @@ Tabs:
             source: 'Logos/HomeIcon.png'
             size: 100, 100
             pos: 50, 0
-    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
+    background_down: '' # dadurch nimmt es background color an, sowieso immer mit dessen opacity auch waere es ein bild
     background_normal: 'Logos/Black.png'
     background_color: [0.1,0.1,0.1,1]
 
 <HomeScreenManager@ScreenManager>:
     HomeScreen:
     PrintingScreen: 
-#LABELS: try putting the label inside a widget if it does shit e.g. setting size doesnt work
-# size: outer dimensions of the label widget, available space, can be set to texture_size to show everything SYNTAX!!! size: '137.5dp', '31sp'
-# text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits, 
-# texture_size: size of the actual text not cut off(outer dimensions), can set font_size
+
 <HomeScreen@Screen>:
     size: root.size
     name: "homescreen"
@@ -53,10 +52,9 @@ Tabs:
             source: 'Logos/FilesIcon.png'
             size: 100,100
             pos: 250, 0
-    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
+    background_down: ''
     background_normal: 'Logos/Black.png'
     background_color: [0.1,0.1,0.1,1]
-
     FC:
 <FC>:
     filters: '*.gco', '*.gcode'
@@ -70,10 +68,6 @@ Tabs:
             pos: 0,0 #seems to use relative positioning to its screen put 0,0 instead of self.pos
             size: 600,924
 
-#    layout: layout
-#    FileChooserIconLayout:
-#        id: layout
-#        controller: root
 
 
 
@@ -84,17 +78,16 @@ Tabs:
             source: 'Logos/SettingsIcon.png'
             size: 100, 100
             pos: 450, 0
-    background_down: 'Logos/White.png' # diese Farbe, mit background color multipliziert wird ueber panelStrip color ueberblendet, jedoch mit opacity von background color
+    background_down: '' 
     background_normal: 'Logos/Black.png'
     background_color: [0.1,0.1,0.1,1]
 
     ScreenManager:
         name: 'SettingScreenManager'
-
         SettingScreen:
         WifiScreen:
+        
 <SettingScreen@Screen>:
-
     name: 'SettingScreen'
     ScrollView:
         canvas.before:
@@ -120,11 +113,15 @@ Tabs:
             SettingAlwaysCalibrate:
             SettingDivider:  
             SettingWifi:
-            
                 Button:
                     pos_hint: {'x':0, 'y':0}
-                    background_color: [0.1,0.1,0.1, 0]
-                    on_press: root.manager.current = 'WifiScreen'
+                    background_normal: 'Logos/Transparent.png'
+                    background_down: ''
+                    background_color: [1,1,1, 0.1]
+                    on_press:
+                        root.manager.transition.direction = 'left'
+                        root.manager.current = 'WifiScreen'
+                    
 
 <WifiScreen@Screen>:
     name: 'WifiScreen'
@@ -149,8 +146,29 @@ Tabs:
 
             WifiBack:
                 Button:
-                    size: root.height, root.height
-                    size_hint: None, None 
+                    canvas:
+                        Rectangle:
+                            source: 'Logos/BackButton.png'
+                            size: 110,110
+                            pos: 10, 110
+                    background_normal: 'Logos/Transparent.png'
+                    background_down: ''
+                    background_color: [1,1,1,0.1]
+                    pos_hint: {'x':0, 'y': 0}
+                    size_hint_x: None
+                    width: 200
+                    on_press:
+                        root.manager.transition.direction = 'right'
+                        root.manager.current = 'SettingScreen'
+                Label:
+                    text: "Wifi"
+                    font_size: '30sp'
+                    text_size: self.size
+                    size_hint: 1, 1
+                    pos_hint: {'x': 0, 'y': 0}
+                    valign: 'middle'
+                    halign: 'center'
+
             SettingDivider:
             SettingWifi:
             SettingDivider:  
@@ -159,8 +177,7 @@ Tabs:
             
 <SetItem@FloatLayout>:
     size_hint_y: None
-
-    height: 120
+    height: 110
     width: 600
 <SettingDivider@Widget>:
     size_hint_y: None
@@ -229,18 +246,6 @@ Tabs:
         padding_x: 50
 
 <WifiBack@SetItem>:
-    
-
-
-
-    
-
-
-
-
-
-
-
 <SettingUpdate@SetItem>:
 <SettingSystemInfo@SetItem>:
 

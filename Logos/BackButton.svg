@@ -16,9 +16,9 @@
    id="svg8"
    inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
    sodipodi:docname="BackButton.svg"
-   inkscape:export-filename="C:\Users\Konstantin\Dropbox\3dPrinter\CODE\Kivy Gui\Logos\FilesIcon.png"
-   inkscape:export-xdpi="96"
-   inkscape:export-ydpi="96">
+   inkscape:export-filename="C:\Users\Konstantin\Dropbox\3dPrinter\CODE\Klipper-GUI\Logos\BackButton.png"
+   inkscape:export-xdpi="105.6"
+   inkscape:export-ydpi="105.6">
   <defs
      id="defs2" />
   <sodipodi:namedview
@@ -28,9 +28,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="8"
-     inkscape:cx="24.476598"
-     inkscape:cy="49.754356"
+     inkscape:zoom="8.6"
+     inkscape:cx="50"
+     inkscape:cy="50"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -49,7 +49,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -59,18 +59,12 @@
      id="layer1"
      transform="translate(0,-270.54165)">
     <path
-       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:1.46169078;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 5.5980673,279.90706 H 20.860987 v 10.92942 H 5.5980673 Z"
-       id="rect851"
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.34666839"
+       d="m 16.602427,274.77624 -8.7330618,8.73308 8.7330598,8.73306 2.509559,-2.50956 -6.223508,-6.22351 6.223509,-6.22351 z"
+       id="rect4553"
        inkscape:connector-curvature="0"
-       inkscape:export-xdpi="96"
-       inkscape:export-ydpi="96" />
-    <path
-       style="fill:none;stroke:#ffffff;stroke-width:1.42127156;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 5.5771372,281.5932 v -4.90826 h 4.6877248 l 3.182718,3.3679"
-       id="path853"
-       inkscape:connector-curvature="0"
-       inkscape:export-xdpi="96"
-       inkscape:export-ydpi="96" />
+       sodipodi:nodetypes="ccccccc"
+       inkscape:export-xdpi="105.6"
+       inkscape:export-ydpi="105.6" />
   </g>
 </svg>
