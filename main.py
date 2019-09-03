@@ -25,8 +25,8 @@ Config.set('graphics', 'resizable', '0')
 Config.set('graphics', 'width', 600)
 Config.set('graphics', 'height', 1024)
 Config.set('graphics', 'fullscreen', '0')#set to 1 or 'auto' for raspi
-#kivy.resources.resource_add_path('style.kv')
-#kivy.resources.resource_remove_path('')
+#resource_add_path(os.getcwd())
+#resource_remove_path('')
 
 
 def modification_date_sort(files, filesystem):#sortierfunktion fuer Filechooser

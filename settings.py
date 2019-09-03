@@ -4,38 +4,76 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
-from kivy.properties import ListProperty, StringProperty
+from kivy.properties import ListProperty, StringProperty, ObjectProperty
 from kivy.clock import Clock
+#Only for test, will be removed later
+import time
 
 
 class SetItem(FloatLayout):
     pass
 
-class SettingWifi(SetItem):
+class WifiNetwork(SetItem):
     ssid = StringProperty()
 
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self.popup = PasswordPopup(ssid=self.ssid)
+            self.popup.open()
+            return True
+        return super(WifiNetwork, self).on_touch_down(touch)
+
 class WifiScreen(Screen):
+
+    ssid_list = ListProperty()
     
     def __init__(self, **kwargs):
         super(WifiScreen, self).__init__(**kwargs)
-        print(self.size, self.pos)
-        Clock.schedule_once(self.update, 1)
+        # Amount of seconds between wifi rescans in seconds
+        self.freq = 30
 
+    def on_pre_enter(self):
+        # pre_enter: This function is executed when the animation starts
+        Clock.schedule_once(self.get_ssid_list, -1)
+        self.update_clock = Clock.schedule_interval(self.get_ssid_list, self.freq)
 
-    def update(self, dt):
-        self.get_ssid_list()
-        for i in self.ssid_list:
-            entry = SettingWifi()
+    def on_leave(self):
+        Clock.unschedule(self.update_clock)
+
+    def on_ssid_list(self, instance, val):
+        # Repopulate the list of networks when self.ssid_list changes
+        box = self.ids.wifi_box
+        box.clear_widgets()
+        for i in val:
+            entry = WifiNetwork()
             entry.ssid = i
-            #entry.title = 'WIFI'
-            self.ids.wifi_box.add_widget(entry)
+            box.add_widget(entry)
 
+    def get_ssid_list(self, dt):
+        # on_ssid_list() is only called when this list is different to the previous list
+        hms = time.strftime("%H:%M:%S")
+        s = int(time.time())%7 + 2
+        names = []
+        for i in range(s):
+            names.append(hms+'.'+str(i))
+        print names
+        self.ssid_list = names
 
+class PasswordPopup(Popup):
+    
+    password = StringProperty()
+    txt_input = ObjectProperty(None)
+    
+    def __init__(self, ssid, **kwargs):
+        self.ssid = ssid
+        self.title = ssid
+        super(PasswordPopup, self).__init__(**kwargs)
+        self.txt_input.bind(on_text_validate=self.connect)
 
-    def get_ssid_list(self):
-        # Mockup list
-        self.ssid_list = ['wifi1', 'wifi2', 'wifi3', 'wifi4']
-
+    def connect(self, instance=None):
+        self.dismiss()
+        self.password = self.txt_input.text
+        print self.password
 
 
 #DEPRECATED

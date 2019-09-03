@@ -243,9 +243,28 @@ Tabs:
         y: root.y
         right: 600
         padding_x: 50
-<SettingWifi>:
+
+<SettingWifi@SetItem>:
     Label:
         id: current_wifi
+        text: '[current]'
+        font_size: '20sp'
+        text_size: self.size
+        color: 0.7, 0.7, 0.7, 1
+        size: 200, root.height
+        size_hint: None, None
+        valign: 'middle'
+        halign: 'right'
+        y: root.y
+        right: 600
+        padding_x: 50
+
+
+<SettingUpdate@SetItem>:
+<SettingSystemInfo@SetItem>:
+
+<WifiNetwork>:
+    Label:
         text: root.ssid
         font_size: '20sp'
         text_size: self.size
@@ -258,18 +277,50 @@ Tabs:
         right: 600
         padding_x: 50
 
-<SettingUpdate@SetItem>:
-<SettingSystemInfo@SetItem>:
-
-
 <ValuePopup@Popup>:
     auto_dismiss: False
+    
 
 
-
-
-
-
+<PasswordPopup>:
+    title_size: 30
+    size_hint: 0.8, 0.5
+    txt_input: pwd_input
+    FloatLayout:
+        Label:
+            text: 'Password'
+            font_size: 20
+            size: self.texture_size
+            size_hint: None, None
+            pos_hint: {'x': 0.1, 'y': 0.75}
+        TextInput:
+            id: pwd_input
+            multiline: False
+            focus: True
+            password: True
+            height: self.minimum_height
+            size_hint: 0.7, None
+            pos_hint: {'x': 0.1, 'top': 0.73}
+        ToggleButton:
+            text: 'show'
+            on_press: 
+                if self.state == 'down': pwd_input.password = False
+                elif self.state == 'normal': pwd_input.password = True
+            height: pwd_input.height
+            size_hint: 0.1, None
+            pos_hint: {'x': 0.8, 'top': 0.73}
+        Button:
+            id: btn_cancel
+            text: 'Cancel'
+            size_hint: 0.2, 0.1
+            pos_hint: {'x': 0.48, 'y': 0.1}
+            on_release: root.dismiss()
+        Button:
+            text: 'Confirm'
+            size_hint: btn_cancel.size_hint
+            pos_hint: {'x': 0.7, 'y': 0.1}
+            on_release: root.connect()
+   
 <Background@Widget>:
     canvas.before:
         Color:
