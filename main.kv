@@ -108,11 +108,14 @@ Tabs:
             pos: 0, root.height - self.minimum_height
             size_hint_y: None
 
-            SettingLight:
+            SettingSwitch:
+                title: "Light"
             SettingDivider:
-            SettingAlwaysCalibrate:
+            SettingSwitch:
+                title: "Calibrate for every printjob"
             SettingDivider:  
             SettingWifi:
+                title: 'Wifi'
                 Button:
                     pos_hint: {'x':0, 'y':0}
                     background_normal: 'Logos/Transparent.png'
@@ -121,7 +124,10 @@ Tabs:
                     on_press:
                         root.manager.transition.direction = 'left'
                         root.manager.current = 'WifiScreen'
-                    
+            SettingDivider:
+            SettingValueSlider:
+                title: "Max. printhead Acceleration"
+            SettingDivider:
 
 <WifiScreen@Screen>:
     name: 'WifiScreen'
@@ -149,8 +155,8 @@ Tabs:
                     canvas:
                         Rectangle:
                             source: 'Logos/BackButton.png'
-                            size: 110,110
-                            pos: 10, 110
+                            size:70,70
+                            pos: 30, self.y+20
                     background_normal: 'Logos/Transparent.png'
                     background_down: ''
                     background_color: [1,1,1,0.1]
@@ -179,6 +185,16 @@ Tabs:
     size_hint_y: None
     height: 110
     width: 600
+    title: ''
+    Label:
+        id: switch_id
+        text: root.title
+        font_size: '20sp'
+        text_size: self.size
+        size: root.size
+        valign: 'middle'
+        pos: root.pos
+        padding_x: 50
 <SettingDivider@Widget>:
     size_hint_y: None
     height: 1
@@ -189,48 +205,14 @@ Tabs:
         Rectangle:
             pos: self.x+15, self.y
             size: self.width -30, 1
-<SettingLight@SetItem>:
-    Label:
-        id: light
-        text: "Light"
-        font_size: '20sp'
-        text_size: self.size
-        size: root.size
-        valign: 'middle'
-        pos: root.pos
-        padding_x: 50
+<SettingSwitch@SetItem>:
     Switch:
         id: knopf
         size_hint: None, None
         pos_hint: {'center_y': 0.5}
         right: 600-50
-<SettingAlwaysCalibrate@SetItem>:
-    Label:
-        id: calibrate
-        text: "Calibrate for every printjob"
-        font_size: '20sp'
-        text_size: self.size
-        size: root.size
-        valign: 'middle'
-        pos: root.pos
-        padding_x: 50
-    Switch:
-        id: knopf
-        size_hint: None, None
-        pos_hint: {'center_y': 0.5}
-        right: 600-50
-
-<SettingAcceleration@SetItem>:
+<SettingValueSlider@SetItem>:
 <SettingWifi@SetItem>:
-    Label:
-        id: wifi
-        text: "Wifi"
-        font_size: '20sp'
-        text_size: self.size
-        size: root.size
-        valign: 'middle'
-        pos: root.pos
-        padding_x: 50
     Label:
         id: current_wifi
         text: "Das WLAN"
@@ -275,9 +257,5 @@ Tabs:
 <StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
     padding: [0,0,0,0]
         
-
-
-
-
 
     
