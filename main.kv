@@ -1,4 +1,6 @@
 #:kivy 1.8.0
+#:import Factory kivy.factory.Factory
+
 Tabs:
    
 <Tabs@TabbedPanel>:
@@ -124,6 +126,13 @@ Tabs:
                         root.manager.current = 'WifiScreen'
             SettingValueSlider:
                 title: "Max. printhead Acceleration" 
+                value: '777'
+                Button:
+                    pos_hint: {'x':0, 'y':0}
+                    background_normal: 'Logos/Transparent.png'
+                    background_down: ''
+                    background_color: [1,1,1, 0.1]
+                    on_release: Factory.ValuePopup().open()
 
 <WifiScreen>:
     name: 'WifiScreen'
@@ -220,7 +229,20 @@ Tabs:
         right: 600-50
 
 <SettingValueSlider@SetItem>:
-
+    value: ''
+    Label:
+        id: value
+        text: root.value
+        font_size: '20sp'
+        text_size: self.size
+        color: 0.7, 0.7, 0.7, 1
+        size: 200, root.height
+        size_hint: None, None
+        valign: 'middle'
+        halign: 'right'
+        y: root.y
+        right: 600
+        padding_x: 50
 <SettingWifi>:
     Label:
         id: current_wifi
@@ -240,6 +262,8 @@ Tabs:
 <SettingSystemInfo@SetItem>:
 
 
+<ValuePopup@Popup>:
+    auto_dismiss: False
 
 
 
