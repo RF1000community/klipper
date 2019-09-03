@@ -39,7 +39,7 @@ class FC(FileChooserIconView):
 
 
 mainkv = Builder.load_file("main.kv")
-Builder.load_file("style.kv")
+#Builder.load_file("style.kv")
 
 #Clock.schedule_interval(FC._update_files, 1)
 class KlipperGui(App):
