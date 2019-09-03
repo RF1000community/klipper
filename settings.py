@@ -27,7 +27,7 @@ class WifiScreen(Screen):
         for i in self.ssid_list:
             entry = SettingWifi()
             entry.ssid = i
-            entry.title = 'WIFI'
+            #entry.title = 'WIFI'
             self.ids.wifi_box.add_widget(entry)
 
 

@@ -146,7 +146,7 @@ Tabs:
             height: self.minimum_height
             size_hint_y: None
 
-            WifiBack:
+            SetItem:
                 id: wifi_back
                 Button:
                     canvas:
@@ -164,7 +164,7 @@ Tabs:
                         root.manager.transition.direction = 'right'
                         root.manager.current = 'SettingScreen'
                 Label:
-                    text: "Wifimenu"
+                    text: "Wifi"
                     font_size: '30sp'
                     text_size: self.size
                     size_hint: 1, 1
