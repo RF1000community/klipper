@@ -1,3 +1,4 @@
+from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.scrollview import ScrollView
@@ -12,6 +13,44 @@ import time
 
 class SetItem(FloatLayout):
     pass
+
+class SettingWifi(SetItem):
+    
+    # The string that is displayed by the label. 
+    # Holds the current wifi connection and possibly the signal strength as well. 
+    display = StringProperty()
+
+    def __init__(self, **kwargs):
+        super(SettingWifi, self).__init__(**kwargs)
+        self.freq = 30
+        # Assuming very much that the Setting Screen will NEVER be the default on load
+        self.do_update = False
+        # Bind to main tab switches after everything is set up and running
+        Clock.schedule_once(self.bind_tab, 0)
+
+    def bind_tab(self, dt):
+        tab = App.get_running_app().mainkv
+        tab.bind(current_tab=self.control_update)
+
+    def control_update(self, instance, value):
+        if value == instance.ids.set_tab:
+            self.do_update = True
+            Clock.schedule_once(self.update, -1)
+            self.update_clock = Clock.schedule_interval(self.update, self.freq)
+        elif self.do_update and value != instance.ids.set_tab:
+            self.do_update = False
+            self.update_clock.cancel()
+
+    def update(self, dt):
+        # Placeholder
+        hms = time.strftime("%H:%M:%S")
+        print(hms)
+        self.display = hms
+
+    def on_display(self, instance, value):
+        # Applys the new text to display in the Label whenever the text got updated
+        self.ids.current_wifi.text = value
+
 
 class WifiNetwork(SetItem):
     ssid = StringProperty()
@@ -38,7 +77,7 @@ class WifiScreen(Screen):
         self.update_clock = Clock.schedule_interval(self.get_ssid_list, self.freq)
 
     def on_leave(self):
-        Clock.unschedule(self.update_clock)
+        self.update_clock.cancel()
 
     def on_ssid_list(self, instance, val):
         # Repopulate the list of networks when self.ssid_list changes

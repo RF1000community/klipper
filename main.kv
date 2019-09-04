@@ -12,6 +12,7 @@ Tabs:
         HomeScreenManager:           
     FileTab:
     SettingTab:
+        id: set_tab
 
 
 #LABELS: try putting the label inside a widget or set hints to None if it does shit e.g. setting size doesnt work
@@ -244,10 +245,9 @@ Tabs:
         right: 600
         padding_x: 50
 
-<SettingWifi@SetItem>:
+<SettingWifi>:
     Label:
         id: current_wifi
-        text: '[current]'
         font_size: '20sp'
         text_size: self.size
         color: 0.7, 0.7, 0.7, 1
