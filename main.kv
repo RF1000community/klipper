@@ -1,11 +1,12 @@
 #:kivy 1.8.0
 #:import Factory kivy.factory.Factory
+#:import p parameters
 
 Tabs:
    
 <Tabs@TabbedPanel>:
     tab_pos: 'bottom_mid'
-    tab_width: 200
+    tab_width: p.screen_width/3
     tab_height: 100
     do_default_tab: False
     HomeTab:
@@ -28,7 +29,7 @@ Tabs:
             pos: 50, 0
     background_down: '' # dadurch nimmt es background color an, sowieso immer mit dessen opacity auch waere es ein bild
     background_normal: 'Logos/Black.png'
-    background_color: [0.1,0.1,0.1,1]
+    background_color: p.background
 
 <HomeScreenManager@ScreenManager>:
     HomeScreen:
@@ -56,7 +57,7 @@ Tabs:
             pos: 250, 0
     background_down: ''
     background_normal: 'Logos/Black.png'
-    background_color: [0.1,0.1,0.1,1]
+    background_color: p.background
     FC:
 <FC>:
     filters: '*.gco', '*.gcode'
@@ -68,7 +69,7 @@ Tabs:
             rgba: 0.1, 0.1, 0.1, 1 
         Rectangle:
             pos: 0,0 #seems to use relative positioning to its screen put 0,0 instead of self.pos
-            size: 600,924
+            size: p.screen_width,924
 
 
 
@@ -82,8 +83,7 @@ Tabs:
             pos: 450, 0
     background_down: '' 
     background_normal: 'Logos/Black.png'
-    background_color: [0.1,0.1,0.1,1]
-
+    background_color: p.background
     ScreenManager:
         name: 'SettingScreenManager'
         SettingScreen:
@@ -94,14 +94,14 @@ Tabs:
     ScrollView:
         canvas.before:
             Color:
-                rgba: 0.1, 0.1, 0.1, 1
+                rgba: p.background
             Rectangle:
                 pos: self.pos
                 size: self.size
         BoxLayout:
             canvas:
                 Color:
-                    rgb: 0.1, 0.1, 0.1#set Background colour for settings
+                    rgba: p.background #set Background colour for settings
                 Rectangle:
                     size: self.size
                     pos: self.pos
@@ -140,14 +140,14 @@ Tabs:
         do_scroll_x: False
         canvas.before:
             Color:
-                rgba: 0.1, 0.1, 0.1, 1
+                rgba: p.background
             Rectangle:
                 pos: self.pos
                 size: self.size
         BoxLayout:
             canvas:
                 Color:
-                    rgb: 0.1, 0.1, 0.1#set Background colour for settings
+                    rgba: p.background
                 Rectangle:
                     size: self.size
                     pos: self.pos
@@ -174,7 +174,7 @@ Tabs:
                         root.manager.current = 'SettingScreen'
                 Label:
                     text: "Wifi"
-                    font_size: '30sp'
+                    font_size: p.big_font
                     text_size: self.size
                     size_hint: 1, 1
                     pos_hint: {'x': 0, 'y': 0}
@@ -183,7 +183,7 @@ Tabs:
             BoxLayout:
                 canvas:
                     Color:
-                        rgb: 0.1, 0.1, 0.1
+                        rgba: p.background
                     Rectangle:
                         pos: self.pos
                         size: self.size
@@ -196,7 +196,7 @@ Tabs:
 <SetItem>:
     size_hint_y: None
     height: 110
-    width: 600
+    width: p.screen_width
     title: ''
     Label:
         id: switch_id
@@ -212,11 +212,11 @@ Tabs:
 <SettingDivider@Widget>:
     size_hint_y: None
     height: 1
-    width: 600
+    width: p.screen_width
     pos_hint: {'x': 0, 'y': 0}
     canvas:
         Color:
-            rgb: .2, .2, .2
+            rgba: p.medium_gray
         Rectangle:
             pos: self.x+15, self.y
             size: self.width -30, 1
@@ -226,37 +226,37 @@ Tabs:
         id: knopf
         size_hint: None, None
         pos_hint: {'center_y': 0.5}
-        right: 600-50
+        right: p.screen_width-50
 
 <SettingValueSlider@SetItem>:
     value: ''
     Label:
         id: value
         text: root.value
-        font_size: '20sp'
+        font_size: p.normal_font
         text_size: self.size
-        color: 0.7, 0.7, 0.7, 1
+        color: p.light_gray
         size: 200, root.height
         size_hint: None, None
         valign: 'middle'
         halign: 'right'
         y: root.y
-        right: 600
+        right: p.screen_width
         padding_x: 50
 
 <SettingWifi@SetItem>:
     Label:
         id: current_wifi
         text: '[current]'
-        font_size: '20sp'
+        font_size: p.normal_font
         text_size: self.size
-        color: 0.7, 0.7, 0.7, 1
+        color: p.light_gray
         size: 200, root.height
         size_hint: None, None
         valign: 'middle'
         halign: 'right'
         y: root.y
-        right: 600
+        right: p.screen_width
         padding_x: 50
 
 
@@ -266,15 +266,15 @@ Tabs:
 <WifiNetwork>:
     Label:
         text: root.ssid
-        font_size: '20sp'
+        font_size: p.normal_font
         text_size: self.size
-        color: 0.7, 0.7, 0.7, 1
+        color: p.light_gray
         size: 200, root.height
         size_hint: None, None
         valign: 'middle'
         halign: 'right'
         y: root.y
-        right: 600
+        right: p.screen_width
         padding_x: 50
 
 <ValuePopup@Popup>:
@@ -289,7 +289,7 @@ Tabs:
     FloatLayout:
         Label:
             text: 'Password'
-            font_size: 20
+            font_size: p.normal_font
             size: self.texture_size
             size_hint: None, None
             pos_hint: {'x': 0.1, 'y': 0.75}
@@ -324,7 +324,7 @@ Tabs:
 <Background@Widget>:
     canvas.before:
         Color:
-            rgba: 0.1, 0.1, 0.1, 1
+            rgba: p.background
         Rectangle:
             pos: self.pos
             size: self.size

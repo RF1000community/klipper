@@ -20,10 +20,11 @@ from kivy.resources import resource_add_path
 import os
 import subprocess
 from settings import *
+import parameters as p
 
 Config.set('graphics', 'resizable', '0') 
-Config.set('graphics', 'width', 600)
-Config.set('graphics', 'height', 1024)
+Config.set('graphics', 'width', p.screen_width)
+Config.set('graphics', 'height', p.screen_height)
 Config.set('graphics', 'fullscreen', '0')#set to 1 or 'auto' for raspi
 #resource_add_path(os.getcwd())
 #resource_remove_path('')
