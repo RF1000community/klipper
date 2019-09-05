@@ -39,7 +39,7 @@ class FC(FileChooserIconView):
     
 
 
-mainkv = Builder.load_file("main.kv")
+mainkv = Builder.load_file("main.kv") #needs to be below any class definitions referenced in the kv
 Builder.load_file("style.kv")
 
 #Clock.schedule_interval(FC._update_files, 1)

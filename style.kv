@@ -53,7 +53,7 @@
         source: 'atlas://data/images/defaulttheme/filechooser_%s' % ('folder' if ctx.isdir else 'file')
         pos: root.x + dp((137.5-70)/2), root.y + dp(55)
     Label:
-        text: ctx.name #Filename font size
+        text: ctx.name 
         text_size: self.size
         font_size: p.small_font
         halign: 'center'

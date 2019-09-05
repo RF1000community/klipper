@@ -16,8 +16,8 @@ Tabs:
         id: set_tab
 
 
-#LABELS: try putting the label inside a widget or set hints to None if it does shit e.g. setting size doesnt work
-# size: outer dimensions of the label widget, available space, can be set to texture_size to show everything SYNTAX!!! size: '137.5dp', '31sp'
+#LABELS: try setting hints to None if it does shit e.g. setting size doesnt work
+# size: outer dimensions of the label widget, available space, can be set to texture_size to show everything 
 # text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits, 
 # texture_size: size of the actual text not cut off(outer dimensions), can set font_size
 
@@ -31,7 +31,7 @@ Tabs:
     background_down: '' # dadurch nimmt es background color an, sowieso immer mit dessen opacity auch waere es ein bild
     background_normal: 'Logos/Black.png'
     background_color: p.background
-
+    HomeScreenManager
 <HomeScreenManager@ScreenManager>:
     HomeScreen:
     PrintingScreen: 
@@ -67,10 +67,10 @@ Tabs:
     multiselect: 'False'
     canvas.before:         
         Color:
-            rgba: 0.1, 0.1, 0.1, 1 
+            rgba: p.background
         Rectangle:
             pos: 0,0 #seems to use relative positioning to its screen put 0,0 instead of self.pos
-            size: p.screen_width,924
+            size: p.screen_width, 924
 
 
 
@@ -121,7 +121,7 @@ Tabs:
                     pos_hint: {'x':0, 'y':0}
                     background_normal: 'Logos/Transparent.png'
                     background_down: ''
-                    background_color: [1,1,1, 0.1]
+                    background_color: p.translucent_white
                     on_press:
                         root.manager.transition.direction = 'left'
                         root.manager.current = 'WifiScreen'
@@ -132,55 +132,54 @@ Tabs:
                     pos_hint: {'x':0, 'y':0}
                     background_normal: 'Logos/Transparent.png'
                     background_down: ''
-                    background_color: [1,1,1, 0.1]
+                    background_color: p.translucent_white
                     on_release: Factory.ValuePopup().open()
 
 <WifiScreen>:
     name: 'WifiScreen'
-    ScrollView:
-        do_scroll_x: False
-        canvas.before:
+    BoxLayout:
+        canvas:
             Color:
                 rgba: p.background
             Rectangle:
-                pos: self.pos
                 size: self.size
-        BoxLayout:
-            canvas:
+                pos: self.pos
+        orientation:'vertical'
+        size_hint: 1, 1
+        
+        SetItem:
+            id: wifi_back
+            Button:
+                canvas:
+                    Rectangle:
+                        source: 'Logos/BackButton.png'
+                        size: 70, 70
+                        pos: 30, self.y+20
+                background_normal: 'Logos/Transparent.png'
+                background_down: ''
+                background_color: p.translucent_white
+                pos_hint: {'x':0, 'y': 0}
+                size_hint_x: None
+                width: 110
+                on_press:
+                    root.manager.transition.direction = 'right'
+                    root.manager.current = 'SettingScreen'
+            Label:
+                text: "Wifi"
+                font_size: p.big_font
+                text_size: self.size
+                size_hint: 1, 1
+                pos_hint: {'x': 0, 'y': 0}
+                valign: 'middle'
+                halign: 'center'
+        ScrollView:
+            do_scroll_x: False
+            canvas.before:
                 Color:
                     rgba: p.background
                 Rectangle:
-                    size: self.size
                     pos: self.pos
-            orientation:'vertical'
-            height: self.minimum_height
-            size_hint_y: None
-
-            SetItem:
-                id: wifi_back
-                Button:
-                    canvas:
-                        Rectangle:
-                            source: 'Logos/BackButton.png'
-                            size: 70, 70
-                            pos: 30, self.y+20
-                    background_normal: 'Logos/Transparent.png'
-                    background_down: ''
-                    background_color: 1,1,1,0.1
-                    pos_hint: {'x':0, 'y': 0}
-                    size_hint_x: None
-                    width: 110
-                    on_press:
-                        root.manager.transition.direction = 'right'
-                        root.manager.current = 'SettingScreen'
-                Label:
-                    text: "Wifi"
-                    font_size: p.big_font
-                    text_size: self.size
-                    size_hint: 1, 1
-                    pos_hint: {'x': 0, 'y': 0}
-                    valign: 'middle'
-                    halign: 'center'
+                    size: self.size
             BoxLayout:
                 canvas:
                     Color:
@@ -202,7 +201,7 @@ Tabs:
     Label:
         id: switch_id
         text: root.title
-        font_size: '20sp'
+        font_size: p.normal_font
         text_size: self.size
         size: root.size
         valign: 'middle'
