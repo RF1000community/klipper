@@ -2,3 +2,4 @@
 desktop.ini
 .vscode/
 .pyc
+*.pyc
