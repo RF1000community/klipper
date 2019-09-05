@@ -45,6 +45,7 @@ Builder.load_file("style.kv")
 #Clock.schedule_interval(FC._update_files, 1)
 class KlipperGui(App):
     def build(self):
+        self.mainkv = mainkv
         return mainkv
 
 
