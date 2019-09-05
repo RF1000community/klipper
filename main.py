@@ -1,14 +1,10 @@
 #!/usr/bin/env python2
 
-
 from time import time
 from os.path import dirname, join
 from kivy.properties import NumericProperty, StringProperty, BooleanProperty, ListProperty, ObjectProperty, OptionProperty
 from kivy.clock import Clock
 from kivy.animation import Animation
-
-
-
 from kivy.app import App
 from kivy.config import Config
 from kivy.uix.screenmanager import Screen
@@ -18,8 +14,8 @@ from kivy.uix.tabbedpanel import TabbedPanel
 from kivy.uix.filechooser import FileChooser, FileChooserIconView, FileChooserController
 from kivy.resources import resource_add_path
 import os
-import subprocess
 from settings import *
+from home import *
 import parameters as p
 
 Config.set('graphics', 'resizable', '0') 
@@ -39,19 +35,17 @@ class FC(FileChooserIconView):
     
 
 
-mainkv = Builder.load_file("main.kv") #needs to be below any class definitions referenced in the kv
+mainkv = Builder.load_file("main.kv") #needs to be below any class definitions referenced in it
 Builder.load_file("style.kv")
 
 #Clock.schedule_interval(FC._update_files, 1)
-class KlipperGui(App):
+class mainApp(App):
     def build(self):
         self.mainkv = mainkv
         return mainkv
 
 
 
-#subprocess.check_output("cat /etc/services", shell=True)
-    
 if __name__ == '__main__':
     print 'main runs'
-    KlipperGui().run()
+    mainApp().run()

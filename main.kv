@@ -10,7 +10,6 @@ Tabs:
     tab_height: 100
     do_default_tab: False
     HomeTab:
-        HomeScreenManager:           
     FileTab:
     SettingTab:
         id: set_tab
@@ -40,12 +39,36 @@ Tabs:
     size: root.size
     name: "homescreen"
     Background:
+    RoundButton2:
+        title1: 'Unload'
+        title2: 'Load'
+        size: 240,70 
+        size_hint: None, None
+
 
 <PrintingScreen@Screen>:
     name: "printingscreen"
     Label:
         id:l
         text: "PrintingScreen"
+<RoundButton2@Widget>:
+    title1: ''
+    title2: ''
+    
+
+    canvas:
+        Color:
+            rgba: p.medium_gray
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [p.radius,]
+        Color:
+            rgba: p.light_gray
+        Rectangle:
+            pos: self.width/2, self.y+4
+            size: 1,self.height-8
+        
 
 
 
@@ -111,11 +134,11 @@ Tabs:
             pos: 0, root.height - self.height
             size_hint_y: None
 
-            SettingSwitch:
+            SI_Switch:
                 title: "Light"
-            SettingSwitch:
+            SI_Switch:
                 title: "Calibrate for every printjob"
-            SettingWifi:
+            SI_Wifi:
                 title: "Wifi"
                 Button:
                     pos_hint: {'x':0, 'y':0}
@@ -125,7 +148,7 @@ Tabs:
                     on_press:
                         root.manager.transition.direction = 'left'
                         root.manager.current = 'WifiScreen'
-            SettingValueSlider:
+            SI_ValueSlider:
                 title: "Max. printhead Acceleration" 
                 value: '777'
                 Button:
@@ -166,7 +189,7 @@ Tabs:
                     root.manager.current = 'SettingScreen'
             Label:
                 text: "Wifi"
-                font_size: p.big_font
+                font_size: p.large_font
                 text_size: self.size
                 size_hint: 1, 1
                 pos_hint: {'x': 0, 'y': 0}
@@ -206,10 +229,10 @@ Tabs:
         size: root.size
         valign: 'middle'
         pos: root.pos
-        padding_x: 50
-    SettingDivider:
+        padding_x: p.side_padding
+    SI_Divider:
 
-<SettingDivider@Widget>:
+<SI_Divider@Widget>:
     size_hint_y: None
     height: 1
     width: p.screen_width
@@ -221,14 +244,14 @@ Tabs:
             pos: self.x+15, self.y
             size: self.width -30, 1
 
-<SettingSwitch@SetItem>:
+<SI_Switch@SetItem>:
     Switch:
         id: knopf
         size_hint: None, None
         pos_hint: {'center_y': 0.5}
-        right: p.screen_width-50
+        right: p.screen_width-p.side_padding
 
-<SettingValueSlider@SetItem>:
+<SI_ValueSlider@SetItem>:
     value: ''
     Label:
         id: value
@@ -242,9 +265,9 @@ Tabs:
         halign: 'right'
         y: root.y
         right: p.screen_width
-        padding_x: 50
+        padding_x: p.side_padding
 
-<SettingWifi>:
+<SI_Wifi>:
     Label:
         id: current_wifi
         text: '[current]'
@@ -257,13 +280,12 @@ Tabs:
         halign: 'right'
         y: root.y
         right: p.screen_width
-        padding_x: 50
+        padding_x: p.side_padding
 
 
-<SettingUpdate@SetItem>:
-<SettingSystemInfo@SetItem>:
 
-<WifiNetwork>:
+
+<SI_WifiNetwork>:
     Label:
         text: root.ssid
         font_size: p.normal_font
@@ -275,7 +297,7 @@ Tabs:
         halign: 'right'
         y: root.y
         right: p.screen_width
-        padding_x: 50
+        padding_x: p.side_padding
 
 <ValuePopup@Popup>:
     auto_dismiss: False
@@ -283,7 +305,7 @@ Tabs:
 
 
 <PasswordPopup>:
-    title_size: 30
+    title_size: p.large_font
     size_hint: 0.8, 0.5
     txt_input: pwd_input
     FloatLayout:
@@ -328,7 +350,7 @@ Tabs:
         Rectangle:
             pos: self.pos
             size: self.size
-    
+        
 <TabbedPanelStrip>:
     canvas:
         Color:
@@ -339,10 +361,6 @@ Tabs:
 
 <StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
     padding: [0,0,0,0]
-        
-
-
-
 
 
     

@@ -14,14 +14,14 @@ import time
 class SetItem(FloatLayout):
     pass
 
-class SettingWifi(SetItem):
+class SI_Wifi(SetItem):
     
     # The string that is displayed by the label. 
     # Holds the current wifi connection and possibly the signal strength as well. 
     display = StringProperty()
 
     def __init__(self, **kwargs):
-        super(SettingWifi, self).__init__(**kwargs)
+        super(SI_Wifi, self).__init__(**kwargs)
         self.freq = 30
         # Assuming very much that the Setting Screen will NEVER be the default on load
         self.do_update = False
@@ -52,7 +52,7 @@ class SettingWifi(SetItem):
         self.ids.current_wifi.text = value
 
 
-class WifiNetwork(SetItem):
+class SI_WifiNetwork(SetItem):
     ssid = StringProperty()
 
     def on_touch_down(self, touch):
@@ -60,7 +60,7 @@ class WifiNetwork(SetItem):
             self.popup = PasswordPopup(ssid=self.ssid)
             self.popup.open()
             return True
-        return super(WifiNetwork, self).on_touch_down(touch)
+        return super(SI_WifiNetwork, self).on_touch_down(touch)
 
 class WifiScreen(Screen):
 
@@ -84,7 +84,7 @@ class WifiScreen(Screen):
         box = self.ids.wifi_box
         box.clear_widgets()
         for i in val:
-            entry = WifiNetwork()
+            entry = SI_WifiNetwork()
             entry.ssid = i
             box.add_widget(entry)
 
