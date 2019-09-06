@@ -29,7 +29,7 @@ class SI_Wifi(SetItem):
         Clock.schedule_once(self.bind_tab, 0)
 
     def bind_tab(self, dt):
-        tab = App.get_running_app().mainkv
+        tab = App.get_running_app().root
         tab.bind(current_tab=self.control_update)
 
     def control_update(self, instance, value):
