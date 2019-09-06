@@ -39,7 +39,7 @@ mainkv = Builder.load_file("main.kv") #needs to be below any class definitions r
 Builder.load_file("style.kv")
 
 #Clock.schedule_interval(FC._update_files, 1)
-class mainApp(App):
+class GUI(App):
     def build(self):
         self.mainkv = mainkv
         return mainkv
@@ -48,4 +48,4 @@ class mainApp(App):
 
 if __name__ == '__main__':
     print 'main runs'
-    mainApp().run()
+    GUI().run()

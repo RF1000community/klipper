@@ -30,7 +30,7 @@ Tabs:
     background_down: '' # dadurch nimmt es background color an, sowieso immer mit dessen opacity auch waere es ein bild
     background_normal: 'Logos/Black.png'
     background_color: p.background
-    HomeScreenManager
+    HomeScreenManager:
 <HomeScreenManager@ScreenManager>:
     HomeScreen:
     PrintingScreen: 
@@ -39,11 +39,22 @@ Tabs:
     size: root.size
     name: "homescreen"
     Background:
-    RoundButton2:
+    DoubleButton:
         title1: 'Unload'
         title2: 'Load'
         size: 240,70 
-        size_hint: None, None
+        pos: 10,10
+    TripleButton:
+        title1: 'Unload'
+        title2: 'ABS'
+        title3: 'Load'
+        height: 70
+        w1: 90
+        w2: 70
+        w3: 90
+        pos: 50,200
+
+
 
 
 <PrintingScreen@Screen>:
@@ -51,11 +62,12 @@ Tabs:
     Label:
         id:l
         text: "PrintingScreen"
-<RoundButton2@Widget>:
+<DoubleButton@Widget>:
     title1: ''
     title2: ''
-    
-
+    pressed1: True
+    pressed2: False
+    size_hint: None,None
     canvas:
         Color:
             rgba: p.medium_gray
@@ -64,11 +76,122 @@ Tabs:
             size: self.size
             radius: [p.radius,]
         Color:
-            rgba: p.light_gray
+            rgba: p.medium_light_gray
         Rectangle:
-            pos: self.width/2, self.y+4
-            size: 1,self.height-8
+            pos: self.x+ self.width/2, self.y+6
+            size: 1,self.height-12
+
+        Color:# Highlight pressed button parts, using rounded and normal rectangle
+            rgba: 0.4,0.4,0.4,1 if self.pressed1 else 0
+        Rectangle:
+            pos: self.x+self.width/2-19, self.y
+            size: 20,self.height
+        RoundedRectangle:
+            radius: [p.radius,]
+            pos: self.x, self.y
+            size: self.width/2, self.height
+        Color:
+            rgba: 0.4,0.4,0.4,1 if self.pressed2 else 0
+        Rectangle:
+            pos: self.x+self.width/2, self.y
+            size: 20,self.height
+        RoundedRectangle:
+            radius: [p.radius,]
+            pos: self.x+self.width/2+1, self.y
+            size: self.width/2, self.height
+    Label:
+        text: root.title1
+        size: root.width/2, root.height
+        text_size: self.size
+        pos: root.pos        
+        font_size: p.normal_font
+        valign: 'middle'
+        halign: 'center'
+    Label:
+        text: root.title2
+        size: root.width/2, root.height
+        text_size: self.size
+        pos: root.x+root.width/2, root.y        
+        font_size: p.normal_font
+        valign: 'middle'
+        halign: 'center'
         
+<TripleButton@Widget>:
+    title1: ''
+    title2: ''
+    title3: ''
+    w1: 50
+    w2: 50
+    w3: 50
+    pressed1: False
+    pressed2: False
+    pressed3: True
+    size_hint: None, None
+    width: self.w1+self.w2+self.w3+2
+    canvas:
+        Color:
+            rgba: p.medium_gray
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [p.radius,]
+        Color:
+            rgba: p.medium_light_gray
+        Rectangle:
+            pos: self.x+self.w1, self.y+6
+            size: 1,self.height-12
+        Rectangle:
+            pos: self.x+self.w1+1+self.w2, self.y+6
+            size: 1,self.height-12
+
+
+        Color:# Highlight pressed button parts, using rounded and normal rectangle
+            rgba: 0.4,0.4,0.4,1 if self.pressed1 else 0
+        Rectangle:
+            pos: self.x+self.w1-19, self.y
+            size: 20,self.height
+        RoundedRectangle:
+            radius: [p.radius,]
+            pos: self.x, self.y
+            size: self.w1, self.height
+        Color:
+            rgba: 0.4,0.4,0.4,1 if self.pressed2 else 0
+        Rectangle:
+            pos: self.x+self.w1, self.y
+            size: self.w2+2,self.height
+        Color:
+            rgba: 0.4,0.4,0.4,1 if self.pressed3 else 0
+        Rectangle:
+            pos: self.x+self.w1+self.w2+1, self.y
+            size: 20,self.height
+        RoundedRectangle:
+            radius: [p.radius,]
+            pos: self.x+self.w1+1+self.w2, self.y
+            size: self.w3, self.height
+    Label:
+        text: root.title1
+        size: root.w1, root.height
+        text_size: self.size
+        pos: root.pos        
+        font_size: p.normal_font
+        valign: 'middle'
+        halign: 'center'
+    Label:
+        text: root.title2
+        size: root.w2, root.height
+        text_size: self.size
+        pos: root.x+root.w1, root.y        
+        font_size: p.normal_font
+        valign: 'middle'
+        halign: 'center'
+    Label:
+        text: root.title3
+        size: root.w3, root.height
+        text_size: self.size
+        pos: root.x+root.w1+root.w2, root.y        
+        font_size: p.normal_font
+        valign: 'middle'
+        halign: 'center'
 
 
 

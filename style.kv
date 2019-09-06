@@ -1,3 +1,4 @@
+#:kivy 1.8.0
 #:import p parameters
 
 <FileChooserIconLayout>:
@@ -38,7 +39,7 @@
     on_touch_down: self.collide_point(*args[1].pos) and ctx.controller().entry_touched(self, args[1])
     on_touch_up: self.collide_point(*args[1].pos) and ctx.controller().entry_released(self, args[1])
     size: '137.5dp', '150dp'
-    
+
     canvas:
         Color:
             rgba: 1, 1, 1, 0.1 if self.selected else 0

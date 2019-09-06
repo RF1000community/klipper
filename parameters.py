@@ -11,5 +11,6 @@ screen_height = 1024
 
 background = [0.1,0.1,0.1,1]
 medium_gray = [0.2,0.2,0.2,1]
+medium_light_gray = [0.4,0.4,0.4,1]
 light_gray = [0.7,0.7,0.7,1]
 translucent_white = 1,1,1, 0.1
