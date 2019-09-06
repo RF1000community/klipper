@@ -35,16 +35,14 @@ class FC(FileChooserIconView):
     
 
 
-#mainkv = Builder.load_file("main.kv") #needs to be below any class definitions referenced in it
 
 #Clock.schedule_interval(FC._update_files, 1)
-class GUI(App):
+class mainApp(App):
     def build(self):
         Builder.load_file("style.kv")
         return self.root
 
 
-
 if __name__ == '__main__':
     print 'main runs'
-    GUI().run()
+    mainApp().run()
