@@ -35,14 +35,13 @@ class FC(FileChooserIconView):
     
 
 
-mainkv = Builder.load_file("main.kv") #needs to be below any class definitions referenced in it
-Builder.load_file("style.kv")
+#mainkv = Builder.load_file("main.kv") #needs to be below any class definitions referenced in it
 
 #Clock.schedule_interval(FC._update_files, 1)
 class GUI(App):
     def build(self):
-        self.mainkv = mainkv
-        return mainkv
+        Builder.load_file("style.kv")
+        return self.root
 
 
 
