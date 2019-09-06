@@ -3,7 +3,7 @@
 #:import p parameters
 
 Tabs:
-   
+
 <Tabs@TabbedPanel>:
     tab_pos: 'bottom_mid'
     tab_width: p.screen_width/3
@@ -13,12 +13,6 @@ Tabs:
     FileTab:
     SettingTab:
         id: set_tab
-
-
-#LABELS: try setting hints to None if it does shit e.g. setting size doesnt work
-# size: outer dimensions of the label widget, available space, can be set to texture_size to show everything 
-# text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits, 
-# texture_size: size of the actual text not cut off(outer dimensions), can set font_size
 
 # HOME -------------------------------------------------------------
 <HomeTab@TabbedPanelItem>:
@@ -30,25 +24,34 @@ Tabs:
     background_down: '' # dadurch nimmt es background color an, sowieso immer mit dessen opacity auch waere es ein bild
     background_normal: 'Logos/Black.png'
     background_color: p.background
-    HomeScreenManager:
+    FloatLayout:
+        pos: root.pos
+        HomeScreenManager:
+
+        Btn_Stop:
+            pos: 50,400
+            size: 120,120
+        Btn_Play:
+            pos: 50, 600
+            size: 120,120
+
 <HomeScreenManager@ScreenManager>:
     HomeScreen:
-    PrintingScreen: 
+    PrintingScreen:
 
 <HomeScreen@Screen>:
     size: root.size
     name: "homescreen"
     Background:
-    DoubleButton:
-        title1: 'Unload'
-        title2: 'Load'
-        size: 240,70 
+    Btn_Double:
+
+        size: 240,66
         pos: 10,10
-    TripleButton:
+    Btn_Triple:
         title1: 'Unload'
         title2: 'ABS'
         title3: 'Load'
-        height: 70
+        height: 66
         w1: 90
         w2: 70
         w3: 90
@@ -62,10 +65,10 @@ Tabs:
     Label:
         id:l
         text: "PrintingScreen"
-<DoubleButton@Widget>:
+<Btn_Double>:
     title1: ''
     title2: ''
-    pressed1: True
+    pressed1: False
     pressed2: False
     size_hint: None,None
     canvas:
@@ -80,25 +83,18 @@ Tabs:
         Rectangle:
             pos: self.x+ self.width/2, self.y+6
             size: 1,self.height-12
-
-        Color:# Highlight pressed button parts, using rounded and normal rectangle
-            rgba: 0.4,0.4,0.4,1 if self.pressed1 else 0
-        Rectangle:
-            pos: self.x+self.width/2-19, self.y
-            size: 20,self.height
+        Color:# Highlight pressed button
+            rgba: 0.4,0.4,0.4,1 if self.pressed1 else 0        
         RoundedRectangle:
-            radius: [p.radius,]
+            radius: [p.radius,0,0,p.radius]
             pos: self.x, self.y
-            size: self.width/2, self.height
+            size: self.width/2+1, self.height
         Color:
             rgba: 0.4,0.4,0.4,1 if self.pressed2 else 0
-        Rectangle:
-            pos: self.x+self.width/2, self.y
-            size: 20,self.height
         RoundedRectangle:
-            radius: [p.radius,]
-            pos: self.x+self.width/2+1, self.y
-            size: self.width/2, self.height
+            radius: [0,p.radius,p.radius,0]
+            pos: self.x+self.width/2, self.y
+            size: self.width/2+1, self.height
     Label:
         text: root.title1
         size: root.width/2, root.height
@@ -114,9 +110,8 @@ Tabs:
         pos: root.x+root.width/2, root.y        
         font_size: p.normal_font
         valign: 'middle'
-        halign: 'center'
-        
-<TripleButton@Widget>:
+        halign: 'center' 
+<Btn_Triple>:
     title1: ''
     title2: ''
     title3: ''
@@ -125,7 +120,7 @@ Tabs:
     w3: 50
     pressed1: False
     pressed2: False
-    pressed3: True
+    pressed3: False
     size_hint: None, None
     width: self.w1+self.w2+self.w3+2
     canvas:
@@ -143,17 +138,12 @@ Tabs:
         Rectangle:
             pos: self.x+self.w1+1+self.w2, self.y+6
             size: 1,self.height-12
-
-
-        Color:# Highlight pressed button parts, using rounded and normal rectangle
+        Color:# Highlight pressed button
             rgba: 0.4,0.4,0.4,1 if self.pressed1 else 0
-        Rectangle:
-            pos: self.x+self.w1-19, self.y
-            size: 20,self.height
         RoundedRectangle:
-            radius: [p.radius,]
+            radius: [p.radius,0,0,p.radius]
             pos: self.x, self.y
-            size: self.w1, self.height
+            size: self.w1+1, self.height
         Color:
             rgba: 0.4,0.4,0.4,1 if self.pressed2 else 0
         Rectangle:
@@ -161,13 +151,10 @@ Tabs:
             size: self.w2+2,self.height
         Color:
             rgba: 0.4,0.4,0.4,1 if self.pressed3 else 0
-        Rectangle:
-            pos: self.x+self.w1+self.w2+1, self.y
-            size: 20,self.height
         RoundedRectangle:
-            radius: [p.radius,]
+            radius: [0,p.radius,p.radius,0]
             pos: self.x+self.w1+1+self.w2, self.y
-            size: self.w3, self.height
+            size: self.w3+1, self.height
     Label:
         text: root.title1
         size: root.w1, root.height
@@ -192,9 +179,42 @@ Tabs:
         font_size: p.normal_font
         valign: 'middle'
         halign: 'center'
-
-
-
+<ClearButton@Widget>:
+    size_hint: None, None
+    pressed: False
+    enabled: True
+    canvas:
+        Color:
+            rgba: 1,1,1,0.1 if self.pressed else 0
+        RoundedRectangle:
+            radius: [p.radius,]
+            pos: self.pos
+            size: self.size
+<Btn_Stop@ClearButton>:
+    canvas:
+        Color:
+            rgba: p.red if self.enabled else 0
+        Rectangle:
+            pos: self.center_x-33, self.center_y-33
+            size: 66,66
+<Btn_Play@ClearButton>:
+#:set s 66
+#:set h 1.155*s
+    paused: False
+    canvas:
+        Color:
+            rgba: 1,1,1,1 if self.enabled and self.paused else 0
+        Rectangle:
+            pos: self.center_x-s/2, self.center_y-s/2
+            size: 0.4*s,s
+        Rectangle:
+            pos: self.center_x+s/2-0.4*s, self.center_y-s/2
+            size: 0.4*s,s
+            canvas:
+        Color:
+            rgba: 1,1,1,1 if self.enabled and not self.paused else 0
+        Triangle:
+            points: self.center_x-s/2, self.center_y- h/2, self.center_x-s/2, self.center_y+ h/2, self.center_x+s/2, self.center_y
 # FILE -------------------------------------------------------------
 <FileTab@TabbedPanelItem>:
     canvas:
@@ -215,7 +235,7 @@ Tabs:
         Color:
             rgba: p.background
         Rectangle:
-            pos: 0,0 #seems to use relative positioning to its screen put 0,0 instead of self.pos
+            pos: 0,0
             size: p.screen_width, 924
 
 
