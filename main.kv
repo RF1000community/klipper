@@ -25,7 +25,8 @@ Tabs:
     background_normal: 'Logos/Black.png'
     background_color: p.background
     FloatLayout:
-        pos: root.pos
+        size_hint: None, None
+        size: p.screen_width, p.screen_height
         HomeScreenManager:
 
         Btn_Stop:
@@ -40,7 +41,6 @@ Tabs:
     PrintingScreen:
 
 <HomeScreen@Screen>:
-    size: root.size
     name: "homescreen"
     Background:
     Btn_Double:
