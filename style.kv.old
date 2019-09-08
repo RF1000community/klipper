@@ -1,0 +1,75 @@
+#:kivy 1.8.0
+#:import p parameters
+
+<FileChooserIconLayout>:
+    on_entry_added: stacklayout.add_widget(args[1])
+    on_entries_cleared: stacklayout.clear_widgets()
+    ScrollView:
+        id: scrollview
+        pos: root.pos
+        size: root.size
+        size_hint: None, None
+        do_scroll_x: False
+        Scatter:
+            do_rotation: False
+            do_scale: False
+            do_translation: False
+            size_hint_y: None
+            height: stacklayout.height
+            StackLayout:
+                id: stacklayout
+                width: scrollview.width
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: 0
+                padding: 0
+
+<FileChooserIconView>:
+    layout: layout
+    FileChooserIconLayout:
+        id: layout
+        controller: root
+
+[FileIconEntry@Widget]:
+    locked: False
+    path: ctx.path
+    selected: self.path in ctx.controller().selection
+    size_hint: None, None
+
+    on_touch_down: self.collide_point(*args[1].pos) and ctx.controller().entry_touched(self, args[1])
+    on_touch_up: self.collide_point(*args[1].pos) and ctx.controller().entry_released(self, args[1])
+    size: '137.5dp', '150dp'
+
+    canvas:
+        Color:
+            rgba: 1, 1, 1, 0.1 if self.selected else 0
+        RoundedRectangle:
+            
+            pos: root.pos
+            size: root.size
+            radius: [p.radius,]
+
+    Image:
+        size: '70dp', '70dp'
+        source: 'atlas://data/images/defaulttheme/filechooser_%s' % ('folder' if ctx.isdir else 'file')
+        pos: root.x + dp((137.5-70)/2), root.y + dp(55)
+    Label:
+        text: ctx.name 
+        text_size: self.size
+        font_size: p.small_font
+        halign: 'center'
+        valign: 'bottom'
+        shorten: 'True'
+        
+        max_lines: '2'
+        size: '137.5dp', '31sp'
+        pos: root.x, root.y + dp(25)
+
+    Label:#filesize
+        text: '{}'.format(ctx.get_nice_size())
+        font_size: p.extra_small_font
+        color: p.light_gray
+        size: '137.5dp', '16sp'
+        pos: root.x, root.y + dp(5)
+        halign: 'center'
+
