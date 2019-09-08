@@ -1,5 +1,5 @@
-#:kivy 1.0
-
+#:kivy 1.8.0
+#:import p parameters
 <Label>:
     canvas:
         Color:
@@ -377,8 +377,8 @@
                 width: scrollview.width
                 size_hint_y: None
                 height: self.minimum_height
-                spacing: '10dp'
-                padding: '10dp'
+                spacing: 0
+                padding: 0
 
 <FileChooserIconView>:
     layout: layout
@@ -394,35 +394,39 @@
 
     on_touch_down: self.collide_point(*args[1].pos) and ctx.controller().entry_touched(self, args[1])
     on_touch_up: self.collide_point(*args[1].pos) and ctx.controller().entry_released(self, args[1])
-    size: '100dp', '100dp'
+    size: '137.5dp', '150dp'
 
     canvas:
         Color:
-            rgba: 1, 1, 1, 1 if self.selected else 0
-        BorderImage:
-            border: 8, 8, 8, 8
+            rgba: 1, 1, 1, 0.1 if self.selected else 0
+        RoundedRectangle:
+            
             pos: root.pos
             size: root.size
-            source: 'atlas://data/images/defaulttheme/filechooser_selected'
+            radius: [p.radius,]
 
     Image:
-        size: '48dp', '48dp'
+        size: '70dp', '70dp'
         source: 'atlas://data/images/defaulttheme/filechooser_%s' % ('folder' if ctx.isdir else 'file')
-        pos: root.x + dp(24), root.y + dp(40)
+        pos: root.x + dp((137.5-70)/2), root.y + dp(55)
     Label:
-        text: ctx.name
-        text_size: (root.width, self.height)
+        text: ctx.name 
+        text_size: self.size
+        font_size: p.small_font
         halign: 'center'
-        shorten: True
-        size: '100dp', '16dp'
-        pos: root.x, root.y + dp(16)
+        valign: 'bottom'
+        shorten: 'True'
+        
+        max_lines: '2'
+        size: '137.5dp', '31sp'
+        pos: root.x, root.y + dp(25)
 
-    Label:
+    Label:#filesize
         text: '{}'.format(ctx.get_nice_size())
-        font_size: '11sp'
-        color: .8, .8, .8, 1
-        size: '100dp', '16sp'
-        pos: root.pos
+        font_size: p.extra_small_font
+        color: p.light_gray
+        size: '137.5dp', '16sp'
+        pos: root.x, root.y + dp(5)
         halign: 'center'
 
 <FileChooserProgress>:
@@ -1293,3 +1297,4 @@
             id: wheel
             color: root.color
             on_color: root.set_color(args[1][:3])
+
