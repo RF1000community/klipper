@@ -16,46 +16,53 @@ Tabs:
 
 # HOME -------------------------------------------------------------
 <HomeTab@TabbedPanelItem>:
+    background_down: '' # dadurch nimmt es background color an, sowieso immer mit dessen opacity auch waere es ein bild
+    background_normal: 'Logos/Black.png'
+    background_color: p.background
     canvas:
         Rectangle:
             source: 'Logos/HomeIcon.png'
             size: 100, 100
             pos: 50, 0
-    background_down: '' # dadurch nimmt es background color an, sowieso immer mit dessen opacity auch waere es ein bild
-    background_normal: 'Logos/Black.png'
-    background_color: p.background
     FloatLayout:
-        pos: root.pos
-        HomeScreenManager:
+        Background:
+            pos_hint: {'x':0,'y':0}
+            size_hint: 1,1
 
-        Btn_Stop:
-            pos: 50,400
-            size: 120,120
-        Btn_Play:
-            pos: 50, 600
-            size: 120,120
+        HomeScreenManager:
+            pos_hint: {'x':0,'y':0}
+            size_hint: 1,1
+        SI_Divider:
+            pos_hint: {'x':0,'y':0.1}
+
+
+
 
 <HomeScreenManager@ScreenManager>:
     HomeScreen:
     PrintingScreen:
 
 <HomeScreen@Screen>:
-    size: root.size
     name: "homescreen"
-    Background:
-    Btn_Double:
+    FloatLayout:
+        Btn_Double:
 
-        size: 240,66
-        pos: 10,10
-    Btn_Triple:
-        title1: 'Unload'
-        title2: 'ABS'
-        title3: 'Load'
-        height: 66
-        w1: 90
-        w2: 70
-        w3: 90
-        pos: 50,200
+            size: 240,66
+            pos: 10,110
+        Btn_Triple:
+            title1: 'Unload'
+            title2: 'ABS'
+            title3: 'Load'
+            height: 66
+            w1: 90
+            w2: 70
+            w3: 90
+            pos: 90,200
+        Btn:
+
+            size: 240,66
+            pos: 10,10
+
 
 
 
@@ -179,7 +186,8 @@ Tabs:
         font_size: p.normal_font
         valign: 'middle'
         halign: 'center'
-<ClearButton@Widget>:
+#@Widget
+<ClearButton>:
     size_hint: None, None
     pressed: False
     enabled: True
@@ -190,8 +198,27 @@ Tabs:
             radius: [p.radius,]
             pos: self.pos
             size: self.size
+#@ClearButton
+<Btn>:
+    title: ''
+    canvas.before:
+        Color:
+            rgba: p.medium_gray
+        RoundedRectangle:
+            radius: [p.radius,]
+            pos: self.pos
+            size: self.size
+    Label:
+        text: root.title
+        pos: root.pos
+        size: root.size
+        text_size: self.size     
+        font_size: p.normal_font
+        valign: 'middle'
+        halign: 'center'
+        
 <Btn_Stop@ClearButton>:
-    canvas:
+    canvas.before:
         Color:
             rgba: p.red if self.enabled else 0
         Rectangle:
@@ -201,7 +228,7 @@ Tabs:
 #:set s 66
 #:set h 1.155*s
     paused: False
-    canvas:
+    canvas.before:
         Color:
             rgba: 1,1,1,1 if self.enabled and self.paused else 0
         Rectangle:
@@ -217,14 +244,15 @@ Tabs:
             points: self.center_x-s/2, self.center_y- h/2, self.center_x-s/2, self.center_y+ h/2, self.center_x+s/2, self.center_y
 # FILE -------------------------------------------------------------
 <FileTab@TabbedPanelItem>:
+    background_down: ''
+    background_normal: 'Logos/Black.png'
+    background_color: p.background
+
     canvas:
         Rectangle:
             source: 'Logos/FilesIcon.png'
             size: 100,100
             pos: 250, 0
-    background_down: ''
-    background_normal: 'Logos/Black.png'
-    background_color: p.background
     FC:
 <FC>:
     filters: '*.gco', '*.gcode'
@@ -243,14 +271,15 @@ Tabs:
 
 # SETTING ----------------------------------------------------------
 <SettingTab@TabbedPanelItem>:
+    background_down: '' 
+    background_normal: 'Logos/Black.png'
+    background_color: p.background
     canvas:
         Rectangle:
             source: 'Logos/SettingsIcon.png'
             size: 100, 100
             pos: 450, 0
-    background_down: '' 
-    background_normal: 'Logos/Black.png'
-    background_color: p.background
+
     ScreenManager:
         name: 'SettingScreenManager'
         SettingScreen:
@@ -374,12 +403,12 @@ Tabs:
         pos: root.pos
         padding_x: p.side_padding
     SI_Divider:
+        pos_hint: {'x': 0, 'y': 0}
 
 <SI_Divider@Widget>:
     size_hint_y: None
     height: 1
     width: p.screen_width
-    pos_hint: {'x': 0, 'y': 0}
     canvas:
         Color:
             rgba: p.medium_gray
@@ -443,7 +472,18 @@ Tabs:
         padding_x: p.side_padding
 
 <ValuePopup@Popup>:
-    auto_dismiss: False
+    auto_dismiss: False    
+    size_hint: 0.8,0.5
+    background: 'Logos/Transparent.png'
+
+    canvas:
+        Color:
+            rgba: p.medium_light_gray
+        RoundedRectangle:
+            size: self.size
+            pos: self.pos
+            radius: [p.radius]
+                
     
 
 
@@ -451,6 +491,9 @@ Tabs:
     title_size: p.large_font
     size_hint: 0.8, 0.5
     txt_input: pwd_input
+  
+                
+    
     FloatLayout:
         Label:
             text: 'Password'
