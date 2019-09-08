@@ -27,11 +27,9 @@ Config.set('graphics', 'fullscreen', '0')#set to 1 or 'auto' for raspi
 Config.set('kivy','keyboard_mode', 'dock')
 
 
-#resource_add_path(os.getcwd())
-#resource_remove_path('')
-
 Builder.unload_file(join(kivy_data_dir, 'style.kv'))
 Builder.load_file("style.kv")
+
 
 def modification_date_sort(files, filesystem):#sortierfunktion fuer Filechooser
     return (sorted(f for f in files if filesystem.is_dir(f)) 
