@@ -7,7 +7,19 @@ from kivy.uix.popup import Popup
 from kivy.properties import ListProperty, StringProperty, ObjectProperty
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
-
+class ClearButton(Widget):
+    pass
+class Btn(ClearButton):
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self.pressed = True
+            return True
+        return False
+    def on_touch_up(self, touch):
+        if self.pressed: 
+            self.pressed =  False
+            return True
+        return False
 class Btn_Double(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
