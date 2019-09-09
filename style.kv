@@ -356,6 +356,8 @@
             halign: 'right'
             text: '{}'.format(ctx.get_nice_size())
 
+#:kivy 1.8.0
+#:import p parameters
 
 <FileChooserIconLayout>:
     on_entry_added: stacklayout.add_widget(args[1])
@@ -377,8 +379,8 @@
                 width: scrollview.width
                 size_hint_y: None
                 height: self.minimum_height
-                spacing: 0
-                padding: 0
+                spacing: 6
+                padding: 16
 
 <FileChooserIconView>:
     layout: layout
@@ -428,7 +430,6 @@
         size: '137.5dp', '16sp'
         pos: root.x, root.y + dp(5)
         halign: 'center'
-
 <FileChooserProgress>:
     pos_hint: {'x': 0, 'y': 0}
     canvas:
@@ -499,17 +500,14 @@
             rgba: root.background_color[:3] + [root.background_color[-1] * self._anim_alpha]
         Rectangle:
             size: self._window.size if self._window else (0, 0)
-
         Color:
-            rgb: 1, 1, 1
-        BorderImage:
-            source: root.background
-            border: root.border
+            rgba: p.medium_gray
+        RoundedRectangle:
+            radius: [p.radius]
             pos: self.pos
             size: self.size
 
-
-# Popup widget
+# Popup widget @ModalView
 <Popup>:
     _container: container
     GridLayout:
@@ -531,10 +529,10 @@
 
         Widget:
             size_hint_y: None
-            height: dp(4)
+            height: 1
             canvas:
                 Color:
-                    rgba: root.separator_color
+                    rgba: p.medium_light_gray
                 Rectangle:
                     pos: self.x, self.y + root.separator_height / 2.
                     size: self.width, root.separator_height
