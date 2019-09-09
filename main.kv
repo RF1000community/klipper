@@ -367,16 +367,6 @@ Tabs:
                 title: "Light"
             SI_Switch:
                 title: "Calibrate for every printjob"
-            SI_Wifi:
-                title: "Wifi"
-                Button:
-                    pos_hint: {'x':0, 'y':0}
-                    background_normal: 'Logos/Transparent.png'
-                    background_down: ''
-                    background_color: p.translucent_white
-                    on_press:
-                        root.manager.transition.direction = 'left'
-                        root.manager.current = 'WifiScreen'
             SI_ValueSlider:
                 title: "Max. printhead Acceleration" 
                 value: '777'
@@ -386,6 +376,18 @@ Tabs:
                     background_down: ''
                     background_color: p.translucent_white
                     on_release: Factory.ValuePopup().open()
+            SI_Wifi:
+                title: "Wifi"
+                Button:
+                    pos_hint: {'x':0, 'y':0}
+                    background_normal: 'Logos/Transparent.png'
+                    background_down: ''
+                    background_color: 0, 0, 0, 0
+                    on_press:
+                        root.manager.transition.direction = 'left'
+                        root.manager.current = 'WifiScreen'
+            SI_PowerMenu:
+                title: "Shutdown..."
 
 <WifiScreen>:
     name: 'WifiScreen'
@@ -480,7 +482,7 @@ Tabs:
         pos_hint: {'center_y': 0.5}
         right: p.screen_width-p.side_padding
 
-<SI_ValueSlider@SetItem>:
+<SI_ValueSlider>:
     value: ''
     Label:
         id: value
@@ -529,7 +531,7 @@ Tabs:
         padding_x: p.side_padding
 
 <ValuePopup@Popup>:
-    auto_dismiss: False    
+    auto_dismiss: True  
     size_hint: 0.8,0.5
     background: 'Logos/Transparent.png'
 
@@ -559,7 +561,6 @@ Tabs:
         TextInput:
             id: pwd_input
             multiline: False
-            focus: True
             password: True
             height: self.minimum_height
             size_hint: 0.7, None
@@ -583,6 +584,33 @@ Tabs:
             size_hint: btn_cancel.size_hint
             pos_hint: {'x': 0.7, 'y': 0.1}
             on_release: root.connect()
+
+<PowerPopup>:
+    title: "Shutdown"
+    title_size: p.large_font
+    size_hint: 0.8, 0.5
+    
+    FloatLayout:
+        Button:
+            id: btn_poweroff
+            text: "Shutdown"
+            size_hint: 0.25, None
+            height: self.width
+            pos_hint: {'x': 0.2, 'y': 0.5}
+            on_release: root.poweroff()
+        Button:
+            id: btn_reboot
+            text: "Reboot"
+            size_hint: btn_poweroff.size_hint
+            height: btn_poweroff.height
+            pos_hint: {'x': 0.55, 'y': 0.5}
+            on_release: root.reboot()
+        Button:
+            id: btn_cancel
+            text: "Cancel"
+            size_hint: 0.2, 0.1
+            pos_hint: {'x': 0.7, 'y': 0.1}
+            on_release: root.dismiss()                  
    
 <Background@Widget>:
     canvas.before:
@@ -603,5 +631,3 @@ Tabs:
 <StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
     padding: [0,0,0,0]
 
-
-    

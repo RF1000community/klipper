@@ -1,7 +1,9 @@
 #!/usr/bin/env python2
 
-from time import time
 from os.path import dirname, join
+from kivy import kivy_data_dir
+from kivy.lang import Builder
+from time import time
 from kivy.properties import NumericProperty, StringProperty, BooleanProperty, ListProperty, ObjectProperty, OptionProperty
 from kivy.clock import Clock
 from kivy.animation import Animation
@@ -9,7 +11,6 @@ from kivy.app import App
 from kivy.config import Config
 from kivy.uix.screenmanager import Screen
 from kivy.uix.screenmanager import ScreenManager
-from kivy.lang import Builder
 from kivy.uix.tabbedpanel import TabbedPanel
 from kivy.uix.filechooser import FileChooser, FileChooserIconView, FileChooserController
 from kivy.resources import resource_add_path
@@ -26,8 +27,8 @@ Config.set('graphics', 'fullscreen', '0')#set to 1 or 'auto' for raspi
 Config.set('kivy','keyboard_mode', 'dock')
 
 
-#resource_add_path(os.getcwd())
-#resource_remove_path('')
+Builder.unload_file(join(kivy_data_dir, 'style.kv'))
+Builder.load_file("style.kv")
 
 
 def modification_date_sort(files, filesystem):#sortierfunktion fuer Filechooser
@@ -39,11 +40,9 @@ class FC(FileChooserIconView):
     
 
 
-
 #Clock.schedule_interval(FC._update_files, 1)
 class mainApp(App):
     def build(self):
-        Builder.load_file("style.kv")
         return self.root
 
 

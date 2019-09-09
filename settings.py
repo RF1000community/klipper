@@ -7,6 +7,7 @@ from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.properties import ListProperty, StringProperty, ObjectProperty
 from kivy.clock import Clock
+from subprocess import Popen
 #Only for test, will be removed later
 import time
 
@@ -108,45 +109,33 @@ class PasswordPopup(Popup):
         self.title = ssid
         super(PasswordPopup, self).__init__(**kwargs)
         self.txt_input.bind(on_text_validate=self.connect)
+        # If focus is set immediately, keyboard will be covered by popup
+        Clock.schedule_once(self.set_focus_on, 0.1)
+
+    def set_focus_on(self, dt):
+        self.txt_input.focus = True
 
     def connect(self, instance=None):
         self.dismiss()
         self.password = self.txt_input.text
         print self.password
 
+class SI_PowerMenu(SetItem):
 
-#DEPRECATED
-#    def on_touch_up(self, touch):
-#        if self.collide_point(*touch.pos):
-#            popup = SsidList()
-#            popup.open()
-#            return True
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self.popup = PowerPopup()
+            self.popup.open()
+            return True
+        return super(SI_PowerMenu, self).on_touch_down(touch)
 
-#class SsidList(Popup):
-#    
-#    ssid_list = ListProperty()
-#    
-#    def __init__(self, **kwargs):
-#        self.title = 'Wifi'
-#        self.get_content()
-#        super(SsidList, self).__init__(title=self.title, content=self.content, **kwargs)
-#
-#    def get_content(self):
-#        scroll = ScrollView(size_hint = (1, None))
-#        box = BoxLayout(orientation = 'vertical', size_hint_y = None)
-#        
-#        for i in self.get_ssid_list():
-#            label = Label(text = i)
-#            label.size_hint_y = None
-#            label.height = 100
-#            box.add_widget(label)
-#
-#        box.height = box.minimum_height
-#        scroll.add_widget(box)
-#        self.content = scroll 
-#
-#
-#    def get_ssid_list(self):
-#        self.ssid_list = ['wifi1', 'wifi2', 'wifi3', 'wifi4']
-#        return self.ssid_list      
-#
+class PowerPopup(Popup):
+
+    def poweroff(self):
+        Popen(['systemctl', 'poweroff'])
+
+    def reboot(self):
+        Popen(['systemctl', 'reboot'])
+
+class SI_ValueSlider(SetItem):
+    pass
