@@ -100,18 +100,10 @@ Tabs:
             title1: 'Unload'
             title2: 'ABS'
             title3: 'Load'#just for testing can be removed later
-            height: btn_height
-            w1: 80
-            w2: 66
-            w3: 80
             y: btn_arr_B.y
             right: btn_arr_B.x -15
         Btn_Triple:
             id: btn_tr_A
-            height: btn_height
-            w1: 80
-            w2: 66
-            w3: 80
             y: btn_arr_A.y
             right: btn_arr_A.x -15
 <PrintingScreen@Screen>:
@@ -233,14 +225,14 @@ Tabs:
     title1: ''
     title2: ''
     title3: ''
-    w1: 50
-    w2: 50
-    w3: 50
+    w1: 77
+    w2: 66
+    w3: 77
     pressed1: False
     pressed2: False
     pressed3: False
     size_hint: None, None
-    width: self.w1+self.w2+self.w3+2
+    size: self.w1+self.w2+self.w3+2, btn_height
     canvas:
         Color:
             rgba: p.medium_gray

@@ -4,7 +4,7 @@ small_font = 17
 extra_small_font = 14
 screen_width = 600
 screen_height = 1024
-side_padding = 50
+side_padding = 48
 side_padding_hint = side_padding/screen_width
 radius = 5
 
@@ -15,7 +15,7 @@ medium_gray = [0.2,0.2,0.2,1]
 medium_light_gray = [0.35,0.35,0.35,1]
 light_gray = [0.7,0.7,0.7,1]
 translucent_white = 1,1,1,0.1
-red = 0.8,0,0,1
+red = 0.9,0,0,1
 
 
 #Kivy Guide
