@@ -1298,20 +1298,19 @@
 
 <VKeyboard>:
     size_hint: 1, 0.3
-    margin_hint: 0.01, 0.01, 0.01, 0.01
+    # Space on outside of keyboard
+    margin_hint: 0.02, 0.01, 0.02, 0.01
+    # Distance between keys (top, right, bottom, left)
+    key_margin: 6, 4, 6, 4
     background: 'Logos/Transparent.png'
-    key_background_normal: 'Logos/Transparent.png'
-    key_background_down: 'Logos/Black.png'
-    key_background_color: p.translucent_white
+    #background_color: 0.1, 0.3, 0.1, 1
+    key_background_normal: 'Logos/keyboard_key_normal.png'
+    key_background_down: 'Logos/keyboard_key_down.png'
+    #key_background_color: p.translucent_white
     canvas:
         Color:
             rgba: p.background
         Rectangle:
             pos: self.pos
             size: self.size
-        Color:
-            rgba: p.light_gray
-        RoundedRectangle:
-            pos: 106, 10
-            size: 427, 46
-            radius: 4,
+
