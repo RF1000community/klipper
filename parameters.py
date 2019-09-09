@@ -15,6 +15,7 @@ medium_gray = [0.2,0.2,0.2,1]
 medium_light_gray = [0.35,0.35,0.35,1]
 light_gray = [0.7,0.7,0.7,1]
 translucent_white = 1,1,1,0.1
+accent = [0.2, 0.71, 0.9, 1]
 red = 0.8,0,0,1
 
 

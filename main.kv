@@ -30,6 +30,11 @@ Tabs:
             source: 'Logos/HomeIcon.png'
             size: 100, 100
             pos: 50, 0
+        Color:
+            rgba: p.accent if self.state == 'down' else [0, 0, 0, 0]
+        Rectangle:
+            size: self.width, 4
+            pos: self.pos
     FloatLayout:
         Background:
             pos_hint: {'x':0,'y':0}
@@ -312,6 +317,11 @@ Tabs:
             source: 'Logos/FilesIcon.png'
             size: 100,100
             pos: 250, 0
+        Color:
+            rgba: p.accent if self.state == 'down' else [0, 0, 0, 0]
+        Rectangle:
+            size: self.width, 4
+            pos: self.pos
     FC:
 <FC>:
     filters: '*.gco', '*.gcode'
@@ -364,6 +374,12 @@ Tabs:
             source: 'Logos/SettingsIcon.png'
             size: 100, 100
             pos: 450, 0
+        Color:
+            rgba: p.accent if self.state == 'down' else [0, 0, 0, 0]
+        Rectangle:
+            size: self.width, 4
+            pos: self.pos
+
 
     ScreenManager:
         name: 'SettingScreenManager'
