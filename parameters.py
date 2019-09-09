@@ -18,6 +18,10 @@ translucent_white = 1,1,1,0.1
 red = 0.8,0,0,1
 
 
+# The default directory of the filechooser
+fc_starting_path = '~/'
+
+
 #Kivy Guide
 #LABELS: try setting hints to None if it does shit e.g. setting size doesnt work
     # size: outer dimensions of the label widget, available space, can be set to texture_size to show everything 

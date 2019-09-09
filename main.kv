@@ -14,7 +14,9 @@ Tabs:
     tab_height: tab_height
     do_default_tab: False
     HomeTab:
+        id: home_tab
     FileTab:
+        id: file_tab
     SettingTab:
         id: set_tab
 
@@ -315,13 +317,39 @@ Tabs:
     filters: '*.gco', '*.gcode'
     rootpath: '/'
     id: fc
-    multiselect: 'False'
+    multiselect: False
     canvas.before:         
         Color:
             rgba: p.background
         Rectangle:
             pos: 0,0
             size: p.screen_width, 924
+
+<PrintPopup>:
+    title: 'Print now'
+    title_size: p.large_font
+    size_hint: 0.8, 0.3
+    
+    FloatLayout:
+        Label:
+            text: root.prompt
+            markup: True
+            font_size: p.small_font
+            text_size: root.width * 0.9, None
+            size: self.texture_size
+            size_hint: None, None
+            pos_hint: {'x': 0.05, 'top': 0.85}
+        Button:
+            id: btn_cancel
+            text: 'Cancel'
+            size_hint: 0.3, 0.3
+            pos_hint: {'x': 0.25, 'y': 0.1}
+            on_release: root.dismiss()
+        Button:
+            text: 'Start'
+            size_hint: btn_cancel.size_hint
+            pos_hint: {'x': 0.6, 'y': 0.1}
+            on_release: root.confirm()
 
 
 
