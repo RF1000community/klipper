@@ -96,7 +96,7 @@ class WifiScreen(Screen):
         names = []
         for i in range(s):
             names.append(hms+'.'+str(i))
-        print names
+        print(names)
         self.ssid_list = names
 
 class PasswordPopup(Popup):
@@ -118,7 +118,7 @@ class PasswordPopup(Popup):
     def connect(self, instance=None):
         self.dismiss()
         self.password = self.txt_input.text
-        print self.password
+        print(self.password)
 
 class SI_PowerMenu(SetItem):
 

@@ -1296,3 +1296,22 @@
             color: root.color
             on_color: root.set_color(args[1][:3])
 
+<VKeyboard>:
+    size_hint: 1, 0.3
+    margin_hint: 0.01, 0.01, 0.01, 0.01
+    background: 'Logos/Transparent.png'
+    key_background_normal: 'Logos/Transparent.png'
+    key_background_down: 'Logos/Black.png'
+    key_background_color: p.translucent_white
+    canvas:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgba: p.light_gray
+        RoundedRectangle:
+            pos: 106, 10
+            size: 427, 46
+            radius: 4,

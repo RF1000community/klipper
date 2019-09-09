@@ -592,7 +592,8 @@ Tabs:
 
 <PasswordPopup>:
     title_size: p.large_font
-    size_hint: 0.8, 0.5
+    size_hint: 0.8, 0.3
+    pos_hint: {'center_y': 0.6}
     txt_input: pwd_input
     
     FloatLayout:
@@ -620,7 +621,7 @@ Tabs:
         Button:
             id: btn_cancel
             text: 'Cancel'
-            size_hint: 0.2, 0.1
+            size_hint: 0.2, 0.2
             pos_hint: {'x': 0.48, 'y': 0.1}
             on_release: root.dismiss()
         Button:
