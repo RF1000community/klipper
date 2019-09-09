@@ -8,8 +8,6 @@ from kivy.properties import ListProperty, StringProperty, ObjectProperty
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
 class ClearButton(Widget):
-    pass
-class Btn(ClearButton):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             self.pressed = True
@@ -20,6 +18,12 @@ class Btn(ClearButton):
             self.pressed =  False
             return True
         return False
+class Btn_Stop(ClearButton):
+    pass
+class Btn_Play(ClearButton):
+    pass
+class Btn(ClearButton):
+    pass
 class Btn_Double(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -34,6 +38,9 @@ class Btn_Double(Widget):
             self.pressed1 = self.pressed2 =  False
             return True
         return False
+class Btn_DoubleArrow(Btn_Double):
+    pass
+
 class Btn_Triple(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
