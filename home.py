@@ -9,23 +9,28 @@ from kivy.clock import Clock
 from kivy.uix.widget import Widget
 from kivy.uix.behaviors.button import ButtonBehavior
 
+class ClearRoundButton(ButtonBehavior, Widget):
+    def on_press(self):
+        self.pressed = True
+    def on_release(self):
+        self.pressed = False
 class ClearButton(ButtonBehavior, Widget):
     def on_press(self):
         self.pressed = True
     def on_release(self):
         self.pressed = False
-class Btn_Stop(ClearButton):
+class Btn_Stop(ClearRoundButton):
     pass
-class Btn_Play(ClearButton):
+class Btn_Play(ClearRoundButton):
     pass
-class Btn(ClearButton):
+class Btn(ClearRoundButton):
     pass
-class Btn_Outline(ClearButton):
+class Btn_Outline(ClearRoundButton):
     pass
-class Btn_Temp(ClearButton):
+class Btn_Temp(ClearRoundButton):
     pass
 
-class Btn_Arrow(ClearButton):
+class Btn_Arrow(ClearRoundButton):
     pass
 class Btn_Popup(Widget):
     def on_touch_down(self, touch):

@@ -70,6 +70,7 @@ Tabs:
             valign: 'middle'
         Btn_Stop:
             id: btn_stop
+            enabled: False
             size: 118,118
             center_y: l_filename.center_y
             center_x: p.screen_width - btn_play_size/2 -p.padding
@@ -189,21 +190,23 @@ Tabs:
         text: "PrintingScreen"
 
 #@Widget
-<ClearButton>:
+<ClearRoundButton>:
     size_hint: None, None
     pressed: False
     enabled: True
     canvas:
         Color:
-            rgba: 1,1,1,0.2 if self.pressed else 0
+            rgba: p.translucent_white if self.pressed else [0,0,0,0]
         RoundedRectangle:
             radius: [p.radius,]
             pos: self.pos
             size: self.size
+    on_release:
+        print("released ClearRoundButton")
 <Btn_Stop>:
     canvas.before:
         Color:
-            rgba: p.red if self.enabled else 0
+            rgba: p.red if self.enabled else [0,0,0,0]
         Rectangle:
             pos: self.center_x-btn_play_size/2,self.center_y-btn_play_size/2
             size: btn_play_size,btn_play_size
@@ -223,7 +226,7 @@ Tabs:
             rgba: 1,1,1,1 if self.enabled and not self.paused else 0
         Triangle:
             points: self.center_x-btn_play_size/2, self.center_y- h/2, self.center_x-btn_play_size/2, self.center_y+ h/2, self.center_x+btn_play_size/2, self.center_y
-#@ClearButton
+#@ClearRoundButton
 <Btn>:
     title: ''
     canvas.before:
@@ -467,6 +470,7 @@ Tabs:
     Btn_Popup:
         size: root.width, 64
         pos: root.pos
+        on_release: root.confirm()
 
 # FILE -------------------------------------------------------------
 <FileTab@TabbedPanelItem>:
