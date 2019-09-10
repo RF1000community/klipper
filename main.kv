@@ -2,9 +2,9 @@
 #:import Factory kivy.factory.Factory
 #:import p parameters
 #:set tab_height 100
-#:set btn_play_size 62
+#:set btn_play_size 64
 #:set h 1.155*btn_play_size
-#:set btn_height 62
+#:set btn_height 64
 #:set home_col_height 133
 Tabs:
 
@@ -81,7 +81,8 @@ Tabs:
             id: top_divider
             pos: 0, l_filename.top
         HomeScreenManager:
-
+            size_hint: None, None
+            size: p.screen_width, p.screen_height-top_divider.top
             pos: root.x, top_divider.top
         Btn_Temp:
             large_value: "239°C"
@@ -121,7 +122,7 @@ Tabs:
             id: btn_right_B
             size: btn_height, btn_height
             y: 50
-            right: p.screen_width-37
+            right: p.screen_width-34
         Btn_Arrow:
             dir_right: True
             id: btn_right_A
@@ -151,7 +152,36 @@ Tabs:
             title: "Mesh Bed Leveling"
             size: btn_tr_B.size
             pos: btn_tr_B.x, btn_tr_A.top +p.padding
-        
+        Btn_TripleZ:
+            id: btn_tr_Z
+            height: xy_field.height
+            h1: self.height/3
+            h2: self.height/3
+            h3: self.height/3
+            width: self.height/3
+            right: btn_calibrate.right
+            top: root.height-p.padding
+        Widget:
+            id: xy_field
+            size_hint: None, None
+            size: 280, 260
+            point_radius: 10
+            point_pos: 50,200
+            x: p.padding
+            top: root.height-p.padding
+            activated: False
+            canvas:
+                Color:
+                    rgba: p.light_gray if self.activated else p.button
+                RoundedRectangle:
+                    size: self.size
+                    pos: self.pos
+                    radius: [p.radius]
+                Color:
+                    rgba: 1,1,1,1
+                Ellipse:
+                    size: self.point_radius*2,self.point_radius*2
+                    pos: self.point_pos[0]+self.pos[0], self.point_pos[1]+self.pos[1]
 <PrintingScreen@Screen>:
     name: "printingscreen"
     Label:
@@ -215,7 +245,7 @@ Tabs:
     title: ''
     canvas.before:
         Color:
-            rgba: p.medium_light_gray
+            rgba: p.button_outline
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
             width: 1
@@ -348,6 +378,58 @@ Tabs:
         font_size: p.normal_font
         valign: 'middle'
         halign: 'center'
+<Btn_TripleZ>:
+    h1: 85
+    h2: 85
+    h3: 85
+    pressed1: False
+    pressed2: False
+    pressed3: False
+    size_hint: None, None
+    canvas:
+        Color:
+            rgba: p.button_outline
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+        Color:
+            rgba: p.button_outline
+        Rectangle:
+            pos: self.x+6, self.y+self.h1
+            size: self.width-12,1
+        Rectangle:
+            pos: self.x+6, self.y+self.h1+self.h2
+            size: self.width-12,1
+        Color: 
+            rgba: 1,1,1,1
+        #:set t 12
+        #:set u 24 #Triangle has this size x2
+        Triangle:
+            points: self.center_x-u,self.y+self.h1/2+t, self.center_x+u, self.y+self.h1/2+t, self.center_x, self.y+self.h1/2-t
+        Triangle:
+            points: self.center_x-u,self.top-self.h3/2-t, self.center_x+u, self.top-self.h3/2-t, self.center_x, self.top-self.h3/2+t
+        Rectangle:
+            source: 'Logos/HomeIcon.png'
+            size: 64, 64
+            pos: self.center_x-32, self.center_y-32
+        Color:# Highlight pressed button
+            rgba: 0.4,0.4,0.4,1 if self.pressed1 else 0
+        RoundedRectangle:
+            radius: [0,0,p.radius,p.radius]
+            pos: self.x, self.y
+            size: self.width, self.h1
+        Color:
+            rgba: 0.4,0.4,0.4,1 if self.pressed2 else 0
+        Rectangle:
+            pos: self.x, self.y+self.h1
+            size: self.width, self.h2
+        Color:
+            rgba: 0.4,0.4,0.4,1 if self.pressed3 else 0
+        RoundedRectangle:
+            radius: [p.radius,p.radius,0,0]
+            pos: self.x, self.top-self.h3
+            size: self.width, self.h3
+
+        
 <Btn_Temp>:
     red: False
     large_value: "--"

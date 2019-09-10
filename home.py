@@ -7,19 +7,13 @@ from kivy.uix.popup import Popup
 from kivy.properties import ListProperty, StringProperty, ObjectProperty
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
+from kivy.uix.behaviors.button import ButtonBehavior
 
-class ClearButton(Widget):
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            self.pressed = True
-            BasePopup().open()
-            return True
-        return super(ClearButton, self).on_touch_down(touch) #oder False
-    def on_touch_up(self, touch):
-        if self.pressed: 
-            self.pressed =  False
-            return True
-        return super(ClearButton, self).on_touch_down(touch)
+class ClearButton(ButtonBehavior, Widget):
+    def on_press(self):
+        self.pressed = True
+    def on_release(self):
+        self.pressed = False
 class Btn_Stop(ClearButton):
     pass
 class Btn_Play(ClearButton):
@@ -41,13 +35,12 @@ class Btn_Popup(Widget):
             else:
                 self.pressed2 = True
             return True
-        return False
+        return super(Btn_Popup, self).on_touch_down(touch)
     def on_touch_up(self, touch):
         if self.pressed1 or self.pressed2:
             self.pressed1 = self.pressed2 =  False
             return True
-        return False
-    pass
+        return super(Btn_Popup, self).on_touch_up(touch)
 class BasePopup(Popup):
     pass
 class Btn_Triple(Widget):
@@ -60,9 +53,25 @@ class Btn_Triple(Widget):
             else:
                 self.pressed3 = True
             return True
-        return False
+        return super(Btn_Triple, self).on_touch_down(touch)
     def on_touch_up(self, touch):
         if self.pressed1 or self.pressed2 or self.pressed3:
             self.pressed1 = self.pressed2 = self.pressed3 = False
             return True
-        return False
+        return super(Btn_Triple, self).on_touch_up(touch)
+class Btn_TripleZ(Widget):
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            if touch.y-self.y<self.h1:
+                self.pressed1 = True
+            elif touch.y-self.y>self.h1 and touch.y-self.y<(self.h1+self.h2):
+                self.pressed2 = True
+            else:
+                self.pressed3 = True
+            return True
+        return super(Btn_TripleZ, self).on_touch_down(touch)
+    def on_touch_up(self, touch):
+        if self.pressed1 or self.pressed2 or self.pressed3:
+            self.pressed1 = self.pressed2 = self.pressed3 = False
+            return True
+        return super(Btn_TripleZ, self).on_touch_up(touch)
