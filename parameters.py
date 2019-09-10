@@ -1,21 +1,30 @@
-large_font = 30
+large_font = 34
 normal_font = 20
 small_font = 17
 extra_small_font = 14
 screen_width = 600
 screen_height = 1024
-side_padding = 48
-side_padding_hint = side_padding/screen_width
+padding = 50
+padding_hint = padding/screen_width
 radius = 5
+popup_radius = 12
 
 
 
 background = [0.1,0.1,0.1,1]
+popup = 0.15,0.15,0.15,1
+divider = 1,1,1,0.2
+button = 1,1,1,0.1
 medium_gray = [0.2,0.2,0.2,1]
 medium_light_gray = [0.35,0.35,0.35,1]
 light_gray = [0.7,0.7,0.7,1]
 translucent_white = 1,1,1,0.1
+accent = [0.2, 0.71, 0.9, 1]
 red = 0.9,0,0,1
+
+
+# The default directory of the filechooser
+fc_starting_path = '~/'
 
 
 #Kivy Guide

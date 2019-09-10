@@ -7,10 +7,12 @@ from kivy.uix.popup import Popup
 from kivy.properties import ListProperty, StringProperty, ObjectProperty
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
+
 class ClearButton(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             self.pressed = True
+            BasePopup().open()
             return True
         return False
     def on_touch_up(self, touch):
@@ -24,23 +26,17 @@ class Btn_Play(ClearButton):
     pass
 class Btn(ClearButton):
     pass
-class Btn_Double(Widget):
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            if touch.x-self.x<self.width/2:
-                self.pressed1 = True
-            else:
-                self.pressed2 = True
-            return True
-        return False
-    def on_touch_up(self, touch):
-        if self.pressed1 or self.pressed2:
-            self.pressed1 = self.pressed2 =  False
-            return True
-        return False
-class Btn_DoubleArrow(Btn_Double):
+class Btn_Outline(ClearButton):
+    pass
+class Btn_Temp(ClearButton):
     pass
 
+class Btn_Arrow(ClearButton):
+    pass
+class Btn_Popup(Widget):
+    pass
+class BasePopup(Popup):
+    pass
 class Btn_Triple(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -48,6 +44,8 @@ class Btn_Triple(Widget):
                 self.pressed1 = True
             elif touch.x-self.x>self.w1 and touch.x-self.x<(self.w1+2+self.w2):
                 self.pressed2 = True
+                popup = main.BasePopup()
+                popup.open()
             else:
                 self.pressed3 = True
             return True

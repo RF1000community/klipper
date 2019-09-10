@@ -14,7 +14,9 @@ Tabs:
     tab_height: tab_height
     do_default_tab: False
     HomeTab:
+        id: home_tab
     FileTab:
+        id: file_tab
     SettingTab:
         id: set_tab
 
@@ -28,6 +30,11 @@ Tabs:
             source: 'Logos/HomeIcon.png'
             size: 100, 100
             pos: 50, 0
+        Color:
+            rgba: p.accent if self.state == 'down' else [0, 0, 0, 0]
+        Rectangle:
+            size: self.width, 4
+            pos: self.pos
     FloatLayout:
         Background:
             pos_hint: {'x':0,'y':0}
@@ -36,10 +43,10 @@ Tabs:
             id: l_time_remaining
             text: "2:32h remaining"
             size_hint: None, None
-            size: p.screen_width-2*p.side_padding, p.normal_font
+            size: p.screen_width-2*p.padding, p.normal_font
             text_size: self.size
             font_size: p.normal_font
-            pos: p.side_padding, 33 + tab_height
+            pos: p.padding, 33 + tab_height
             halign: 'left'
             valign: 'bottom'
         ProgressBar:
@@ -47,8 +54,8 @@ Tabs:
             max: 1
             value: 0.3
             size_hint: None, None
-            size: p.screen_width-2*p.side_padding, 5
-            pos: p.side_padding, l_time_remaining.top+14
+            size: p.screen_width-2*p.padding, 5
+            pos: p.padding, l_time_remaining.top+14
             
         Label:
             id: l_filename
@@ -57,7 +64,7 @@ Tabs:
             size: 300,134
             text_size: self.size
             font_size: p.large_font
-            pos: p.side_padding, progress_bar.top
+            pos: p.padding, progress_bar.top
             shorten: True
             halign: 'left'
             valign: 'middle'
@@ -65,7 +72,7 @@ Tabs:
             id: btn_stop
             size: 118,118
             center_y: l_filename.center_y
-            center_x: p.screen_width - btn_play_size/2 -p.side_padding
+            center_x: p.screen_width - btn_play_size/2 -p.padding
         Btn_Play:
             size: btn_stop.size
             y: btn_stop.y
@@ -74,9 +81,33 @@ Tabs:
             id: top_divider
             pos: 0, l_filename.top
         HomeScreenManager:
-            size_hint: None, None
-            size: p.screen_width-2*p.side_padding, p.screen_height-p.side_padding - top_divider.y
-            pos: p.side_padding, top_divider.y
+
+            pos: root.x, top_divider.top
+        Btn_Temp:
+            large_value: "239°C"
+            small_value: "240+0°C"
+            red: True
+            id: temp_B
+            size: 190,100
+            x: p.padding-20
+            center_y: p.padding+btn_height/2+ top_divider.top
+        Btn_Temp:
+            large_value: "18°C"
+            small_value: "Off"
+            id: temp_A
+            size: 190,100
+            x: p.padding-20
+            center_y: p.padding+btn_height + temp_B.center_y
+        Btn_Temp:
+            large_value: "72°C"
+            small_value: "70+0°C"
+            red: True
+            id: temp_bed
+            size: 190,100
+            x: p.padding-20
+            center_y: p.padding+btn_height+ temp_A.center_y
+                    
+
         
 
 <HomeScreenManager@ScreenManager>:
@@ -85,27 +116,42 @@ Tabs:
 <HomeScreen@Screen>:
     name: "homescreen"
     FloatLayout:
-        Btn_DoubleArrow:
-            id: btn_arr_B
-            size: btn_height*2+1, btn_height
+        Btn_Arrow:
+            dir_right: True
+            id: btn_right_B
+            size: btn_height, btn_height
             y: 50
-            right: 500
-        Btn_DoubleArrow:
-            id: btn_arr_A
-            size: btn_height*2+1, btn_height
-            y: btn_arr_B.top+p.side_padding
-            right: 500
+            right: p.screen_width-37
+        Btn_Arrow:
+            dir_right: True
+            id: btn_right_A
+            size: btn_height, btn_height
+            y: btn_right_B.top+p.padding
+            x: btn_right_B.x
         Btn_Triple:
             id: btn_tr_B
-            title1: 'Unload'
-            title2: 'ABS'
-            title3: 'Load'#just for testing can be removed later
-            y: btn_arr_B.y
-            right: btn_arr_B.x -15
+            y: btn_right_B.y
+            right: btn_right_B.x
         Btn_Triple:
             id: btn_tr_A
-            y: btn_arr_A.y
-            right: btn_arr_A.x -15
+            y: btn_right_A.y
+            right: btn_right_A.x
+        Btn_Arrow:
+            id: btn_left_B
+            size: btn_height, btn_height
+            y: btn_right_B.y
+            right: btn_tr_B.x
+        Btn_Arrow:
+            id: btn_left_A
+            size: btn_height, btn_height
+            y: btn_tr_A.y
+            right: btn_tr_A.x
+        Btn_Outline:
+            id: btn_calibrate
+            title: "Mesh Bed Leveling"
+            size: btn_tr_B.size
+            pos: btn_tr_B.x, btn_tr_A.top +p.padding
+        
 <PrintingScreen@Screen>:
     name: "printingscreen"
     Label:
@@ -119,7 +165,7 @@ Tabs:
     enabled: True
     canvas:
         Color:
-            rgba: 1,1,1,0.1 if self.pressed else 0
+            rgba: 1,1,1,0.2 if self.pressed else 0
         RoundedRectangle:
             radius: [p.radius,]
             pos: self.pos
@@ -165,24 +211,38 @@ Tabs:
         font_size: p.normal_font
         valign: 'middle'
         halign: 'center'
-<Btn_Double>:
-    title1: ''
-    title2: ''
+<Btn_Outline>:
+    title: ''
+    canvas.before:
+        Color:
+            rgba: p.medium_light_gray
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+            width: 1
+    Label:
+        text: root.title
+        pos: root.pos
+        size: root.size
+        text_size: self.size     
+        font_size: p.normal_font
+        valign: 'middle'
+        halign: 'center'
+<Btn_Popup>:
+    title1: 'Cancel'
+    title2: 'Confirm'
     pressed1: False
     pressed2: False
     size_hint: None,None
     canvas:
         Color:
-            rgba: p.medium_gray
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: [p.radius,]
-        Color:
-            rgba: p.medium_light_gray
+            rgba: p.divider
         Rectangle:
-            pos: self.x+ self.width/2, self.y+6
-            size: 1,self.height-12
+            pos: self.x+ self.width/2, self.y
+            size: 1,self.height
+        Rectangle:
+            pos: self.x, self.top
+            size: self.width, 1
+
         Color:# Highlight pressed button
             rgba: 0.4,0.4,0.4,1 if self.pressed1 else 0        
         RoundedRectangle:
@@ -211,23 +271,22 @@ Tabs:
         font_size: p.normal_font
         valign: 'middle'
         halign: 'center'
-<Btn_DoubleArrow>:
-    #:set v 36
-    #:set w 18
-    canvas:
+<Btn_Arrow>:
+    #:set v 48
+    #:set w 24
+    dir_right: False
+    canvas.before:
         Color:
-            rgba: 1,1,1,1
-        Triangle:
-            points: self.x+self.width/4+w/2-4, self.center_y- v/2, self.x+self.width/4+w/2-4, self.center_y+ v/2, self.x+self.width/4-w/2-4, self.center_y
-        Triangle:
-            points: self.x+self.width*3/4-w/2+4, self.center_y- v/2, self.x+self.width*3/4-w/2+4, self.center_y+ v/2, self.x+self.width*3/4+w/2+4, self.center_y
+            rgba: p.medium_gray
+        Triangle:#the new 21/9 ultrawide monitor presents:
+            points: [self.x+self.width/2-w/2, self.center_y- v/2, self.x+self.width/2-w/2, self.center_y+ v/2, self.x+self.width/2+w/2, self.center_y] if self.dir_right else [self.x+self.width/2+w/2, self.center_y- v/2, self.x+self.width/2+w/2, self.center_y+ v/2, self.x+self.width/2-w/2, self.center_y]
 <Btn_Triple>:
-    title1: ''
+    title1: 'Unload'
     title2: ''
-    title3: ''
+    title3: 'Load'
     w1: 77
-    w2: 66
-    w3: 77
+    w2: 68
+    w3: 68
     pressed1: False
     pressed2: False
     pressed3: False
@@ -235,7 +294,7 @@ Tabs:
     size: self.w1+self.w2+self.w3+2, btn_height
     canvas:
         Color:
-            rgba: p.medium_gray
+            rgba: p.button
         RoundedRectangle:
             pos: self.pos
             size: self.size
@@ -277,7 +336,7 @@ Tabs:
         text: root.title2
         size: root.w2, root.height
         text_size: self.size
-        pos: root.x+root.w1, root.y        
+        pos: root.x+root.w1, root.y
         font_size: p.normal_font
         valign: 'middle'
         halign: 'center'
@@ -289,8 +348,44 @@ Tabs:
         font_size: p.normal_font
         valign: 'middle'
         halign: 'center'
+<Btn_Temp>:
+    red: False
+    large_value: "--"
+    small_value: "--"
+    Label:
+        padding_x: 15
+        color: 1,0,0,1 if root.red else 1,1,1,1
+        text: root.large_value
+        size_hint: None, None
+        size: root.width, btn_height+16#to compensate for the font being 8px below top when set to 'top'
+        text_size: self.size
+        center_y: root.center_y
+        right: root.right
+        font_size: p.large_font
+        valign: 'top'
+        halign: 'right'
+    Label:
+        padding_x: 15
+        color: p.light_gray
+        text: root.small_value
+        size_hint: None, None
+        size: root.width, btn_height+9
+        text_size: self.size
+        center_y: root.center_y
+        right: root.right
+        font_size: p.normal_font
+        valign: 'bottom'
+        halign: 'right'
+<BasePopup>:
+    title_size: p.large_font
+    title_align: 'center'
+    background_color: 0,0,0,0.4 #reduces background darkening from 0.7
+    size_hint: 0.67, 0.3
+    pos_hint: {'center_y': 0.55}
+    Btn_Popup:
+        size: root.width, 64
+        pos: root.pos
 
-        
 # FILE -------------------------------------------------------------
 <FileTab@TabbedPanelItem>:
     background_down: ''
@@ -302,18 +397,51 @@ Tabs:
             source: 'Logos/FilesIcon.png'
             size: 100,100
             pos: 250, 0
+        Color:
+            rgba: p.accent if self.state == 'down' else [0, 0, 0, 0]
+        Rectangle:
+            size: self.width, 4
+            pos: self.pos
     FC:
 <FC>:
     filters: '*.gco', '*.gcode'
     rootpath: '/'
     id: fc
-    multiselect: 'False'
+    multiselect: False
     canvas.before:         
         Color:
             rgba: p.background
         Rectangle:
             pos: 0,0
             size: p.screen_width, 924
+
+<PrintPopup>:
+    title: 'Print now'
+    title_size: p.large_font
+    size_hint: 0.8, 0.3
+    
+    FloatLayout:
+        Label:
+            text: root.prompt
+            markup: True
+            font_size: p.small_font
+            text_size: root.width * 0.9, None
+            size: self.texture_size
+            size_hint: None, None
+            pos_hint: {'x': 0.05, 'top': 0.85}
+
+        
+        Button:
+            id: btn_cancel
+            text: 'Cancel'
+            size_hint: 0.3, 0.3
+            pos_hint: {'x': 0.25, 'y': 0.1}
+            on_release: root.dismiss()
+        Button:
+            text: 'Start'
+            size_hint: btn_cancel.size_hint
+            pos_hint: {'x': 0.6, 'y': 0.1}
+            on_release: root.confirm()
 
 
 
@@ -328,6 +456,12 @@ Tabs:
             source: 'Logos/SettingsIcon.png'
             size: 100, 100
             pos: 450, 0
+        Color:
+            rgba: p.accent if self.state == 'down' else [0, 0, 0, 0]
+        Rectangle:
+            size: self.width, 4
+            pos: self.pos
+
 
     ScreenManager:
         name: 'SettingScreenManager'
@@ -452,7 +586,7 @@ Tabs:
         size: root.size
         valign: 'middle'
         pos: root.pos
-        padding_x: p.side_padding
+        padding_x: p.padding
     SI_Divider:
         pos_hint: {'x': 0, 'y': 0}
 
@@ -462,7 +596,7 @@ Tabs:
     width: p.screen_width
     canvas:
         Color:
-            rgba: p.medium_gray
+            rgba: p.divider
         Rectangle:
             pos: self.x+15, self.y
             size: self.width -30, 1
@@ -472,7 +606,7 @@ Tabs:
         id: knopf
         size_hint: None, None
         pos_hint: {'center_y': 0.5}
-        right: p.screen_width-p.side_padding
+        right: p.screen_width-p.padding
 
 <SI_ValueSlider>:
     value: ''
@@ -488,7 +622,7 @@ Tabs:
         halign: 'right'
         y: root.y
         right: p.screen_width
-        padding_x: p.side_padding
+        padding_x: p.padding
 
 <SI_Wifi>:
     Label:
@@ -503,7 +637,7 @@ Tabs:
         halign: 'right'
         y: root.y
         right: p.screen_width
-        padding_x: p.side_padding
+        padding_x: p.padding
 
 
 
@@ -520,7 +654,7 @@ Tabs:
         halign: 'right'
         y: root.y
         right: p.screen_width
-        padding_x: p.side_padding
+        padding_x: p.padding
 
 <ValuePopup@Popup>:
     auto_dismiss: True  
@@ -540,8 +674,12 @@ Tabs:
 
 <PasswordPopup>:
     title_size: p.large_font
-    size_hint: 0.8, 0.5
+    title_align: 'center'
+    background_color: 0,0,0,0.4 #reduces background darkening from 0.7
+    size_hint: 0.67, 0.3
+    pos_hint: {'center_y': 0.6}
     txt_input: pwd_input
+
     
     FloatLayout:
         Label:
@@ -568,7 +706,7 @@ Tabs:
         Button:
             id: btn_cancel
             text: 'Cancel'
-            size_hint: 0.2, 0.1
+            size_hint: 0.2, 0.2
             pos_hint: {'x': 0.48, 'y': 0.1}
             on_release: root.dismiss()
         Button:

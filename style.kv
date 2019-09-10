@@ -501,7 +501,7 @@
         Rectangle:
             size: self._window.size if self._window else (0, 0)
         Color:
-            rgba: p.medium_gray
+            rgba: p.popup
         RoundedRectangle:
             radius: [p.radius]
             pos: self.pos
@@ -511,7 +511,7 @@
 <Popup>:
     _container: container
     GridLayout:
-        padding: '12dp'
+        padding: '0dp'
         cols: 1
         size_hint: None, None
         pos: root.pos
@@ -519,6 +519,7 @@
 
         Label:
             text: root.title
+            padding_y: 12
             color: root.title_color
             size_hint_y: None
             height: self.texture_size[1] + dp(16)
@@ -527,15 +528,7 @@
             font_name: root.title_font
             halign: root.title_align
 
-        Widget:
-            size_hint_y: None
-            height: 1
-            canvas:
-                Color:
-                    rgba: p.medium_light_gray
-                Rectangle:
-                    pos: self.x, self.y + root.separator_height / 2.
-                    size: self.width, root.separator_height
+    
 
         BoxLayout:
             id: container
@@ -1295,4 +1288,22 @@
             id: wheel
             color: root.color
             on_color: root.set_color(args[1][:3])
+
+<VKeyboard>:
+    size_hint: 1, 0.3
+    # Space on outside of keyboard
+    margin_hint: 0.02, 0.01, 0.02, 0.01
+    # Distance between keys (top, right, bottom, left)
+    key_margin: 6, 4, 6, 4
+    background: 'Logos/Transparent.png'
+    #background_color: 0.1, 0.3, 0.1, 1
+    key_background_normal: 'Logos/keyboard_key_normal.png'
+    key_background_down: 'Logos/keyboard_key_down.png'
+    #key_background_color: p.translucent_white
+    canvas:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
