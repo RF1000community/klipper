@@ -14,12 +14,12 @@ class ClearButton(Widget):
             self.pressed = True
             BasePopup().open()
             return True
-        return False
+        return super(ClearButton, self).on_touch_down(touch) #oder False
     def on_touch_up(self, touch):
         if self.pressed: 
             self.pressed =  False
             return True
-        return False
+        return super(ClearButton, self).on_touch_down(touch)
 class Btn_Stop(ClearButton):
     pass
 class Btn_Play(ClearButton):
@@ -34,6 +34,19 @@ class Btn_Temp(ClearButton):
 class Btn_Arrow(ClearButton):
     pass
 class Btn_Popup(Widget):
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            if touch.x-self.x<self.width/2:
+                self.pressed1 = True
+            else:
+                self.pressed2 = True
+            return True
+        return False
+    def on_touch_up(self, touch):
+        if self.pressed1 or self.pressed2:
+            self.pressed1 = self.pressed2 =  False
+            return True
+        return False
     pass
 class BasePopup(Popup):
     pass
@@ -44,8 +57,6 @@ class Btn_Triple(Widget):
                 self.pressed1 = True
             elif touch.x-self.x>self.w1 and touch.x-self.x<(self.w1+2+self.w2):
                 self.pressed2 = True
-                popup = main.BasePopup()
-                popup.open()
             else:
                 self.pressed3 = True
             return True
