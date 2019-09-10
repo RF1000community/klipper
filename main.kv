@@ -161,27 +161,23 @@ Tabs:
             width: self.height/3
             right: btn_calibrate.right
             top: root.height-p.padding
-        Widget:
+        XyField:
             id: xy_field
             size_hint: None, None
             size: 280, 260
             point_radius: 10
-            point_pos: 50,200
             x: p.padding
             top: root.height-p.padding
-            activated: False
-            canvas:
-                Color:
-                    rgba: p.light_gray if self.activated else p.button
-                RoundedRectangle:
-                    size: self.size
-                    pos: self.pos
-                    radius: [p.radius]
-                Color:
-                    rgba: 1,1,1,1
-                Ellipse:
-                    size: self.point_radius*2,self.point_radius*2
-                    pos: self.point_pos[0]+self.pos[0], self.point_pos[1]+self.pos[1]
+        Label:
+            id: xy_display
+            size: self.texture_size
+            size_hint: None, None
+            x: xy_field.x
+            y: xy_field.y - self.height
+            color: p.light_gray
+            font_size: p.extra_small_font
+            text: xy_field.display
+
 <PrintingScreen@Screen>:
     name: "printingscreen"
     Label:
