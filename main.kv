@@ -87,7 +87,7 @@ Tabs:
             pos: root.x, top_divider.top
         Btn_Temp:
             on_release:
-                Factory.BasePopup().open()
+                Factory.P_Single().open()
             large_value: "239°C"
             small_value: "240+0°C"
             red: True
@@ -96,6 +96,8 @@ Tabs:
             x: p.padding-20
             center_y: p.padding+btn_height/2+ top_divider.top
         Btn_Temp:
+            on_release:
+                Factory.P_Normal().open()
             large_value: "18°C"
             small_value: "Off"
             id: temp_A
@@ -203,7 +205,6 @@ Tabs:
             font_size: p.small_font
             text: xy_field.display
 
-
 <BaseButton>:
     pressed: False
     on_press: self.pressed = True
@@ -211,13 +212,6 @@ Tabs:
     title: ''
     size_hint: None, None
     enabled: True
-    canvas.before:
-        Color:
-            rgba: p.translucent_white if self.pressed else [0,0,0,0]
-        RoundedRectangle:
-            radius: [p.radius,]
-            pos: self.pos
-            size: self.size
     Label:
         text: root.title
         size: root.size
@@ -226,6 +220,16 @@ Tabs:
         font_size: p.normal_font
         valign: 'middle'
         halign: 'center'
+    
+<RoundButton>:
+    canvas:
+        Color:
+            rgba: p.translucent_white if self.pressed else [0,0,0,0]
+        RoundedRectangle:
+            radius: [p.radius,]
+            pos: self.pos
+            size: self.size
+
 <Btn_Stop>:
     canvas.before:
         Color:
@@ -251,9 +255,9 @@ Tabs:
             points: self.center_x-btn_play_size/2, self.center_y- h/2, self.center_x-btn_play_size/2, self.center_y+ h/2, self.center_x+btn_play_size/2, self.center_y
 <Btn>:
     title: ''
-    canvas.before:
+    canvas:
         Color:
-            rgba: p.medium_gray
+            rgba: p.button
         RoundedRectangle:
             radius: [p.radius,]
             pos: self.pos
@@ -272,7 +276,7 @@ Tabs:
     dir_right: False
     canvas.before:
         Color:
-            rgba: p.medium_gray
+            rgba: p.button
         Triangle:
             points: [self.x+self.width/2-w/2, self.center_y- v/2, self.x+self.width/2-w/2, self.center_y+ v/2, self.x+self.width/2+w/2, self.center_y] if self.dir_right else [self.x+self.width/2+w/2, self.center_y- v/2, self.x+self.width/2+w/2, self.center_y+ v/2, self.x+self.width/2-w/2, self.center_y]
 <Btn_Triple>:
@@ -300,11 +304,10 @@ Tabs:
             pos: self.x+self.w1+1+self.w2, self.y+6
             size: 1,self.height-12
     BaseButton:
-        title: root.title1
         size: root.w1, root.height
         pos: root.pos
-        canvas.before:
-            Clear
+        title: root.title1
+        canvas:
             Color:
                 rgba: p.translucent_white if self.pressed else [0,0,0,0]
             RoundedRectangle:
@@ -312,28 +315,26 @@ Tabs:
                 size: self.size
                 pos: self.pos
     BaseButton:
-        title: root.title2
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
-        canvas.before:
-            Clear
+        title: root.title2
+        canvas:
             Color:
                 rgba: p.translucent_white if self.pressed else [0,0,0,0]
             Rectangle:
                 size: self.size
                 pos: self.pos
     BaseButton:
-        title: root.title3
         size: root.w3, root.height
         pos: root.x + root.w1+root.w2,root.y
-        canvas.before:
-            Clear
+        title: root.title3
+        canvas:
             Color:
                 rgba: p.translucent_white if self.pressed else [0,0,0,0]
             RoundedRectangle:
                 radius: [0,p.radius,p.radius, 0]
                 size: self.size
-                pos: self.pos
+                pos: self.pos        
 <Btn_TripleZ>:
     h1: 85
     h2: 85
@@ -364,7 +365,7 @@ Tabs:
             source: 'Logos/HomeIcon.png'
             size: 64, 64
             pos: self.center_x-32, self.center_y-32
-    BaseButton:
+    RoundButton:
         size: root.width, root.h1
         pos: root.x, root.y
         canvas.before:
@@ -375,7 +376,7 @@ Tabs:
                 radius: [0,0,p.radius,p.radius]
                 size: self.size
                 pos: self.pos
-    BaseButton:
+    RoundButton:
         size: root.width, root.h2
         pos: root.x, root.y+root.h1
         canvas.before:
@@ -385,7 +386,7 @@ Tabs:
             Rectangle:
                 size: self.size
                 pos: self.pos
-    BaseButton:
+    RoundButton:
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
         canvas.before:
@@ -431,25 +432,25 @@ Tabs:
     title_align: 'center'
     background_color: [0,0,0,0.5] #reduces background darkening from 0.7
     size_hint: 0.67, 0.3
-    pos_hint: {'center_y': 0.55}
+    pos_hint: {'center_y': 0.55, 'center_x':0.5}
 <P_Single@BasePopup>:
     l_cancel: 'Cancel'
-    canvas:
-        Color:
-            rgba: p.divider
-        Rectangle:
-            pos: self.x, self.top
-            size: self.width, 1
+
     FloatLayout:
         BaseButton:
             on_release:
                 root.dismiss()
             title: root.l_cancel
             pos: root.pos
-            size: root.width/2, root.width
+            size: root.width, 70
             canvas:
+                Color:
+                    rgba: p.divider
+                Rectangle:
+                    size: self.width, 1
+                    pos: self.x, self.top-1
                 Color:# Highlight pressed button
-                    rgba: 0.4,0.4,0.4,1 if self.pressed else [0,0,0,0]    
+                    rgba: p.translucent_white if self.pressed else [0,0,0,0]    
                 RoundedRectangle:
                     radius: [0,0,p.popup_radius, p.popup_radius]
                     pos: self.pos
@@ -458,26 +459,25 @@ Tabs:
 <P_Normal@BasePopup>:
     l_cancel: 'Cancel'
     l_confirm: 'Confirm'
-    canvas:
-        Color:
-            rgba: p.divider
-        Rectangle:
-            pos: self.x+ self.width/2, self.y
-            size: 1,self.height
-        Rectangle:
-            pos: self.x, self.top
-            size: self.width, 1
+
     FloatLayout:
+        height: root.height
         pos: root.pos
-        pos_hint: None, None
         BaseButton:
             on_release:
                 root.dismiss()
             title: root.l_cancel
             pos: root.pos
-            size: root.width/2, root.width
+            size: root.width/2, 70
             canvas:
-                Clear
+                Color:
+                    rgba: p.divider
+                Rectangle:
+                    size: root.width,1
+                    pos: self.x,self.top-1
+                Rectangle:
+                    size: 1,self.height
+                    pos: self.right,self.y
                 Color:
                     rgba: p.translucent_white if self.pressed else [0,0,0,0]
                 RoundedRectangle:
@@ -485,13 +485,11 @@ Tabs:
                     pos: self.pos
                     size: self.size
         BaseButton:
-            on_release:
-                root.confirm()
+            on_release: root.confirm()
             title: root.l_confirm
-            pos: root.center_x, root.x
-            size: root.width/2, root.width
+            pos: root.center_x, root.y
+            size: root.width/2, 70
             canvas:
-                Clear
                 Color:
                     rgba: p.translucent_white if self.pressed else [0,0,0,0]
                 RoundedRectangle:

@@ -18,24 +18,23 @@ class BaseButton(ButtonBehavior, Widget):
     def on_touch_up(self, touch):
         if self.pressed: 
             self.pressed = False
-            return True
-        return super(BaseButton, self).on_touch_up(touch)
-
-class Btn_Stop(BaseButton):
+        super(BaseButton, self).on_touch_up(touch)
+        return
+class RoundButton(BaseButton):
     pass
-class Btn_Play(BaseButton):
+class Btn_Stop(RoundButton):
     pass
-class Btn(BaseButton):
+class Btn_Play(RoundButton):
     pass
-class Btn_Outline(BaseButton):
+class Btn(RoundButton):
     pass
-class Btn_Temp(BaseButton):
+class Btn_Outline(RoundButton):
     pass
-class Btn_Arrow(BaseButton):
+class Btn_Temp(RoundButton):
+    pass
+class Btn_Arrow(RoundButton):
     pass
 class BasePopup(Popup):
-    def dismiss(self):
-        return
     def confirm(self):
         self.dismiss()
 class Btn_Triple(Widget):
