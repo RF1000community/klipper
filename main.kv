@@ -56,7 +56,6 @@ Tabs:
             size_hint: None, None
             size: p.screen_width-2*p.padding, 5
             pos: p.padding, l_time_remaining.top+14
-            
         Label:
             id: l_filename
             text: "Cube_tesfforprintfinalfinalnew2"
@@ -70,11 +69,11 @@ Tabs:
             valign: 'middle'
         Btn_Stop:
             id: btn_stop
-            enabled: False
             size: 118,118
             center_y: l_filename.center_y
             center_x: p.screen_width - btn_play_size/2 -p.padding
         Btn_Play:
+            on_release: hs_manager.current = 'printingscreen'
             size: btn_stop.size
             y: btn_stop.y
             right: btn_stop.x
@@ -82,10 +81,13 @@ Tabs:
             id: top_divider
             pos: 0, l_filename.top
         HomeScreenManager:
+            id: hs_manager
             size_hint: None, None
             size: p.screen_width, p.screen_height-top_divider.top
             pos: root.x, top_divider.top
         Btn_Temp:
+            on_release:
+                Factory.BasePopup().open()
             large_value: "239°C"
             small_value: "240+0°C"
             red: True
@@ -108,13 +110,33 @@ Tabs:
             size: 190,100
             x: p.padding-20
             center_y: p.padding+btn_height+ temp_A.center_y
-                    
-
-        
-
 <HomeScreenManager@ScreenManager>:
     HomeScreen:
     PrintingScreen:
+<PrintingScreen@Screen>:
+    name: "printingscreen"
+    FloatLayout:
+        Btn_Temp:
+            large_value: "55%"
+            small_value: "Print Cooling"
+            id: temp_cooling
+            size: 190,100
+            x: p.padding-20
+            center_y: 420
+        Btn_Temp:
+            large_value: "100%"
+            small_value: "Material Flow"
+            id: temp_flowrate
+            size: 190,100
+            x: p.padding-20
+            center_y: p.padding+btn_height + temp_cooling.center_y
+        Btn_Temp:
+            large_value: "100%"
+            small_value: "Print Speed"
+            id: temp_speed
+            size: 190,100
+            x: p.padding-20
+            center_y: p.padding+btn_height+ temp_flowrate.center_y
 <HomeScreen@Screen>:
     name: "homescreen"
     FloatLayout:
@@ -183,26 +205,30 @@ Tabs:
                 Ellipse:
                     size: self.point_radius*2,self.point_radius*2
                     pos: self.point_pos[0]+self.pos[0], self.point_pos[1]+self.pos[1]
-<PrintingScreen@Screen>:
-    name: "printingscreen"
-    Label:
-        id:l
-        text: "PrintingScreen"
 
-#@Widget
-<ClearRoundButton>:
-    size_hint: None, None
+
+<BaseButton>:
     pressed: False
+    on_press: self.pressed = True
+    on_release: self.pressed = False
+    title: ''
+    size_hint: None, None
     enabled: True
-    canvas:
+    canvas.before:
         Color:
             rgba: p.translucent_white if self.pressed else [0,0,0,0]
         RoundedRectangle:
             radius: [p.radius,]
             pos: self.pos
             size: self.size
-    on_release:
-        print("released ClearRoundButton")
+    Label:
+        text: root.title
+        size: root.size
+        text_size: self.size
+        pos: root.pos        
+        font_size: p.normal_font
+        valign: 'middle'
+        halign: 'center'
 <Btn_Stop>:
     canvas.before:
         Color:
@@ -226,7 +252,6 @@ Tabs:
             rgba: 1,1,1,1 if self.enabled and not self.paused else 0
         Triangle:
             points: self.center_x-btn_play_size/2, self.center_y- h/2, self.center_x-btn_play_size/2, self.center_y+ h/2, self.center_x+btn_play_size/2, self.center_y
-#@ClearRoundButton
 <Btn>:
     title: ''
     canvas.before:
@@ -236,14 +261,6 @@ Tabs:
             radius: [p.radius,]
             pos: self.pos
             size: self.size
-    Label:
-        text: root.title
-        pos: root.pos
-        size: root.size
-        text_size: self.size     
-        font_size: p.normal_font
-        valign: 'middle'
-        halign: 'center'
 <Btn_Outline>:
     title: ''
     canvas.before:
@@ -252,58 +269,6 @@ Tabs:
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
             width: 1
-    Label:
-        text: root.title
-        pos: root.pos
-        size: root.size
-        text_size: self.size     
-        font_size: p.normal_font
-        valign: 'middle'
-        halign: 'center'
-<Btn_Popup>:
-    title1: 'Cancel'
-    title2: 'Confirm'
-    pressed1: False
-    pressed2: False
-    size_hint: None,None
-    canvas:
-        Color:
-            rgba: p.divider
-        Rectangle:
-            pos: self.x+ self.width/2, self.y
-            size: 1,self.height
-        Rectangle:
-            pos: self.x, self.top
-            size: self.width, 1
-
-        Color:# Highlight pressed button
-            rgba: 0.4,0.4,0.4,1 if self.pressed1 else 0        
-        RoundedRectangle:
-            radius: [p.radius,0,0,p.radius]
-            pos: self.x, self.y
-            size: self.width/2+1, self.height
-        Color:
-            rgba: 0.4,0.4,0.4,1 if self.pressed2 else 0
-        RoundedRectangle:
-            radius: [0,p.radius,p.radius,0]
-            pos: self.x+self.width/2, self.y
-            size: self.width/2+1, self.height
-    Label:
-        text: root.title1
-        size: root.width/2, root.height
-        text_size: self.size
-        pos: root.pos        
-        font_size: p.normal_font
-        valign: 'middle'
-        halign: 'center'
-    Label:
-        text: root.title2
-        size: root.width/2, root.height
-        text_size: self.size
-        pos: root.x+root.width/2, root.y        
-        font_size: p.normal_font
-        valign: 'middle'
-        halign: 'center'
 <Btn_Arrow>:
     #:set v 48
     #:set w 24
@@ -311,7 +276,7 @@ Tabs:
     canvas.before:
         Color:
             rgba: p.medium_gray
-        Triangle:#the new 21/9 ultrawide monitor presents:
+        Triangle:
             points: [self.x+self.width/2-w/2, self.center_y- v/2, self.x+self.width/2-w/2, self.center_y+ v/2, self.x+self.width/2+w/2, self.center_y] if self.dir_right else [self.x+self.width/2+w/2, self.center_y- v/2, self.x+self.width/2+w/2, self.center_y+ v/2, self.x+self.width/2-w/2, self.center_y]
 <Btn_Triple>:
     title1: 'Unload'
@@ -320,11 +285,8 @@ Tabs:
     w1: 77
     w2: 68
     w3: 68
-    pressed1: False
-    pressed2: False
-    pressed3: False
     size_hint: None, None
-    size: self.w1+self.w2+self.w3+2, btn_height
+    size: self.w1+self.w2+self.w3, btn_height
     canvas:
         Color:
             rgba: p.button
@@ -340,54 +302,45 @@ Tabs:
         Rectangle:
             pos: self.x+self.w1+1+self.w2, self.y+6
             size: 1,self.height-12
-        Color:# Highlight pressed button
-            rgba: 0.4,0.4,0.4,1 if self.pressed1 else 0
-        RoundedRectangle:
-            radius: [p.radius,0,0,p.radius]
-            pos: self.x, self.y
-            size: self.w1+1, self.height
-        Color:
-            rgba: 0.4,0.4,0.4,1 if self.pressed2 else 0
-        Rectangle:
-            pos: self.x+self.w1, self.y
-            size: self.w2+2,self.height
-        Color:
-            rgba: 0.4,0.4,0.4,1 if self.pressed3 else 0
-        RoundedRectangle:
-            radius: [0,p.radius,p.radius,0]
-            pos: self.x+self.w1+1+self.w2, self.y
-            size: self.w3+1, self.height
-    Label:
-        text: root.title1
+    BaseButton:
+        title: root.title1
         size: root.w1, root.height
-        text_size: self.size
-        pos: root.pos        
-        font_size: p.normal_font
-        valign: 'middle'
-        halign: 'center'
-    Label:
-        text: root.title2
+        pos: root.pos
+        canvas.before:
+            Clear
+            Color:
+                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+            RoundedRectangle:
+                radius: [p.radius, 0,0,p.radius]
+                size: self.size
+                pos: self.pos
+    BaseButton:
+        title: root.title2
         size: root.w2, root.height
-        text_size: self.size
-        pos: root.x+root.w1, root.y
-        font_size: p.normal_font
-        valign: 'middle'
-        halign: 'center'
-    Label:
-        text: root.title3
+        pos: root.x + root.w1,root.y
+        canvas.before:
+            Clear
+            Color:
+                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+            Rectangle:
+                size: self.size
+                pos: self.pos
+    BaseButton:
+        title: root.title3
         size: root.w3, root.height
-        text_size: self.size
-        pos: root.x+root.w1+root.w2, root.y        
-        font_size: p.normal_font
-        valign: 'middle'
-        halign: 'center'
+        pos: root.x + root.w1+root.w2,root.y
+        canvas.before:
+            Clear
+            Color:
+                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+            RoundedRectangle:
+                radius: [0,p.radius,p.radius, 0]
+                size: self.size
+                pos: self.pos
 <Btn_TripleZ>:
     h1: 85
     h2: 85
     h3: 85
-    pressed1: False
-    pressed2: False
-    pressed3: False
     size_hint: None, None
     canvas:
         Color:
@@ -414,32 +367,45 @@ Tabs:
             source: 'Logos/HomeIcon.png'
             size: 64, 64
             pos: self.center_x-32, self.center_y-32
-        Color:# Highlight pressed button
-            rgba: 0.4,0.4,0.4,1 if self.pressed1 else 0
-        RoundedRectangle:
-            radius: [0,0,p.radius,p.radius]
-            pos: self.x, self.y
-            size: self.width, self.h1
-        Color:
-            rgba: 0.4,0.4,0.4,1 if self.pressed2 else 0
-        Rectangle:
-            pos: self.x, self.y+self.h1
-            size: self.width, self.h2
-        Color:
-            rgba: 0.4,0.4,0.4,1 if self.pressed3 else 0
-        RoundedRectangle:
-            radius: [p.radius,p.radius,0,0]
-            pos: self.x, self.top-self.h3
-            size: self.width, self.h3
-
-        
+    BaseButton:
+        size: root.width, root.h1
+        pos: root.x, root.y
+        canvas.before:
+            Clear
+            Color:
+                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+            RoundedRectangle:
+                radius: [0,0,p.radius,p.radius]
+                size: self.size
+                pos: self.pos
+    BaseButton:
+        size: root.width, root.h2
+        pos: root.x, root.y+root.h1
+        canvas.before:
+            Clear
+            Color:
+                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+            Rectangle:
+                size: self.size
+                pos: self.pos
+    BaseButton:
+        size: root.width, root.h3
+        pos: root.x, root.top-root.h3
+        canvas.before:
+            Clear
+            Color:
+                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+            RoundedRectangle:
+                radius: [p.radius,p.radius,0,0]
+                size: self.size
+                pos: self.pos       
 <Btn_Temp>:
     red: False
     large_value: "--"
     small_value: "--"
     Label:
         padding_x: 15
-        color: 1,0,0,1 if root.red else 1,1,1,1
+        color: p.red if root.red else [1,1,1,1]
         text: root.large_value
         size_hint: None, None
         size: root.width, btn_height+16#to compensate for the font being 8px below top when set to 'top'
@@ -461,23 +427,85 @@ Tabs:
         font_size: p.normal_font
         valign: 'bottom'
         halign: 'right'
+
+
 <BasePopup>:
     title_size: p.large_font
     title_align: 'center'
-    background_color: 0,0,0,0.4 #reduces background darkening from 0.7
+    background_color: [0,0,0,0.5] #reduces background darkening from 0.7
     size_hint: 0.67, 0.3
     pos_hint: {'center_y': 0.55}
-    Btn_Popup:
-        size: root.width, 64
-        pos: root.pos
-        on_release: root.confirm()
+<P_Single@BasePopup>:
+    l_cancel: 'Cancel'
+    canvas:
+        Color:
+            rgba: p.divider
+        Rectangle:
+            pos: self.x, self.top
+            size: self.width, 1
+    FloatLayout:
+        BaseButton:
+            on_release:
+                root.dismiss()
+            title: root.l_cancel
+            pos: root.pos
+            size: root.width/2, root.width
+            canvas:
+                Color:# Highlight pressed button
+                    rgba: 0.4,0.4,0.4,1 if self.pressed else [0,0,0,0]    
+                RoundedRectangle:
+                    radius: [0,0,p.popup_radius, p.popup_radius]
+                    pos: self.pos
+                    size: self.size
 
+<P_Normal@BasePopup>:
+    l_cancel: 'Cancel'
+    l_confirm: 'Confirm'
+    canvas:
+        Color:
+            rgba: p.divider
+        Rectangle:
+            pos: self.x+ self.width/2, self.y
+            size: 1,self.height
+        Rectangle:
+            pos: self.x, self.top
+            size: self.width, 1
+    FloatLayout:
+        pos: root.pos
+        pos_hint: None, None
+        BaseButton:
+            on_release:
+                root.dismiss()
+            title: root.l_cancel
+            pos: root.pos
+            size: root.width/2, root.width
+            canvas:
+                Clear
+                Color:
+                    rgba: p.translucent_white if self.pressed else [0,0,0,0]
+                RoundedRectangle:
+                    radius: [0,0,0,p.popup_radius]
+                    pos: self.pos
+                    size: self.size
+        BaseButton:
+            on_release:
+                root.confirm()
+            title: root.l_confirm
+            pos: root.center_x, root.x
+            size: root.width/2, root.width
+            canvas:
+                Clear
+                Color:
+                    rgba: p.translucent_white if self.pressed else [0,0,0,0]
+                RoundedRectangle:
+                    radius: [0,0,p.popup_radius,0]
+                    pos: self.pos
+                    size: self.size
 # FILE -------------------------------------------------------------
 <FileTab@TabbedPanelItem>:
     background_down: ''
     background_normal: 'Logos/Black.png'
     background_color: p.background
-
     canvas:
         Rectangle:
             source: 'Logos/FilesIcon.png'
