@@ -86,8 +86,6 @@ Tabs:
             size: p.screen_width, p.screen_height-top_divider.top
             pos: root.x, top_divider.top
         Btn_Temp:
-            on_release:
-                Factory.P_Single().open()
             large_value: "239°C"
             small_value: "240+0°C"
             red: True
@@ -96,8 +94,6 @@ Tabs:
             x: p.padding-20
             center_y: p.padding+btn_height/2+ top_divider.top
         Btn_Temp:
-            on_release:
-                Factory.P_Normal().open()
             large_value: "18°C"
             small_value: "Off"
             id: temp_A
@@ -433,69 +429,40 @@ Tabs:
     background_color: [0,0,0,0.5] #reduces background darkening from 0.7
     size_hint: 0.67, 0.3
     pos_hint: {'center_y': 0.55, 'center_x':0.5}
-<P_Single@BasePopup>:
-    l_cancel: 'Cancel'
-
-    FloatLayout:
-        BaseButton:
-            on_release:
-                root.dismiss()
-            title: root.l_cancel
-            pos: root.pos
-            size: root.width, 70
-            canvas:
-                Color:
-                    rgba: p.divider
-                Rectangle:
-                    size: self.width, 1
-                    pos: self.x, self.top-1
-                Color:# Highlight pressed button
-                    rgba: p.translucent_white if self.pressed else [0,0,0,0]    
-                RoundedRectangle:
-                    radius: [0,0,p.popup_radius, p.popup_radius]
-                    pos: self.pos
-                    size: self.size
-
-<P_Normal@BasePopup>:
-    l_cancel: 'Cancel'
-    l_confirm: 'Confirm'
-
-    FloatLayout:
-        height: root.height
-        pos: root.pos
-        BaseButton:
-            on_release:
-                root.dismiss()
-            title: root.l_cancel
-            pos: root.pos
-            size: root.width/2, 70
-            canvas:
-                Color:
-                    rgba: p.divider
-                Rectangle:
-                    size: root.width,1
-                    pos: self.x,self.top-1
-                Rectangle:
-                    size: 1,self.height
-                    pos: self.right,self.y
-                Color:
-                    rgba: p.translucent_white if self.pressed else [0,0,0,0]
-                RoundedRectangle:
-                    radius: [0,0,0,p.popup_radius]
-                    pos: self.pos
-                    size: self.size
-        BaseButton:
-            on_release: root.confirm()
-            title: root.l_confirm
-            pos: root.center_x, root.y
-            size: root.width/2, 70
-            canvas:
-                Color:
-                    rgba: p.translucent_white if self.pressed else [0,0,0,0]
-                RoundedRectangle:
-                    radius: [0,0,p.popup_radius,0]
-                    pos: self.pos
-                    size: self.size
+<Btn_P_Cancel@BaseButton>:
+    title: "Cancel"
+    single: False
+    height: 70
+    canvas:
+        Color:
+            rgba: p.divider
+        Rectangle:
+            size: self.width, 1
+            pos: self.x, self.top-1
+        Color:# Highlight pressed button
+            rgba: p.translucent_white if self.pressed else [0,0,0,0]    
+        RoundedRectangle:
+            radius:[0,0,p.radius,p.popup_radius] if self.single else [0,0,0, p.popup_radius]
+            pos: self.pos
+            size: self.size
+<Btn_P_Confirm@BaseButton>:
+    title: "Confirm"
+    height: 70
+    canvas:
+        Color:
+            rgba: p.divider
+        Rectangle:
+            size: self.width, 1
+            pos: self.x, self.top-1
+        Rectangle:
+            size: 1, self.height
+            pos: self.pos
+        Color:# Highlight pressed button
+            rgba: p.translucent_white if self.pressed else [0,0,0,0]    
+        RoundedRectangle:
+            radius:[0,0,p.radius,0]
+            pos: self.pos
+            size: self.size
 # FILE -------------------------------------------------------------
 <FileTab@TabbedPanelItem>:
     background_down: ''
@@ -539,17 +506,14 @@ Tabs:
             size_hint: None, None
             pos_hint: {'x': 0.05, 'top': 0.85}
 
-        
-        Button:
-            id: btn_cancel
-            text: 'Cancel'
-            size_hint: 0.3, 0.3
-            pos_hint: {'x': 0.25, 'y': 0.1}
+        Btn_P_Cancel:
+            width: root.width/2
+            pos: root.pos
             on_release: root.dismiss()
-        Button:
-            text: 'Start'
-            size_hint: btn_cancel.size_hint
-            pos_hint: {'x': 0.6, 'y': 0.1}
+        
+        Btn_P_Confirm:
+            width: root.width/2
+            pos: root.center_x, root.y
             on_release: root.confirm()
 
 
@@ -782,11 +746,6 @@ Tabs:
 
 
 <PasswordPopup>:
-    title_size: p.large_font
-    title_align: 'center'
-    background_color: 0,0,0,0.4 #reduces background darkening from 0.7
-    size_hint: 0.67, 0.3
-    pos_hint: {'center_y': 0.6}
     txt_input: pwd_input
 
     
@@ -814,18 +773,14 @@ Tabs:
             height: pwd_input.height
             size_hint: 0.1, None
             pos_hint: {'x': 0.8, 'top': 0.73}
-        Button:
-            id: btn_cancel
-            text: 'Cancel'
-            size_hint: 0.2, 0.2
-            pos_hint: {'x': 0.48, 'y': 0.1}
+        Btn_P_Cancel:
+            width: root.width/2
+            pos: root.pos
             on_release: root.dismiss()
-        Button:
-            text: 'Confirm'
-            size_hint: btn_cancel.size_hint
-            pos_hint: {'x': 0.7, 'y': 0.1}
-            on_release: root.connect()
-
+        Btn_P_Confirm:
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.confirm()
 <PowerPopup>:
     title: "Shutdown"
     title_size: p.large_font
@@ -846,12 +801,12 @@ Tabs:
             height: btn_poweroff.height
             pos_hint: {'x': 0.55, 'y': 0.5}
             on_release: root.reboot()
-        Button:
-            id: btn_cancel
-            text: "Cancel"
-            size_hint: 0.2, 0.1
-            pos_hint: {'x': 0.7, 'y': 0.1}
-            on_release: root.dismiss()                  
+        Btn_P_Cancel:
+            single: True
+            width: root.width
+            pos: root.pos
+            on_release: root.dismiss()
+          
    
 <Background@Widget>:
     canvas.before:

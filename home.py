@@ -3,25 +3,19 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
-from kivy.uix.popup import Popup
 from kivy.properties import ListProperty, StringProperty, ObjectProperty, BooleanProperty
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
-from kivy.uix.behaviors.button import ButtonBehavior
+from elements import *
 #  self.ids.big_button.text = "
 from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Line
 from kivy.graphics.context_instructions import Color
 import parameters as p
+
 import random
 
-class BaseButton(ButtonBehavior, Widget):
-    def on_touch_up(self, touch):
-        if self.pressed: 
-            self.pressed = False
-        super(BaseButton, self).on_touch_up(touch)
-        return
-class RoundButton(BaseButton):
-    pass
+
+
 class Btn_Stop(RoundButton):
     pass
 class Btn_Play(RoundButton):
@@ -34,9 +28,7 @@ class Btn_Temp(RoundButton):
     pass
 class Btn_Arrow(RoundButton):
     pass
-class BasePopup(Popup):
-    def confirm(self):
-        self.dismiss()
+
 class Btn_Triple(Widget):
     pass
 class Btn_TripleZ(Widget):

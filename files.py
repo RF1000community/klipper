@@ -2,7 +2,9 @@ from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.popup import Popup
 from kivy.app import App
 from os.path import expanduser, getmtime, split, dirname, exists, abspath
+from elements import *
 import parameters as p
+
 
 
 class FC(FileChooserIconView):
@@ -31,7 +33,7 @@ class FC(FileChooserIconView):
 
 #Clock.schedule_interval(FC._update_files, 1)
 
-class PrintPopup(Popup):
+class PrintPopup(BasePopup):
     
     def __init__(self, filename, chooser, **kwargs):
         self.prompt = "Start printing of\n%s/[b]%s[/b]"%split(filename)
@@ -44,7 +46,7 @@ class PrintPopup(Popup):
         self.chooser.selection = [] 
 
     def confirm(self):
-        self.dismiss()
+        super(PrintPopup, self).confirm()
         tab = App.get_running_app().root
         tab.switch_to(tab.ids.home_tab)
 

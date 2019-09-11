@@ -8,6 +8,8 @@ from kivy.uix.popup import Popup
 from kivy.properties import ListProperty, StringProperty, ObjectProperty
 from kivy.clock import Clock
 from subprocess import Popen
+from elements import *
+
 #Only for test, will be removed later
 import time
 
@@ -99,7 +101,7 @@ class WifiScreen(Screen):
         print(names)
         self.ssid_list = names
 
-class PasswordPopup(Popup):
+class PasswordPopup(BasePopup):
     
     password = StringProperty()
     txt_input = ObjectProperty(None)
@@ -119,6 +121,9 @@ class PasswordPopup(Popup):
         self.dismiss()
         self.password = self.txt_input.text
         print(self.password)
+    def confirm(self):
+        self.connect()
+        super(PasswordPopup,self).confirm()
 
 class SI_PowerMenu(SetItem):
 
@@ -129,7 +134,7 @@ class SI_PowerMenu(SetItem):
             return True
         return super(SI_PowerMenu, self).on_touch_down(touch)
 
-class PowerPopup(Popup):
+class PowerPopup(BasePopup):
 
     def poweroff(self):
         Popen(['systemctl', 'poweroff'])
