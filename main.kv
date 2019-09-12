@@ -77,7 +77,7 @@ Tabs:
             size: btn_stop.size
             y: btn_stop.y
             right: btn_stop.x
-        SI_Divider:
+        Divider:
             id: top_divider
             pos: 0, l_filename.top
         HomeScreenManager:
@@ -216,16 +216,21 @@ Tabs:
         font_size: p.normal_font
         valign: 'middle'
         halign: 'center'
-    
-<RoundButton>:
+<RoundButton@BaseButton>:
     canvas:
         Color:
             rgba: p.translucent_white if self.pressed else [0,0,0,0]
         RoundedRectangle:
             radius: [p.radius,]
-            pos: self.pos
             size: self.size
-
+            pos: self.pos
+<RectangleButton@BaseButton>:
+    canvas:
+        Color:
+            rgba: p.translucent_white if self.pressed else [0,0,0,0]
+        Rectangle:
+            size: self.size
+            pos: self.pos
 <Btn_Stop>:
     canvas.before:
         Color:
@@ -421,14 +426,6 @@ Tabs:
         font_size: p.normal_font
         valign: 'bottom'
         halign: 'right'
-
-
-<BasePopup>:
-    title_size: p.large_font
-    title_align: 'center'
-    background_color: [0,0,0,0.5] #reduces background darkening from 0.7
-    size_hint: 0.67, 0.3
-    pos_hint: {'center_y': 0.55, 'center_x':0.5}
 <Btn_P_Cancel@BaseButton>:
     title: "Cancel"
     single: False
@@ -463,6 +460,12 @@ Tabs:
             radius:[0,0,p.radius,0]
             pos: self.pos
             size: self.size
+<BasePopup>:
+    title_size: p.large_font
+    title_align: 'center'
+    background_color: [0,0,0,0.5] #reduces background darkening from 0.7
+    size_hint: 0.67, 0.3
+    pos_hint: {'center_y': 0.55, 'center_x':0.5}
 # FILE -------------------------------------------------------------
 <FileTab@TabbedPanelItem>:
     background_down: ''
@@ -660,10 +663,10 @@ Tabs:
         valign: 'middle'
         pos: root.pos
         padding_x: p.padding
-    SI_Divider:
+    Divider:
         pos_hint: {'x': 0, 'y': 0}
 
-<SI_Divider@Widget>:
+<Divider@Widget>:
     size_hint_y: None
     height: 1
     width: p.screen_width
@@ -673,7 +676,6 @@ Tabs:
         Rectangle:
             pos: self.x+15, self.y
             size: self.width -30, 1
-
 <SI_Switch@SetItem>:
     Switch:
         id: knopf
@@ -711,10 +713,6 @@ Tabs:
         y: root.y
         right: p.screen_width
         padding_x: p.padding
-
-
-
-
 <SI_WifiNetwork>:
     Label:
         text: root.ssid
@@ -729,26 +727,41 @@ Tabs:
         right: p.screen_width
         padding_x: p.padding
 
-<ValuePopup@Popup>:
-    auto_dismiss: True  
+<ValuePopup@BasePopup>:
     size_hint: 0.8,0.5
-    background: 'Logos/Transparent.png'
-
-    canvas:
-        Color:
-            rgba: p.medium_light_gray
-        RoundedRectangle:
-            size: self.size
-            pos: self.pos
-            radius: [p.radius]
-                
     
-
+    FloatLayout:
+        
+        Slider:
+            size_hint_x: 0.85
+            height: 30
+            pos_hint: {'center_x':0.5, 'y':0}
+            id: val_slider
+            min: 0
+            max: 100
+            step: 1
+            orientation: 'horizontal'
+        Label:
+            id: value
+            text: '36000mm/s^2'
+            size: val_slider.width, p.normal_font
+            pos: val_slider.x, val_slider.top + 30
+            text_size: self.size
+            font_size: p.large_font
+            halign: 'center'
+            valign: 'bottom'
+        Btn_P_Cancel:
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        Btn_P_Confirm:
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.confirm()
 
 <PasswordPopup>:
     txt_input: pwd_input
 
-    
     FloatLayout:
         Label:
             text: 'Password'
@@ -762,17 +775,25 @@ Tabs:
             password: True
             height: self.minimum_height
             size_hint: 0.7, None
-            pos_hint: {'x': 0.1, 'top': 0.73}
-        ToggleButton:
-            text: 'show'
+            pos_hint: {'x': 0.1, 'center_y': 0.63}
+        RectangleButton:
             on_press: 
                 if self.state == 'down': pwd_input.password = False
                 elif self.state == 'normal': pwd_input.password = True
             on_release:
                 pwd_input.focus = True
-            height: pwd_input.height
+            id: btn_s
+            height: pwd_input.height-1
             size_hint: 0.1, None
-            pos_hint: {'x': 0.8, 'top': 0.73}
+            pos_hint: {'x': 0.81, 'center_y': 0.63}
+            Label:
+                size: btn_s.size
+                pos: btn_s.pos
+                text_size: self.size
+                text: "show"
+                font_size: p.extra_small_font
+                halign: 'center'
+                valign: 'middle'
         Btn_P_Cancel:
             width: root.width/2
             pos: root.pos
@@ -784,22 +805,35 @@ Tabs:
 <PowerPopup>:
     title: "Shutdown"
     title_size: p.large_font
-    size_hint: 0.8, 0.5
-    
+    size_hint: 0.65, 0.45
     FloatLayout:
-        Button:
+        
+        RectangleButton:
             id: btn_poweroff
-            text: "Shutdown"
-            size_hint: 0.25, None
-            height: self.width
-            pos_hint: {'x': 0.2, 'y': 0.5}
+            title: "Shutdown"
+            size_hint: 0.5, None
+            height: 100
+            pos_hint: {'center_x': 0.5, 'y': 0.24}
             on_release: root.poweroff()
-        Button:
+        Divider:
+            size_hint: None, None
+            size: btn_poweroff.width, 1
+            pos: btn_reboot.pos
+        RectangleButton:
             id: btn_reboot
-            text: "Reboot"
-            size_hint: btn_poweroff.size_hint
-            height: btn_poweroff.height
-            pos_hint: {'x': 0.55, 'y': 0.5}
+            title: "Reboot"
+            size: btn_poweroff.size
+            pos: btn_poweroff.x, btn_poweroff.top
+            on_release: root.reboot()
+        Divider:
+            size_hint: None, None
+            size: btn_poweroff.width, 1
+            pos: btn_restart_klipper.pos
+        RectangleButton:
+            id: btn_restart_klipper
+            title: "Restart Klipper"
+            size: btn_poweroff.size
+            pos: btn_poweroff.x, btn_reboot.top
             on_release: root.reboot()
         Btn_P_Cancel:
             single: True

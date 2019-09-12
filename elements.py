@@ -2,7 +2,6 @@ from kivy.uix.widget import Widget
 from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.popup import Popup
 
-
 class BaseButton(ButtonBehavior, Widget):
     def on_touch_up(self, touch):
         if self.pressed: 
