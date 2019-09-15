@@ -1,0 +1,7 @@
+.dropbox
+desktop.ini
+.vscode/
+.pyc
+*.pyc
+*.psd
+*.xcf

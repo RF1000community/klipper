@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100"
+   height="100"
+   viewBox="0 0 26.458333 26.458334"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="SettingsIcon.svg"
+   inkscape:export-filename="C:\Users\Konstantin\Dropbox\3dPrinter\CODE\Kivy Gui\Logos\SettingsIcon.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="5.6"
+     inkscape:cx="38.810736"
+     inkscape:cy="50.323604"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     units="px"
+     inkscape:window-width="1920"
+     inkscape:window-height="1027"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:pagecheckerboard="true" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-270.54165)">
+    <path
+       style="fill:#ffffff;fill-opacity:1;stroke:#fffffb;stroke-width:0.85136354;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 13.229166,275.00679 c -0.361253,0.004 -0.721969,0.0275 -1.080262,0.0718 l -0.495632,2.55979 c -1.158238,0.27566 -2.2165979,0.85023 -3.0613157,1.66194 l -2.5996106,-0.89739 c -0.433927,0.53331 -0.8018656,1.11277 -1.0964878,1.72684 l 2.0582504,1.78683 c -0.1914637,0.60079 -0.2889074,1.22573 -0.2891189,1.8542 0.00199,0.62753 0.1009318,1.25128 0.2935441,1.85075 l -2.0612007,1.7893 c 0.2919039,0.6149 0.6572005,1.19551 1.0886209,1.73028 l 2.6064944,-0.89981 c 0.8445666,0.81121 1.9025569,1.38542 3.0603319,1.66096 l 0.496616,2.5652 c 0.358222,0.0427 0.718773,0.0652 1.07977,0.0674 0.361253,-0.004 0.721968,-0.0275 1.080262,-0.0718 l 0.495632,-2.55979 c 1.158238,-0.27566 2.216598,-0.85022 3.061316,-1.66194 l 2.599611,0.89736 c 0.433926,-0.53332 0.801866,-1.11279 1.096488,-1.72685 l -2.058251,-1.78684 c 0.191463,-0.60079 0.288907,-1.22572 0.289119,-1.85419 -0.002,-0.62754 -0.100932,-1.25129 -0.293544,-1.85075 l 2.0612,-1.78929 c -0.291748,-0.61489 -0.65688,-1.1955 -1.088129,-1.73029 l -2.606494,0.89981 c -0.844703,-0.81129 -1.902872,-1.3855 -3.060824,-1.66096 l -0.496616,-2.56519 c -0.358222,-0.0428 -0.718773,-0.0652 -1.07977,-0.0674 z m 0,5.34673 a 3.4172316,3.4172316 0 0 1 3.417306,3.41731 3.4172316,3.4172316 0 0 1 -3.417306,3.4173 3.4172316,3.4172316 0 0 1 -3.4173054,-3.4173 3.4172316,3.4172316 0 0 1 3.4173054,-3.41731 z"
+       id="path10"
+       inkscape:connector-curvature="0"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+  </g>
+</svg>
