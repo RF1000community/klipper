@@ -33,7 +33,7 @@ class Btn_Triple(Widget):
     pass
 class Btn_TripleZ(Widget):
     pass
-class XyField(FloatLayout):
+class XyField(Widget):
 
     mm_pos = ListProperty()
     display = StringProperty()
