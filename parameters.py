@@ -11,10 +11,10 @@ popup_radius = 12
 
 
 
-background = [0.1,0.1,0.1,1]
+background = [0.07,0.07,0.07,1]
 popup = 0.15,0.15,0.15,1
 divider = 1,1,1,0.15
-button = 1,1,1,0.1
+button = 1,1,1,0.08
 button_outline = 1,1,1,0.2
 medium_gray = [0.2,0.2,0.2,1]
 medium_light_gray = [0.35,0.35,0.35,1]

@@ -16,7 +16,7 @@ import parameters as p
 Config.set('graphics', 'resizable', '0') 
 Config.set('graphics', 'width', p.screen_width)
 Config.set('graphics', 'height', p.screen_height)
-Config.set('graphics', 'fullscreen', '0')#set to 1 or 'auto' for raspi
+Config.set('graphics', 'fullscreen', '1')#set to 1 or 'auto' for raspi
 Config.set('kivy', 'keyboard_layout', 'en_US')
 Config.set('kivy','keyboard_mode', 'dock')
 
