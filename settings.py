@@ -7,7 +7,8 @@ from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.properties import ListProperty, StringProperty, ObjectProperty
 from kivy.clock import Clock
-from subprocess import Popen
+from subprocess import Popen, PIPE, STDOUT
+from functools import partial
 from elements import *
 
 #Only for test, will be removed later
@@ -124,6 +125,98 @@ class PasswordPopup(BasePopup):
     def confirm(self):
         self.connect()
         super(PasswordPopup,self).confirm()
+
+class Wifi(object):
+
+    networks = ListProperty()
+
+    def __init__(self):
+        self.state = self.check_nmcli()
+
+    def check_nmcli(self):
+        # state codes:
+        #
+        # 0     No problems
+        # 2     network-manager not installed
+        # 3     network-manager not running
+        # 10    Any Error while running nmcli
+        #
+        #TODO integrate kivy logger warnings
+        try:
+            proc = Popen(['nmcli', '-g', 'RUNNING', 'general'], stdout=PIPE, stderr=STDOUT, universal_newlines=True)
+        except OSError as e:
+            # 2 is "No such file or directory" error
+            if e.errno == 2:
+                print('NetworkManager not available. Wifimenu will be disabled')
+                print("Use 'sudo apt-get install network-manager' to install")
+                return e.errno
+            else:
+                # crash in case of unknown error
+                print('NetworkManager failed with Error:')
+                raise
+        output = proc.communicate()
+        if output[0] == 'running':
+            return 0
+        else:
+            print(output[1])
+            return 3
+
+    def get_wifi_list(self, instant=False):
+        # instant: when True set --rescan to no to immediately (~100ms delay) return a list, even if
+        # it is too old. Otherwise rescan if necessary (handled by using 'auto'), possibly taking a few
+        # seconds, unless the latest rescan was very recent.
+        # bind to networks property to receive the final list
+        if self.state != 0:
+            return
+        rescan = 'no' if instant else 'auto'
+        cmd = ['nmcli', '--get-values', 'SSID,SIGNAL,BARS,IN-USE', 'device', 'wifi', 'list', '--rescan', rescan]
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        self.poll(proc, self.parse_wifi_list)
+
+    def poll(self, proc, callback, *args):
+        # This function keeps checking whether the given process is done and only forwards it
+        # to the given callback once it is complete, which is checked by Popen.poll(), which
+        # returns the returncode when the process is complete.
+        # accept *args to catch dt from Clock if provided
+
+        # if process is still running
+        if proc.poll() == None:
+            # partial returns a new callable with the given default args
+            # because Clock itself can't add args to the callback
+            Clock.schedule_once(partial(self.poll, proc, callback), 0)
+        # if process is done forward to callback
+        else:
+            callback(proc)
+
+    def parse_wifi_list(self, proc):
+        stdout, stderr = proc.communicate()
+        returncode = proc.returncode
+        if stderr:
+            print(stderr)
+        if returncode == 8:
+            self.state = 3
+            return
+        # catch all other returncodes
+        elif returncode != 0:
+            self.state = 10
+            print('NetworkManager returned {}'.format(returncode))
+            return
+
+        wifi_list = []
+        for wifi in stdout.splitlines():
+            f = wifi.split(':')
+            # create a dictionary for each network containing the fields
+            entry = {'ssid': f[0], 'signal': int(f[1]), 'bars': f[2], 'in-use': bool(f[3])}
+            # Put in-use network to beginning of list
+            if entry['in-use']:
+                wifi_list.insert(0, entry)
+            else:
+                wifi_list.append(entry)
+
+        self.networks = wifi_list
+
+
+wifi = Wifi()
 
 class SI_PowerMenu(SetItem):
 

@@ -24,3 +24,20 @@ sudo ./LCD7C-show 90
 
 
 python -m pip install kivy
+
+
+## Additional dependencies
+
+#### Xorg
+
+* xserver-xorg
+* xinit
+
+#### Wifi
+
+* network-manager
+
+
+`sudo apt-get install --no-install-recommends xserver-xorg xinit`
+
+`sudo apt-get install network-manager`
