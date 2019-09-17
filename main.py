@@ -19,7 +19,8 @@ Config.set('graphics', 'height', p.screen_height)
 Config.set('graphics', 'fullscreen', '1')#set to 1 or 'auto' for raspi
 Config.set('kivy', 'keyboard_layout', 'en_US')
 Config.set('kivy','keyboard_mode', 'dock')
-
+os.environ['KIVY_WINDOW'] = 'pygame' #temporary fix, needs to be egl-rpi for good performance
+Config.set("kivy", "log_level", "debug")#temporary for debugging
 
 Builder.unload_file(join(kivy_data_dir, 'style.kv'))
 Builder.load_file("style.kv")
