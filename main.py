@@ -33,7 +33,6 @@ Config.set("kivy", "log_level", "debug")#temporary for debugging
 Builder.unload_file(join(kivy_data_dir, 'style.kv'))
 Builder.load_file("style.kv")
 
-
 #Clock.schedule_interval(FC._update_files, 1)
 class mainApp(App):
     pass
