@@ -116,6 +116,16 @@ class Wifi(EventDispatcher):
                 wifi_list.append(entry)
         self.networks = wifi_list
 
+    def connect(self, ssid, password):
+
+        if state:
+            return
+        #TODO Error handling
+
+        cmd = ['nmcli', 'device', 'wifi', 'connect', ssid, 'password', password]
+        #TODO everything
+        Popen(cmd)
+
 
 wifi = Wifi()
 
@@ -268,6 +278,7 @@ class PasswordPopup(BasePopup):
         self.dismiss()
         self.password = self.txt_input.text
         print(self.password)
+        wifi.connect(self.ssid, self.password)
 
     def confirm(self):
         self.connect()
