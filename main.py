@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 from sys import argv
 if '-t' in argv:
@@ -7,7 +7,6 @@ if '-t' in argv:
 else:
     testing = False
 import os
-os.environ['KIVY_WINDOW'] = 'pygame' #temporary fix, needs to be egl-rpi for good performance
 
 from os.path import dirname, join
 from kivy import kivy_data_dir
