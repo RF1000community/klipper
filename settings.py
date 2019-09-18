@@ -8,6 +8,7 @@ from kivy.uix.popup import Popup
 from kivy.properties import ListProperty, StringProperty, ObjectProperty, NumericProperty
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
+from kivy.logger import Logger
 from subprocess import Popen, PIPE, STDOUT
 from functools import partial
 from elements import *
@@ -49,7 +50,7 @@ class Wifi(EventDispatcher):
                 print('NetworkManager failed with Error:')
                 raise
         output = proc.communicate()
-        if output[0] == 'running':
+        if output[0].rstrip('\n') == 'running':
             return 0
         else:
             print(output[1])
@@ -80,7 +81,6 @@ class Wifi(EventDispatcher):
         # to the given callback once it is complete, which is checked by Popen.poll(), which
         # returns the returncode when the process is complete.
         # accept *args to catch dt from Clock if provided
-
         # if process is still running
         if proc.poll() == None:
             # partial returns a new callable with the given default args
@@ -107,8 +107,9 @@ class Wifi(EventDispatcher):
         wifi_list = []
         for wifi in stdout.splitlines():
             f = wifi.split(':')
+            in_use = True if '*' in f[3] else False
             # create a dictionary for each network containing the fields
-            entry = {'ssid': f[0], 'signal': int(f[1]), 'bars': f[2], 'in-use': bool(f[3])}
+            entry = {'ssid': f[0], 'signal': int(f[1]), 'bars': f[2], 'in-use': in_use}
             # Put in-use network to beginning of list
             if entry['in-use']:
                 wifi_list.insert(0, entry)
@@ -184,7 +185,7 @@ class SI_Wifi(SetItem):
         if value[0]['in-use']:
             self.display = value[0]['ssid']
         else:
-            self.display = 'not connected'
+            self.display = ['not connected', False]
 
     def on_display(self, instance, value):
         # Applys the new text to display in the Label whenever the text got updated
