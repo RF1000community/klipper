@@ -36,3 +36,13 @@ git clone https://github.com/D4SK/Klipper-GUI #needs password for github right n
 backend gl oder sdl2
 window egl rpi
 python3
+
+
+### NetworkManager
+
+sudo apt install network-manager
+sudo apt purge openresolv dhcpcd5
+sudo mv /etc/resolv.conf /etc/resolv.conf.backup
+sudo ln -s /lib/systemd/resolv.conf /etc/resolv.conf
+sudo systemctl start systemd-resolved.service
+sudo systemctl enable systemd-resolved.service
