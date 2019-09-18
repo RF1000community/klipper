@@ -5,133 +5,27 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
-from kivy.properties import ListProperty, StringProperty, ObjectProperty
+from kivy.properties import ListProperty, StringProperty, ObjectProperty, NumericProperty
 from kivy.clock import Clock
+from kivy.event import EventDispatcher
 from subprocess import Popen, PIPE, STDOUT
 from functools import partial
 from elements import *
+import parameters as p
 
 #Only for test, will be removed later
 import time
 
 
-class SetItem(FloatLayout):
-    pass
+class Wifi(EventDispatcher):
 
-class SI_Wifi(SetItem):
-    
-    # The string that is displayed by the label. 
-    # Holds the current wifi connection and possibly the signal strength as well. 
-    display = StringProperty()
-
-    def __init__(self, **kwargs):
-        super(SI_Wifi, self).__init__(**kwargs)
-        self.freq = 30
-        # Assuming very much that the Setting Screen will NEVER be the default on load
-        self.do_update = False
-        # Bind to main tab switches after everything is set up and running
-        Clock.schedule_once(self.bind_tab, 0)
-
-    def bind_tab(self, dt):
-        tab = App.get_running_app().root
-        tab.bind(current_tab=self.control_update)
-
-    def control_update(self, instance, value):
-        if value == instance.ids.set_tab:
-            self.do_update = True
-            Clock.schedule_once(self.update, -1)
-            self.update_clock = Clock.schedule_interval(self.update, self.freq)
-        elif self.do_update and value != instance.ids.set_tab:
-            self.do_update = False
-            self.update_clock.cancel()
-
-    def update(self, dt):
-        # Placeholder
-        hms = time.strftime("%H:%M:%S")
-        print(hms)
-        self.display = hms
-
-    def on_display(self, instance, value):
-        # Applys the new text to display in the Label whenever the text got updated
-        self.ids.current_wifi.text = value
-
-
-class SI_WifiNetwork(SetItem):
-    ssid = StringProperty()
-
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            self.popup = PasswordPopup(ssid=self.ssid)
-            self.popup.open()
-            return True
-        return super(SI_WifiNetwork, self).on_touch_down(touch)
-
-class WifiScreen(Screen):
-
-    ssid_list = ListProperty()
-    
-    def __init__(self, **kwargs):
-        super(WifiScreen, self).__init__(**kwargs)
-        # Amount of seconds between wifi rescans in seconds
-        self.freq = 30
-
-    def on_pre_enter(self):
-        # pre_enter: This function is executed when the animation starts
-        Clock.schedule_once(self.get_ssid_list, -1)
-        self.update_clock = Clock.schedule_interval(self.get_ssid_list, self.freq)
-
-    def on_leave(self):
-        self.update_clock.cancel()
-
-    def on_ssid_list(self, instance, val):
-        # Repopulate the list of networks when self.ssid_list changes
-        box = self.ids.wifi_box
-        box.clear_widgets()
-        for i in val:
-            entry = SI_WifiNetwork()
-            entry.ssid = i
-            box.add_widget(entry)
-
-    def get_ssid_list(self, dt):
-        # on_ssid_list() is only called when this list is different to the previous list
-        hms = time.strftime("%H:%M:%S")
-        s = int(time.time())%7 + 2
-        names = []
-        for i in range(s):
-            names.append(hms+'.'+str(i))
-        print(names)
-        self.ssid_list = names
-
-class PasswordPopup(BasePopup):
-    
-    password = StringProperty()
-    txt_input = ObjectProperty(None)
-    
-    def __init__(self, ssid, **kwargs):
-        self.ssid = ssid
-        self.title = ssid
-        super(PasswordPopup, self).__init__(**kwargs)
-        self.txt_input.bind(on_text_validate=self.connect)
-        # If focus is set immediately, keyboard will be covered by popup
-        Clock.schedule_once(self.set_focus_on, 0.1)
-
-    def set_focus_on(self, dt):
-        self.txt_input.focus = True
-
-    def connect(self, instance=None):
-        self.dismiss()
-        self.password = self.txt_input.text
-        print(self.password)
-    def confirm(self):
-        self.connect()
-        super(PasswordPopup,self).confirm()
-
-class Wifi(object):
-
+    #How often to rescan. 0 means never (disabled)
+    update_freq = NumericProperty(0)
     networks = ListProperty()
 
     def __init__(self):
         self.state = self.check_nmcli()
+        self.update_clock = None
 
     def check_nmcli(self):
         # state codes:
@@ -161,14 +55,22 @@ class Wifi(object):
             print(output[1])
             return 3
 
-    def get_wifi_list(self, instant=False):
-        # instant: when True set --rescan to no to immediately (~100ms delay) return a list, even if
+    def on_update_freq(self, instance, value):
+        if self.state:
+            return
+        if self.update_clock:
+            self.update_clock.cancel()
+        if value > 0:
+            self.update_clock = Clock.schedule_interval(get_wifi_list, value)            
+
+    def get_wifi_list(self, no_rescan=False, *args):
+        # no_rescan: when True set --rescan to no to immediately (still ~100ms delay) return a list, even if
         # it is too old. Otherwise rescan if necessary (handled by using 'auto'), possibly taking a few
         # seconds, unless the latest rescan was very recent.
         # bind to networks property to receive the final list
-        if self.state != 0:
+        if self.state:
             return
-        rescan = 'no' if instant else 'auto'
+        rescan = 'no' if no_rescan else 'auto'
         cmd = ['nmcli', '--get-values', 'SSID,SIGNAL,BARS,IN-USE', 'device', 'wifi', 'list', '--rescan', rescan]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
         self.poll(proc, self.parse_wifi_list)
@@ -212,11 +114,165 @@ class Wifi(object):
                 wifi_list.insert(0, entry)
             else:
                 wifi_list.append(entry)
-
         self.networks = wifi_list
 
 
 wifi = Wifi()
+
+
+class SetItem(FloatLayout):
+    pass
+
+
+class SI_Wifi(SetItem):
+    
+    # The string that is displayed by the label. 
+    # Holds the current wifi connection and possibly the signal strength as well. 
+    # [0]: ssid or message, [1]: formatted as ssid if true, as message otherwise
+    display = ListProperty(['', False])
+
+    def __init__(self, **kwargs):
+        super(SI_Wifi, self).__init__(**kwargs)
+        self.freq = 10
+        if wifi.state:
+            self.default = 'not available'
+        else:
+            self.default = '...'
+        # Assuming very much that the Setting Screen will NEVER be the default on load
+        self.do_update = False
+        wifi.bind(networks=self.update)
+        # Bind to main tab switches after everything is set up and running
+        Clock.schedule_once(self.bind_tab, 0)
+
+    def on_touch_down(self, touch):
+        # don't open wifiscreen when wifi doesn't work
+        if self.collide_point(*touch.pos) and not wifi.state:
+            mgr = self.parent.parent.parent.manager
+            mgr.transition.direction = 'left'
+            mgr.current = 'WifiScreen'
+            return True
+        return super(SI_Wifi, self).on_touch_down(touch)
+
+    def on_pre_enter(self):
+        wifi.update_freq = self.freq
+
+    def bind_tab(self, dt):
+        tab = App.get_running_app().root
+        tab.bind(current_tab=self.control_update)
+
+    def control_update(self, instance, value):
+        if value == instance.ids.set_tab:
+            self.do_update = True
+            wifi.get_wifi_list(True)
+            wifi.update_freq = self.freq
+        elif self.do_update and value != instance.ids.set_tab:
+            self.do_update = False
+            #Disable scanning updates
+            wifi.update_freq = 0
+
+    def update(self, instance, value):
+        if value[0]['in-use']:
+            self.display = value[0]['ssid']
+        else:
+            self.display = 'not connected'
+
+    def on_display(self, instance, value):
+        # Applys the new text to display in the Label whenever the text got updated
+        label = self.ids.current_wifi
+        label.text = value[0]
+        if value[1]:
+            label.color = p.light_gray
+            label.italic = False
+        else:
+            label.color = p.medium_light_gray
+            label.italic = True
+
+
+class SI_WifiNetwork(SetItem):
+
+    ssid = StringProperty()
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self.popup = PasswordPopup(ssid=self.ssid)
+            self.popup.open()
+            return True
+        return super(SI_WifiNetwork, self).on_touch_down(touch)
+
+
+class WifiScreen(Screen):
+
+    def __init__(self, **kwargs):
+        super(WifiScreen, self).__init__(**kwargs)
+        if wifi.state:
+            self.message = "Wifi doesn't work. How did you even get here? You should never have come this far."
+        else:
+            self.message = 'scanning...'
+        Clock.schedule_once(self.set_message, 0)
+        # Amount of seconds between wifi rescans in seconds
+        self.freq = 10
+        wifi.bind(networks=self.update)
+
+    def on_pre_enter(self):
+        # pre_enter: This function is executed when the animation starts
+        wifi.get_wifi_list(True)
+        wifi.update_freq = self.freq
+
+    def set_message(self, dt, msg=None):
+        message = msg or self.message
+        box = self.ids.wifi_box
+        box.clear_widgets()
+        label = Label(text=message)
+        label.markup = True
+        label.italic = True
+        label.color = p.medium_light_gray
+        label.size_hint = (1, None)
+        label.text_size = (p.screen_width, None)
+        label.height = 110
+        label.font_size = p.normal_font
+        label.padding = (p.padding,p.padding)
+        label.halign = 'center'
+        box.add_widget(label)
+
+    def update(self, instance, value):
+        # Repopulate the list of networks when self.ssid_list changes
+        box = self.ids.wifi_box
+        box.clear_widgets()
+        if value:
+            for i in value:
+                entry = SI_WifiNetwork()
+                entry.ssid = i['ssid']
+                box.add_widget(entry)
+        # In case no networks were found
+        else:
+            self.set_message(msg='no wifi networks detected')
+
+
+class PasswordPopup(BasePopup):
+    
+    password = StringProperty()
+    txt_input = ObjectProperty(None)
+    
+    def __init__(self, ssid, **kwargs):
+        self.ssid = ssid
+        self.title = ssid
+        super(PasswordPopup, self).__init__(**kwargs)
+        self.txt_input.bind(on_text_validate=self.connect)
+        # If focus is set immediately, keyboard will be covered by popup
+        Clock.schedule_once(self.set_focus_on, 0.1)
+
+    def set_focus_on(self, dt):
+        self.txt_input.focus = True
+
+    def connect(self, instance=None):
+        self.dismiss()
+        self.password = self.txt_input.text
+        print(self.password)
+
+    def confirm(self):
+        self.connect()
+        super(PasswordPopup,self).confirm()
+
 
 class SI_PowerMenu(SetItem):
 
@@ -227,6 +283,7 @@ class SI_PowerMenu(SetItem):
             return True
         return super(SI_PowerMenu, self).on_touch_down(touch)
 
+
 class PowerPopup(BasePopup):
 
     def poweroff(self):
@@ -234,6 +291,7 @@ class PowerPopup(BasePopup):
 
     def reboot(self):
         Popen(['systemctl', 'reboot'])
+
 
 class SI_ValueSlider(SetItem):
     pass
