@@ -1,43 +1,38 @@
 Raspian buster lite without desktop env.
 
-
 add new 'ssh' file with no extension to boot folder to enable ssh
-sudo apt-get install python-pip
 
-python -m pip install --upgrade --user pip setuptools
-python -m pip install --upgrade --user pip virtualenv
+sudo apt update
 
+#git is for Klipper and LCD driver, pip and the rest is for Kivy
+sudo apt install --yes \
+   git python-pip python-pygame libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+   pkg-config libgl1-mesa-dev libgles2-mesa-dev \
+   python-setuptools libgstreamer1.0-dev git-core \
+   gstreamer1.0-plugins-{bad,base,good,ugly} \
+   gstreamer1.0-{omx,alsa} python-dev libmtdev-dev \
+   xclip xsel libjpeg-dev
+mtdev-tools??
+python -m pip install --upgrade --user pip
+python -m pip install --upgrade --user setuptools
+python -m pip install --upgrade --user Cython==0.29.10
+python -m pip install --upgrade --user pillow
+#uses pypi as source
+python -m pip install --user kivy==1.11.0
 
+(sudo apt install xorg)
 
-sudo apt-get install git
-Der wesentliche Schritt ist, den Xorg Display Server zu installieren 
-    sudo apt-get install --no-install-recommends xserver-xorg
-Der nächste (empfohlene) Schritt besteht darin, xinit zu installieren, mit dem Sie den Xorg Display Server von der Kommandozeile aus starten können (mit startx)
-    sudo apt-get install --no-install-recommends xinit
-
-
-sudo rm -rf LCD-show
-git clone https://github.com/goodtft/LCD-show.git
-chmod -R 755 LCD-show
+#sudo rm -rf LCD-show
+cd /
+sudo git clone https://github.com/goodtft/LCD-show.git
+sudo chmod -R 755 LCD-show
 cd LCD-show/
-sudo ./LCD7C-show 90
+#reboots when finished
+sudo ./LCD7C-show 90 
+
+git clone https://github.com/D4SK/Klipper-GUI #needs password for github right now
 
 
-python -m pip install kivy
-
-
-## Additional dependencies
-
-#### Xorg
-
-* xserver-xorg
-* xinit
-
-#### Wifi
-
-* network-manager
-
-
-`sudo apt-get install --no-install-recommends xserver-xorg xinit`
-
-`sudo apt-get install network-manager`
+backend gl oder sdl2
+window egl rpi
+python3
