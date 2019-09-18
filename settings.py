@@ -183,7 +183,7 @@ class SI_Wifi(SetItem):
 
     def update(self, instance, value):
         if value[0]['in-use']:
-            self.display = value[0]['ssid']
+            self.display = [value[0]['ssid'], True]
         else:
             self.display = ['not connected', False]
 
@@ -201,11 +201,13 @@ class SI_Wifi(SetItem):
 
 class SI_WifiNetwork(SetItem):
 
-    ssid = StringProperty()
+    def __init__(self, wifi, **kwargs):
+        super(SI_WifiNetwork, self).__init__(**kwargs)
+        self.wifi = wifi
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
-            self.popup = PasswordPopup(ssid=self.ssid)
+            self.popup = PasswordPopup(ssid=self.wifi['ssid'])
             self.popup.open()
             return True
         return super(SI_WifiNetwork, self).on_touch_down(touch)
@@ -251,8 +253,7 @@ class WifiScreen(Screen):
         box.clear_widgets()
         if value:
             for i in value:
-                entry = SI_WifiNetwork()
-                entry.ssid = i['ssid']
+                entry = SI_WifiNetwork(i)
                 box.add_widget(entry)
         # In case no networks were found
         else:

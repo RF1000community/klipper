@@ -708,17 +708,26 @@ Tabs:
         padding_x: p.padding
 <SI_WifiNetwork>:
     Label:
-        text: root.ssid
+        text: root.wifi['ssid']
         font_size: p.normal_font
         text_size: self.size
         color: p.light_gray
-        size: 200, root.height
+        size: root.width, root.height
         size_hint: None, None
         valign: 'middle'
         halign: 'right'
         y: root.y
         right: p.screen_width
         padding_x: p.padding
+    Label:
+        text: root.wifi['bars']
+        font_size: p.normal_font
+        padding_x: p.padding
+        width: self.texture_size[0]
+        height: root.height
+        size_hint: None, None
+        color: p.light_gray
+        pos: root.pos
 
 <ValuePopup@BasePopup>:
     size_hint: 0.8,0.5
