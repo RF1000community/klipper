@@ -41,8 +41,5 @@ python3
 ### NetworkManager
 
 sudo apt install network-manager
-sudo apt purge openresolv dhcpcd5
-sudo mv /etc/resolv.conf /etc/resolv.conf.backup
-sudo ln -s /lib/systemd/resolv.conf /etc/resolv.conf
-sudo systemctl start systemd-resolved.service
-sudo systemctl enable systemd-resolved.service
+sudo apt purge dhcpcd5
+_maybe edit /etc/interfaces_

@@ -42,18 +42,19 @@ class Wifi(EventDispatcher):
         except OSError as e:
             # 2 is "No such file or directory" error
             if e.errno == 2:
-                print('NetworkManager not available. Wifimenu will be disabled')
-                print("Use 'sudo apt-get install network-manager' to install")
+                Logger.error("Wifi: NetworkManager not available. Wifimenu will be disabled. ")
+                Logger.error("Wifi: Use 'sudo apt-get install network-manager' to install")
                 return e.errno
             else:
                 # crash in case of unknown error
-                print('NetworkManager failed with Error:')
+                Logger.critical('Wifi: NetworkManager failed with Error:')
                 raise
         output = proc.communicate()
         if output[0].rstrip('\n') == 'running':
             return 0
         else:
-            print(output[1])
+            Logger.error('Wifi: NetworkManager not running:')
+            Logger.error('NetworkManager: ' + output[1])
             return 3
 
     def on_update_freq(self, instance, value):
@@ -94,14 +95,16 @@ class Wifi(EventDispatcher):
         stdout, stderr = proc.communicate()
         returncode = proc.returncode
         if stderr:
-            print(stderr)
+            Logger.error('NetworkManager: ' + stderr)
         if returncode == 8:
+            Logger.error('Wifi: NetworkManager not running:')
+            Logger.error('NetworkManager: ' + output[1])
             self.state = 3
             return
         # catch all other returncodes
         elif returncode != 0:
             self.state = 10
-            print('NetworkManager returned {}'.format(returncode))
+            Logger.error('NetworkManager: ' + returncode)
             return
 
         wifi_list = []
