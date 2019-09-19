@@ -21,7 +21,7 @@ from files import *
 import parameters as p
 from kivy.config import Config
 
-#Config.read('config.ini')
+Config.read('config.ini')
 # set config
 #Config.write()
 
