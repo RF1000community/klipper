@@ -21,9 +21,9 @@ from files import *
 import parameters as p
 from kivy.config import Config
 
-Config.read('config.ini')
+#Config.read('config.ini')
 # set config
-Config.write()
+#Config.write()
 
 Config.set('graphics', 'fullscreen', 0 if testing else 1)#set to 1 or 'auto' for raspi
 Config.set("kivy", "log_level", "debug")#temporary for debugging
