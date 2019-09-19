@@ -7,8 +7,8 @@ if '-t' in argv:
 else:
     testing = False
 import os
-#os.environ['KIVY_WINDOW'] = 'pygame' #temporary fix, needs to be egl-rpi for good performance
-os.environ['KCFG_input_device_%(name)s'] = 'probesysfs,provider=mtdev,param=rotation=90,param=invert_y=1'
+#os.environ['KIVY_WINDOW'] = 'pygame' 
+#os.environ['KCFG_input_device_%(name)s'] = 'probesysfs,provider=mtdev,param=rotation=90,param=invert_y=1'
 from os.path import dirname, join
 from kivy import kivy_data_dir
 from kivy.lang import Builder
@@ -30,9 +30,9 @@ Config.set('kivy','keyboard_mode', 'dock')
 Config.set('graphics','maxfps',30)
 Config.set("kivy", "log_level", "debug")#temporary for debugging
 Config.set('kivy','show_fps', True)
-#Config.set('input','device_%(name)s', 'probesysfs')
+Config.set('input','device_%(name)s', 'probesysfs, provider=mtdev, param=rotation=90,param=invert_y=1')
 #Config.set('input', 'provider','mtdev')
-#Config.set('input','param','rotation=90,param=invert_y=1)
+#Config.set('input','param','rotation=90,param=invert_y=1')
 Builder.unload_file(join(kivy_data_dir, 'style.kv'))
 Builder.load_file("style.kv")
 
