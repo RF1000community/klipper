@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 from sys import argv
 if '-t' in argv:
@@ -7,7 +7,9 @@ if '-t' in argv:
 else:
     testing = False
 import os
-#os.environ['KIVY_WINDOW'] = 'pygame' 
+os.environ['KIVY_WINDOW'] = 'sdl2'
+os.environ['KIVY_GL_BACKEND'] = 'gl'
+os.environ['KIVY_GL_DEBUG'] = '1'
 from os.path import dirname, join
 from kivy import kivy_data_dir
 from kivy.lang import Builder
