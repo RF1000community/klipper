@@ -582,14 +582,6 @@ Tabs:
                     on_release: Factory.ValuePopup().open()
             SI_Wifi:
                 title: "Wifi"
-                Button:
-                    pos_hint: {'x':0, 'y':0}
-                    background_normal: 'Logos/Transparent.png'
-                    background_down: ''
-                    background_color: 0, 0, 0, 0
-                    on_press:
-                        #root.manager.transition.direction = 'left'
-                        root.manager.current = 'WifiScreen'
             SI_PowerMenu:
                 title: "Shutdown..."
 
@@ -704,11 +696,12 @@ Tabs:
 <SI_Wifi>:
     Label:
         id: current_wifi
-        text: '[current]'
+        text: root.default
         font_size: p.normal_font        
         text_size: self.size
-        color: p.light_gray
-        size: 200, root.height
+        color: p.medium_light_gray
+        italic: True
+        size: 400, root.height
         size_hint: None, None
         valign: 'middle'
         halign: 'right'
@@ -717,17 +710,26 @@ Tabs:
         padding_x: p.padding
 <SI_WifiNetwork>:
     Label:
-        text: root.ssid
+        text: root.wifi['ssid']
         font_size: p.normal_font
         text_size: self.size
         color: p.light_gray
-        size: 200, root.height
+        size: root.width, root.height
         size_hint: None, None
         valign: 'middle'
         halign: 'right'
         y: root.y
         right: p.screen_width
         padding_x: p.padding
+    Label:
+        text: str(root.wifi['signal'])
+        font_size: p.normal_font
+        padding_x: p.padding
+        width: self.texture_size[0]
+        height: root.height
+        size_hint: None, None
+        color: p.light_gray
+        pos: root.pos
 
 <ValuePopup@BasePopup>:
     size_hint: 0.8,0.5
