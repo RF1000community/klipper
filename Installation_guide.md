@@ -53,3 +53,15 @@ sudo ./LCD7C-show 90
 #evtl rpi-update
 
 opengl driver only works with autologin enabled and a reinstall of the lcd driver
+backend gl oder sdl2
+window egl rpi
+python3
+
+
+### NetworkManager
+
+sudo apt install network-manager
+
+sudo apt purge dhcpcd5
+
+_maybe edit /etc/interfaces_
