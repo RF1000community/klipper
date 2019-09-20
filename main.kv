@@ -805,15 +805,15 @@ Tabs:
 <PowerPopup>:
     title: "Shutdown"
     title_size: p.large_font
-    size_hint: 0.65, 0.45
+    size_hint: 0.65, 0.5
     FloatLayout:
         
         RectangleButton:
             id: btn_poweroff
             title: "Shutdown"
-            size_hint: 0.5, None
-            height: 100
-            pos_hint: {'center_x': 0.5, 'y': 0.24}
+            size_hint: 0.7, None
+            height: 90
+            pos_hint: {'center_x': 0.5, 'y': 0.18}
             on_release: root.poweroff()
         Divider:
             size_hint: None, None
@@ -835,6 +835,16 @@ Tabs:
             size: btn_poweroff.size
             pos: btn_poweroff.x, btn_reboot.top
             on_release: root.reboot()
+        Divider:
+            size_hint: None, None
+            size: btn_poweroff.width, 1
+            pos: btn_quit.pos
+        RectangleButton:
+            id: btn_quit
+            title: "Quit to tty"
+            size: btn_poweroff.size
+            pos: btn_poweroff.x, btn_restart_klipper.top
+            on_release: root.quit()
         Btn_P_Cancel:
             single: True
             width: root.width
