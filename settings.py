@@ -142,5 +142,9 @@ class PowerPopup(BasePopup):
     def reboot(self):
         Popen(['systemctl', 'reboot'])
 
+    def quit(self):
+        app = App.get_running_app()
+        app.stop()
+
 class SI_ValueSlider(SetItem):
     pass
