@@ -22,11 +22,16 @@ class Wifi(EventDispatcher):
 
     #How often to rescan. 0 means never (disabled)
     update_freq = NumericProperty(0)
-    networks = ListProperty()
+    #networks = ListProperty()
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super(Wifi, self).__init__(**kwargs)
         self.state = self.check_nmcli()
+        self.register_event_type('on_networks')
+        #This shouldn't be needed, but it is
+        #self.bind(update_freq=self.on_update_freq)
         self.update_clock = None
+        self.networks = []
 
     def check_nmcli(self):
         # state codes:
@@ -62,9 +67,10 @@ class Wifi(EventDispatcher):
         if self.update_clock:
             self.update_clock.cancel()
         if value > 0:
-            self.update_clock = Clock.schedule_interval(get_wifi_list, value)            
+            self.get_wifi_list()
+            self.update_clock = Clock.schedule_interval(self.get_wifi_list, value)
 
-    def get_wifi_list(self, no_rescan=False, *args):
+    def get_wifi_list(self, *args, no_rescan=False):
         # no_rescan: when True set --rescan to no to immediately (still ~100ms delay) return a list, even if
         # it is too old. Otherwise rescan if necessary (handled by using 'auto'), possibly taking a few
         # seconds, unless the latest rescan was very recent.
@@ -116,6 +122,10 @@ class Wifi(EventDispatcher):
             else:
                 wifi_list.append(entry)
         self.networks = wifi_list
+        self.dispatch('on_networks', self.networks)
+
+    def on_networks(self, *args):
+        pass
 
     def connect(self, ssid, password):
 
@@ -151,7 +161,7 @@ class SI_Wifi(SetItem):
             self.default = '...'
         # Assuming very much that the Setting Screen will NEVER be the default on load
         self.do_update = False
-        wifi.bind(networks=self.update)
+        wifi.bind(on_networks=self.update)
         # Bind to main tab switches after everything is set up and running
         Clock.schedule_once(self.bind_tab, 0)
 
@@ -174,7 +184,7 @@ class SI_Wifi(SetItem):
     def control_update(self, instance, value):
         if value == instance.ids.set_tab:
             self.do_update = True
-            wifi.get_wifi_list(True)
+            wifi.get_wifi_list(no_rescan=True)
             wifi.update_freq = self.freq
         elif self.do_update and value != instance.ids.set_tab:
             self.do_update = False
@@ -202,8 +212,8 @@ class SI_Wifi(SetItem):
 class SI_WifiNetwork(SetItem):
 
     def __init__(self, wifi, **kwargs):
-        super(SI_WifiNetwork, self).__init__(**kwargs)
         self.wifi = wifi
+        super(SI_WifiNetwork, self).__init__(**kwargs)
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -224,11 +234,11 @@ class WifiScreen(Screen):
         Clock.schedule_once(self.set_message, 0)
         # Amount of seconds between wifi rescans in seconds
         self.freq = 10
-        wifi.bind(networks=self.update)
+        wifi.bind(on_networks=self.update)
 
     def on_pre_enter(self):
         # pre_enter: This function is executed when the animation starts
-        wifi.get_wifi_list(True)
+        wifi.get_wifi_list(no_rescan=True)
         wifi.update_freq = self.freq
 
     def set_message(self, dt, msg=None):
@@ -248,7 +258,7 @@ class WifiScreen(Screen):
         box.add_widget(label)
 
     def update(self, instance, value):
-        # Repopulate the list of networks when self.ssid_list changes
+        # Repopulate the list of networks when wifi.networks changes
         box = self.ids.wifi_box
         box.clear_widgets()
         if value:
