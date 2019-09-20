@@ -15,6 +15,8 @@ from kivy import kivy_data_dir
 from kivy.lang import Builder
 from kivy.app import App
 from kivy.config import Config
+from kivy.clock import Clock
+from elements import UltraKeyboard
 from settings import *
 from home import *
 from files import *
@@ -30,8 +32,13 @@ Builder.load_file("style.kv")
 
 #Clock.schedule_interval(FC._update_files, 1)
 class mainApp(App):
-    pass
+    
+    def run(self):
+        Clock.schedule_once(self.change_vkeyboard, 0)
+        super(mainApp, self).run()
 
+    def change_vkeyboard(self, dt):
+        self.root_window.set_vkeyboard_class(UltraKeyboard)
 
 if __name__ == '__main__':
     print('main runs')

@@ -1291,6 +1291,8 @@
             on_color: root.set_color(args[1][:3])
 
 <VKeyboard>:
+    # Use local keyboard json instead of system default
+    layout_path: '.'
     size_hint: 1, 0.3
     # Space on outside of keyboard
     margin_hint: 0.02, 0.01, 0.02, 0.01
