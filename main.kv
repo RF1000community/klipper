@@ -465,7 +465,7 @@ Tabs:
 <BasePopup>:
     title_size: p.large_font
     title_align: 'center'
-    background_color: [0,0,0,0.5] #reduces background darkening from 0.7
+    background_color: [0,0,0,0] #reduces background darkening from 0.7
     size_hint: 0.67, 0.3
     pos_hint: {'center_y': 0.55, 'center_x':0.5}
 # FILE -------------------------------------------------------------
@@ -745,15 +745,14 @@ Tabs:
         pos: root.pos
 
 <ValuePopup@BasePopup>:
-    size_hint: None, None
-    size: 500,600
+    size_hint: 0.8,0.5
     
     FloatLayout:
         
         UltraSlider:
             id: val_slider
             width: 400
-            pos: root.center_x-200, root.y+170
+            pos_hint: {'center_x':0.5, 'y':0.3}
         Label:
             id: value
             text: '36000mm/s^2'
