@@ -50,13 +50,17 @@ Tabs:
             pos: p.padding, 33 + tab_height
             halign: 'left'
             valign: 'bottom'
-        ProgressBar:
+        UltraSlider:
             id: progress_bar
-            max: 1
-            value: 0.3
-            size_hint: None, None
-            size: p.screen_width-2*p.padding, 5
+            width: p.screen_width-2*p.padding
             pos: p.padding, l_time_remaining.top+14
+        # ProgressBar:
+        #     id: progress_bar
+        #     max: 1
+        #     value: 0.3
+        #     size_hint: None, None
+        #     size: p.screen_width-2*p.padding, 5
+        #     pos: p.padding, l_time_remaining.top+14
         Label:
             id: l_filename
             text: "Cube_tesfforprintfinalfinalnew2"
@@ -465,7 +469,7 @@ Tabs:
 <BasePopup>:
     title_size: p.large_font
     title_align: 'center'
-    background_color: [0,0,0,0] #reduces background darkening from 0.7
+    background_color: [0,0,0,0.5] #reduces background darkening from 0.7
     size_hint: 0.67, 0.3
     pos_hint: {'center_y': 0.55, 'center_x':0.5}
 # FILE -------------------------------------------------------------
