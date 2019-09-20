@@ -7,9 +7,9 @@ if '-t' in argv:
 else:
     testing = False
 import os
-os.environ['KIVY_WINDOW'] = 'sdl2'
-os.environ['KIVY_GL_BACKEND'] = 'gl'
-os.environ['KIVY_GL_DEBUG'] = '1'
+if not testing: 
+    os.environ['KIVY_WINDOW'] = 'sdl2'
+    os.environ['KIVY_GL_BACKEND'] = 'gl'
 from os.path import dirname, join
 from kivy import kivy_data_dir
 from kivy.lang import Builder

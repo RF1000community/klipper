@@ -1,5 +1,6 @@
 #:kivy 1.8.0
 #:import Factory kivy.factory.Factory
+#: import screenmanager kivy.uix.screenmanager
 #:import p parameters
 #:set tab_height 100
 #:set btn_play_size 64
@@ -541,6 +542,7 @@ Tabs:
 
     ScreenManager:
         name: 'SettingScreenManager'
+        transition: screenmanager.NoTransition()
         SettingScreen:
         WifiScreen:
         
@@ -586,7 +588,7 @@ Tabs:
                     background_down: ''
                     background_color: 0, 0, 0, 0
                     on_press:
-                        root.manager.transition.direction = 'left'
+                        #root.manager.transition.direction = 'left'
                         root.manager.current = 'WifiScreen'
             SI_PowerMenu:
                 title: "Shutdown..."
@@ -618,7 +620,7 @@ Tabs:
                 size_hint_x: None
                 width: 110
                 on_press:
-                    root.manager.transition.direction = 'right'
+                    #root.manager.transition.direction = 'right'
                     root.manager.current = 'SettingScreen'
             Label:
                 text: "Wifi"
