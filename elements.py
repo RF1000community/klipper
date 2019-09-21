@@ -1,7 +1,7 @@
 from kivy.uix.widget import Widget
 from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.popup import Popup
-from kivy.properties import NumericProperty
+from kivy.properties import NumericProperty, BooleanProperty
 from kivy.uix.vkeyboard import VKeyboard
 
 
@@ -19,7 +19,7 @@ class BasePopup(Popup):
 
 class UltraSlider(Widget):
     abs_val_px = NumericProperty()
-
+    pressed = BooleanProperty(False)
     def __init__(self, **kwargs):
         self.abs_min = 100
         print("this is x{} and this right{} ".format(self.x,self.right))
@@ -29,17 +29,20 @@ class UltraSlider(Widget):
         super(UltraSlider, self).__init__(**kwargs)
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
-            touch.grab(self)
+            self.pressed = True
+            #touch.grab(self)
             self.update_pos(touch.pos)
             return True
-    def on_touch_move(self, touch):
-        if touch.grab_current is self:
-            self.update_pos(touch.pos)
-            return True
+    # def on_touch_move(self, touch):
+    #     if touch.grab_current is self:
+    #         self.update_pos(touch.pos)
+    #         return True
     def on_touch_up(self, touch):
-        if touch.grab_current is self:
-            touch.ungrab(self)
+        #if touch.grab_current is self:
+            #touch.ungrab(self)
+
             self.update_pos(touch.pos)
+            self.pressed = False
             return True
     def update_pos(self, pos):
         x = int(pos[0])

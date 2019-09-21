@@ -535,7 +535,7 @@ Tabs:
             size: root.width, 8
             pos: root.x,root.center_y-4
         Color:
-            rgba: 1,1,1,1
+            rgba: [0,0,0,0] if self.pressed else [1,1,1,1] 
         Ellipse:
             size: 20,20
             pos: root.abs_val_px,root.center_y-10
