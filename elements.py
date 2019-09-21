@@ -87,6 +87,9 @@ class UltraKeyboard(VKeyboard):
                 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 self.have_special = not self.have_special
                 uid = -2
+                if self.have_capslock:
+                    self.active_keys.pop(-1, None)
+                    self.have_capslock = False
                 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             elif special_char == 'layout':
                 self.change_layout()
