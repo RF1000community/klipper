@@ -466,6 +466,8 @@ Tabs:
             radius:[0,0,p.radius,0]
             pos: self.pos
             size: self.size
+<Btn_Slider@RectangleButton>:
+
 <BasePopup>:
     title_size: p.large_font
     title_align: 'center'
@@ -529,9 +531,9 @@ Tabs:
     height: 46
     canvas:
         Color:
-            rgba: p.medium_gray
+            rgba: [1,1,1,1] if self.pressed else p.medium_gray
         RoundedRectangle:
-            radius: [3]
+            radius: [4]
             size: root.width, 8
             pos: root.x,root.center_y-4
         Color:
