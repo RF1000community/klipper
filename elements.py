@@ -1,8 +1,9 @@
 from kivy.uix.widget import Widget
 from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.popup import Popup
-from kivy.properties import NumericProperty, BooleanProperty
+from kivy.properties import NumericProperty, BooleanProperty, StringProperty
 from kivy.uix.vkeyboard import VKeyboard
+from kivy.clock import Clock
 
 
 class BaseButton(ButtonBehavior, Widget):
@@ -19,38 +20,50 @@ class BasePopup(Popup):
 
 class UltraSlider(Widget):
     abs_val_px = NumericProperty()
+    disp_val = StringProperty()
     pressed = BooleanProperty(False)
     def __init__(self, **kwargs):
-        self.abs_min = 100
-        print("this is x{} and this right{} ".format(self.x,self.right))
-
-        self.abs_max = 500
-        self.abs_val_px = 80
+        self.val = str()
         super(UltraSlider, self).__init__(**kwargs)
+        Clock.schedule_once(self.init_drawing, 0)
+
+    def init_drawing(self, dt):
+        self.abs_max = self.right-54
+        self.abs_min = self.x+54
+
     def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
+        #print("x is {} and right is {} ".format(self.x,self.right))
+
+        if touch.pos[0] > self.abs_min and touch.pos[0] < self.abs_max and \
+           touch.pos[1] > self.y + 70-15 and touch.pos[1] < self.y + 70+15:
             self.pressed = True
-            #touch.grab(self)
+            touch.grab(self)
             self.update_pos(touch.pos)
             return True
-    # def on_touch_move(self, touch):
-    #     if touch.grab_current is self:
-    #         self.update_pos(touch.pos)
-    #         return True
-    def on_touch_up(self, touch):
-        #if touch.grab_current is self:
-            #touch.ungrab(self)
-
+    def on_touch_move(self, touch):
+        if touch.grab_current is self:
             self.update_pos(touch.pos)
+            return True
+    def on_touch_up(self, touch):
+        if touch.grab_current is self:
+            touch.ungrab(self)
+            self.update_pos(touch.pos, True)
             self.pressed = False
             return True
-    def update_pos(self, pos):
+    def update_pos(self, pos, update_val_px = False):
         x = int(pos[0])
         if x > self.abs_max: x = self.abs_max
         elif x < self.abs_min: x = self.abs_min
+        self.px_val_conversion(x)
         #print(x)
         self.abs_val_px = x
+    def px_val_conversion(self,abs_x):
+        self.val = (abs_x-self.abs_min)*100/(self.abs_max-self.abs_min)
+        self.disp_val = "{}%".format(round(self.val,1))
+        if self.val == 0:
+            self.disp_val = "Off"
 
+        print(self.disp_val)
 
 class UltraKeyboard(VKeyboard):
     # Copy of VKeyboard, only overwrite two methods

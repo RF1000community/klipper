@@ -50,17 +50,13 @@ Tabs:
             pos: p.padding, 33 + tab_height
             halign: 'left'
             valign: 'bottom'
-        UltraSlider:
+        ProgressBar:
             id: progress_bar
-            width: p.screen_width-2*p.padding
+            max: 1
+            value: 0.3
+            size_hint: None, None
+            size: p.screen_width-2*p.padding, 5
             pos: p.padding, l_time_remaining.top+14
-        # ProgressBar:
-        #     id: progress_bar
-        #     max: 1
-        #     value: 0.3
-        #     size_hint: None, None
-        #     size: p.screen_width-2*p.padding, 5
-        #     pos: p.padding, l_time_remaining.top+14
         Label:
             id: l_filename
             text: "Cube_tesfforprintfinalfinalnew2"
@@ -206,7 +202,6 @@ Tabs:
             color: p.divider
             font_size: p.small_font
             text: xy_field.display
-
 <BaseButton>:
     pressed: False
     on_press: self.pressed = True
@@ -466,7 +461,6 @@ Tabs:
             radius:[0,0,p.radius,0]
             pos: self.pos
             size: self.size
-<Btn_Slider@RectangleButton>:
 
 <BasePopup>:
     title_size: p.large_font
@@ -526,22 +520,42 @@ Tabs:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: root.confirm()
+
 <UltraSlider>:
-    size_hint: None, None
-    height: 46
+    #:set slider_pos_y 70
+    size_hint: None,None
+    height: 200
+
     canvas:
         Color:
-            rgba: [1,1,1,1] if self.pressed else p.medium_gray
+            rgba: p.light_gray if root.pressed else p.medium_gray
         RoundedRectangle:
             radius: [4]
-            size: root.width, 8
-            pos: root.x,root.center_y-4
+            size: self.width-100, 8
+            pos: self.x+50,slider_pos_y-4+self.y
         Color:
-            rgba: [0,0,0,0] if self.pressed else [1,1,1,1] 
+            rgba: [0,0,0,0] if root.pressed else [1,1,1,1] 
         Ellipse:
             size: 20,20
-            pos: root.abs_val_px,root.center_y-10
+            pos: root.abs_val_px-10,slider_pos_y-10+self.y
 
+    Label:
+        text: root.disp_val
+        size_hint: None,None
+        pos_hint: None,None
+        size: root.width, p.large_font
+        y: root.y + 100
+        center_x: root.center_x
+        color: p.light_gray
+        size_hint: None,None
+        text_size: self.size
+        font_size: p.large_font
+        valign: 'middle'
+        halign: 'center'
+
+
+<Btn_Slider@RectangleButton>:
+    
 # SETTING ----------------------------------------------------------
 <SettingTab@TabbedPanelItem>:
     background_down: '' 
@@ -755,22 +769,11 @@ Tabs:
 
 <ValuePopup@BasePopup>:
     size_hint: 0.8,0.5
-    
     FloatLayout:
-        
         UltraSlider:
             id: val_slider
-            width: 400
+            width: root.width
             pos_hint: {'center_x':0.5, 'y':0.3}
-        Label:
-            id: value
-            text: '36000mm/s^2'
-            size: val_slider.width, p.normal_font
-            pos: val_slider.x, val_slider.top + 30
-            text_size: self.size
-            font_size: p.large_font
-            halign: 'center'
-            valign: 'bottom'
         Btn_P_Cancel:
             width: root.width/2
             pos: root.pos
