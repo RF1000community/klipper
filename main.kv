@@ -783,7 +783,7 @@ Tabs:
         padding_x: p.padding
 <SI_WifiNetwork>:
     Label:
-        text: root.wifi['ssid']
+        text: root.network['ssid']
         font_size: p.normal_font
         text_size: self.size
         color: p.light_gray
@@ -795,7 +795,7 @@ Tabs:
         right: p.screen_width
         padding_x: p.padding
     Label:
-        text: str(root.wifi['signal'])
+        text: str(root.network['signal'])
         font_size: p.normal_font
         padding_x: p.padding
         width: self.texture_size[0]
@@ -863,6 +863,33 @@ Tabs:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: root.confirm()
+<ConnectionPopup>:
+    title: self.network['ssid']
+    size_hint: 0.65, 0.4
+    FloatLayout:
+        RectangleButton:
+            id: btn_toggle_connect
+            title: 'Disconnect' if root.connected else 'Connect'
+            size_hint: 0.7, None
+            height: 80
+            pos_hint: {'center_x': 0.5, 'top': 1}
+            on_release: root.toggle_connected()
+        Divider:
+            size_hint: None, None
+            size: btn_toggle_connect.width, 1
+            pos: btn_toggle_connect.pos
+        RectangleButton:
+            id: btn_delete
+            title: 'Delete connection'
+            size: btn_toggle_connect.size
+            x: btn_toggle_connect.x
+            top: btn_toggle_connect.y
+            on_release: root.delete()
+        Btn_P_Cancel:
+            single: True
+            width: root.width
+            pos: root.pos
+            on_release: root.dismiss()
 <PowerPopup>:
     title: "Shutdown"
     title_size: p.large_font
