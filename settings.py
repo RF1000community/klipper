@@ -27,6 +27,7 @@ class Wifi(EventDispatcher):
         super(Wifi, self).__init__(**kwargs)
         self.state = self.check_nmcli()
         self.register_event_type('on_networks')
+        self.register_event_type('on_wrong_pw')
         self.scan_output = self.connections_output = None
         #This shouldn't be needed, but it is
         #self.bind(update_freq=self.on_update_freq)
@@ -148,15 +149,12 @@ class Wifi(EventDispatcher):
             # Reset output cache for next update
             self.scan_output = self.connections_output = None
 
-    def on_networks(self, *args):
-        pass
-
     def connect(self, ssid, password):
         # Connect a new, unknown network
         if self.state:
             return
         cmd = ['nmcli', 'device', 'wifi', 'connect', ssid, 'password', password]
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newline=True)
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
         self.poll(proc, self.process_connections)
 
     def up(self, ssid):
@@ -173,6 +171,9 @@ class Wifi(EventDispatcher):
             return
         cmd = ['nmcli', 'connection', 'down', ssid]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+
+    def on_networks(self, *args):
+        pass
         self.poll(proc, self.process_connections)
 
     def delete(self, ssid):
@@ -190,6 +191,9 @@ class Wifi(EventDispatcher):
 
         if stderr:
             Logger.warning('NetworkManager: ' + stderr)
+        # If the password was wrong:
+        if stdout.rstrip('\n') == 'Error: Connection activation failed: (7) Secrets were required, but not provided.':
+            self.dispatch('on_wrong_pw')
         if returncode == 3:
             Logger.warning('NetworkManager: Operation timed out')
             return
@@ -202,6 +206,12 @@ class Wifi(EventDispatcher):
             return
 
         self.get_wifi_list()
+
+    def on_networks(self, *args):
+        pass
+
+    def on_wrong_pw(self, *args):
+        pass
 
 
 wifi = Wifi()
@@ -283,8 +293,11 @@ class SI_WifiNetwork(SetItem):
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
-            print(self.network)
-            self.popup = PasswordPopup(self.network)
+            #Present different options when wifi is stored by NM
+            if self.network['stored']:
+                self.popup = ConnectionPopup(self.network)
+            else:
+                self.popup = PasswordPopup(self.network)
             self.popup.open()
             return True
         return super(SI_WifiNetwork, self).on_touch_down(touch)
@@ -347,21 +360,51 @@ class PasswordPopup(BasePopup):
         self.ssid = self.network['ssid']
         self.title = self.ssid
         super(PasswordPopup, self).__init__(**kwargs)
-        self.txt_input.bind(on_text_validate=self.connect)
+        self.txt_input.bind(on_text_validate=self.confirm)
+        wifi.bind(on_wrong_pw=self.wrong_pw)
         # If focus is set immediately, keyboard will be covered by popup
         Clock.schedule_once(self.set_focus_on, 0.2)
 
-    def set_focus_on(self, dt):
+    def set_focus_on(self, *args):
         self.txt_input.focus = True
 
-    def connect(self, instance=None):
-        self.dismiss()
+    def confirm(self, *args):
         self.password = self.txt_input.text
         wifi.connect(self.ssid, self.password)
-
-    def confirm(self):
-        self.connect()
         super(PasswordPopup,self).confirm()
+
+    def wrong_pw(self, instance):
+        # Avoid a network being stored with the wrong password
+        wifi.delete(self.ssid)
+        self.open()
+        self.set_focus_on()
+
+
+class ConnectionPopup(BasePopup):
+
+    def __init__(self, network, **kwargs):
+        self.network = network
+        self.ssid = self.network['ssid']
+        self.connected = self.network['in-use']
+        super(ConnectionPopup, self).__init__(**kwargs)
+
+    def toggle_connected(self):
+        if self.connected:
+            self.down()
+        else:
+            self.up()
+
+    def up(self):
+        wifi.up(self.ssid)
+        self.dismiss()
+
+    def down(self):
+        wifi.down(self.ssid)
+        self.dismiss()
+
+    def delete(self):
+        wifi.delete(self.ssid)
+        self.dismiss()
 
 
 class SI_PowerMenu(SetItem):
