@@ -528,19 +528,24 @@ Tabs:
 
     canvas:
         Color:
-            rgba: p.light_gray if root.pressed else p.medium_gray
+            rgba: [1,1,1,1] if root.pressed else p.button
         RoundedRectangle:
-            radius: [4]
-            size: self.width-100, 8
-            pos: self.x+50,slider_pos_y-4+self.y
+            radius: [4,4,4,4]
+            size: root.width-100, 8
+            pos: root.x+50,slider_pos_y-4+root.y
         Color:
-            rgba: [0,0,0,0] if root.pressed else [1,1,1,1] 
+            rgba: [1,1,1,1] if root.pressed else p.accent
+        RoundedRectangle:
+            radius: [4,4,4,4]
+            size: self.px-root.x-50, 8
+            pos: root.x+50,slider_pos_y-4+root.y
+        Color:
+            rgba: [0,0,0,0] if self.pressed else [1,1,1,1] 
         Ellipse:
             size: 20,20
-            pos: root.abs_val_px-10,slider_pos_y-10+self.y
-
+            pos: root.px-10,slider_pos_y-10+root.y
     Label:
-        text: root.disp_val
+        text: root.disp
         size_hint: None,None
         pos_hint: None,None
         size: root.width, p.large_font
@@ -552,9 +557,38 @@ Tabs:
         font_size: p.large_font
         valign: 'middle'
         halign: 'center'
+    Btn_Slider:
+        pos: root.pos
+        
+
+<Btn_Slider@BaseButton>:
+    #:set t 7  #half of width
+    #:set j 11
+    s_title: "PLA\\ncold pull"
+    size: 80,40
+    size_hint: None,None
+    t_offset: 0
+    canvas:
+        Color:
+            rgba: p.light_gray if self.pressed else p.button
+        RoundedRectangle:
+            radius: [p.radius]
+            size: self.size
+            pos: self.pos
+        Triangle:
+            points: self.x+self.width/2+self.t_offset,self.top+j, self.x+self.width/2+t+self.t_offset,self.top, self.x+self.width/2-t+self.t_offset,self.top
+    Label:
+        markup:'True'
+        text: root.s_title
+        size: root.size
+        text_size: self.size
+        pos: root.pos        
+        font_size: p.extra_small_font
+        valign: 'middle'
+        halign: 'center'
 
 
-<Btn_Slider@RectangleButton>:
+
     
 # SETTING ----------------------------------------------------------
 <SettingTab@TabbedPanelItem>:

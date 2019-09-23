@@ -17,13 +17,15 @@ class RoundButton(BaseButton):
 class BasePopup(Popup):
     def confirm(self):
         self.dismiss()
-
 class UltraSlider(Widget):
-    abs_val_px = NumericProperty()
-    disp_val = StringProperty()
+    px = NumericProperty() #absolute position of dot in px
+    disp = StringProperty()#value displayed by label
     pressed = BooleanProperty(False)
     def __init__(self, **kwargs):
-        self.val = str()
+        self.val = float()#value, passed to printer, not in px
+        self.recieve_val()
+        self.set_px_from_val()
+        self.sticky_vals = list()
         super(UltraSlider, self).__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
 
@@ -32,38 +34,81 @@ class UltraSlider(Widget):
         self.abs_min = self.x+54
 
     def on_touch_down(self, touch):
-        #print("x is {} and right is {} ".format(self.x,self.right))
-
-        if touch.pos[0] > self.abs_min and touch.pos[0] < self.abs_max and \
-           touch.pos[1] > self.y + 70-15 and touch.pos[1] < self.y + 70+15:
+        if touch.pos[0] > self.abs_min-30 and touch.pos[0] < self.abs_max+30 and \
+           touch.pos[1] > self.y + 70 -15 and touch.pos[1] < self.y + 70 + 15:
             self.pressed = True
             touch.grab(self)
-            self.update_pos(touch.pos)
+            x = self.apply_bounds(touch.pos[0])
+            self.set_val_disp_from_px(x)
             return True
+        return super(UltraSlider, self).on_touch_down(touch)
+
     def on_touch_move(self, touch):
         if touch.grab_current is self:
-            self.update_pos(touch.pos)
+            x = self.apply_bounds(touch.pos[0])
+            self.set_val_disp_from_px(x)
             return True
+
     def on_touch_up(self, touch):
         if touch.grab_current is self:
-            touch.ungrab(self)
-            self.update_pos(touch.pos, True)
             self.pressed = False
+            x = self.apply_bounds(touch.pos[0])
+            self.px = x
+            self.set_val_disp_from_px(x)
+            touch.ungrab(self)
             return True
-    def update_pos(self, pos, update_val_px = False):
-        x = int(pos[0])
+        return super(UltraSlider, self).on_touch_up(touch)
+
+    def apply_bounds(self, x):
         if x > self.abs_max: x = self.abs_max
         elif x < self.abs_min: x = self.abs_min
-        self.px_val_conversion(x)
-        #print(x)
-        self.abs_val_px = x
-    def px_val_conversion(self,abs_x):
-        self.val = (abs_x-self.abs_min)*100/(self.abs_max-self.abs_min)
-        self.disp_val = "{}%".format(round(self.val,1))
-        if self.val == 0:
-            self.disp_val = "Off"
+        return x
+        
+    def set_val_disp_from_px(self,x):
+        self.val = x
+        self.disp = "{}%".format(round(self.val,1))
 
-        print(self.disp_val)
+        # self.val = (abs_x-self.abs_min)*100/(self.abs_max-self.abs_min)
+        # if self.val%10 <=2:
+        #     self.val -= self.val%10
+        #     self.px = self.val*(self.abs_max-self.abs_min)/100
+        # elif self.val%10 >= 8:
+        #     self.val -= self.val%10
+        #     self.px = self.val*(self.abs_max-self.abs_min)/100 +self.abs_min
+    def set_px_from_val(self):
+        self.px = int(self.val)
+    def send_val(self):
+        return
+    def recieve_val(self):
+        self.val = 300
+    
+class AccelerationSlider(UltraSlider):
+    def __init__(self, **kwargs):
+        self.sticky_vals = ((35,0))
+        super(UltraSlider, self).__init__(**kwargs)
+    
+    def set_px_from_val(self,abs_x):#  v sets settable range
+        self.val = (abs_x-self.abs_min)*(60-3)/(self.abs_max-self.abs_min)
+        for k in self.sticky_vals:
+            if self.val > k[0]-k[1] and self.val < k[0]+k[1]:
+                self.val = k[0]
+                self.px = self.val*(self.abs_max-self.abs_min)/100
+        self.disp = "{}m/s".format(round(self.val,1))
+class TemperatureSlider(UltraSlider):
+    def __init__(self, **kwargs):
+        self.sticky_vals = ((0,0))
+        super(UltraSlider, self).__init__(**kwargs)
+    
+    def set_px_from_val(self,abs_x):#  v sets settable range
+        self.val = (abs_x-self.abs_min)*(60-3)/(self.abs_max-self.abs_min)
+        for k in self.sticky_vals:
+            if self.val > k[0]-k[1] and self.val < k[0]+k[1]:
+                self.val = k[0]
+                self.px = self.val*(self.abs_max-self.abs_min)/100
+        self.disp = "{}m/s".format(round(self.val,1))      
+
+
+
 
 class UltraKeyboard(VKeyboard):
     # Copy of VKeyboard, only overwrite two methods
