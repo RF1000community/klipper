@@ -746,7 +746,7 @@ Tabs:
         padding_x: p.padding
 <SI_WifiNetwork>:
     Label:
-        text: root.wifi['ssid']
+        text: root.network['ssid']
         font_size: p.normal_font
         text_size: self.size
         color: p.light_gray
@@ -758,7 +758,7 @@ Tabs:
         right: p.screen_width
         padding_x: p.padding
     Label:
-        text: str(root.wifi['signal'])
+        text: str(root.network['signal'])
         font_size: p.normal_font
         padding_x: p.padding
         width: self.texture_size[0]

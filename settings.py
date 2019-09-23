@@ -22,12 +22,12 @@ class Wifi(EventDispatcher):
 
     #How often to rescan. 0 means never (disabled)
     update_freq = NumericProperty(0)
-    #networks = ListProperty()
 
     def __init__(self, **kwargs):
         super(Wifi, self).__init__(**kwargs)
         self.state = self.check_nmcli()
         self.register_event_type('on_networks')
+        self.scan_output = self.connections_output = None
         #This shouldn't be needed, but it is
         #self.bind(update_freq=self.on_update_freq)
         self.update_clock = None
@@ -40,8 +40,7 @@ class Wifi(EventDispatcher):
         # 2     network-manager not installed
         # 3     network-manager not running
         # 10    Any Error while running nmcli
-        #
-        #TODO integrate kivy logger warnings
+
         try:
             proc = Popen(['nmcli', '-g', 'RUNNING', 'general'], stdout=PIPE, stderr=STDOUT, universal_newlines=True)
         except OSError as e:
@@ -82,6 +81,10 @@ class Wifi(EventDispatcher):
         cmd = ['nmcli', '--get-values', 'SSID,SIGNAL,BARS,IN-USE', 'device', 'wifi', 'list', '--rescan', rescan]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
         self.poll(proc, self.parse_wifi_list)
+        # Also get the list of stored connections to apply to the wifi list
+        ccmd = ['nmcli', '--get-values', 'NAME', 'connection', 'show']
+        cproc = Popen(ccmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        self.poll(cproc, self.parse_connections)
 
     def poll(self, proc, callback, *args):
         # This function keeps checking whether the given process is done and only forwards it
@@ -97,48 +100,108 @@ class Wifi(EventDispatcher):
         else:
             callback(proc)
 
-    def parse_wifi_list(self, proc):
+    def parse_connections(self, proc):
+        self.parse_wifi_list(proc, True)
+
+    def parse_wifi_list(self, proc, connections=False):
         stdout, stderr = proc.communicate()
         returncode = proc.returncode
         if stderr:
-            Logger.error('NetworkManager: ' + stderr)
+            Logger.warning('NetworkManager: ' + stderr)
         if returncode == 8:
             Logger.error('Wifi: NetworkManager not running:')
             Logger.error('NetworkManager: ' + output[1])
             self.state = 3
             return
+        elif returncode == 3:
+            Logger.warning('NetworkManager: Operation timed out')
+            return
         # catch all other returncodes
         elif returncode != 0:
             self.state = 10
-            Logger.error('NetworkManager: ' + returncode)
+            Logger.error('NetworkManager: ' + str(returncode))
             return
 
-        wifi_list = []
-        for wifi in stdout.splitlines():
-            f = wifi.split(':')
-            in_use = True if '*' in f[3] else False
-            # create a dictionary for each network containing the fields
-            entry = {'ssid': f[0], 'signal': int(f[1]), 'bars': f[2], 'in-use': in_use}
-            # Put in-use network to beginning of list
-            if entry['in-use']:
-                wifi_list.insert(0, entry)
-            else:
-                wifi_list.append(entry)
-        self.networks = wifi_list
-        self.dispatch('on_networks', self.networks)
+        # Remember the output for each command
+        if not connections:
+            self.scan_output = stdout
+        elif connections:
+            self.connections_output = stdout
+
+        # Only proceed if output of both commands is present
+        if self.scan_output and self.connections_output:
+            wifi_list = []
+            for wifi in self.scan_output.splitlines():
+                f = wifi.split(':')
+                in_use = '*' in f[3]
+                # create a dictionary for each network containing the fields
+                entry = {'ssid': f[0], 'signal': int(f[1]), 'bars': f[2], 'in-use': in_use}
+                stored = entry['ssid'] in self.connections_output.splitlines()
+                entry['stored'] = stored
+                # Put in-use network to beginning of list
+                if entry['in-use']:
+                    wifi_list.insert(0, entry)
+                else:
+                    wifi_list.append(entry)
+            self.networks = wifi_list
+            self.dispatch('on_networks', self.networks)
+            # Reset output cache for next update
+            self.scan_output = self.connections_output = None
 
     def on_networks(self, *args):
         pass
 
     def connect(self, ssid, password):
-
-        if state:
+        # Connect a new, unknown network
+        if self.state:
             return
-        #TODO Error handling
-
         cmd = ['nmcli', 'device', 'wifi', 'connect', ssid, 'password', password]
-        #TODO everything
-        Popen(cmd)
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newline=True)
+        self.poll(proc, self.process_connections)
+
+    def up(self, ssid):
+        # Connect to an existing wifi connection
+        if self.state:
+            return
+        cmd = ['nmcli', 'connection', 'up', ssid]
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        self.poll(proc, self.process_connections)
+
+    def down(self, ssid):
+        # Disconnect a connected wifi network and disable autoconnect until next reboot
+        if self.state:
+            return
+        cmd = ['nmcli', 'connection', 'down', ssid]
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        self.poll(proc, self.process_connections)
+
+    def delete(self, ssid):
+        if self.state:
+            return
+        cmd = ['nmcli', 'connection', 'delete', ssid]
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        self.poll(proc, self.process_connections)
+
+    def process_connections(self, proc):
+        # Receive finished processes to change connections (up, down, delete, connect)
+        # Check for errors and run a rescan
+        stdout, stderr = proc.communicate()
+        returncode = proc.returncode
+
+        if stderr:
+            Logger.warning('NetworkManager: ' + stderr)
+        if returncode == 3:
+            Logger.warning('NetworkManager: Operation timed out')
+            return
+        if 4 <= returncode <= 7:
+            Logger.warning('NetworkManager: Operation unsuccessful. Please Try again later.')
+            return
+        elif returncode:
+            self.state = 10
+            Logger.error('NetworkManager: ' + str(returncode))
+            return
+
+        self.get_wifi_list()
 
 
 wifi = Wifi()
@@ -214,13 +277,14 @@ class SI_Wifi(SetItem):
 
 class SI_WifiNetwork(SetItem):
 
-    def __init__(self, wifi, **kwargs):
-        self.wifi = wifi
+    def __init__(self, network, **kwargs):
+        self.network = network
         super(SI_WifiNetwork, self).__init__(**kwargs)
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
-            self.popup = PasswordPopup(ssid=self.wifi['ssid'])
+            print(self.network)
+            self.popup = PasswordPopup(self.network)
             self.popup.open()
             return True
         return super(SI_WifiNetwork, self).on_touch_down(touch)
@@ -265,8 +329,8 @@ class WifiScreen(Screen):
         box = self.ids.wifi_box
         box.clear_widgets()
         if value:
-            for i in value:
-                entry = SI_WifiNetwork(i)
+            for network in value:
+                entry = SI_WifiNetwork(network)
                 box.add_widget(entry)
         # In case no networks were found
         else:
@@ -278,13 +342,14 @@ class PasswordPopup(BasePopup):
     password = StringProperty()
     txt_input = ObjectProperty(None)
     
-    def __init__(self, ssid, **kwargs):
-        self.ssid = ssid
-        self.title = ssid
+    def __init__(self, network, **kwargs):
+        self.network = network
+        self.ssid = self.network['ssid']
+        self.title = self.ssid
         super(PasswordPopup, self).__init__(**kwargs)
         self.txt_input.bind(on_text_validate=self.connect)
         # If focus is set immediately, keyboard will be covered by popup
-        Clock.schedule_once(self.set_focus_on, 0.1)
+        Clock.schedule_once(self.set_focus_on, 0.2)
 
     def set_focus_on(self, dt):
         self.txt_input.focus = True
@@ -292,7 +357,6 @@ class PasswordPopup(BasePopup):
     def connect(self, instance=None):
         self.dismiss()
         self.password = self.txt_input.text
-        print(self.password)
         wifi.connect(self.ssid, self.password)
 
     def confirm(self):
