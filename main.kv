@@ -522,7 +522,7 @@ Tabs:
             on_release: root.confirm()
 
 <UltraSlider>:
-    #:set slider_pos_y 70
+    #:set slider_pos_y 80
     size_hint: None,None
     height: 200
 
@@ -534,7 +534,7 @@ Tabs:
             size: root.width-100, 8
             pos: root.x+50,slider_pos_y-4+root.y
         Color:
-            rgba: [1,1,1,1] if root.pressed else p.accent
+            rgba: [1,1,1,1] if root.pressed else p.medium_light_gray
         RoundedRectangle:
             radius: [4,4,4,4]
             size: self.px-root.x-50, 8
@@ -557,26 +557,29 @@ Tabs:
         font_size: p.large_font
         valign: 'middle'
         halign: 'center'
-    Btn_Slider:
-        pos: root.pos
+
+        
         
 
-<Btn_Slider@BaseButton>:
-    #:set t 7  #half of width
-    #:set j 11
-    s_title: "PLA\\ncold pull"
-    size: 80,40
+<Btn_Slider>:
+    #:set t 9  #half of width
+    #:set j 15
+    x: self.px-self.width/2-self.offset
+    s_title: "      PLA      cold pull"
+    size: 78,46
     size_hint: None,None
-    t_offset: 0
+    offset: -12
+        
+    active: False
     canvas:
         Color:
-            rgba: p.light_gray if self.pressed else p.button
+            rgba: p.medium_light_gray if self.active else p.button
         RoundedRectangle:
             radius: [p.radius]
             size: self.size
             pos: self.pos
         Triangle:
-            points: self.x+self.width/2+self.t_offset,self.top+j, self.x+self.width/2+t+self.t_offset,self.top, self.x+self.width/2-t+self.t_offset,self.top
+            points: self.x+self.width/2+self.offset,self.top+j, self.x+self.width/2+t+self.offset,self.top, self.x+self.width/2-t+self.offset,self.top
     Label:
         markup:'True'
         text: root.s_title
