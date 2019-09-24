@@ -15,7 +15,6 @@ import parameters as p
 import random
 
 
-
 class Btn_Stop(RoundButton):
     pass
 class Btn_Play(RoundButton):
@@ -28,7 +27,6 @@ class Btn_Temp(RoundButton):
     pass
 class Btn_Arrow(RoundButton):
     pass
-
 class Btn_Triple(Widget):
     pass
 class Btn_TripleZ(Widget):

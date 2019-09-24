@@ -428,6 +428,25 @@ class PowerPopup(BasePopup):
     def quit(self):
         app = App.get_running_app()
         app.stop()
+class AccSlider(UltraSlider):
 
+    def init_drawing(self, dt):
+        self.buttons = [[36,0,"default",None]]
+        super(AccSlider, self).init_drawing(dt)
+
+    def get_val_from_px(self,x):
+        return int(((x-self.abs_min)/(self.abs_max-self.abs_min))*(50-3)+3)
+        
+    def get_disp_from_val(self, val):
+        return "{}m/s^2".format(round(self.val,0))
+
+    def get_px_from_val(self,val):
+        return ((val-3)/(50-3))*(self.abs_max-self.abs_min)+self.abs_min
+
+    def send_val(self):
+        return
+
+    def recieve_val(self):
+        self.val = 300
 class SI_ValueSlider(SetItem):
     pass

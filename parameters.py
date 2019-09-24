@@ -7,7 +7,7 @@ screen_height = 1024
 padding = 50
 padding_hint = padding/screen_width
 radius = 5
-popup_radius = 12
+popup_radius = 14
 
 
 
