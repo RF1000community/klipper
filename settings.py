@@ -302,6 +302,13 @@ class SI_WifiNetwork(SetItem):
             return True
         return super(SI_WifiNetwork, self).on_touch_down(touch)
 
+    def get_color(self):
+        if self.network['stored']:
+            if self.network['in-use']:
+                return [0, 0.7, 0, 1]
+            return [0.7, 0, 0, 1]
+        return p.light_gray
+
 
 class WifiScreen(Screen):
 
