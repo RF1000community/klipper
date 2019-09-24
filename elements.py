@@ -22,7 +22,11 @@ class Btn_Slider(BaseButton):
     offset = NumericProperty()
 
 class BasePopup(Popup):
-    pass
+    def open(self, animation=False, **kwargs):
+        super(BasePopup, self).open(animation=animation, **kwargs)
+    def dismiss(self, animation=False, **kwargs):
+        super(BasePopup, self).dismiss(animation=animation, **kwargs)
+
 
 class UltraSlider(Widget):
     px = NumericProperty() #absolute position of dot in px
