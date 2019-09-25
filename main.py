@@ -22,7 +22,6 @@ from settings import *
 from home import *
 from files import *
 import parameters as p
-from kivy.config import Config
 
 if testing: Config.read('testconfig.ini')
 else: Config.read('config.ini')

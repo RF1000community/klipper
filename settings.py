@@ -1,12 +1,9 @@
 # coding: utf-8
 from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.scrollview import ScrollView
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
-from kivy.uix.popup import Popup
-from kivy.properties import ListProperty, StringProperty, ObjectProperty, NumericProperty
+from kivy.properties import ListProperty, ObjectProperty, NumericProperty
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
 from kivy.logger import Logger
@@ -167,6 +164,7 @@ class Wifi(EventDispatcher):
             return
         cmd = ['nmcli', 'connection', 'down', ssid]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        self.poll(proc, self.process_connections)
 
     def delete(self, ssid):
         # Remove a connection along with its stored password
@@ -200,13 +198,14 @@ class Wifi(EventDispatcher):
             Logger.error('NetworkManager: ' + str(returncode))
             return
 
-        self.get_wifi_list()
+        # Somehow requesting the wifi list right after some actions returns empty output
+        Clock.schedule_once(partial(self.get_wifi_list, no_rescan=True), 1)
 
     def on_networks(self, value):
         Logger.debug('Wifi: Wifi scan complete returning {} networks'.format(len(value)))
 
     def on_wrong_pw(self, *args):
-        Logger.debug('Wifi: Seriously? That wasn\'t even close to the right password.')
+        pass
 
 
 wifi = Wifi()

@@ -2,7 +2,7 @@
 from kivy.uix.widget import Widget
 from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.popup import Popup
-from kivy.properties import NumericProperty, BooleanProperty, StringProperty, ListProperty
+from kivy.properties import NumericProperty, BooleanProperty, StringProperty
 from kivy.uix.vkeyboard import VKeyboard
 from kivy.clock import Clock
 from kivy.app import App

@@ -1,7 +1,6 @@
 from kivy.uix.filechooser import FileChooserIconView
-from kivy.uix.popup import Popup
 from kivy.app import App
-from os.path import expanduser, getmtime, split, dirname, exists, abspath
+from os.path import expanduser, getmtime, split, exists, abspath
 from elements import *
 import parameters as p
 
