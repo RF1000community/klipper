@@ -1,5 +1,4 @@
 # coding: utf-8
-
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
@@ -20,22 +19,59 @@ import random
 class Btn_Stop(RoundButton):
     def stop(self):
         print("stop print")
+
 class Btn_Play(RoundButton):
     def play(self):
         print("start printing")
     def pause(self):
         print("pause print")
+
 class Btn(RoundButton):
     pass
+
 class Btn_Outline(RoundButton):
     def calibrate(self):
         print("OnCalibrate")
+
 class Btn_Temp(RoundButton):
-    pass
+    
+    def recieve_speed(self):
+        return 77
+    def send_speed(self,val):
+        print("send {} as speed".format(val))
+
+    def recieve_flow(self):
+        return 107
+    def send_flow(self,val):
+        print("send {} as flow".format(val))
+
+    def recieve_fan(self):
+        return 77
+    def send_fan(self,val):
+        print("send {} as fan".format(val))
+
+    def recieve_temp_A(self):
+        return 77
+    def send_temp_A(self,val):
+        self.value = val#temporary should be recieve call afterwards
+        print("send {} as Temp A".format(val))
+
+    def recieve_temp_B(self):
+        return 77
+    def send_temp_B(self,val):
+        print("send {} as Temp B".format(val))
+
+    def recieve_temp_bed(self):
+        return 77
+    def send_temp_bed(self,val):
+        print("send {} as Temp bed".format(val))
+
 class Btn_Arrow(RoundButton):
     pass
+
 class Btn_Triple(Widget):
     pass
+
 class Btn_TripleZ(Widget):
     def up(self):
         print("move Z up")
@@ -45,6 +81,7 @@ class Btn_TripleZ(Widget):
         print("stop Z")
     def home(self):
         print("Home Z Axis")
+
 class XyField(Widget):
 
     mm_pos = ListProperty()
@@ -140,10 +177,88 @@ class XyField(Widget):
         self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)
 
 
-class TempSlider(UltraSlider):
+class SpeedSlider(UltraSlider):
     def init_drawing(self, dt):
+        self.val = self.creator.recieve_speed()
+        self.buttons = [[100,0,"no multiplier",None]]
+        super(SpeedSlider, self).init_drawing(dt)
+
+    def get_val_from_px(self, x):
+        return int(((x-self.px_min)/(self.px_width))*(500-10)+10)
+
+    def get_disp_from_val(self, val):
+        if val == 100:
+            self.px = self.get_px_from_val(val)
+        return "{}%".format(val)
+
+    def get_px_from_val(self, val):
+        return int((float(val-10)/(500-10))*(self.px_width)+self.px_min)
+
+class FlowSlider(UltraSlider):        
+    def init_drawing(self, dt):
+        self.val = self.creator.recieve_flow()
+        self.buttons = [[100,0,"no multiplier",None]]
+        super(FlowSlider, self).init_drawing(dt)
+
+    def get_val_from_px(self, x):
+        return int(((x-self.px_min)/(self.px_width))*(110-90)+90)
+
+    def get_disp_from_val(self, val):
+        if val == 100:
+            self.px = self.get_px_from_val(val)
+        return "{}%".format(val)
+
+    def get_px_from_val(self, val):
+        return int((float(val-90)/(110-90))*(self.px_width)+self.px_min)
+
+class FanSlider(UltraSlider):
+    def init_drawing(self, dt):
+        self.val = self.creator.recieve_fan()
+        self.buttons = []
+        super(FanSlider, self).init_drawing(dt)
+
+    def get_val_from_px(self, x):
+        return int(((x-self.px_min)/(self.px_width))*(100))
+
+    def get_disp_from_val(self, val):
+        return "{}%".format(val)
+
+    def get_px_from_val(self, val):
+        return int((float(val)/(100))*(self.px_width)+self.px_min)
+
+
+class BedTempSlider(UltraSlider):
+    def init_drawing(self, dt):
+        self.val = self.creator.recieve_temp_bed()
+        self.buttons = [[0,0,"Off",None],[60,0,"PLA",None],[90,0,"PETG",None],[110,0,"ABS",None]]
+        super(BedTempSlider, self).init_drawing(dt)
+    def get_val_from_px(self, x):
+        v = int(((x-self.px_min)/self.px_width)*(140-30)+30)
+        for b in self.buttons:
+            if v >= b[0]-2 and v <= b[0]+2:
+                v = b[0]
+                self.px = self.get_px_from_val(v)
+                break
+        if v <= 42: v = 0
+        return v
+    def get_disp_from_val(self, val):
+        if self.val == 0:
+            s = "Off"
+        else:
+            s = "{}°C".format(self.val)
+        return s
+    def get_px_from_val(self, val):
+        x = (float(val-30)/float(140-30))*self.px_width+self.px_min
+        if x < self.px_min: x = self.px_min
+        return x
+
+
+class ExtTempSlider(UltraSlider):
+    def init_drawing(self, dt):
+        if   self.creator.idpy == "A": self.val = self.creator.recieve_temp_A()
+        elif self.creator.idpy == "B": self.val = self.creator.recieve_temp_A()
         self.buttons = [[0,14,"Off",None],[70,0,"PLA\ncold pull",None],[90,-68/2,"ABS/PETG\ncold pull",None],[210,68/2,"PLA",None],[230,0,"PETG",None],[250,-68/2,"ABS",None]]
-        super(TempSlider, self).init_drawing(dt)
+        super(ExtTempSlider, self).init_drawing(dt)
     def get_val_from_px(self, x):
         v = int(((x-self.px_min)/self.px_width)*(280-40)+40)
         for b in self.buttons:
@@ -163,7 +278,4 @@ class TempSlider(UltraSlider):
         x = (float(val-40)/float(280-40))*self.px_width+self.px_min
         if x < self.px_min: x = self.px_min
         return x
-    def send_temp_B(self):
-        print("Sent Temp of {} to nozzle".format(self.val))
-    def recieve_temp_B(self):
-        self.val = 0
+

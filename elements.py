@@ -9,43 +9,40 @@ from kivy.app import App
 from collections import deque 
 
 
-
 class BaseButton(ButtonBehavior, Widget):
-    def on_release(self):
-
-
-
-        super(BaseButton, self).on_release()
-        #print(get_instance("temp_A").pressed)
-        #print(get_id(get_instance("temp_A")))
-
+    pass
 
 class RoundButton(BaseButton):
     pass
+
+
 class Btn_Slider(BaseButton):
     val = NumericProperty()
     px = NumericProperty()
     s_title = StringProperty()
     offset = NumericProperty()
 
-class BasePopup(Popup):
+class BasePopup(Popup):# makes this Popup recieve the instance of the calling button to access its methods and idpy
+    def __init__(self,**kwargs):
+        if 'instance' in kwargs: self.creator = kwargs['instance']
+        super(BasePopup,self).__init__(**kwargs)
     def open(self, animation=False, **kwargs):
         super(BasePopup, self).open(animation=animation, **kwargs)
     def dismiss(self, animation=False, **kwargs):
         super(BasePopup, self).dismiss(animation=animation, **kwargs)
 
-
 class UltraSlider(Widget):
     px = NumericProperty() #absolute position of dot in px
     disp = StringProperty()#value displayed by label
     pressed = BooleanProperty(False)
+
     def __init__(self, **kwargs):
         self.buttons = list() #list of lists: e.g. [[val,offset,"name",the instance]]
         self.val = float()    #value, passed to printer, not in px
         self.btn_last_active = None
-        self.recieve_val()
         super(UltraSlider, self).__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
+
     def init_drawing(self, dt):
         self.px_max = self.right-54
         self.px_min = self.x+54
@@ -57,6 +54,7 @@ class UltraSlider(Widget):
             b[3].bind(on_press=self.on_button)
             self.add_widget(b[3])
         self.highlight_button()
+
     def on_touch_down(self, touch):
         if touch.pos[0] > self.px_min-30 and touch.pos[0] < self.px_max+30 and \
            touch.pos[1] > self.y + 95 -15 and touch.pos[1] < self.y + 95 + 15:
@@ -68,12 +66,14 @@ class UltraSlider(Widget):
             if self.btn_last_active is not None: self.btn_last_active[3].active = False
             return True
         return super(UltraSlider, self).on_touch_down(touch)
+
     def on_touch_move(self, touch):
         if touch.grab_current is self:
             x = self.apply_bounds(touch.pos[0])
             self.val = self.get_val_from_px(x)
             self.disp = self.get_disp_from_val(self.val)
             return True
+
     def on_touch_up(self, touch):
         if touch.grab_current is self:
             self.pressed = False
@@ -85,21 +85,25 @@ class UltraSlider(Widget):
             touch.ungrab(self)
             return True
         return super(UltraSlider, self).on_touch_up(touch)
+
     def apply_bounds(self, x):
         if x > self.px_max: x = self.px_max
         elif x < self.px_min: x = self.px_min
         return x
+
     def highlight_button(self):
         if self.btn_last_active is not None: self.btn_last_active[3].active = False
         for b in self.buttons:
             if b[0] == self.val:
                 b[3].active = True
                 self.btn_last_active = b
+
     def on_button(self, instance):
         self.val = instance.val
         self.px = self.get_px_from_val(instance.val)
         self.highlight_button()
         self.disp = self.get_disp_from_val(instance.val)
+
     def get_val_from_px(self,x):
         return x
     def get_disp_from_val(self, val):
@@ -107,35 +111,7 @@ class UltraSlider(Widget):
     def get_px_from_val(self,val):#requires px_max to be set, do not use in __init__
         self.px = int(val)
         return self.px
-    def send_val(self):
-        return
-    def recieve_val(self):
-        return
 
-
-
-
-
-
-class FlowSlider(UltraSlider):        
-        # self.val = (abs_x-self.px_min)*100/(self.px_max-self.px_min)
-        # if self.val%10 <=2:
-        #     self.val -= self.val%10
-        #     self.px = self.val*(self.px_max-self.px_min)/100
-        # elif self.val%10 >= 8:
-        #     self.val -= self.val%10
-        #     self.px = self.val*(self.px_max-self.px_min)/100 +self.px_min
-    def __init__(self, **kwargs):
-        self.sticky_vals = ((0,0))
-        super(UltraSlider, self).__init__(**kwargs)
-    
-    def get_px_from_val(self,abs_x):#  v sets settable range
-        self.val = (abs_x-self.px_min)*(60-3)/(self.px_max-self.px_min)
-        for k in self.sticky_vals:
-            if self.val > k[0]-k[1] and self.val < k[0]+k[1]:
-                self.val = k[0]
-                self.px = self.val*(self.px_max-self.px_min)/100
-        self.disp = "{}m/s".format(round(self.val,1))
 
 def get_id(inst, root_widget = None):
     if root_widget is None: root_widget = App.get_running_app().root
@@ -154,7 +130,6 @@ def get_instance(id, root_widget = None):#BFS => always gives the highest level 
         c = q.popleft()
         if id in c.ids: return c.ids[id]
         q.extend(list(c.ids.values()))
-
 
 class UltraKeyboard(VKeyboard):
     # Copy of VKeyboard, only overwrite two methods
