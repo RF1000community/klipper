@@ -360,7 +360,6 @@ class WifiScreen(Screen):
 
 class PasswordPopup(BasePopup):
     
-    password = StringProperty()
     txt_input = ObjectProperty(None)
     
     def __init__(self, network, **kwargs):
@@ -379,13 +378,14 @@ class PasswordPopup(BasePopup):
     def confirm(self, *args):
         self.password = self.txt_input.text
         wifi.connect(self.ssid, self.password)
-        super(PasswordPopup,self).confirm()
+        self.dismiss()
 
     def wrong_pw(self, instance):
         # Avoid a network being stored with the wrong password
         wifi.delete(self.ssid)
         self.open()
         self.set_focus_on()
+        return True
 
 
 class ConnectionPopup(BasePopup):
