@@ -1,12 +1,9 @@
 # coding: utf-8
 from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.scrollview import ScrollView
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
-from kivy.uix.popup import Popup
-from kivy.properties import ListProperty, StringProperty, ObjectProperty, NumericProperty
+from kivy.properties import ListProperty, ObjectProperty, NumericProperty
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
 from kivy.logger import Logger
@@ -14,9 +11,6 @@ from subprocess import Popen, PIPE, STDOUT
 from functools import partial
 from elements import *
 import parameters as p
-
-#Only for test, will be removed later
-import time
 
 
 class Wifi(EventDispatcher):
@@ -30,8 +24,6 @@ class Wifi(EventDispatcher):
         self.register_event_type('on_networks')
         self.register_event_type('on_wrong_pw')
         self.scan_output = self.connections_output = None
-        #This shouldn't be needed, but it is
-        #self.bind(update_freq=self.on_update_freq)
         self.update_clock = None
         self.networks = []
 
@@ -46,11 +38,11 @@ class Wifi(EventDispatcher):
         try:
             proc = Popen(['nmcli', '-g', 'RUNNING', 'general'], stdout=PIPE, stderr=STDOUT, universal_newlines=True)
         except OSError as e:
-            # 2 is "No such file or directory" error
+            # errno 2 is "No such file or directory" error
             if e.errno == 2:
                 Logger.error("Wifi: NetworkManager not available. Wifimenu will be disabled. ")
                 Logger.error("Wifi: Use 'sudo apt-get install network-manager' to install")
-                return e.errno
+                return 2
             else:
                 # crash in case of unknown error
                 Logger.critical('Wifi: NetworkManager failed with Error:')
@@ -172,12 +164,10 @@ class Wifi(EventDispatcher):
             return
         cmd = ['nmcli', 'connection', 'down', ssid]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-
-    def on_networks(self, *args):
-        pass
         self.poll(proc, self.process_connections)
 
     def delete(self, ssid):
+        # Remove a connection along with its stored password
         if self.state:
             return
         cmd = ['nmcli', 'connection', 'delete', ssid]
@@ -190,6 +180,8 @@ class Wifi(EventDispatcher):
         stdout, stderr = proc.communicate()
         returncode = proc.returncode
 
+        if stdout:
+            Logger.debug('NetworkManager: ' + stdout)
         if stderr:
             Logger.warning('NetworkManager: ' + stderr)
         # If the password was wrong:
@@ -206,10 +198,11 @@ class Wifi(EventDispatcher):
             Logger.error('NetworkManager: ' + str(returncode))
             return
 
-        self.get_wifi_list()
+        # Somehow requesting the wifi list right after some actions returns empty output
+        Clock.schedule_once(partial(self.get_wifi_list, no_rescan=True), 1)
 
-    def on_networks(self, *args):
-        pass
+    def on_networks(self, value):
+        Logger.debug('Wifi: Wifi scan complete returning {} networks'.format(len(value)))
 
     def on_wrong_pw(self, *args):
         pass
@@ -246,7 +239,6 @@ class SI_Wifi(SetItem):
         # don't open wifiscreen when wifi doesn't work
         if self.collide_point(*touch.pos) and not wifi.state:
             mgr = self.parent.parent.parent.manager
-            mgr.transition.direction = 'left'
             mgr.current = 'WifiScreen'
             return True
         return super(SI_Wifi, self).on_touch_down(touch)
@@ -334,7 +326,6 @@ class WifiScreen(Screen):
         box = self.ids.wifi_box
         box.clear_widgets()
         label = Label(text=message)
-        label.markup = True
         label.italic = True
         label.color = p.medium_light_gray
         label.size_hint = (1, None)
