@@ -38,3 +38,10 @@ fc_starting_path = '~/'
 # pos: coordinates are always relative to the innermost Layout, not Widget you are in
 # Widgets: always define size first then pos at least when using top or right.. x:
 # Never Put comments after canvas: Instruction
+"""How to access Instances or their methods:
+    in kv to on_propertychange: id.method() id can be bound within root widget
+    in py someinstance.bind(someinstances on_propertychange = self.method_to_bind) passes instance and every property
+    by instantiating in python, storing instance
+    in python self.ids["id"].method() instances of child widges can be accessed by id (ids is dict with instance as value)
+    get_id(instance) sloow
+    get_instance(id) also slow"""

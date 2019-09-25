@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
@@ -16,13 +18,18 @@ import random
 
 
 class Btn_Stop(RoundButton):
-    pass
+    def stop(self):
+        print("stop print")
 class Btn_Play(RoundButton):
-    pass
+    def play(self):
+        print("start printing")
+    def pause(self):
+        print("pause print")
 class Btn(RoundButton):
     pass
 class Btn_Outline(RoundButton):
-    pass
+    def calibrate(self):
+        print("OnCalibrate")
 class Btn_Temp(RoundButton):
     pass
 class Btn_Arrow(RoundButton):
@@ -30,7 +37,14 @@ class Btn_Arrow(RoundButton):
 class Btn_Triple(Widget):
     pass
 class Btn_TripleZ(Widget):
-    pass
+    def up(self):
+        print("move Z up")
+    def down(self):
+        print("move Z down")
+    def stop(self):
+        print("stop Z")
+    def home(self):
+        print("Home Z Axis")
 class XyField(Widget):
 
     mm_pos = ListProperty()
@@ -124,3 +138,32 @@ class XyField(Widget):
 
     def on_mm_pos(self, instance, value):
         self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)
+
+
+class TempSlider(UltraSlider):
+    def init_drawing(self, dt):
+        self.buttons = [[0,14,"Off",None],[70,0,"PLA\ncold pull",None],[90,-68/2,"ABS/PETG\ncold pull",None],[210,68/2,"PLA",None],[230,0,"PETG",None],[250,-68/2,"ABS",None]]
+        super(TempSlider, self).init_drawing(dt)
+    def get_val_from_px(self, x):
+        v = int(((x-self.px_min)/self.px_width)*(280-40)+40)
+        for b in self.buttons:
+            if v >= b[0]-2 and v <= b[0]+2:
+                v = b[0]
+                self.px = self.get_px_from_val(v)
+                break
+        if v <= 42: v = 0
+        return v
+    def get_disp_from_val(self, val):
+        if self.val == 0:
+            s = "Off"
+        else:
+            s = "{}°C".format(self.val)
+        return s
+    def get_px_from_val(self, val):
+        x = (float(val-40)/float(280-40))*self.px_width+self.px_min
+        if x < self.px_min: x = self.px_min
+        return x
+    def send_temp_B(self):
+        print("Sent Temp of {} to nozzle".format(self.val))
+    def recieve_temp_B(self):
+        self.val = 0

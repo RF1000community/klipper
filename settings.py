@@ -1,3 +1,4 @@
+# coding: utf-8
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
@@ -435,25 +436,30 @@ class PowerPopup(BasePopup):
     def quit(self):
         app = App.get_running_app()
         app.stop()
+
+class SI_ValueSlider(SetItem):
+    pass
+
+class SI_AccSlider(SI_ValueSlider):
+    pass
+
 class AccSlider(UltraSlider):
 
     def init_drawing(self, dt):
-        self.buttons = [[36,0,"default",None]]
+        self.buttons = [[36,0,"default",None],]
         super(AccSlider, self).init_drawing(dt)
 
-    def get_val_from_px(self,x):
-        return int(((x-self.abs_min)/(self.abs_max-self.abs_min))*(50-3)+3)
-        
-    def get_disp_from_val(self, val):
-        return "{}m/s^2".format(round(self.val,0))
+    def get_val_from_px(self, x):
+        return int(((x-self.px_min)/(self.px_width))*(50-3)+3)
 
-    def get_px_from_val(self,val):
-        return ((val-3)/(50-3))*(self.abs_max-self.abs_min)+self.abs_min
+    def get_disp_from_val(self, val):
+        return "{}m/s²".format(self.val)
+
+    def get_px_from_val(self, val):
+        return (float(val-3)/(50-3))*(self.px_width)+self.px_min
 
     def send_val(self):
-        return
+        print("Sent Accelleration of {} to printer".format(self.val))
 
     def recieve_val(self):
-        self.val = 300
-class SI_ValueSlider(SetItem):
-    pass
+        self.val = 36
