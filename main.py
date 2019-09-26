@@ -32,14 +32,80 @@ Builder.load_file("style.kv")
 
 #Clock.schedule_interval(FC._update_files, 1)
 class mainApp(App):
-    
+
     def run(self):
         Clock.schedule_once(self.change_vkeyboard, 0)
         super(mainApp, self).run()
 
+            
+
+    def recieve_speed(self):
+        return 77
+    def send_speed(self,val):
+        print("send {} as speed".format(val))
+
+    def recieve_flow(self):
+        return 107
+    def send_flow(self,val):
+        print("send {} as flow".format(val))
+
+    def recieve_fan(self):
+        return 77
+    def send_fan(self,val):
+        print("send {} as fan".format(val))
+
+    def recieve_temp_A(self):
+        return 77
+    def send_temp_A(self,val):
+        k = self
+        self.value = val#temporary should be recieve call afterwards
+        print("send {} as Temp A".format(val))
+
+    def recieve_temp_B(self):
+        return 77
+    def send_temp_B(self,val):
+        print("send {} as Temp B".format(val))
+
+    def recieve_temp_bed(self):
+        return 77
+    def send_temp_bed(self,val):
+        print("send {} as Temp bed".format(val))
+
     def change_vkeyboard(self, dt):
         self.root_window.set_vkeyboard_class(UltraKeyboard)
+
+    def send_up_Z(self):
+        print("move Z up")
+
+    def send_down_Z(self):
+        print("move Z down")
+
+    def send_stop_Z(self):
+        print("stop Z")
+
+    def send_home_Z(self):
+        print("Home Z Axis")
+
+    def send_stop(self):
+        print("stop print")
+
+    def send_play(self):
+        print("resume print")
+
+    def send_pause(self):
+        print("pause print")
+
+    def send_calibrate(self):
+        print("calibrate")
+
+    def send_acc(self, val):
+        print("Sent Accelleration of {} to printer".format(val))
+
+    def request_acc(self):
+        return 36
+
 
 if __name__ == '__main__':
     print('main runs')
     mainApp().run()
+    print(App.get_running_app().root.ids)

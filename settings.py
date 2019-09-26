@@ -437,7 +437,7 @@ class SI_AccSlider(SI_ValueSlider):
 class AccSlider(UltraSlider):
 
     def init_drawing(self, dt):
-        self.val = self.recieve_val()
+        self.val = App.get_running_app().request_acc()
         self.buttons = [[36,0,"default",None],]
         super(AccSlider, self).init_drawing(dt)
 
@@ -449,9 +449,3 @@ class AccSlider(UltraSlider):
 
     def get_px_from_val(self, val):
         return (float(val-3)/(50-3))*(self.px_width)+self.px_min
-
-    def send_val(self):
-        print("Sent Accelleration of {} to printer".format(self.val))
-
-    def recieve_val(self):
-        return 36

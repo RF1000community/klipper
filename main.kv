@@ -1,6 +1,7 @@
 #:kivy 1.8.0
 #:import Factory kivy.factory.Factory
-#: import screenmanager kivy.uix.screenmanager
+#:import App kivy.app.App
+#:import screenmanager kivy.uix.screenmanager
 #:import p parameters
 #:set tab_height 100
 #:set btn_play_size 64
@@ -8,9 +9,7 @@
 #:set btn_height 64
 #:set home_col_height 133
 
-Tabs:
-
-<Tabs@TabbedPanel>:
+TabbedPanel:
     tab_pos: 'bottom_mid'
     tab_width: p.screen_width/3
     tab_height: tab_height
@@ -60,7 +59,7 @@ Tabs:
             pos: p.padding, l_time_remaining.top+14
         Label:
             id: l_filename
-            text: "Cube_tesfforprintfinalfinalnew2"
+            text: "Cube_testfinalfinalnew2"
             size_hint: None, None
             size: 300,134
             text_size: self.size
@@ -71,7 +70,7 @@ Tabs:
             valign: 'middle'
         Btn_Stop:
             on_release:
-                if self.enabled: self.stop()
+                if self.enabled: App.get_running_app().send_stop()
             id: btn_stop
             size: 118,118
             center_y: l_filename.center_y
@@ -81,8 +80,8 @@ Tabs:
                 if self.enabled and self.paused: self.paused = False
                 elif self.enabled: self.paused = True
             on_release:
-                if self.enabled and self.paused: self.play()
-                elif self.enabled: self.pause()
+                if self.enabled and self.paused: App.get_running_app().send_play()
+                elif self.enabled: App.get_running_app().send_pause()
             on_release:
                 if self.enabled and self.paused: hs_manager.current = "printingscreen"
                 elif self.enabled: hs_manager.current = "homescreen"
@@ -92,11 +91,14 @@ Tabs:
         Divider:
             id: top_divider
             pos: 0, l_filename.top
-        HomeScreenManager:
+        ScreenManager:
+            transition: screenmanager.NoTransition()
             id: hs_manager
             size_hint: None, None
             size: p.screen_width, p.screen_height-top_divider.top
             pos: root.x, top_divider.top
+            HomeScreen:
+            PrintingScreen:
         Btn_Temp:
             on_release: Factory.ExtTempPopup(instance=self).open()
             id: temp_B
@@ -125,10 +127,7 @@ Tabs:
             size: 190,100
             x: p.padding-20
             center_y: p.padding+btn_height+temp_A.center_y
-<HomeScreenManager@ScreenManager>:
-    transition: screenmanager.NoTransition()
-    HomeScreen:
-    PrintingScreen:
+
 <PrintingScreen@Screen>:
     name: "printingscreen"
     FloatLayout:
@@ -191,7 +190,7 @@ Tabs:
             right: btn_tr_A.x
         Btn_Outline:
             id: btn_calibrate
-            on_release: self.calibrate()
+            on_release: App.get_running_app().send_calibrate()
             title: "Mesh Bed Leveling"
             size: btn_tr_B.size
             pos: btn_tr_B.x, btn_tr_A.top +p.padding
@@ -254,14 +253,14 @@ Tabs:
         Rectangle:
             size: self.size
             pos: self.pos
-<Btn_Stop>:
+<Btn_Stop@RoundButton>:
     canvas.before:
         Color:
             rgba: p.red if self.enabled else [0,0,0,0]
         Rectangle:
             pos: self.center_x-btn_play_size/2,self.center_y-btn_play_size/2
             size: btn_play_size,btn_play_size
-<Btn_Play>:
+<Btn_Play@RoundButton>:
     paused: True
     canvas.before:
         Color:
@@ -277,7 +276,7 @@ Tabs:
             rgba: 1,1,1,1 if self.enabled and self.paused else 0
         Triangle:
             points: self.center_x-btn_play_size/2, self.center_y- h/2, self.center_x-btn_play_size/2, self.center_y+ h/2, self.center_x+btn_play_size/2, self.center_y
-<Btn>:
+<Btn@RoundButton>:
     title: ''
     canvas:
         Color:
@@ -286,7 +285,7 @@ Tabs:
             radius: [p.radius,]
             pos: self.pos
             size: self.size
-<Btn_Outline>:
+<Btn_Outline@RoundButton>:
     title: ''
     canvas.before:
         Color:
@@ -294,7 +293,7 @@ Tabs:
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
             width: 1
-<Btn_Arrow>:
+<Btn_Arrow@RoundButton>:
     #:set v 48
     #:set w 24
     dir_right: False
@@ -303,7 +302,7 @@ Tabs:
             rgba: p.button
         Triangle:
             points: [self.x+self.width/2-w/2, self.center_y- v/2, self.x+self.width/2-w/2, self.center_y+ v/2, self.x+self.width/2+w/2, self.center_y] if self.dir_right else [self.x+self.width/2+w/2, self.center_y- v/2, self.x+self.width/2+w/2, self.center_y+ v/2, self.x+self.width/2-w/2, self.center_y]
-<Btn_Triple>:
+<Btn_Triple@Widget>:
     title1: 'Unload'
     title2: ''
     title3: 'Load'
@@ -359,7 +358,7 @@ Tabs:
                 radius: [0,p.radius,p.radius, 0]
                 size: self.size
                 pos: self.pos        
-<Btn_TripleZ>:
+<Btn_TripleZ@Widget>:
     h1: 85
     h2: 85
     h3: 85
@@ -390,8 +389,8 @@ Tabs:
             size: 64, 64
             pos: self.center_x-32, self.center_y-32
     BaseButton:
-        on_press: root.down()
-        on_release: root.stop()
+        on_press: App.get_running_app().send_down_Z()
+        on_release: App.get_running_app().send_stop_Z()
         size: root.width, root.h1
         pos: root.x, root.y
         canvas.before:
@@ -402,7 +401,7 @@ Tabs:
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_release: root.home()
+        on_release: App.get_running_app().send_home_Z()
         size: root.width, root.h2
         pos: root.x, root.y+root.h1
         canvas.before:
@@ -412,8 +411,8 @@ Tabs:
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: root.up()
-        on_release: root.stop()
+        on_press: App.get_running_app().send_up_Z()
+        on_release: App.get_running_app().send_stop_Z()
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
         canvas.before:
@@ -423,7 +422,7 @@ Tabs:
                 radius: [p.radius,p.radius,0,0]
                 size: self.size
                 pos: self.pos       
-<Btn_Temp>:
+<Btn_Temp@RoundButton>:
     red: False
     large_value: "--"
     small_value: "--"
@@ -616,7 +615,7 @@ Tabs:
         Btn_P_Confirm:
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: root.creator.send_speed(slider.val), root.dismiss()
+            on_release: App.get_running_app().send_speed(slider.val), root.dismiss()
 <FlowPopup@BasePopup>:
     size_hint: 0.95,0.4
     title: "Set Material Flow"
@@ -635,7 +634,7 @@ Tabs:
         Btn_P_Confirm:
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: root.creator.send_flow(slider.val), root.dismiss()
+            on_release: App.get_running_app().send_flow(slider.val), root.dismiss()
 <FanPopup@BasePopup>:
     size_hint: 0.95,0.4
     title: "Set Part Cooling"
@@ -654,7 +653,7 @@ Tabs:
         Btn_P_Confirm:
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: root.creator.send_fan(slider.val), root.dismiss()
+            on_release: App.get_running_app().send_fan(slider.val), root.dismiss()
 <BedTempPopup@BasePopup>:
     size_hint: 0.95,0.4
     title: "Set Buildplate Temperature"
@@ -673,7 +672,7 @@ Tabs:
         Btn_P_Confirm:
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: root.creator.send_temp_bed(slider.val), root.dismiss()
+            on_release: App.get_running_app().send_temp_bed(slider.val), root.dismiss()
 <ExtTempPopup@BasePopup>:
     size_hint: 0.95,0.4
     title: "Set Nozzle "+self.creator.idpy+" Temperature"
@@ -694,8 +693,8 @@ Tabs:
             width: root.width/2
             pos: root.center_x, root.y
             on_release:
-                if   root.creator.idpy == "A": root.creator.send_temp_A(slider.val)
-                elif root.creator.idpy == "B": root.creator.send_temp_B(slider.val)
+                if   root.creator.idpy == "A": App.get_running_app().send_temp_A(slider.val)
+                elif root.creator.idpy == "B": App.get_running_app().send_temp_B(slider.val)
             on_release:
                 root.dismiss()
 # FILE  ########################################################################
@@ -969,7 +968,7 @@ Tabs:
         Btn_P_Confirm:
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: (slider.send_val(), root.dismiss())
+            on_release: (App.get_running_app().send_acc(), root.dismiss())
 
 <PasswordPopup>:
     txt_input: pwd_input

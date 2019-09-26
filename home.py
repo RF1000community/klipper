@@ -1,82 +1,14 @@
 # coding: utf-8
-
 from kivy.properties import ListProperty, StringProperty
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
-from elements import *
-#  self.ids.big_button.text = "
 from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Line
 from kivy.graphics.context_instructions import Color
+from elements import *
 import parameters as p
 
 import random
 
-
-class Btn_Stop(RoundButton):
-    def stop(self):
-        print("stop print")
-
-class Btn_Play(RoundButton):
-    def play(self):
-        print("start printing")
-    def pause(self):
-        print("pause print")
-
-class Btn(RoundButton):
-    pass
-
-class Btn_Outline(RoundButton):
-    def calibrate(self):
-        print("OnCalibrate")
-
-class Btn_Temp(RoundButton):
-    
-    def recieve_speed(self):
-        return 77
-    def send_speed(self,val):
-        print("send {} as speed".format(val))
-
-    def recieve_flow(self):
-        return 107
-    def send_flow(self,val):
-        print("send {} as flow".format(val))
-
-    def recieve_fan(self):
-        return 77
-    def send_fan(self,val):
-        print("send {} as fan".format(val))
-
-    def recieve_temp_A(self):
-        return 77
-    def send_temp_A(self,val):
-        self.value = val#temporary should be recieve call afterwards
-        print("send {} as Temp A".format(val))
-
-    def recieve_temp_B(self):
-        return 77
-    def send_temp_B(self,val):
-        print("send {} as Temp B".format(val))
-
-    def recieve_temp_bed(self):
-        return 77
-    def send_temp_bed(self,val):
-        print("send {} as Temp bed".format(val))
-
-class Btn_Arrow(RoundButton):
-    pass
-
-class Btn_Triple(Widget):
-    pass
-
-class Btn_TripleZ(Widget):
-    def up(self):
-        print("move Z up")
-    def down(self):
-        print("move Z down")
-    def stop(self):
-        print("stop Z")
-    def home(self):
-        print("Home Z Axis")
 
 class XyField(Widget):
 
@@ -175,7 +107,7 @@ class XyField(Widget):
 
 class SpeedSlider(UltraSlider):
     def init_drawing(self, dt):
-        self.val = self.creator.recieve_speed()
+        self.val = App.get_running_app().recieve_speed()
         self.buttons = [[100,0,"no multiplier",None]]
         super(SpeedSlider, self).init_drawing(dt)
 
@@ -192,7 +124,7 @@ class SpeedSlider(UltraSlider):
 
 class FlowSlider(UltraSlider):        
     def init_drawing(self, dt):
-        self.val = self.creator.recieve_flow()
+        self.val = App.get_running_app().recieve_flow()
         self.buttons = [[100,0,"no multiplier",None]]
         super(FlowSlider, self).init_drawing(dt)
 
@@ -209,7 +141,7 @@ class FlowSlider(UltraSlider):
 
 class FanSlider(UltraSlider):
     def init_drawing(self, dt):
-        self.val = self.creator.recieve_fan()
+        self.val = App.get_running_app().recieve_fan()
         self.buttons = []
         super(FanSlider, self).init_drawing(dt)
 
@@ -225,7 +157,7 @@ class FanSlider(UltraSlider):
 
 class BedTempSlider(UltraSlider):
     def init_drawing(self, dt):
-        self.val = self.creator.recieve_temp_bed()
+        self.val = App.get_running_app().recieve_temp_bed()
         self.buttons = [[0,0,"Off",None],[60,0,"PLA",None],[90,0,"PETG",None],[110,0,"ABS",None]]
         super(BedTempSlider, self).init_drawing(dt)
     def get_val_from_px(self, x):
@@ -251,8 +183,8 @@ class BedTempSlider(UltraSlider):
 
 class ExtTempSlider(UltraSlider):
     def init_drawing(self, dt):
-        if   self.creator.idpy == "A": self.val = self.creator.recieve_temp_A()
-        elif self.creator.idpy == "B": self.val = self.creator.recieve_temp_A()
+        if   self.creator.idpy == "A": self.val = App.get_running_app().recieve_temp_A()
+        elif self.creator.idpy == "B": self.val = App.get_running_app().recieve_temp_A()
         self.buttons = [[0,14,"Off",None],[70,0,"PLA\ncold pull",None],[90,-68/2,"ABS/PETG\ncold pull",None],[210,68/2,"PLA",None],[230,0,"PETG",None],[250,-68/2,"ABS",None]]
         super(ExtTempSlider, self).init_drawing(dt)
     def get_val_from_px(self, x):
