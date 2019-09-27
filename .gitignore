@@ -4,3 +4,10 @@ out
 .config
 .config.old
 klippy/.version
+
+.dropbox
+desktop.ini
+.vscode/
+*.code-workspace
+*.pyc
+
