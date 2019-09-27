@@ -1,0 +1,4 @@
+[submodule "klippy/extras/KGUI"]
+	path = klippy/extras/KGUI
+	url = https://github.com/D4SK/Klipper-GUI
+	branch = master
