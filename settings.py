@@ -437,7 +437,7 @@ class SI_AccSlider(SI_ValueSlider):
 class AccSlider(UltraSlider):
 
     def init_drawing(self, dt):
-        self.val = App.get_running_app().request_acc()
+        #self.val = App.get_running_app().request_acc()
         self.buttons = [[36,0,"default",None],]
         super(AccSlider, self).init_drawing(dt)
 

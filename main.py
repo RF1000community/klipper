@@ -25,12 +25,10 @@ import parameters as p
 
 if testing: Config.read('testconfig.ini')
 else: Config.read('config.ini')
-#Config.write()
 
 Builder.unload_file(join(kivy_data_dir, 'style.kv'))
 Builder.load_file("style.kv")
 
-#Clock.schedule_interval(FC._update_files, 1)
 class mainApp(App):
 
     def run(self):
@@ -71,27 +69,20 @@ class mainApp(App):
     def send_temp_bed(self,val):
         print("send {} as Temp bed".format(val))
 
-    def change_vkeyboard(self, dt):
-        self.root_window.set_vkeyboard_class(UltraKeyboard)
 
     def send_up_Z(self):
         print("move Z up")
-
     def send_down_Z(self):
         print("move Z down")
-
     def send_stop_Z(self):
         print("stop Z")
-
     def send_home_Z(self):
         print("Home Z Axis")
 
     def send_stop(self):
         print("stop print")
-
     def send_play(self):
         print("resume print")
-
     def send_pause(self):
         print("pause print")
 
@@ -100,12 +91,13 @@ class mainApp(App):
 
     def send_acc(self, val):
         print("Sent Accelleration of {} to printer".format(val))
-
     def request_acc(self):
         return 36
 
+    def change_vkeyboard(self, dt):
+        self.root_window.set_vkeyboard_class(UltraKeyboard)
+    
+
 
 if __name__ == '__main__':
-    print('main runs')
     mainApp().run()
-    print(App.get_running_app().root.ids)
