@@ -38,7 +38,7 @@ sudo apt purge dhcpcd5 --yes && \
 python -m pip install --upgrade --user pip  && \
 python -m pip install --upgrade --user Cython==0.29.10  && \
 python -m pip install --user kivy==1.11.0 && \
-cd / && \
+cd /usr/local/src/ && \
 sudo git clone https://github.com/goodtft/LCD-show.git && \
 sudo chmod -R 755 LCD-show && \
 cd LCD-show/ && \
