@@ -35,15 +35,14 @@ install_kgui()
     # KGUI and WIFI deps
     PKGLIST="libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
     pkg-config libgl1-mesa-dev libgles2-mesa-dev \
-    python-setuptools libgstreamer1.0-dev git-core \
-    gstreamer1.0-plugins-{bad,base,good,ugly} \
-    gstreamer1.0-{omx,alsa} python-dev libmtdev-dev \
-    xclip xsel libjpeg-dev mtdev-tools xorg python-pillow xserver-xorg-video-fbturbo network-manager git python-pip"
+    python-setuptools libgstreamer1.0-dev \
+    python-dev libmtdev-dev \
+    xclip xsel libjpeg-dev mtdev-tools xorg python-pil xserver-xorg-video-fbturbo network-manager git python-pip"
 
     sudo apt-get install --yes ${PKGLIST}
     # Display Driver installation for kgui, 7 inch 1024*600 touchscreen
     sudo apt purge dhcpcd5 --yes
-    cd /
+    cd ~
     sudo git clone https://github.com/goodtft/LCD-show.git
     sudo chmod -R 755 LCD-show
     cd LCD-show/
