@@ -25,7 +25,7 @@ XPIDFILE=/var/run/xorg.pid
 
 case "$1" in
 start)  log_daemon_msg "Starting klipper" $NAME
-        start-stop-daemon --start --quiet --exec "usr/bin/startx" \
+        start-stop-daemon --start --quiet --exec $KLIPPY_EXEC \
                           --background --pidfile $XPIDFILE --make-pidfile \
                           --chuid $KLIPPY_USER --user $KLIPPY_USER \
                           -- $KLIPPY_ARGS
