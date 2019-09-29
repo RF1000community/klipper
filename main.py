@@ -101,3 +101,6 @@ class mainApp(App):
 
 if __name__ == '__main__':
     mainApp().run()
+
+def load_config(config):
+    mainApp().run()
