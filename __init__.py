@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
-import main
+from main import mainApp
 
 def load_config(config):
-    return main.mainApp(config).run()
+    mainApp(config).run()
 
 if __name__ == '__main__':
-    load_config(1)
+    mainApp().run()
