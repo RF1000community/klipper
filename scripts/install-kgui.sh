@@ -41,7 +41,7 @@ install_kgui()
     gstreamer1.0-plugins-good \
     gstreamer1.0-plugins-ugly \
     gstreamer1.0-omx \
-    gscreamer1.0-alsa \
+    gstreamer1.0-alsa \
     python-dev libmtdev-dev \
     xclip xsel libjpeg-dev mtdev-tools xorg python-pil xserver-xorg-video-fbturbo network-manager git python-pip"
 
