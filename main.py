@@ -30,7 +30,7 @@ Builder.unload_file(join(kivy_data_dir, 'style.kv'))
 Builder.load_file("style.kv")
 
 class mainApp(App):
-    def __init__(self, config, **kwargs):
+    def __init__(self, config = None, **kwargs):
         super(mainApp,self).__init__(**kwargs)
 
     def run(self):
