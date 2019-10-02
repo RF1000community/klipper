@@ -39,7 +39,7 @@ install_kgui()
     python-dev libmtdev-dev \
     xclip xsel libjpeg-dev mtdev-tools xorg python-pil xserver-xorg-video-fbturbo network-manager git python-pip"
 
-    sudo apt-get install --yes ${PKGLIST}
+    sudo apt install --yes ${PKGLIST}
     # Display Driver installation for kgui, 7 inch 1024*600 touchscreen
     sudo apt purge dhcpcd5 --yes
     cd ~

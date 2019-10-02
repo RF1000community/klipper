@@ -28,7 +28,7 @@ start)  log_daemon_msg "Starting klipper" $NAME
         start-stop-daemon --start --quiet --exec usr/bin/startx \
                           --background --pidfile $XPIDFILE --make-pidfile \
                           --chuid $KLIPPY_USER --user $KLIPPY_USER \
-                          -- "~/klipperui/klippy/extras/kgui/main.py"
+                          -- "~/klipperui/klippy/extras/kgui/__init__.py"#doesn`t work 
         log_end_msg $?
         ;;
 stop)   log_daemon_msg "Stopping klipper" $NAME
