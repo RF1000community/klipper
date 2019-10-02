@@ -42,12 +42,7 @@ install_kgui()
     sudo apt install --yes ${PKGLIST}
     # Display Driver installation for kgui, 7 inch 1024*600 touchscreen
     sudo apt purge dhcpcd5 --yes
-    cd ~
-    sudo rm -rf LCD-show #to allow rerunning the script without errors
-    sudo git clone https://github.com/goodtft/LCD-show.git
-    sudo chmod -R 755 LCD-show
-    cd LCD-show/
-    sudo ./LCD7C-show 90
+
 }
 # KGUI #####################
 
@@ -92,11 +87,14 @@ KLIPPY_ARGS="${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -l /tmp/klippy.log"
 EOF
 }
 
-# Step 5: Start host software
-start_software()
+install_lcd_driver()
 {
-    report_status "Launching Klipper host software..."
-    sudo /etc/init.d/klipper restart
+    cd ~
+    sudo rm -rf LCD-show #to allow rerunning the script without errors
+    sudo git clone https://github.com/goodtft/LCD-show.git
+    sudo chmod -R 755 LCD-show
+    cd LCD-show/
+    sudo ./LCD7C-show 90
 }
 
 # Helper functions
@@ -126,4 +124,4 @@ install_kgui
 create_virtualenv
 install_script
 install_config
-start_software
+install_lcd_driver
