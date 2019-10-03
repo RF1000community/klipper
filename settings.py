@@ -47,12 +47,13 @@ class Wifi(EventDispatcher):
                 # crash in case of unknown error
                 Logger.critical('Wifi: NetworkManager failed with Error:')
                 raise
-        output = proc.communicate()
-        if output[0].rstrip('\n') == 'running':
+        stdout, stderr = proc.communicate()
+        if stdout.rstrip('\n') == 'running':
             return 0
         else:
             Logger.error('Wifi: NetworkManager not running:')
-            Logger.error('NetworkManager: ' + output[1])
+            if stdout or stderr:
+                Logger.error('NetworkManager: ', stdout, stderr)
             return 3
 
     def on_update_freq(self, instance, value):
