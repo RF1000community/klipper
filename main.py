@@ -22,16 +22,21 @@ from settings import *
 from home import *
 from files import *
 import parameters as p
+import threading
 
 if testing: Config.read('testconfig.ini')
 else: Config.read('config.ini')
 
 Builder.unload_file(join(kivy_data_dir, 'style.kv'))
 Builder.load_file("style.kv")
+print("print")
 
-class mainApp(App):
+class mainApp(App, threading.Thread):
     def __init__(self, config = None, **kwargs):
+        self.config = config
+
         super(mainApp,self).__init__(**kwargs)
+
 
     def run(self):
         Clock.schedule_once(self.change_vkeyboard, 0)
@@ -102,5 +107,5 @@ class mainApp(App):
 
 
 if __name__ == '__main__':
-    mainApp().run()
-
+    k = 1
+    mainApp(k).start() # starts in new thread

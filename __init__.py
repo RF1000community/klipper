@@ -2,7 +2,7 @@
 from main import mainApp
 
 def load_config(config):
-    mainApp(config).run()
+    mainApp(config).start()
 
 if __name__ == '__main__':
-    mainApp().run()
+    mainApp().start()

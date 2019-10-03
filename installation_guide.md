@@ -3,7 +3,6 @@ Raspian buster lite without desktop env.
 add new 'ssh' file with no extension to boot folder to enable ssh
 
 sudo apt-get update
-sudo apt-get upgrade # to get new mesa gl driver, maybe not needed later
 
 sudo raspi-config: memory split = 256, GL Driver, autologin
 
@@ -29,10 +28,8 @@ sudo update-rc.d octoprint defaults.
 https://community.octoprint.org/t/setting-up-octoprint-on-a-raspberry-pi-running-raspbian/2337
 
 ### Klipperui with KGUI
-
+cd ~
 git clone https://github.com/D4SK/klipperui
-chmod +x ./klipperui/scripts/install-kgui.sh  #somehow only needed for this script and not the others
-chmod +x ./klipperui/scripts/klipper-kgui-start.sh
 ./klipperui/scripts/install-kgui.sh # this runs all the kgui and klipper installation 
 
 #see install-kgui.sh and klippy-kgui-requirements.txt (where the pip packages are listed)
@@ -95,3 +92,11 @@ sudo apt install network-manager
 sudo apt purge dhcpcd5
 
 _maybe edit /etc/interfaces_
+
+
+
+### Logs
+
+Klipper: /tmp/klippy.log
+Kivy:  ~/.kivy/logs
+Xorg: /var/log/
