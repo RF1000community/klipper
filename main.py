@@ -107,5 +107,4 @@ class mainApp(App, threading.Thread):
 
 
 if __name__ == '__main__':
-    k = 1
-    mainApp(k).start() # starts in new thread
+    mainApp().run()
