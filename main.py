@@ -31,7 +31,7 @@ Builder.unload_file(join(kivy_data_dir, 'style.kv'))
 Builder.load_file("style.kv")
 print("print")
 
-class mainApp(App, threading.Thread):
+class mainApp(App): #add threading.thread
     def __init__(self, config = None, **kwargs):
         self.config = config
 
