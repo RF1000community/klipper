@@ -25,11 +25,10 @@ XPIDFILE=/var/run/xorg.pid
 
 case "$1" in
 start)  log_daemon_msg "Starting klipper" $NAME
-        source /home/pi/klippy-env/bin/activate
         start-stop-daemon --start --quiet --exec "/usr/bin/startx" \
                         --background --pidfile $PIDFILE --make-pidfile \
                         --chuid $KLIPPY_USER --user $KLIPPY_USER \
-                        -- "/home/pi/klipperui/klippy/extras/kgui/main.py"
+                        -- "/home/pi/klippy-env/bin/python /home/pi/klipperui/klippy/extras/kgui/main.py"
         log_end_msg $?
         ;;
 stop)   log_daemon_msg "Stopping klipper" $NAME
