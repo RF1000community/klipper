@@ -29,7 +29,7 @@ https://community.octoprint.org/t/setting-up-octoprint-on-a-raspberry-pi-running
 
 ### Klipperui with KGUI
 cd ~
-git clone https://github.com/D4SK/klipperui
+git clone --recurse-submodules https://github.com/D4SK/klipperui
 ./klipperui/scripts/install-kgui.sh # this runs all the kgui and klipper installation 
 
 #see install-kgui.sh and klippy-kgui-requirements.txt (where the pip packages are listed)
@@ -65,7 +65,7 @@ sudo apt install --yes \
    xclip xsel libjpeg-dev mtdev-tools xorg python-pillow xserver-xorg-video-fbturbo \
    network-manager && \
 
-sudo apt purge dhcpcd5 --yes && \
+sudo apt purge dhcpcd5 && \
 
 python -m pip install --upgrade --user pip  && \
 python -m pip install --upgrade --user Cython==0.29.10  && \
@@ -74,7 +74,7 @@ cd /usr/local/src/ && \
 sudo git clone https://github.com/goodtft/LCD-show.git && \
 sudo chmod -R 755 LCD-show && \
 cd LCD-show/ && \
-sudo ./LCD7C-show 90 
+sudo ./LCD7C-show 90
 #reboots when finished
 #git clone https://github.com/D4SK/Klipper-GUI 
 
@@ -100,3 +100,7 @@ _maybe edit /etc/interfaces_
 Klipper: /tmp/klippy.log
 Kivy:  ~/.kivy/logs
 Xorg: /var/log/
+
+
+/home/pi/klippy-env/bin/python      klippy executable
+/usr/bin/startx                     xorg
