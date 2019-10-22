@@ -18,6 +18,8 @@ from kivy.app import App
 from kivy.config import Config
 from kivy.clock import Clock
 from elements import UltraKeyboard
+from Xlib.display import Display
+from Xlib import X
 from settings import *
 from home import *
 from files import *
@@ -42,6 +44,22 @@ class mainApp(App): #add threading.thread
         Clock.schedule_once(self.change_vkeyboard, 0)
         super(mainApp, self).run()
 
+    def on_start(self):#starts Xorg on its own
+        TITLE = "main app"
+        HEIGHT = p.screen_height
+        WIDTH = p.screen_width
+        display = Display()
+        root = display.screen().root
+        windowIDs = root.get_full_property(display.intern_atom('_NET_CLIENT_LIST'), 
+            X.AnyPropertyType).value
+        for windowID in windowIDs:
+            window = display.create_resource_object('window', windowID)
+            title = window.get_wm_name()
+            pid = window.get_full_property(display.intern_atom('_NET_WM_PID'), 
+            X.AnyPropertyType)
+            if TITLE in title:
+                window.configure(width = WIDTH, height = HEIGHT)
+                display.sync()
             
 
     def recieve_speed(self):
