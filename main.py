@@ -33,18 +33,9 @@ Builder.unload_file(join(kivy_data_dir, 'style.kv'))
 Builder.load_file("style.kv")
 print("print")
 
-class mainApp(App): #add threading.thread
+class mainApp(App, threading): #add threading.thread
     def __init__(self, config = None, **kwargs):
         self.config = config
-
-        super(mainApp,self).__init__(**kwargs)
-
-
-    def run(self):
-        Clock.schedule_once(self.change_vkeyboard, 0)
-        super(mainApp, self).run()
-
-    def on_start(self):#starts Xorg on its own
         TITLE = "main app"
         HEIGHT = p.screen_height
         WIDTH = p.screen_width
@@ -58,8 +49,19 @@ class mainApp(App): #add threading.thread
             pid = window.get_full_property(display.intern_atom('_NET_WM_PID'), 
             X.AnyPropertyType)
             if TITLE in title:
+                print("found Window")
                 window.configure(width = WIDTH, height = HEIGHT)
                 display.sync()
+
+        super(mainApp,self).__init__(**kwargs)
+
+
+    def run(self):
+        Clock.schedule_once(self.change_vkeyboard, 0)
+        super(mainApp, self).run()
+
+    def on_start(self):#starts Xorg on its own
+ 
             
 
     def recieve_speed(self):
