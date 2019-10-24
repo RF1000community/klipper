@@ -11,8 +11,6 @@ import os
 if not testing: 
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'gl'
-    from Xlib.display import Display
-    from Xlib import X
 from os.path import dirname, join
 from kivy import kivy_data_dir
 from kivy.lang import Builder
@@ -37,23 +35,6 @@ class mainApp(App, threading.Thread): #add threading.thread => inherits start() 
     def __init__(self, config = None, **kwargs):
         logging.info("Kivy app initializing...")
         self.config = config
-        if not testing:
-            TITLE = "main app"
-            HEIGHT = p.screen_height
-            WIDTH = p.screen_width
-            display = Display()
-            root = display.screen().root
-            windowIDs = root.get_full_property(display.intern_atom('_NET_CLIENT_LIST'), 
-                X.AnyPropertyType).value
-            for windowID in windowIDs:
-                window = display.create_resource_object('window', windowID)
-                title = window.get_wm_name()
-                pid = window.get_full_property(display.intern_atom('_NET_WM_PID'), 
-                X.AnyPropertyType)
-                if TITLE in title:
-                    print("found Window")
-                    window.configure(width = WIDTH, height = HEIGHT)
-                    display.sync()
         super(mainApp,self).__init__(**kwargs)
 
     def run(self):
