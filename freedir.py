@@ -87,10 +87,9 @@ def get_space(path):
     proc = Popen(df_cmd, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
     output = proc.communicate()[0]
     if proc.returncode != 0:
-        raise Exception('Error while calling df')
+        raise Exception('df failed with returncode ' + proc.returncode)
     output = output.splitlines()[1]
     avail = int(output.rstrip('M'))
-    end = time.time()
     return avail
 
 if __name__ == '__main__':
