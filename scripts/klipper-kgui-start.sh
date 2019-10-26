@@ -16,7 +16,6 @@ DESC="klipper daemon"
 NAME="klipper"
 DEFAULTS_FILE=/etc/default/klipper
 PIDFILE=/var/run/klipper.pid
-XPIDFILE=/var/run/xorg.pid
 
 . /lib/lsb/init-functions
 
@@ -26,9 +25,9 @@ XPIDFILE=/var/run/xorg.pid
 case "$1" in
 start)  log_daemon_msg "Starting klipper" $NAME
         start-stop-daemon --start --quiet --exec "/usr/bin/startx" \
-                        --background --pidfile $PIDFILE --make-pidfile \
+                        --pidfile $PIDFILE --make-pidfile \
                         --chuid $KLIPPY_USER --user $KLIPPY_USER \
-                        -- "/home/pi/klippy-env/bin/python /home/pi/klipperui/klippy/extras/kgui/main.py"
+                        -- "/home/pi/klippy-env/bin/python /home/pi/klipperui/klippy/extras/kgui/__init__.py"
         log_end_msg $?
         ;;
 stop)   log_daemon_msg "Stopping klipper" $NAME
