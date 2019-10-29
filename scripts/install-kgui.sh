@@ -29,7 +29,6 @@ install_packages()
 
 
 # Git currently needs to be installed befofehand
-# KGUI ######################
 install_kgui()
 {
     # KGUI and WIFI deps
@@ -46,11 +45,9 @@ install_kgui()
     xclip xsel libjpeg-dev mtdev-tools xorg python-pil xserver-xorg-video-fbturbo network-manager git python-pip"
 
     sudo apt install --yes ${PKGLIST}
-    # Display Driver installation for kgui, 7 inch 1024*600 touchscreen
     sudo apt purge dhcpcd5 --yes
 
 }
-# KGUI #####################
 
 # Step 2: Create python virtual environment
 create_virtualenv()
@@ -68,9 +65,7 @@ create_virtualenv()
 install_script()
 {
     report_status "Installing system start script..."
-    # KGUI ##########
     sudo cp "${SRCDIR}/scripts/klipper-kgui-start.sh" /etc/init.d/klipper
-    # KGUI ##########
     sudo update-rc.d klipper defaults
 }
 
@@ -86,13 +81,14 @@ install_config()
 
 KLIPPY_USER=$USER
 
-KLIPPY_EXEC=${PYTHONDIR}/bin/python
-
+KLIPPY_EXEC="/usr/bin/startx"
 KLIPPY_ARGS="${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -l /tmp/klippy.log"
 
 EOF
 }
 
+
+# Display Driver installation for kgui, 7 inch 1024*600 touchscreen
 install_lcd_driver()
 {
     cd ~

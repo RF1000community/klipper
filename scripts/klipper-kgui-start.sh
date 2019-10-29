@@ -25,9 +25,9 @@ PIDFILE=/var/run/klipper.pid
 case "$1" in
 start)  log_daemon_msg "Starting klipper" $NAME
         source /home/pi/klippy-env/bin/activate
-        start-stop-daemon --start --quiet --exec /usr/bin/startx \
-                        --chuid $KLIPPY_USER --user $KLIPPY_USER \
-                        -- /home/pi/klipperui/klippy/extras/kgui/__init__.py
+        start-stop-daemon --start --quiet --exec $KLIPPY_EXEC \
+                          --chuid $KLIPPY_USER --user $KLIPPY_USER \
+                          -- $KLIPPY_ARGS
         log_end_msg $?
         ;;
 stop)   log_daemon_msg "Stopping klipper" $NAME
