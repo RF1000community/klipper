@@ -29,8 +29,8 @@ import logging
 if testing: Config.read(str(Path(__file__).resolve().parent) + '/testconfig.ini') #this needs an absolute path otherwise config will only be loaded when working directory is parent directory of main.py
 else:       Config.read(str(Path(__file__).resolve().parent) + '/config.ini')
 
-Builder.unload_file(join(kivy_data_dir, 'style.kv'))
-Builder.load_file("style.kv")
+#Builder.unload_file(join(kivy_data_dir, 'style.kv'))
+#Builder.load_file("style.kv")# just removet for testing
 
 class mainApp(App, threading.Thread): #add threading.thread => inherits start() method to start in new thread
     def __init__(self, config = None, **kwargs):
@@ -39,6 +39,7 @@ class mainApp(App, threading.Thread): #add threading.thread => inherits start() 
         super(mainApp,self).__init__(**kwargs)
 
     def run(self):
+        logging.info("Kivy app.run")
         Clock.schedule_once(self.change_vkeyboard, 0)
         super(mainApp, self).run()
 
