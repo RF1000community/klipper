@@ -44,6 +44,7 @@ install_kgui()
     python-dev libmtdev-dev \
     xclip xsel libjpeg-dev mtdev-tools xorg python-pil xserver-xorg-video-fbturbo network-manager git python-pip"
 
+    report_status "install GUI packages"
     sudo apt install --yes ${PKGLIST}
     sudo apt purge dhcpcd5 --yes
 
@@ -56,7 +57,7 @@ create_virtualenv()
 
     # Create virtualenv if it doesn't already exist
     [ ! -d ${PYTHONDIR} ] && virtualenv ${PYTHONDIR}
-
+    report_status "install pip packages..."
     # Install/update dependencies                             v  custom KGUI list of pip packages
     ${PYTHONDIR}/bin/pip install -r ${SRCDIR}/scripts/klippy-kgui-requirements.txt
 }
@@ -72,6 +73,7 @@ install_script()
 # Step 4: Install startup script config
 install_config()
 {
+    report_status "Set defaults file..."
     DEFAULTS_FILE=/etc/default/klipper
     [ -f $DEFAULTS_FILE ] && return
 
@@ -91,6 +93,7 @@ EOF
 # Display Driver installation for kgui, 7 inch 1024*600 touchscreen
 install_lcd_driver()
 {
+    report_status "Installing LCD Driver..."
     cd ~
     sudo rm -rf LCD-show #to allow rerunning the script without errors
     sudo git clone https://github.com/goodtft/LCD-show.git
