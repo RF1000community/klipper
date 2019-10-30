@@ -17,7 +17,7 @@ from kivy.lang import Builder
 from kivy.app import App
 from kivy.config import Config
 from kivy.clock import Clock
-from pathlib import Path  #for testing in python2 use pip install pathlib
+from os.path import join
 from elements import UltraKeyboard
 from settings import *
 from home import *
@@ -26,11 +26,11 @@ import parameters as p
 import threading
 import logging
 
-if testing: Config.read(str(Path(__file__).resolve().parent) + '/testconfig.ini') #this needs an absolute path otherwise config will only be loaded when working directory is parent directory of main.py
-else:       Config.read(str(Path(__file__).resolve().parent) + '/config.ini')
+if testing: Config.read(join(p.kgui_dir, 'testconfig.ini')) #this needs an absolute path otherwise config will only be loaded when working directory is parent directory of main.py
+else:       Config.read(join(p.kgui_dir, 'config.ini'))
 
-#Builder.unload_file(join(kivy_data_dir, 'style.kv'))
-#Builder.load_file("style.kv")# just removet for testing
+Builder.unload_file(join(kivy_data_dir, 'style.kv'))
+Builder.load_file(join(p.kgui_dir, "style.kv"))
 
 class mainApp(App, threading.Thread): #add threading.thread => inherits start() method to start in new thread
     def __init__(self, config = None, **kwargs):
