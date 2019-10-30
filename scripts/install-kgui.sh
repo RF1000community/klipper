@@ -44,9 +44,13 @@ install_kgui()
     python-dev libmtdev-dev \
     xclip xsel libjpeg-dev mtdev-tools xorg python-pil xserver-xorg-video-fbturbo network-manager git python-pip"
 
-    report_status "install GUI packages"
+    report_status "install GUI packages..."
     sudo apt install --yes ${PKGLIST}
     sudo apt purge dhcpcd5 --yes
+    report_status "Xwrapper config mod..."
+    #change line in Xwrapper.config so xorg feels inclined to start when asked by systemd
+    # -i for in place (just modify file) s for substitute (this line)
+    sudo sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
 
 }
 

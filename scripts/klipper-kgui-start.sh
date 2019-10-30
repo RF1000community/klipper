@@ -21,7 +21,7 @@ PIDFILE=/var/run/klipper.pid
 
 # Read defaults file
 [ -r $DEFAULTS_FILE ] && . $DEFAULTS_FILE
-
+#TODO add pidfile back in
 case "$1" in
 start)  log_daemon_msg "Starting klipper" $NAME
         source /home/pi/klippy-env/bin/activate
