@@ -130,7 +130,7 @@ class Wifi(EventDispatcher):
                 f = wifi.split(':')
                 in_use = '*' in f[3]
                 # create a dictionary for each network containing the fields
-                entry = {'ssid': f[0], 'signal': int(f[1]), 'bars': f[2], 'in-use': in_use}
+                entry = {'ssid': f[0], 'signal': f[1], 'bars': f[2], 'in-use': in_use}
                 stored = entry['ssid'] in self.connections_output.splitlines()
                 entry['stored'] = stored
                 # Put in-use network to beginning of list
