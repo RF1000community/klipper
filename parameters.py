@@ -45,3 +45,8 @@ fc_starting_path = '~/'
     in python self.ids["id"].method() instances of child widges can be accessed by id (ids is dict with instance as value)
     get_id(instance) sloow
     get_instance(id) also slow"""
+
+
+
+from os.path import dirname
+kgui_dir = dirname(__file__)
