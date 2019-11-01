@@ -24,7 +24,9 @@ from files import *
 import parameters as p
 import threading
 import logging
+import site
 
+site.addsitedir(p.kgui_dir)#add parent directory to sys.path so main.kv (parser.py) can import from it
 
 if testing: Config.read(join(p.kgui_dir, "testconfig.ini")) #this needs an absolute path otherwise config will only be loaded when working directory is parent directory of main.py
 else:       Config.read(join(p.kgui_dir, "config.ini"))

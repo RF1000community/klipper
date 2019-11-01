@@ -25,11 +25,11 @@ TabbedPanel:
 # HOME ########################################################################
 <HomeTab@TabbedPanelItem>:
     background_down: '' # dadurch nimmt es background color an, sowieso immer mit dessen opacity auch waere es ein bild
-    background_normal: 'Logos/Black.png'
+    background_normal: p.kgui_dir+'/Logos/Black.png'
     background_color: p.background
     canvas:
         Rectangle:
-            source: 'Logos/HomeIcon.png'
+            source: p.kgui_dir+'/Logos/HomeIcon.png'
             size: 100, 100
             pos: 50, 0
         Color:
@@ -380,7 +380,7 @@ TabbedPanel:
         Triangle:
             points: self.center_x-u,self.top-self.h3/2-t, self.center_x+u, self.top-self.h3/2-t, self.center_x, self.top-self.h3/2+t
         Rectangle:
-            source: 'Logos/HomeIcon.png'
+            source: p.kgui_dir+'/Logos/HomeIcon.png'
             size: 64, 64
             pos: self.center_x-32, self.center_y-32
     BaseButton:
@@ -647,11 +647,11 @@ TabbedPanel:
 # FILE  ########################################################################
 <FileTab@TabbedPanelItem>:
     background_down: ''
-    background_normal: 'Logos/Black.png'
+    background_normal: p.kgui_dir+'/Logos/Black.png'
     background_color: p.background
     canvas:
         Rectangle:
-            source: 'Logos/FilesIcon.png'
+            source: p.kgui_dir+'/Logos/FilesIcon.png'
             size: 100,100
             pos: 250, 0
         Color:
@@ -697,11 +697,11 @@ TabbedPanel:
 # SETTING ########################################################################
 <SettingTab@TabbedPanelItem>:
     background_down: '' 
-    background_normal: 'Logos/Black.png'
+    background_normal: p.kgui_dir+'/Logos/Black.png'
     background_color: p.background
     canvas:
         Rectangle:
-            source: 'Logos/SettingsIcon.png'
+            source: p.kgui_dir+'/Logos/SettingsIcon.png'
             size: 100, 100
             pos: 450, 0
         Color:
@@ -775,10 +775,10 @@ TabbedPanel:
             Button:#TODO Change to RectangleButton
                 canvas:
                     Rectangle:
-                        source: 'Logos/BackButton.png'
+                        source: p.kgui_dir+'/Logos/BackButton.png'
                         size: 70, 70
                         pos: 30, self.y+20
-                background_normal: 'Logos/Transparent.png'
+                background_normal: p.kgui_dir+'/Logos/Transparent.png'
                 background_down: ''
                 background_color: p.translucent_white
                 pos_hint: {'x':0, 'y': 0}
