@@ -26,10 +26,10 @@ import threading
 import logging
 
 
-if testing: Config.read(join(p.kgui_dir, 'testconfig.ini')) #this needs an absolute path otherwise config will only be loaded when working directory is parent directory of main.py
-else:       Config.read(join(p.kgui_dir, 'config.ini'))
+if testing: Config.read(join(p.kgui_dir, "testconfig.ini")) #this needs an absolute path otherwise config will only be loaded when working directory is parent directory of main.py
+else:       Config.read(join(p.kgui_dir, "config.ini"))
 
-Builder.unload_file(join(kivy_data_dir, 'style.kv'))
+Builder.unload_file(join(kivy_data_dir, "style.kv"))
 Builder.load_file(join(p.kgui_dir, "style.kv"))
 
 class mainApp(App, threading.Thread): #add threading.thread => inherits start() method to start in new thread
