@@ -11,8 +11,7 @@
 # Description:       Starts the Klipper daemon.
 ### END INIT INFO
 
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/pi/klippy-env/bin #maybe last is not necessary
-PYTHONPATH=/home/pi/klipperui/klippy/extras/kgui #for kgui to make the local import in main.kv work
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 DESC="klipper daemon"
 NAME="klipper"
 DEFAULTS_FILE=/etc/default/klipper

@@ -91,7 +91,8 @@ KLIPPY_EXEC="/usr/bin/startx"
 KLIPPY_ARGS="${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
 
 EOF
-}#-v is just for addidtional debugging information
+}
+#-v is just for addidtional debugging information
 
 
 # Display Driver installation for kgui, 7 inch 1024*600 touchscreen
