@@ -38,8 +38,8 @@ class mainApp(App, threading.Thread): #add threading.thread => inherits start() 
     def __init__(self, config = None, **kwargs):# runs in klippy thread
         logging.info("Kivy app initializing...")
         if not testing:
-            self.config = config
-            self.printer = self.config.get_printer()
+            self.klipper_config = config
+            self.printer = self.klippper_config.get_printer()
             self.reactor = self.printer.get_reactor()
             self.printer.register_event_handler("klippy:ready", self.handle_ready)
         super(mainApp, self).__init__(**kwargs)
