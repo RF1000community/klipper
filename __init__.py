@@ -39,7 +39,7 @@ class mainApp(App, threading.Thread): #add threading.thread => inherits start() 
         logging.info("Kivy app initializing...")
         if not testing:
             self.klipper_config = config
-            self.printer = self.klippper_config.get_printer()
+            self.printer = self.klipper_config.get_printer()
             self.reactor = self.printer.get_reactor()
             self.printer.register_event_handler("klippy:ready", self.handle_ready)
         super(mainApp, self).__init__(**kwargs)
