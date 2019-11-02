@@ -73,7 +73,7 @@ class Wifi(EventDispatcher):
         if self.state:
             return
         rescan = 'no' if no_rescan else 'auto'
-        cmd = ['nmcli', '--get-values', 'SSID,SIGNAL,BARS,IN-USE', 'device', 'wifi', 'list', '--rescan', rescan]
+        cmd = ['nmcli', '--get-values', 'SIGNAL,IN-USE,SSID', 'device', 'wifi', 'list', '--rescan', rescan]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
         self.poll(proc, self.parse_wifi_list)
         # Also get the list of stored connections to apply to the wifi list
@@ -127,10 +127,11 @@ class Wifi(EventDispatcher):
         if self.scan_output and self.connections_output:
             wifi_list = []
             for wifi in self.scan_output.splitlines():
-                f = wifi.split(':')
-                in_use = '*' in f[3]
+                # Only allow two splits in case some doofus puts ':' in the wifi name
+                f = wifi.split(':', 2)
+                in_use = '*' in f[1]
                 # create a dictionary for each network containing the fields
-                entry = {'ssid': f[0], 'signal': f[1], 'bars': f[2], 'in-use': in_use}
+                entry = {'signal': int(f[0]), 'in-use': in_use, 'ssid': f[2]}
                 stored = entry['ssid'] in self.connections_output.splitlines()
                 entry['stored'] = stored
                 # Put in-use network to beginning of list
