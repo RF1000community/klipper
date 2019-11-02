@@ -23,7 +23,8 @@ translucent_white = [1,1,1,0.1]
 accent = [0,0.76,0.9,1]
 red = [0.9,0,0,1]
 
-
+from os.path import dirname
+kgui_dir = dirname(__file__)
 # The default directory of the filechooser
 fc_starting_path = '~/'
 
@@ -48,5 +49,3 @@ fc_starting_path = '~/'
 
 
 
-from os.path import dirname
-kgui_dir = dirname(__file__)

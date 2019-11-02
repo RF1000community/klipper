@@ -24,20 +24,22 @@ from files import *
 import parameters as p
 import threading
 import logging
+import site
 
+site.addsitedir(p.kgui_dir)#add parent directory to sys.path so main.kv (parser.py) can import from it
 
-if testing: Config.read(join(p.kgui_dir, 'testconfig.ini')) #this needs an absolute path otherwise config will only be loaded when working directory is parent directory of main.py
-else:       Config.read(join(p.kgui_dir, 'config.ini'))
+if testing: Config.read(join(p.kgui_dir, "testconfig.ini")) #this needs an absolute path otherwise config will only be loaded when working directory is parent directory of main.py
+else:       Config.read(join(p.kgui_dir, "config.ini"))
 
-Builder.unload_file(join(kivy_data_dir, 'style.kv'))
+Builder.unload_file(join(kivy_data_dir, "style.kv"))
 Builder.load_file(join(p.kgui_dir, "style.kv"))
 
 class mainApp(App, threading.Thread): #add threading.thread => inherits start() method to start in new thread
     def __init__(self, config = None, **kwargs):# runs in klippy thread
         logging.info("Kivy app initializing...")
         if not testing:
-            self.config = config
-            self.printer = self.config.get_printer()
+            self.klipper_config = config
+            self.printer = self.klipper_config.get_printer()
             self.reactor = self.printer.get_reactor()
             self.printer.register_event_handler("klippy:ready", self.handle_ready)
         super(mainApp, self).__init__(**kwargs)
