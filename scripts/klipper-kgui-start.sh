@@ -25,7 +25,7 @@ PIDFILE=/var/run/klipper.pid
 #klippy.py and klipper-kgui-start.sh need to have executable permission!
 case "$1" in
 start)  log_daemon_msg "Starting klipper" $NAME
-        source /home/pi/klippy-env/bin/activate
+        source ${PYTHONDIR}/bin/activate
         start-stop-daemon --start --quiet --exec $KLIPPY_EXEC \
                           --pidfile $PIDFILE --make-pidfile \
                           --chuid $KLIPPY_USER --user $KLIPPY_USER \

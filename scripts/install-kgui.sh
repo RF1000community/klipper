@@ -20,11 +20,11 @@ install_packages()
 
     # Update system package info
     report_status "Running apt-get update..."
-    sudo apt-get update
+    sudo apt update
 
     # Install desired packages
     report_status "Installing packages..."
-    sudo apt-get install --yes ${PKGLIST}
+    sudo apt install --yes ${PKGLIST}
 }
 
 
@@ -46,10 +46,11 @@ install_kgui()
 
     report_status "install GUI packages..."
     sudo apt install --yes ${PKGLIST}
+    # Wifi 
     sudo apt purge dhcpcd5 --yes
     report_status "Xwrapper config mod..."
-    #change line in Xwrapper.config so xorg feels inclined to start when asked by systemd
-    # -i for in place (just modify file) s for substitute (this line)
+    # change line in Xwrapper.config so xorg feels inclined to start when asked by systemd
+    # -i for in place (just modify file), s for substitute (this line)
     sudo sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
 
 }
@@ -58,7 +59,6 @@ install_kgui()
 create_virtualenv()
 {
     report_status "Updating python virtual environment..."
-
     # Create virtualenv if it doesn't already exist
     [ ! -d ${PYTHONDIR} ] && virtualenv ${PYTHONDIR}
     report_status "install pip packages..."
@@ -84,12 +84,10 @@ install_config()
     report_status "Installing system start configuration..."
     sudo /bin/sh -c "cat > $DEFAULTS_FILE" <<EOF
 # Configuration for /etc/init.d/klipper
-
 KLIPPY_USER=$USER
-
+PYTHONDIR
 KLIPPY_EXEC="/usr/bin/startx"
 KLIPPY_ARGS="${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
-
 EOF
 }
 #-v is just for addidtional debugging information
