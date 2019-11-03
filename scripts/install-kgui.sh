@@ -85,9 +85,13 @@ install_config()
     sudo /bin/sh -c "cat > $DEFAULTS_FILE" <<EOF
 # Configuration for /etc/init.d/klipper
 KLIPPY_USER=$USER
-PYTHONDIR
+
+PYTHONDIR=$PYTHONDIR
+
 KLIPPY_EXEC="/usr/bin/startx"
+
 KLIPPY_ARGS="${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
+
 EOF
 }
 #-v is just for addidtional debugging information
