@@ -1,10 +1,12 @@
 #!/bin/bash
-# This script installs Klipper on a Raspberry Pi machine running Octopi.
+# This script installs Klipper on a Raspberry Pi machine running Octopi, with git installed
 
 PYTHONDIR="${HOME}/klippy-env"
+# Find SRCDIR from the pathname of this script
+SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
 
-# Step 1: Install system packages
-install_packages()
+
+install_klipper_packages()
 {
     # Packages for python cffi
     PKGLIST="python-virtualenv virtualenv python-dev libffi-dev build-essential"
@@ -17,11 +19,9 @@ install_packages()
     # ARM chip installation and building
     PKGLIST="${PKGLIST} stm32flash dfu-util libnewlib-arm-none-eabi"
     PKGLIST="${PKGLIST} gcc-arm-none-eabi binutils-arm-none-eabi"
-
     # Update system package info
     report_status "Running apt-get update..."
     sudo apt update
-
     # Install desired packages
     report_status "Installing packages..."
     sudo apt install --yes ${PKGLIST}
@@ -29,7 +29,7 @@ install_packages()
 
 
 # Git currently needs to be installed befofehand
-install_kgui()
+install_kgui_packages()
 {
     # KGUI and WIFI deps
     PKGLIST="libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
@@ -66,35 +66,26 @@ create_virtualenv()
     ${PYTHONDIR}/bin/pip install -r ${SRCDIR}/scripts/klippy-kgui-requirements.txt
 }
 
-# Step 3: Install custom KGUI start script
-install_script()
+
+install_service()
 {
-    report_status "Installing system start script..."
-    sudo cp "${SRCDIR}/scripts/klipper-kgui-start.sh" /etc/init.d/klipper
-    sudo update-rc.d klipper defaults
-}
+    report_status "Install systemd service..."
+    sudo cat > /etc/systemd/system/klipper.service <<EOF
+[Unit]
+Description="Klipper with GUI running in Xorg"
+After=multi-user.target
 
-# Step 4: Install startup script config
-install_config()
-{
-    report_status "Set defaults file..."
-    DEFAULTS_FILE=/etc/default/klipper
-    [ -f $DEFAULTS_FILE ] && return
+[Service]
+Type=simple
+ExecStart="/usr/bin/startx ${PYTHONDIR}/bin/python ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
 
-    report_status "Installing system start configuration..."
-    sudo /bin/sh -c "cat > $DEFAULTS_FILE" <<EOF
-# Configuration for /etc/init.d/klipper
-KLIPPY_USER=$USER
-
-PYTHONDIR=$PYTHONDIR
-
-KLIPPY_EXEC="/usr/bin/startx"
-
-KLIPPY_ARGS="${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
-
+[Install]
+WantedBy=multi-user.target
 EOF
+    sudo chmod +x /etc/systemd/system/klipper.service
+    sudo systemctl daemon-reload
+    sudo systemctl enable klipper.service
 }
-#-v is just for addidtional debugging information
 
 
 # Display Driver installation for kgui, 7 inch 1024*600 touchscreen
@@ -126,14 +117,10 @@ verify_ready()
 # Force script to exit if an error occurs
 set -e
 
-# Find SRCDIR from the pathname of this script
-SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
-
 # Run installation steps defined above
 verify_ready
-install_packages
-install_kgui
+install_klipper_packages
+install_kgui_packages
 create_virtualenv
-install_script
-install_config
+install_service
 install_lcd_driver
