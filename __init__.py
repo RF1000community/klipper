@@ -125,8 +125,7 @@ class mainApp(App, threading.Thread): #add threading.thread => inherits start() 
             self.printer.reactor.end()
         self.reactor.register_async_callback(restart())
     def quit(self):
-        app = App.get_running_app()
-        app.stop()
+        self.stop()
 
     def change_vkeyboard(self, dt):
         self.root_window.set_vkeyboard_class(UltraKeyboard)

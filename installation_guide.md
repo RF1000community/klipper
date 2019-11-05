@@ -102,5 +102,10 @@ Kivy:  ~/.kivy/logs
 Xorg: /var/log/
 
 
+### Shutdown without needing to provide password
+
+sudo echo "%sudo ALL=(ALL) NOPASSWD: /bin/systemctl" >> /etc/sudoers
+
+
 /home/pi/klippy-env/bin/python      klippy executable
 /usr/bin/startx                     xorg
