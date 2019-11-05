@@ -116,9 +116,9 @@ class mainApp(App, threading.Thread): #add threading.thread => inherits start() 
         return 36
 
     def poweroff(self):
-        Popen(['systemctl', 'poweroff'])
+        Popen(['sudo','systemctl', 'poweroff'])
     def reboot(self):
-        Popen(['systemctl', 'reboot'])
+        Popen(['sudo','systemctl', 'reboot'])
     def restart_klipper(self):
         def restart(e=None):
             self.printer.run_result = 'fimrmware_restart'
