@@ -2,11 +2,11 @@ Raspian buster lite without desktop env.
 
 add new 'ssh' file with no extension to boot folder to enable ssh
 
-sudo apt-get update
+sudo apt update
 
 sudo raspi-config: memory split = 256, GL Driver, autologin
 
-sudo apt-get install git python-pip virtualenv
+sudo apt install git python-pip virtualenv
 
 ### Octoprint from source
 cd ~

@@ -17,6 +17,7 @@ from kivy.app import App
 from kivy.config import Config
 from kivy.clock import Clock
 from os.path import join
+from subprocess import Popen
 from elements import UltraKeyboard
 from settings import *
 from home import *
@@ -98,8 +99,7 @@ class mainApp(App, threading.Thread): #add threading.thread => inherits start() 
     def send_stop_Z(self):
         print("stop Z")
     def send_home_Z(self):
-        self.reactor.register_async_callback(self.gcode.cmd_G28("Z"))
-        logging.info("sent G28 Z from kgui")
+        self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28("Z")))
     def send_stop(self):
         print("stop print")
     def send_play(self):
@@ -115,11 +115,19 @@ class mainApp(App, threading.Thread): #add threading.thread => inherits start() 
     def request_acc(self):
         return 36
 
+    def poweroff(self):
+        Popen(['systemctl', 'poweroff'])
+    def reboot(self):
+        Popen(['systemctl', 'reboot'])
+    def restart_klipper(self):
+        self.reactor.register_async_callback((lambda e: self.gcode.request_restart('firmware_restart')))
+    def quit(self):
+        app = App.get_running_app()
+        app.stop()
+
     def change_vkeyboard(self, dt):
         self.root_window.set_vkeyboard_class(UltraKeyboard)
     
-
-
 def load_config(config): #Entry point
     kgui_object = mainApp(config)
     kgui_object.start()

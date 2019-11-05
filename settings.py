@@ -417,19 +417,6 @@ class SI_PowerMenu(SetItem):
             return True
         return super(SI_PowerMenu, self).on_touch_down(touch)
 
-
-class PowerPopup(BasePopup):
-
-    def poweroff(self):
-        Popen(['systemctl', 'poweroff'])
-
-    def reboot(self):
-        Popen(['systemctl', 'reboot'])
-
-    def quit(self):
-        app = App.get_running_app()
-        app.stop()
-
 class SI_ValueSlider(SetItem):
     pass
 

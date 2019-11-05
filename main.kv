@@ -989,7 +989,7 @@ TabbedPanel:
             pos: root.pos
             on_release: root.dismiss()
 
-<PowerPopup>:
+<PowerPopup@BasePopup>:
     title: "Shutdown"
     title_size: p.large_font
     size_hint: 0.65, 0.5
@@ -1001,7 +1001,7 @@ TabbedPanel:
             size_hint: 0.7, None
             height: 90
             pos_hint: {'center_x': 0.5, 'y': 0.18}
-            on_release: root.poweroff()
+            on_release: app.poweroff()
         Divider:
             size_hint: None, None
             size: btn_poweroff.width, 1
@@ -1011,7 +1011,7 @@ TabbedPanel:
             title: "Reboot"
             size: btn_poweroff.size
             pos: btn_poweroff.x, btn_poweroff.top
-            on_release: root.reboot()
+            on_release: app.reboot()
         Divider:
             size_hint: None, None
             size: btn_poweroff.width, 1
@@ -1021,7 +1021,7 @@ TabbedPanel:
             title: "Restart Klipper"
             size: btn_poweroff.size
             pos: btn_poweroff.x, btn_reboot.top
-            on_release: root.reboot()
+            on_release: app.restart_klipper()
         Divider:
             size_hint: None, None
             size: btn_poweroff.width, 1
@@ -1031,7 +1031,7 @@ TabbedPanel:
             title: "Quit to tty"
             size: btn_poweroff.size
             pos: btn_poweroff.x, btn_restart_klipper.top
-            on_release: root.quit()
+            on_release: app.quit()
         Btn_P_Cancel:
             single: True
             width: root.width
