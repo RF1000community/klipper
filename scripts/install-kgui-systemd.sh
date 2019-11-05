@@ -6,7 +6,7 @@ PYTHONDIR="${HOME}/klippy-env"
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
 
 
-install_klipper_packages()
+install_packages()
 {
     # Packages for python cffi
     PKGLIST="python-virtualenv virtualenv python-dev libffi-dev build-essential"
@@ -19,21 +19,10 @@ install_klipper_packages()
     # ARM chip installation and building
     PKGLIST="${PKGLIST} stm32flash dfu-util libnewlib-arm-none-eabi"
     PKGLIST="${PKGLIST} gcc-arm-none-eabi binutils-arm-none-eabi"
-    # Update system package info
-    report_status "Running apt-get update..."
-    sudo apt update
-    # Install desired packages
-    report_status "Installing packages..."
-    sudo apt install --yes ${PKGLIST}
-}
 
-
-# Git currently needs to be installed befofehand
-install_kgui_packages()
-{
     # KGUI and WIFI deps
-    PKGLIST="libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-    pkg-config libgl1-mesa-dev libgles2-mesa-dev \
+    PKGLIST="${PKGLIST} libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
+    libsdl2-ttf-dev pkg-config libgl1-mesa-dev libgles2-mesa-dev \
     python-setuptools libgstreamer1.0-dev \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
@@ -42,17 +31,22 @@ install_kgui_packages()
     gstreamer1.0-omx \
     gstreamer1.0-alsa \
     python-dev libmtdev-dev \
-    xclip xsel libjpeg-dev mtdev-tools xorg python-pil xserver-xorg-video-fbturbo network-manager git python-pip"
+    xclip xsel libjpeg-dev mtdev-tools xorg python-pil \
+    xserver-xorg-video-fbturbo network-manager git python-pip"
 
-    report_status "install GUI packages..."
+    # Update system package info
+    report_status "Running apt-get update..."
+    sudo apt update
+    # Install desired packages
+    report_status "Installing packages..."
     sudo apt install --yes ${PKGLIST}
+
     # Wifi 
     sudo apt purge dhcpcd5 --yes
-    report_status "Xwrapper config mod..."
     # change line in Xwrapper.config so xorg feels inclined to start when asked by systemd
-    # -i for in place (just modify file), s for substitute (this line)
+    report_status "Xwrapper config mod..."
     sudo sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
-
+    # -i for in place (just modify file), s for substitute (this line)
 }
 
 # Step 2: Create python virtual environment
@@ -70,19 +64,21 @@ create_virtualenv()
 install_service()
 {
     report_status "Install systemd service..."
-    sudo cat > /etc/systemd/system/klipper.service <<EOF
+    sudo /bin/sh -c "cat > /lib/systemd/system/klipper.service" <<EOF
 [Unit]
 Description="Klipper with GUI running in Xorg"
-After=multi-user.target
+Requires=multi-user.target
 
 [Service]
 Type=simple
-ExecStart="/usr/bin/startx ${PYTHONDIR}/bin/python ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
+User=$USER
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/bin/bash -c "/usr/bin/startx ${PYTHONDIR}/bin/python ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 EOF
-    sudo chmod +x /etc/systemd/system/klipper.service
+    sudo chmod +x /lib/systemd/system/klipper.service
     sudo systemctl daemon-reload
     sudo systemctl enable klipper.service
 }
@@ -119,8 +115,7 @@ set -e
 
 # Run installation steps defined above
 verify_ready
-install_klipper_packages
-install_kgui_packages
+install_packages
 create_virtualenv
 install_service
 install_lcd_driver
