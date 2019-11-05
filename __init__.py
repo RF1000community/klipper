@@ -120,7 +120,10 @@ class mainApp(App, threading.Thread): #add threading.thread => inherits start() 
     def reboot(self):
         Popen(['systemctl', 'reboot'])
     def restart_klipper(self):
-        self.reactor.register_async_callback((lambda e: self.gcode.request_restart('firmware_restart')))
+        def restart(e=None):
+            self.printer.run_result = 'fimrmware_restart'
+            self.printer.reactor.end()
+        self.reactor.register_async_callback(restart())
     def quit(self):
         app = App.get_running_app()
         app.stop()
