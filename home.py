@@ -17,10 +17,8 @@ class XyField(Widget):
 
     def __init__(self, **kwargs):
         super(XyField, self).__init__(**kwargs)
-        self.point_radius = 10
+        self.point_radius = 9
         self.point_color = [1, 1, 1, 1]
-        self.line_color = 1,1,1,0.5
-        self.background_color = p.button
         self.mm_pos = [0, 0]
         #Probably temporary
         self.printer_dimensions = [random.randint(50, 2000), random.randint(50, 2000)]
@@ -30,10 +28,10 @@ class XyField(Widget):
 
     def init_drawing(self, dt):
         with self.canvas:
-            Color(rgba=self.background_color)
-            self.bg_rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[p.radius,])
+            Color(rgba=p.button_outline)
+            self.bg_rect = Line(width=1, rounded_rectangle=(self.x, self.y, self.width, self.height, p.radius))
             
-            Color(rgba=self.line_color)
+            Color(rgba=p.button_outline)
             #Vertical line, 
             self.line_x = Line(points=[0, 0])
             #Horizontal line

@@ -146,7 +146,7 @@ TabbedPanel:
             id: btn_right_B
             size: p.btn_height, p.btn_height
             y: p.padding
-            right: p.screen_width-34
+            center_x: p.screen_width - p.padding - w/2
         Btn_Arrow:
             dir_right: True
             id: btn_right_A
@@ -200,7 +200,7 @@ TabbedPanel:
             size_hint: None, None
             x: xy_field.x
             y: xy_field.y - self.height
-            color: p.divider
+            color: p.button_outline
             font_size: p.small_font
             text: xy_field.display
 
