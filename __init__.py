@@ -142,4 +142,6 @@ def load_config(config): #Entry point
 if __name__ == "__main__":
     import time
     mainApp().start()
-    time.sleep(1000)
+    if not testing:
+        while True:
+            time.sleep(1)

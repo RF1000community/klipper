@@ -46,6 +46,7 @@ class PrintPopup(BasePopup):
 
     def confirm(self):
         self.dismiss()
-        tab = App.get_running_app().root
+        root = App.get_running_app().root
+        tab = root.ids.tabs
         tab.switch_to(tab.ids.home_tab)
 

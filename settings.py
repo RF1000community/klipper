@@ -251,7 +251,8 @@ class SI_Wifi(SetItem):
         wifi.update_freq = self.freq
 
     def bind_tab(self, dt):
-        tab = App.get_running_app().root
+        root = App.get_running_app().root
+        tab = root.ids.tabs
         tab.bind(current_tab=self.control_update)
 
     def control_update(self, instance, value):

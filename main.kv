@@ -5,8 +5,26 @@
 # note that this requires the kgui folder to be in PYTHONPATH or sys.path, unless the 
 # interpreter is started in this folder because the import is happening in kivy/lang/parser.py 
 
+FloatLayout:
+    StatusBar:
+        height: p.status_bar_height
+        top: root.top
+    MainTabs:
+        id: tabs
+        height: root.height - p.status_bar_height
+        size_hint_y: None
 
-TabbedPanel:
+<StatusBar@BoxLayout>:
+    canvas:
+        Color:
+            rgba: p.accent
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    
+    
+
+<MainTabs@TabbedPanel>:
     tab_pos: 'bottom_mid'
     tab_width: p.screen_width/3
     tab_height: p.tab_height
@@ -664,6 +682,7 @@ TabbedPanel:
             size: self.width, 4
             pos: self.pos
     FC:
+
 <FC>:
     filters: '*.gco', '*.gcode'
     rootpath: '/'
@@ -673,8 +692,7 @@ TabbedPanel:
         Color:
             rgba: p.background
         Rectangle:
-            pos: 0,0
-            size: p.screen_width, 924
+            size: root.size
 
 <PrintPopup>:
     title: 'Print now'
