@@ -150,6 +150,10 @@ TabbedPanel:
             size: 190,100
             x: p.padding-20
             center_y: p.padding+btn_height+flow.center_y
+    #    Btn_Temp:
+    #        id: z_adjust
+    #        on_release: Factory.ZAdjustPopup(instance=self).open()
+    #        pos_hint:
 <HomeScreen@Screen>:
     name: "homescreen"
     FloatLayout:
@@ -421,6 +425,7 @@ TabbedPanel:
     red: False
     large_value: "--"
     small_value: "--"
+    size: 190, 100
     Label:
         padding_x: 15
         color: p.red if root.red else [1,1,1,1]

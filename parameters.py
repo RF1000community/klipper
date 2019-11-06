@@ -26,7 +26,7 @@ red = [0.9,0,0,1]
 from os.path import dirname
 kgui_dir = dirname(__file__)
 # The default directory of the filechooser
-fc_starting_path = '~/'
+fc_starting_path = '/media/'
 
 
 #Kivy Guide
