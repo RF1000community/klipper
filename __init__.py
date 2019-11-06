@@ -30,10 +30,11 @@ import site
 #add parent directory to sys.path so main.kv (parser.py) can import from it
 site.addsitedir(p.kgui_dir)
 
-#this needs an absolute path otherwise config will only be loaded when working directory is parent directory of main.py
+#this needs an absolute path otherwise config will only be loaded when working directory is the parent directory
 if testing: Config.read(join(p.kgui_dir, "config-test.ini"))
 else:       Config.read(join(p.kgui_dir, "config.ini"))
 
+#load a custom style.kv with changes to filechooser and more
 Builder.unload_file(join(kivy_data_dir, "style.kv"))
 Builder.load_file(join(p.kgui_dir, "style.kv"))
 

@@ -4,12 +4,18 @@ small_font = 17
 extra_small_font = 14
 screen_width = 600
 screen_height = 1024
-padding = 50
-padding_hint = padding/screen_width
 radius = 5
 popup_radius = 14
 
-
+status_bar_height = 25
+progress_bar_height = 5
+btn_height = 66
+tab_height = 100
+#generate even spacing based on all contents on homescreen
+padding = (screen_height - tab_height - progress_bar_height-normal_font - status_bar_height - btn_height*7)/10
+home_col_height = padding+btn_height
+padding_hint = padding/screen_width
+small_padding = 12
 
 background = [0.07,0.07,0.07,1]
 popup = [0.15,0.15,0.15,1]

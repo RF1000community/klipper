@@ -4,16 +4,12 @@
 #:import p parameters
 # note that this requires the kgui folder to be in PYTHONPATH or sys.path, unless the 
 # interpreter is started in this folder because the import is happening in kivy/lang/parser.py 
-#:set tab_height 100
-#:set btn_play_size 64
-#:set h 1.155*btn_play_size
-#:set btn_height 64
-#:set home_col_height 133
+
 
 TabbedPanel:
     tab_pos: 'bottom_mid'
     tab_width: p.screen_width/3
-    tab_height: tab_height
+    tab_height: p.tab_height
     do_default_tab: False
     HomeTab:
         id: home_tab
@@ -41,6 +37,13 @@ TabbedPanel:
         Background:
             pos_hint: {'x':0,'y':0}
             size_hint: 1,1
+        ProgressBar:
+            id: progress_bar
+            max: 1
+            value: 0.3
+            size_hint: None, None
+            size: p.screen_width-2*p.padding, p.progress_bar_height
+            pos: p.padding, p.tab_height+p.padding+p.normal_font
         Label:
             id: l_time_remaining
             text: "2:32h remaining"
@@ -48,34 +51,17 @@ TabbedPanel:
             size: p.screen_width-2*p.padding, p.normal_font
             text_size: self.size
             font_size: p.normal_font
-            pos: p.padding, 33 + tab_height
+            x: p.padding
+            top: progress_bar.y - p.small_padding
             halign: 'left'
             valign: 'bottom'
-        ProgressBar:
-            id: progress_bar
-            max: 1
-            value: 0.3
-            size_hint: None, None
-            size: p.screen_width-2*p.padding, 5
-            pos: p.padding, l_time_remaining.top+14
-        Label:
-            id: l_filename
-            text: "Cube_testfinalfinalnew2"
-            size_hint: None, None
-            size: 300,134
-            text_size: self.size
-            font_size: p.large_font
-            pos: p.padding, progress_bar.top
-            shorten: True
-            halign: 'left'
-            valign: 'middle'
         Btn_Stop:
             on_release:
                 if self.enabled: app.send_stop()
             id: btn_stop
             size: 118,118
-            center_y: l_filename.center_y
-            center_x: p.screen_width - btn_play_size/2 -p.padding
+            center_y: progress_bar.top + p.padding + p.btn_height/2
+            center_x: p.screen_width - p.btn_height/2 -p.padding
         Btn_Play:
             on_release:
                 if self.enabled and self.paused: app.send_play(); self.paused=False; hs_manager.current="printingscreen"
@@ -83,9 +69,21 @@ TabbedPanel:
             size: btn_stop.size
             y: btn_stop.y
             right: btn_stop.x
+        Label:
+            id: l_filename
+            text: "Cube_testfinalfinalnew2"
+            size_hint: None, None
+            size: 300,134
+            text_size: self.size
+            font_size: p.large_font
+            x: p.padding
+            center_y: btn_stop.center_y
+            shorten: True
+            halign: 'left'
+            valign: 'middle'
         Divider:
             id: top_divider
-            pos: 0, l_filename.top
+            pos: 0, btn_stop.center_y + p.btn_height/2 + p.padding
         ScreenManager:
             transition: screenmanager.NoTransition()
             id: hs_manager
@@ -98,75 +96,61 @@ TabbedPanel:
             on_release: Factory.ExtTempPopup(instance=self).open()
             id: temp_B
             idpy: "B"
-            large_value: "--"
-            small_value: "--"
-            red: False
-            size: 190,100
             x: p.padding-20
-            center_y: p.padding+btn_height/2+top_divider.top
+            center_y: p.padding+p.btn_height/2+top_divider.top
         Btn_Temp:
             on_release: Factory.ExtTempPopup(instance=self).open()
             id: temp_A
             idpy: "A"
-            large_value: "--"
-            small_value: "--"
-            size: 190,100
             x: p.padding-20
-            center_y: p.padding+btn_height+temp_B.center_y
+            center_y: p.padding+p.btn_height+temp_B.center_y
         Btn_Temp:
             on_release: Factory.BedTempPopup(instance=self).open()
             id: temp_bed
-            large_value: "--"
-            small_value: "--"
-            red: False
-            size: 190,100
             x: p.padding-20
-            center_y: p.padding+btn_height+temp_A.center_y
-
+            center_y: p.padding+p.btn_height+temp_A.center_y
 <PrintingScreen@Screen>:
     name: "printingscreen"
     FloatLayout:
         Btn_Temp:
-            id: fan
-            on_release: Factory.FanPopup(instance=self).open()
-            large_value: "--"
-            small_value: "Print Cooling"
-            size: 190,100
-            x: p.padding-20
-            center_y: 420
-        Btn_Temp:
-            id: flow
-            on_release: Factory.FlowPopup(instance=self).open()
-            large_value: "--"
-            small_value: "Material Flow"
-            size: 190,100
-            x: p.padding-20
-            center_y: p.padding+btn_height+fan.center_y
+            id: z_adjust
+            on_release: Factory.ZAdjustPopup(instance=self).open()
+            small_value: "Nozzle Height"
+            right: root.width -p.padding
+            center_y: root.height-p.padding-p.status_bar_height-p.btn_height/2
         Btn_Temp:
             id: speed
             on_release: Factory.SpeedPopup(instance=self).open()
-            large_value: "--"
             small_value: "Print Speed"
-            size: 190,100
             x: p.padding-20
-            center_y: p.padding+btn_height+flow.center_y
-    #    Btn_Temp:
-    #        id: z_adjust
-    #        on_release: Factory.ZAdjustPopup(instance=self).open()
-    #        pos_hint:
+            center_y: z_adjust.center_y
+        Btn_Temp:
+            id: flow
+            on_release: Factory.FlowPopup(instance=self).open()
+            small_value: "Material Flow"
+            x: p.padding-20
+            center_y: speed.center_y - p.padding - p.btn_height
+        Btn_Temp:
+            id: fan
+            on_release: Factory.FanPopup(instance=self).open()
+            small_value: "Print Cooling"
+            x: p.padding-20
+            center_y: flow.center_y - p.padding - p.btn_height
+
+
 <HomeScreen@Screen>:
     name: "homescreen"
     FloatLayout:
         Btn_Arrow:
             dir_right: True
             id: btn_right_B
-            size: btn_height, btn_height
-            y: 50
+            size: p.btn_height, p.btn_height
+            y: p.padding
             right: p.screen_width-34
         Btn_Arrow:
             dir_right: True
             id: btn_right_A
-            size: btn_height, btn_height
+            size: p.btn_height, p.btn_height
             y: btn_right_B.top+p.padding
             x: btn_right_B.x
         Btn_Triple:
@@ -179,12 +163,12 @@ TabbedPanel:
             right: btn_right_A.x
         Btn_Arrow:
             id: btn_left_B
-            size: btn_height, btn_height
+            size: p.btn_height, p.btn_height
             y: btn_right_B.y
             right: btn_tr_B.x
         Btn_Arrow:
             id: btn_left_A
-            size: btn_height, btn_height
+            size: p.btn_height, p.btn_height
             y: btn_tr_A.y
             right: btn_tr_A.x
         Btn_Outline:
@@ -201,14 +185,14 @@ TabbedPanel:
             h3: self.height/3
             width: self.height/3
             right: btn_calibrate.right
-            top: root.height-p.padding
+            top: root.height-p.padding-p.status_bar_height
         XyField:
             id: xy_field
             size_hint: None, None
-            size: 280, 260
+            size: 280, 3*p.btn_height + 2*p.padding
             point_radius: 10
             x: p.padding
-            top: root.height-p.padding
+            top: root.height-p.padding-p.status_bar_height
             activated: False
         Label:
             id: xy_display
@@ -257,24 +241,25 @@ TabbedPanel:
         Color:
             rgba: p.red if self.enabled else [0,0,0,0]
         Rectangle:
-            pos: self.center_x-btn_play_size/2,self.center_y-btn_play_size/2
-            size: btn_play_size,btn_play_size
+            pos: self.center_x-p.btn_height/2,self.center_y-p.btn_height/2
+            size: p.btn_height,p.btn_height
 <Btn_Play@RoundButton>:
+    #:set h p.btn_height*1.155
     paused: True
     canvas.before:
         Color:
             rgba: 1,1,1,1 if self.enabled and not self.paused else 0
         Rectangle:
-            pos: self.center_x-btn_play_size/2, self.center_y-btn_play_size/2
-            size: 0.38*btn_play_size,btn_play_size
+            pos: self.center_x-p.btn_height/2, self.center_y-p.btn_height/2
+            size: 0.38*p.btn_height,p.btn_height
         Rectangle:
-            pos: self.center_x+btn_play_size/2-0.4*btn_play_size, self.center_y-btn_play_size/2
-            size: 0.38*btn_play_size,btn_play_size
+            pos: self.center_x+p.btn_height/2-0.4*p.btn_height, self.center_y-p.btn_height/2
+            size: 0.38*p.btn_height,p.btn_height
             canvas:
         Color:
             rgba: 1,1,1,1 if self.enabled and self.paused else 0
         Triangle:
-            points: self.center_x-btn_play_size/2, self.center_y- h/2, self.center_x-btn_play_size/2, self.center_y+ h/2, self.center_x+btn_play_size/2, self.center_y
+            points: self.center_x-p.btn_height/2, self.center_y- h/2, self.center_x-p.btn_height/2, self.center_y+ h/2, self.center_x+p.btn_height/2, self.center_y
 <Btn@RoundButton>:
     title: ''
     canvas:
@@ -309,7 +294,7 @@ TabbedPanel:
     w2: 68
     w3: 68
     size_hint: None, None
-    size: self.w1+self.w2+self.w3, btn_height
+    size: self.w1+self.w2+self.w3, p.btn_height
     canvas:
         Color:
             rgba: p.button
@@ -431,7 +416,7 @@ TabbedPanel:
         color: p.red if root.red else [1,1,1,1]
         text: root.large_value
         size_hint: None, None
-        size: root.width, btn_height+16#to compensate for the font being 8px below top when set to 'top'
+        size: root.width, p.btn_height+16#to compensate for the font being 8px below top when set to 'top'
         text_size: self.size
         center_y: root.center_y
         right: root.right
@@ -443,7 +428,7 @@ TabbedPanel:
         color: p.light_gray
         text: root.small_value
         size_hint: None, None
-        size: root.width, btn_height+9
+        size: root.width, p.btn_height+9
         text_size: self.size
         center_y: root.center_y
         right: root.right
@@ -551,6 +536,20 @@ TabbedPanel:
     background_color: [0,0,0,0.5] #reduces background darkening from 0.7
     size_hint: 0.67, 0.3
     pos_hint: {'center_y': 0.55, 'center_x':0.5}
+<ZAdjustPopup@BasePopup>:
+    size_hint: 0.95,0.4
+    title: "Calibrate Nozzle Height"
+    FloatLayout:
+
+        Btn_P_Cancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        Btn_P_Confirm:
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.send_z_adjust("777"), root.dismiss()
 <SpeedPopup@BasePopup>:
     size_hint: 0.95,0.4
     title: "Set Speed Factor"
@@ -759,7 +758,9 @@ TabbedPanel:
                 title: "Wifi"
             SI_PowerMenu:
                 title: "Shutdown..."
-
+            SetItem:
+                TextInput:
+                    
 
 <WifiScreen>:
     name: 'WifiScreen'
@@ -842,7 +843,7 @@ TabbedPanel:
             rgba: p.divider
         Rectangle:
             pos: self.x+15, self.y
-            size: self.width -30, 1
+            size: self.width -2*p.small_padding, 1
 <SI_Switch@SetItem>:
     Switch:
         id: knopf
@@ -992,7 +993,7 @@ TabbedPanel:
             pos: root.pos
             on_release: root.dismiss()
 
-<PowerPopup>:
+<PowerPopup@BasePopup>:
     title: "Shutdown"
     title_size: p.large_font
     size_hint: 0.65, 0.5
