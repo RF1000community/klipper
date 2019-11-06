@@ -20,7 +20,7 @@ install_packages()
     PKGLIST="${PKGLIST} stm32flash dfu-util libnewlib-arm-none-eabi"
     PKGLIST="${PKGLIST} gcc-arm-none-eabi binutils-arm-none-eabi"
 
-    # KGUI and WIFI deps
+    # KGUI
     PKGLIST="${PKGLIST} libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
     libsdl2-ttf-dev pkg-config libgl1-mesa-dev libgles2-mesa-dev \
     python-setuptools libgstreamer1.0-dev \
@@ -32,7 +32,11 @@ install_packages()
     gstreamer1.0-alsa \
     python-dev libmtdev-dev \
     xclip xsel libjpeg-dev mtdev-tools xorg python-pil \
-    xserver-xorg-video-fbturbo network-manager git python-pip"
+    xserver-xorg-video-fbturbo git python-pip"
+    #Wifi
+    PKGLIST="${PKGLIST} network-manager"
+    #Usb Stick Automounting
+    PKGLIST="${PKGLIST} pmount"
 
     # Update system package info
     report_status "Running apt-get update..."
@@ -61,9 +65,9 @@ create_virtualenv()
 }
 
 
-install_service()
+install_services()
 {
-    report_status "Install systemd service..."
+    report_status "Install klipper systemd service..."
     sudo /bin/sh -c "cat > /lib/systemd/system/klipper.service" <<EOF
 [Unit]
 Description="Klipper with GUI running in Xorg"
@@ -78,9 +82,34 @@ ExecStart=/bin/bash -c "/usr/bin/startx ${PYTHONDIR}/bin/python ${SRCDIR}/klippy
 [Install]
 WantedBy=default.target
 EOF
+    # -v option in ExecStart is for debugging information
     sudo chmod +x /lib/systemd/system/klipper.service
     sudo systemctl daemon-reload
     sudo systemctl enable klipper.service
+
+
+    report_status "Install USB Automount Udev Rule..."
+    sudo /bin/sh -c "cat > /etc/udev/rules.d/usbstick.rules" <<EOF
+ACTION=="add", KERNEL=="sd[a-z][0-9]", TAG+="systemd", ENV{SYSTEMD_WANTS}="usbstick-handler@%k"
+EOF
+
+
+    report_status "Install USB Automount systemd service"
+    sudo /bin/sh -c "cat > /lib/systemd/system/usbstick-handler@.service" <<EOF
+[Unit]
+Description=Mount USB sticks
+BindsTo=dev-%i.device
+After=dev-%i.device
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/home/pi/klipperui/scripts/usb-automount /dev/%I
+ExecStop=/usr/bin/pumount /dev/%I
+EOF
+    sudo chmod +x /lib/systemd/system/usbstick-handler@.service
+    sudo systemctl daemon-reload
+    sudo systemctl enable usbstick-handler@.service
 }
 
 
@@ -117,5 +146,5 @@ set -e
 verify_ready
 install_packages
 create_virtualenv
-install_service
+install_services
 install_lcd_driver
