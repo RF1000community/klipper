@@ -212,6 +212,8 @@ class Wifi(EventDispatcher):
 
 wifi = Wifi()
 
+class PowerPopup(BasePopup):
+    pass
 
 class SetItem(FloatLayout):
     pass

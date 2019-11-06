@@ -119,14 +119,16 @@ class mainApp(App, threading.Thread):
         return 36
 
     def poweroff(self):
-        Popen(['systemctl', 'poweroff'])
+        Popen(['sudo','systemctl', 'poweroff'])
     def reboot(self):
-        Popen(['systemctl', 'reboot'])
+        Popen(['sudo','systemctl', 'reboot'])
     def restart_klipper(self):
-        self.reactor.register_async_callback((lambda e: self.gcode.request_restart('firmware_restart')))
+        def restart(e=None):
+            self.printer.run_result = 'fimrmware_restart'
+            self.printer.reactor.end()
+        self.reactor.register_async_callback(restart())
     def quit(self):
-        app = App.get_running_app()
-        app.stop()
+        self.stop()
 
     def change_vkeyboard(self, dt):
         self.root_window.set_vkeyboard_class(UltraKeyboard)
