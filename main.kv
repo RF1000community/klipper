@@ -8,6 +8,7 @@
 FloatLayout:
     StatusBar:
         height: p.status_bar_height
+        size_hint: 1, None
         top: root.top
     MainTabs:
         id: tabs
@@ -21,8 +22,31 @@ FloatLayout:
         Rectangle:
             size: self.size
             pos: self.pos
-    
-    
+    orientation: 'horizontal'
+    LeftItems:
+        orientation: 'lr-tb'
+        size_hint_x: 0.5
+        x: root.x
+    RightItems:
+        orientation: 'rl-tb'
+        size_hint_x: 0.5
+        right: root.right
+
+<LeftItems@StackLayout>:
+    Button:
+        text: "I'm on the left!"
+        size_hint_x: 0.4
+    Button:
+        text: "Me too!!"
+        size_hint_x: 0.3
+    Button:
+        text: "How exciting"
+        size_hint_x: 0.3
+
+<RightItems@StackLayout>:
+    Button:
+        text: "And here's right"
+        size_hint_x: 0.4
 
 <MainTabs@TabbedPanel>:
     tab_pos: 'bottom_mid'
