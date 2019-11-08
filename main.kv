@@ -15,7 +15,7 @@ FloatLayout:
         height: root.height - p.status_bar_height
         size_hint_y: None
 
-<StatusBar@BoxLayout>:
+<StatusBar>:
     canvas:
         Color:
             rgba: p.accent
@@ -24,10 +24,12 @@ FloatLayout:
             pos: self.pos
     orientation: 'horizontal'
     LeftItems:
+        id: left
         orientation: 'lr-tb'
         size_hint_x: 0.5
         x: root.x
     RightItems:
+        id: right
         orientation: 'rl-tb'
         size_hint_x: 0.5
         right: root.right
@@ -44,9 +46,21 @@ FloatLayout:
         size_hint_x: 0.3
 
 <RightItems@StackLayout>:
-    Button:
-        text: "And here's right"
-        size_hint_x: 0.4
+    Label:
+        id: con
+        text: ""
+        font_name: "/usr/share/fonts/TTF/fa-solid-900.ttf"
+        size_hint_x: None
+        size: self.texture_size
+        font_size: root.height - 4
+        padding: 5, 2
+    TimeLabel:
+        id: time
+        text: self.time
+        size_hint_x: None
+        size: self.texture_size
+        font_size: root.height - 4
+        padding: 5, 2
 
 <MainTabs@TabbedPanel>:
     tab_pos: 'bottom_mid'

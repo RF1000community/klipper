@@ -22,6 +22,7 @@ from elements import UltraKeyboard
 from settings import *
 from home import *
 from files import *
+from status import *
 import parameters as p
 import threading
 import logging
