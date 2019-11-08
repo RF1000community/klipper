@@ -2,13 +2,15 @@ import time
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
+from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.properties import StringProperty
 from kivy.app import App
 from kivy.logger import Logger
-from kivy.graphics.vertex_instructions import RoundedRectangle
+from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse
 from kivy.graphics.context_instructions import Color
 import parameters as p
+from settings import wifi
 
 class TimeLabel(Label):
 
@@ -53,6 +55,33 @@ class TimeLabel(Label):
             return True
         return super(TimeLabel, self).on_touch_down(touch)
 
+class ConnectionIcon(Widget):
+    
+    def __init__(self, **kwargs):
+        self.topright = [0,0]
+        super(ConnectionIcon, self).__init__(**kwargs)
+        Clock.schedule_once(self.init_drawing, 0)
+
+    def init_drawing(self, dt):
+        padding = 2
+        import math
+        full_radius = self.height - 2*padding
+        full_size = [2*radius, 2*radius]
+        cutoff = radius - math.cos(math.pi/4) * radius
+        cutoff = int(cutoff+0.5)
+        self.width = size[0] - 2*cutoff + padding
+        full_pos = [self.topright[0] - (size[0] - cutoff) - padding,
+                    self.topright[1] - size[1] - padding]
+
+        self.transparent = [0, 0, 0, 0]
+        with self.canvas:
+            self.wifi_color = Color(rgba=self.transparent)
+            self.wifi = Ellipse(pos=full_pos, size=full_size, angle_start=315, angle_end=405)
+            self.eth_color = Color(rgba=self.transparent)
+            self.eth = 
+        self.adjust_signal()
+
+
 class Notifications(FloatLayout):
 
     def __init__(self, padding=(10, 10), height=100, **kwargs):
@@ -96,9 +125,8 @@ class Notifications(FloatLayout):
 
     def show(self, title="", message="", level="info", log=True, delay=10, color=None):
         """
-        Lowlevel method for the purpose of showing custom notifications.
-        Otherwise use the preset methods instead. If log is set, this will
-        log under info log level.
+        Show a notification popup with the given parameters. If log is set,
+        also write to the log file.
 
         Parameters:
         title   string      Title of the notification

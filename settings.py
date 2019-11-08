@@ -23,6 +23,7 @@ class Wifi(EventDispatcher):
         self.state = self.check_nmcli()
         self.register_event_type('on_networks')
         self.register_event_type('on_wrong_pw')
+        self.register_event_type('on_connection_types')
         self.scan_output = self.connections_output = None
         self.update_clock = None
         self.networks = []
@@ -203,10 +204,50 @@ class Wifi(EventDispatcher):
         # Somehow requesting the wifi list right after some actions returns empty output
         Clock.schedule_once(partial(self.get_wifi_list, no_rescan=True), 1)
 
+    def get_connection_types(self, *args):
+        if self.state:
+            return
+        cmd = ['nmcli', '--get-values', 'TYPE', 'connection', 'show', '--active']
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        self.poll(proc, self.parse_connection_types)
+
+    def parse_connection_types(self, proc):
+        # Returns a list of bools in form [Wifi, Ethernet]
+        stdout, stderr = proc.communicate()
+        returncode = proc.returncode
+        if stderr:
+            Logger.warning('NetworkManager: ' + stderr)
+        if returncode == 8:
+            Logger.error('Wifi: NetworkManager not running:')
+            Logger.error('NetworkManager: ' + output[1])
+            self.state = 3
+            return
+        elif returncode == 3:
+            Logger.warning('NetworkManager: Operation timed out')
+            return
+        # catch all other returncodes
+        elif returncode != 0:
+            self.state = 10
+            Logger.error('NetworkManager: ' + str(returncode))
+            return
+
+        types = [False, False]
+        for i in stdout.splitlines():
+            if i.endswith("wireless"):
+                types[0] = True
+            elif i.endswith("ethernet"):
+                types[1] = True
+        self.dispatch('on_connection_types', types)
+
     def on_networks(self, value):
         Logger.debug('Wifi: Wifi scan complete returning {} networks'.format(len(value)))
 
     def on_wrong_pw(self, *args):
+        app = App.get_running_app()
+        app.notify.show("Wrong Password", "Secrets were required, but not provided",
+                level="warning", delay=4)
+
+    def on_connection_types(self, value):
         pass
 
 
