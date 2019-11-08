@@ -125,6 +125,8 @@ class mainApp(App, threading.Thread):
     def send_play(self):
         print("resume print")
         self.state = "printing"
+        nt = Notifications()
+        nt.show()
     def send_pause(self):
         print("pause print")
         self.state = "paused"

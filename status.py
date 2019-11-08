@@ -1,10 +1,14 @@
 import time
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.clock import Clock
 from kivy.properties import StringProperty
 from kivy.app import App
-
+from kivy.logger import Logger
+from kivy.graphics.vertex_instructions import RoundedRectangle
+from kivy.graphics.context_instructions import Color
+import parameters as p
 
 class TimeLabel(Label):
 
@@ -48,3 +52,55 @@ class TimeLabel(Label):
             self.set_seconds(not(self.seconds))
             return True
         return super(TimeLabel, self).on_touch_down(touch)
+
+class Notifications(FloatLayout):
+
+    def __init__(self, **kwargs):
+        super(Notifications, self).__init__(**kwargs)
+        self.root_widget = App.get_running_app().root
+        self.size_hint = (None, None)
+        self.size = self.root_widget.width - 20, 100
+        self.x = self.root_widget.x + 10
+        self.top = self.root_widget.top - p.status_bar_height - 10
+        self.active = False
+        self.title = "Title"
+        self.message = "Hello Computer!"
+        Clock.schedule_once(self.init_drawing, 0)
+
+    def init_drawing(self, dt):
+        with self.canvas:
+            self.bg_color = Color(rgba=p.red)
+            RoundedRectangle(pos=self.pos, size=self.size, radius=(p.radius,p.radius))
+
+        title = Label(text = self.title)
+        title.size_hint = (None, None)
+        title.font_size = p.normal_font
+        title.bold = True
+        title.size = title.texture_size
+        title.pos_hint = {'x': 0.1, 'y': 0.8}
+        title.align = 'left'
+        self.add_widget(title)
+
+        message = Label(text = self.message)
+        message.size_hint = (None, None)
+        message.font_size = p.normal_font
+        message.size = message.texture_size
+        message.pos_hint = {'x': 0.1, 'top': 0.75}
+        message.align = 'left'
+        self.add_widget(message)
+
+    def show(self):
+        # Only show one Notification at a time
+        if self.active:
+            self.hide()
+        self.root_widget.add_widget(self)
+        Logger.info("Notification: I'm not even properly set up :(")
+
+    def hide(self):
+        self.root_widget.remove_widget(self)
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self.hide()
+            return True
+        return super(Notifications, self).on_touch_down(touch)
