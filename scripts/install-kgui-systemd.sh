@@ -65,7 +65,7 @@ create_virtualenv()
 }
 
 
-install_services()
+install_klipper_service()
 {
     report_status "Install klipper systemd service..."
     sudo /bin/sh -c "cat > /lib/systemd/system/klipper.service" <<EOF
@@ -86,8 +86,12 @@ EOF
     sudo chmod +x /lib/systemd/system/klipper.service
     sudo systemctl daemon-reload
     sudo systemctl enable klipper.service
+}
 
 
+
+install_usb_automounting()
+{
     report_status "Install USB Automount Udev Rule..."
     sudo /bin/sh -c "cat > /etc/udev/rules.d/usbstick.rules" <<EOF
 ACTION=="add", KERNEL=="sd[a-z][0-9]", TAG+="systemd", ENV{SYSTEMD_WANTS}="usbstick-handler@%k"
@@ -111,6 +115,17 @@ EOF
     sudo systemctl daemon-reload
     sudo systemctl enable usbstick-handler@.service
 }
+
+
+setup_boot_options()
+{
+    #disables printing debug info on boot and spash image by appending to cmdline.txt unless already there
+    if ! grep -Fxq "quiet" /boot/cmdline.txt
+    then
+        sudo /bin/sh -c "echo ' quiet disable_splash=1' >> /boot/cmdline.txt"
+    fi
+}
+
 
 
 # Display Driver installation for kgui, 7 inch 1024*600 touchscreen
@@ -146,5 +161,7 @@ set -e
 verify_ready
 install_packages
 create_virtualenv
-install_services
+install_klipper_service
+install_usb_automounting
+setup_boot_options
 install_lcd_driver
