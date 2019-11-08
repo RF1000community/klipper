@@ -1,5 +1,6 @@
 from kivy.uix.filechooser import FileChooserIconView
 from kivy.app import App
+from kivy.clock import Clock
 from os.path import expanduser, getmtime, split, exists, abspath
 from elements import *
 import parameters as p
@@ -11,13 +12,24 @@ class FC(FileChooserIconView):
     def __init__(self, **kwargs):
         super(FC, self).__init__(**kwargs)
         self.sort_func = self.modification_date_sort
-        # Default path
-        self.path = self.get_starting_path()
+        self.filters = ['*.gco', '*.gcode']
+        self.multiselect = False
+        if exists("/media"):
+            self.rootpath = "/media"        
+            self.path = "/media"
+        self.scheduled_updating = False
+        Clock.schedule_once(self.bind_tab, 0)
 
-    def get_starting_path(self):
-        if exists(expanduser(p.fc_starting_path)):
-            return abspath(expanduser(p.fc_starting_path))
-        return expanduser('~/')
+    def bind_tab(self, e):
+        tab = App.get_running_app().root.ids.tabs
+        tab.bind(current_tab=self.control_updating)
+
+    def control_updating(self, instance, tab):
+        if tab == instance.ids.file_tab:
+            self._update_files()
+            self.scheduled_updating = Clock.schedule_interval(self._update_files, 1)
+        elif self.scheduled_updating:
+            Clock.unschedule(self.scheduled_updating)
 
     def modification_date_sort(self, files, filesystem):#sortierfunktion fuer Filechooser
         return (sorted(f for f in files if filesystem.is_dir(f)) 
@@ -30,7 +42,6 @@ class FC(FileChooserIconView):
         self.popup = PrintPopup(filenames[0], self)
         self.popup.open()
 
-#Clock.schedule_interval(FC._update_files, 1)
 
 class PrintPopup(BasePopup):
     

@@ -93,7 +93,9 @@ sudo apt purge dhcpcd5
 
 _maybe edit /etc/interfaces_
 
+### Boot optimizations
 
+add quiet disable_splash=1 to /boot/cmdline.txt
 
 ### Logs
 

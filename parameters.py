@@ -1,3 +1,6 @@
+from os.path import dirname
+kgui_dir = dirname(__file__)
+
 large_font = 34
 normal_font = 21
 small_font = 17
@@ -35,29 +38,25 @@ notify_warning = [0.75, 0.25, 0, 0.75]
 notify_error = [0.7, 0, 0, 1]
 notify_success = [0, 0.7, 0, 0.75]
 
-from os.path import dirname
-kgui_dir = dirname(__file__)
-# The default directory of the filechooser
-fc_starting_path = '/media/'
-
-
-#Kivy Guide
-#LABELS: try setting hints to None if it does shit e.g. setting size doesnt work
-    # size: outer dimensions of the label widget, available space, can be set to texture_size to show everything 
-    # text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits, 
-    # texture_size: size of the actual text not cut off(outer dimensions), can set font_size
-    # always size_hint: None, None when setting size: needed
-# in canvas: e.g. self.*** acceses the 'parent' widget of the canvas, unlike in other child Instances like Label:
-# pos: coordinates are always relative to the innermost Layout, not Widget you are in
-# Widgets: always define size first then pos at least when using top or right.. x:
-# Never Put comments after canvas: Instruction
-"""How to access Instances or their methods:
+"""
+Kivy Guide
+LABELS: try setting hints to None if it does shit e.g. setting size doesnt work
+    size: outer dimensions of the label widget, available space, can be set to texture_size to show everything 
+    text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits, 
+    texture_size: size of the actual text not cut off(outer dimensions), can set font_size
+    always size_hint: None, None when setting size: needed
+in canvas: e.g. self.*** acceses the 'parent' widget of the canvas, unlike in other child Instances like Label:
+pos: coordinates are always relative to the innermost Layout, not Widget you are in
+Widgets: always define size first then pos at least when using top or right.. x:
+Never Put comments after canvas: Instruction
+How to access Instances or their methods:
     in kv to on_propertychange: id.method() id can be bound within root widget
     in py someinstance.bind(someinstances on_propertychange = self.method_to_bind) passes instance and every property
     by instantiating in python, storing instance
     in python self.ids["id"].method() instances of child widges can be accessed by id (ids is dict with instance as value)
     get_id(instance) sloow
-    get_instance(id) also slow"""
+    get_instance(id) also slow
+"""
 
 
 

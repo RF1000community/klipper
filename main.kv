@@ -413,21 +413,13 @@ FloatLayout:
         Rectangle:
             pos: self.x+6, self.y+self.h1+self.h2
             size: self.width-12,1
-        Color: 
-            rgba: 1,1,1,1
-        #:set t 12
-        #:set u 24 #Triangle has this size x2
-        Triangle:
-            points: self.center_x-u,self.y+self.h1/2+t, self.center_x+u, self.y+self.h1/2+t, self.center_x, self.y+self.h1/2-t
-        Triangle:
-            points: self.center_x-u,self.top-self.h3/2-t, self.center_x+u, self.top-self.h3/2-t, self.center_x, self.top-self.h3/2+t
-        Rectangle:
-            source: p.kgui_dir+'/Logos/HomeIcon.png'
-            size: 64, 64
-            pos: self.center_x-32, self.center_y-32
+    #:set t 12
+    #:set u 24 #Triangle has this size x2
     BaseButton:
+        id: btn_z_down
         on_press: app.send_down_Z()
         on_release: app.send_stop_Z()
+        enabled: app.z_homed
         size: root.width, root.h1
         pos: root.x, root.y
         canvas.before:
@@ -437,19 +429,29 @@ FloatLayout:
                 radius: [0,0,p.radius,p.radius]
                 size: self.size
                 pos: self.pos
+            Color:
+                rgba: [1,1,1,1] if self.enabled else p.medium_gray
+            Triangle:
+                points: self.center_x-u,self.center_y+t,  self.center_x+u,self.center_y+t,  self.center_x,self.center_y-t
     BaseButton:
         on_release: app.send_home_Z()
         size: root.width, root.h2
         pos: root.x, root.y+root.h1
-        canvas.before:
+        canvas:
+            Rectangle:
+                source: p.kgui_dir+'/Logos/HomeIcon.png'
+                size: 64, 64
+                pos: self.center_x-32, self.center_y-32
             Color:
                 rgba: p.translucent_white if self.pressed else [0,0,0,0]
             Rectangle:
                 size: self.size
                 pos: self.pos
     BaseButton:
+        id: btn_z_up
         on_press: app.send_up_Z()
         on_release: app.send_stop_Z()
+        enabled: app.z_homed
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
         canvas.before:
@@ -458,7 +460,11 @@ FloatLayout:
             RoundedRectangle:
                 radius: [p.radius,p.radius,0,0]
                 size: self.size
-                pos: self.pos       
+                pos: self.pos
+            Color:
+                rgba: [1,1,1,1] if self.enabled else p.medium_gray
+            Triangle:
+                points: self.center_x-u,self.center_y-t,  self.center_x+u,self.center_y-t,  self.center_x,self.center_y+t
 <Btn_Temp@RoundButton>:
     red: False
     large_value: "--"
@@ -719,10 +725,7 @@ FloatLayout:
     FC:
 
 <FC>:
-    filters: '*.gco', '*.gcode'
-    rootpath: '/'
     id: fc
-    multiselect: False
     canvas.before:         
         Color:
             rgba: p.background

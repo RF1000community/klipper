@@ -260,7 +260,7 @@ class SI_Wifi(SetItem):
             self.do_update = True
             wifi.get_wifi_list(no_rescan=True)
             wifi.update_freq = self.freq
-        elif self.do_update and value != instance.ids.set_tab:
+        elif self.do_update:
             self.do_update = False
             #Disable scanning updates
             wifi.update_freq = 0
