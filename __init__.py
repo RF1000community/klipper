@@ -40,13 +40,17 @@ Builder.load_file(join(p.kgui_dir, "style.kv"))
 
 #add threading.thread => inherits start() method to start in new thread
 class mainApp(App, threading.Thread):
+    z_homed = BooleanProperty(False)
     def __init__(self, config = None, **kwargs):# runs in klippy thread
         logging.info("Kivy app initializing...")
+        self.testing = testing
         if not testing:
             self.klipper_config = config
             self.printer = self.klipper_config.get_printer()
             self.reactor = self.printer.get_reactor()
             self.printer.register_event_handler("klippy:ready", self.handle_ready)
+            self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
+            self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
         super(mainApp, self).__init__(**kwargs)
 
     def run(self):
@@ -62,7 +66,13 @@ class mainApp(App, threading.Thread):
         self.extruder0 = self.printer.lookup_object('extruder0', None)
         self.extruder1 = self.printer.lookup_object('extruder1', None)
         self.heater_bed = self.printer.lookup_object('heater_bed', None)
-
+    def handle_shutdown(self):
+        logging.info("hadnled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        self.stop()
+    def handle_homed(self, homing, rails):
+        for rail in rails:
+            if rail.name == 'z':
+                self.z_homed = True
     def recieve_speed(self):
         return 77
     def send_speed(self,val):
@@ -129,7 +139,7 @@ class mainApp(App, threading.Thread):
             self.printer.reactor.end()
         self.reactor.register_async_callback(restart())
     def quit(self):
-        self.stop()
+        Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
 
     def change_vkeyboard(self, dt):
         self.root_window.set_vkeyboard_class(UltraKeyboard)

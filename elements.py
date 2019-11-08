@@ -114,7 +114,7 @@ class UltraSlider(Widget):
         return self.px
 
 
-def get_id(inst, root_widget = None):
+def get_id(inst, root_widget = None):#doesnt work :)
     if root_widget is None: root_widget = App.get_running_app().root
     q = deque(root_widget.ids.values())
     while 1:
