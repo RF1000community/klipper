@@ -30,6 +30,11 @@ accent = [0,0.76,0.9,1]
 status_bar = accent
 red = [0.9,0,0,1]
 
+notify_info = accent[:3] + [0.75]
+notify_warning = [0.75, 0.25, 0, 0.75]
+notify_error = [0.7, 0, 0, 1]
+notify_success = [0, 0.7, 0, 0.75]
+
 from os.path import dirname
 kgui_dir = dirname(__file__)
 # The default directory of the filechooser

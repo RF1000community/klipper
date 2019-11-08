@@ -66,7 +66,7 @@ class mainApp(App, threading.Thread):
 
     def run(self):
         logging.info("Kivy app.run")
-        Clock.schedule_once(self.change_vkeyboard, 0)
+        Clock.schedule_once(self.setup_after_run, 0)
         super(mainApp, self).run()
 
     def handle_ready(self):
@@ -122,14 +122,15 @@ class mainApp(App, threading.Thread):
     def send_stop(self):
         print("stop print")
         self.state = "normal"
+        self.notify.show(message="Printing stopped", level="error")
     def send_play(self):
         print("resume print")
         self.state = "printing"
-        nt = Notifications()
-        nt.show()
+        self.notify.show("Printing", "Started printing now", log=False)
     def send_pause(self):
         print("pause print")
         self.state = "paused"
+        self.notify.show("Paused", level="warning", delay=4, color=[0, 0, 0.5, 0.5])
 
     def send_calibrate(self):
         print("calibrate")
@@ -151,8 +152,9 @@ class mainApp(App, threading.Thread):
     def quit(self):
         self.stop()
 
-    def change_vkeyboard(self, dt):
+    def setup_after_run(self, dt):
         self.root_window.set_vkeyboard_class(UltraKeyboard)
+        self.notify = Notifications(padding=(10, 10), height=100)
     
 def load_config(config): #Entry point
     kgui_object = mainApp(config)
