@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 # coding: utf-8
+
 import os
 from sys import argv
 if '-t' in argv:
@@ -16,17 +17,19 @@ from kivy.lang import Builder
 from kivy.app import App
 from kivy.config import Config
 from kivy.clock import Clock
+from kivy.properties import OptionProperty
 from os.path import join
 from subprocess import Popen
+import threading
+import logging
+import site
+
 from elements import UltraKeyboard
 from settings import *
 from home import *
 from files import *
 from status import *
 import parameters as p
-import threading
-import logging
-import site
 
 #add parent directory to sys.path so main.kv (parser.py) can import from it
 site.addsitedir(p.kgui_dir)
@@ -41,6 +44,17 @@ Builder.load_file(join(p.kgui_dir, "style.kv"))
 
 #add threading.thread => inherits start() method to start in new thread
 class mainApp(App, threading.Thread):
+
+    # Property for controlling the state as shown in the statusbar.
+    state = OptionProperty("normal", options=[
+        # Every string set has to be in this list
+        "normal",
+        "printing",
+        "paused",
+        "error",
+        "initializing",
+        ])
+
     def __init__(self, config = None, **kwargs):# runs in klippy thread
         logging.info("Kivy app initializing...")
         if not testing:
@@ -107,10 +121,13 @@ class mainApp(App, threading.Thread):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28("Z")))
     def send_stop(self):
         print("stop print")
+        self.state = "normal"
     def send_play(self):
         print("resume print")
+        self.state = "printing"
     def send_pause(self):
         print("pause print")
+        self.state = "paused"
 
     def send_calibrate(self):
         print("calibrate")

@@ -3,9 +3,8 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.clock import Clock
 from kivy.properties import StringProperty
+from kivy.app import App
 
-class StatusBar(BoxLayout):
-    pass
 
 class TimeLabel(Label):
 

@@ -15,10 +15,10 @@ FloatLayout:
         height: root.height - p.status_bar_height
         size_hint_y: None
 
-<StatusBar>:
+<StatusBar@BoxLayout>:
     canvas:
         Color:
-            rgba: p.accent
+            rgba: p.status_bar
         Rectangle:
             size: self.size
             pos: self.pos
@@ -26,24 +26,22 @@ FloatLayout:
     LeftItems:
         id: left
         orientation: 'lr-tb'
-        size_hint_x: 0.5
+        width: self.minimum_width
         x: root.x
     RightItems:
         id: right
         orientation: 'rl-tb'
-        size_hint_x: 0.5
+        width: self.minimum_width
         right: root.right
 
 <LeftItems@StackLayout>:
-    Button:
-        text: "I'm on the left!"
-        size_hint_x: 0.4
-    Button:
-        text: "Me too!!"
-        size_hint_x: 0.3
-    Button:
-        text: "How exciting"
-        size_hint_x: 0.3
+    Label:
+        id: state
+        text: "state: " + app.state
+        size_hint_x: None
+        size: self.texture_size
+        font_size: root.height - 4
+        padding: 5, 2
 
 <RightItems@StackLayout>:
     Label:
