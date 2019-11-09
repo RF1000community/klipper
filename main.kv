@@ -452,8 +452,8 @@ FloatLayout:
                 pos: self.pos
     BaseButton:
         id: btn_z_up
-        on_press: app.send_up_Z() if self.enabled
-        on_release: app.send_stop_Z() if self.enabled
+        on_press: app.send_up_Z()
+        on_release: app.send_stop_Z()
         enabled: app.homed_z
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
