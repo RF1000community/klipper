@@ -16,7 +16,7 @@ import parameters as p
 class Wifi(EventDispatcher):
 
     #How often to rescan. 0 means never (disabled)
-    update_freq = NumericProperty(0)
+    update_freq = NumericProperty(30)
     wifi_connected = BooleanProperty(False)
     eth_connected = BooleanProperty(False)
 
@@ -28,6 +28,7 @@ class Wifi(EventDispatcher):
         self.scan_output = self.connections_output = None
         self.update_clock = None
         self.networks = []
+        Clock.schedule_once(partial(self.get_wifi_list, True), 1)
 
     def check_nmcli(self):
         # state codes:
@@ -233,7 +234,7 @@ class Wifi(EventDispatcher):
             Logger.error('NetworkManager: ' + str(returncode))
             return
 
-        values = (False, False)
+        values = [False, False]
         for i in stdout.splitlines():
             if i.endswith("wireless"):
                 values[0] = True

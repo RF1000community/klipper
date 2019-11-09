@@ -77,7 +77,6 @@ class ConnectionIcon(Widget):
             self.wifi = Ellipse(pos=(0, 0), size=(0, 0), angle_start=315, angle_end=405)
             self.eth_color = Color(rgba=p.red)
             self.eth = Rectangle(pos=(0, 0), size=(0, 0), source="Logos/ethernet.png")
-
         self.draw_nothing()
 
     def draw_wifi(self):
@@ -133,9 +132,8 @@ class ConnectionIcon(Widget):
             self.draw_nothing()
 
     def update_wifi(self, instance, value):
-        self.signal = 100.0 / value[0]['signal']
+        self.signal = value[0]['signal'] / 100.0
         self.draw_wifi()
-
         
 
 class Notifications(FloatLayout):
