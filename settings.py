@@ -250,10 +250,8 @@ class Wifi(EventDispatcher):
     def on_networks(self, value):
         Logger.debug('Wifi: Wifi scan complete returning {} networks'.format(len(value)))
 
-    def on_wrong_pw(self, *args):
-        app = App.get_running_app()
-        app.notify.show("Wrong Password", "Secrets were required, but not provided",
-                level="warning", delay=4)
+    def on_wrong_pw(self, value):
+        pass
 
 
 wifi = Wifi()
@@ -430,6 +428,9 @@ class PasswordPopup(BasePopup):
         wifi.delete(self.ssid)
         self.open()
         self.set_focus_on()
+        app = App.get_running_app()
+        app.notify.show("Wrong Password", "Secrets were required, but not provided",
+                level="warning", delay=4)
         return True
 
 
