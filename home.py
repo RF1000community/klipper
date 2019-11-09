@@ -20,7 +20,8 @@ class XyField(Widget):
         super(XyField, self).__init__(**kwargs)
         self.point_radius = 9
         self.app = App.get_running_app()
-        self.printer_dimensions = (self.app.pos_max[0]-self.app.pos_min[0], self.app.pos_max[1]-self.app.pos_min[1])
+        if not self.app.testing: self.printer_dimensions = (self.app.pos_max[0]-self.app.pos_min[0], self.app.pos_max[1]-self.app.pos_min[1])
+        else: self.printer_dimensions = (777,777)
         Clock.schedule_once(self.init_drawing, 0)
 
 
