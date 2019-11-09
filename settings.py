@@ -3,7 +3,7 @@ from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
-from kivy.properties import ListProperty, ObjectProperty, NumericProperty
+from kivy.properties import ListProperty, ObjectProperty, NumericProperty, BooleanProperty
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
 from kivy.logger import Logger
@@ -17,13 +17,14 @@ class Wifi(EventDispatcher):
 
     #How often to rescan. 0 means never (disabled)
     update_freq = NumericProperty(0)
+    wifi_connected = BooleanProperty(False)
+    eth_connected = BooleanProperty(False)
 
     def __init__(self, **kwargs):
         super(Wifi, self).__init__(**kwargs)
         self.state = self.check_nmcli()
         self.register_event_type('on_networks')
         self.register_event_type('on_wrong_pw')
-        self.register_event_type('on_connection_types')
         self.scan_output = self.connections_output = None
         self.update_clock = None
         self.networks = []
@@ -58,10 +59,10 @@ class Wifi(EventDispatcher):
             return 3
 
     def on_update_freq(self, instance, value):
-        if self.state:
-            return
         if self.update_clock:
             self.update_clock.cancel()
+        if self.state:
+            return
         if value > 0:
             self.get_wifi_list()
             self.update_clock = Clock.schedule_interval(self.get_wifi_list, value)
@@ -73,6 +74,7 @@ class Wifi(EventDispatcher):
         # bind to networks property to receive the final list
         if self.state:
             return
+        self.get_connection_types()
         rescan = 'no' if no_rescan else 'auto'
         cmd = ['nmcli', '--get-values', 'SIGNAL,IN-USE,SSID', 'device', 'wifi', 'list', '--rescan', rescan]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
@@ -231,13 +233,14 @@ class Wifi(EventDispatcher):
             Logger.error('NetworkManager: ' + str(returncode))
             return
 
-        types = [False, False]
+        values = (False, False)
         for i in stdout.splitlines():
             if i.endswith("wireless"):
-                types[0] = True
+                values[0] = True
             elif i.endswith("ethernet"):
-                types[1] = True
-        self.dispatch('on_connection_types', types)
+                values[1] = True
+        self.wifi_connected = values[0]
+        self.eth_connected = values[1]
 
     def on_networks(self, value):
         Logger.debug('Wifi: Wifi scan complete returning {} networks'.format(len(value)))
@@ -246,9 +249,6 @@ class Wifi(EventDispatcher):
         app = App.get_running_app()
         app.notify.show("Wrong Password", "Secrets were required, but not provided",
                 level="warning", delay=4)
-
-    def on_connection_types(self, value):
-        pass
 
 
 wifi = Wifi()
@@ -304,7 +304,7 @@ class SI_Wifi(SetItem):
         elif self.do_update:
             self.do_update = False
             #Disable scanning updates
-            wifi.update_freq = 0
+            wifi.update_freq = 30
 
     def update(self, instance, value):
         if value[0]['in-use']:

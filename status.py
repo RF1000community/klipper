@@ -1,4 +1,5 @@
 import time
+import math
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
@@ -7,7 +8,7 @@ from kivy.clock import Clock
 from kivy.properties import StringProperty
 from kivy.app import App
 from kivy.logger import Logger
-from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse
+from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Rectangle
 from kivy.graphics.context_instructions import Color
 import parameters as p
 from settings import wifi
@@ -58,29 +59,84 @@ class TimeLabel(Label):
 class ConnectionIcon(Widget):
     
     def __init__(self, **kwargs):
-        self.topright = [0,0]
+        self.topright = []
         super(ConnectionIcon, self).__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
 
-    def init_drawing(self, dt):
-        padding = 2
-        import math
-        full_radius = self.height - 2*padding
-        full_size = [2*radius, 2*radius]
-        cutoff = radius - math.cos(math.pi/4) * radius
-        cutoff = int(cutoff+0.5)
-        self.width = size[0] - 2*cutoff + padding
-        full_pos = [self.topright[0] - (size[0] - cutoff) - padding,
-                    self.topright[1] - size[1] - padding]
+        self.show_wifi = False
+        self.show_eth = False
+        wifi.bind(on_wifi_connected=self.set_wifi)
+        wifi.bind(on_eth_connected=self.set_eth)
+        wifi.bind(on_networks=self.update_wifi)
 
+    def init_drawing(self, dt):
+        self.icon_padding = 2
         self.transparent = [0, 0, 0, 0]
         with self.canvas:
             self.wifi_color = Color(rgba=self.transparent)
-            self.wifi = Ellipse(pos=full_pos, size=full_size, angle_start=315, angle_end=405)
-            self.eth_color = Color(rgba=self.transparent)
-            self.eth = 
-        self.adjust_signal()
+            self.wifi = Ellipse(pos=(0, 0), size=(0, 0), angle_start=315, angle_end=405)
+            self.eth_color = Color(rgba=p.red)
+            self.eth = Rectangle(pos=(0, 0), size=(0, 0), source="Logos/ethernet.png")
 
+        self.draw_nothing()
+
+    def draw_wifi(self):
+        padding = self.icon_padding
+        h = self.height - 2*padding        
+        full_size = [2*h, 2*h]
+        cutoff = int(h - math.cos(math.pi/4.0) * h + 0.5)
+        self.width = full_size[0] - 2*cutoff + padding
+        full_pos = [self.topright[0] - (full_size[0] - cutoff) - padding,
+                    self.topright[1] - full_size[1] - padding]
+        partial_size = [full_size[0] * self.signal, full_size[1] * self.signal]
+        difference = h*(1 - self.signal)
+        partial_pos = [full_pos[0] + difference, full_pos[1] + difference]
+
+        self.wifi_color.rgba = p.medium_gray
+        self.eth_color.rgba = self.transparent
+
+        self.wifi.pos = partial_pos
+        self.wifi.size = partial_size
+
+    def draw_eth(self):
+        padding = self.icon_padding
+        h = self.height - 2*padding
+        size = [h, h]
+        self.width = size[0] + padding
+        pos = [self.topright[0] - size[0] - padding, 
+               self.topright[1] - size[1] - padding]
+        print(size, pos)
+
+        self.eth_color.rgba = p.medium_gray
+        self.wifi_color.rgba = self.transparent
+
+        self.eth.pos = pos
+        self.eth.size = size
+
+    def draw_nothing(self):
+        self.width = 0
+        self.eth_color.rgba = self.wifi_color.rgba = self.transparent
+
+    def set_wifi(self, instance, value):
+        if value and not self.show_eth:
+                self.show_wifi = True
+                self.draw_wifi()
+        if not(value) and self.show_wifi:
+            self.show_wifi = False
+            self.draw_nothing()
+
+    def set_eth(self, instance, value):
+        self.show_eth = value
+        if self.show_eth:
+            self.draw_eth()
+        else:
+            self.draw_nothing()
+
+    def update_wifi(self, instance, value):
+        self.signal = 100.0 / value[0]['signal']
+        self.draw_wifi()
+
+        
 
 class Notifications(FloatLayout):
 
