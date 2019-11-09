@@ -3,7 +3,7 @@ from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
-from kivy.properties import ListProperty, ObjectProperty, NumericProperty, BooleanProperty
+from kivy.properties import ListProperty, ObjectProperty, NumericProperty, DictProperty
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
 from kivy.logger import Logger
@@ -16,9 +16,8 @@ import parameters as p
 class Wifi(EventDispatcher):
 
     #How often to rescan. 0 means never (disabled)
-    update_freq = NumericProperty(30)
-    wifi_connected = BooleanProperty(False)
-    eth_connected = BooleanProperty(False)
+    update_freq = NumericProperty(15)
+    connection_types = DictProperty({'wifi': False, 'eth': False})
 
     def __init__(self, **kwargs):
         super(Wifi, self).__init__(**kwargs)
@@ -29,6 +28,9 @@ class Wifi(EventDispatcher):
         self.update_clock = None
         self.networks = []
         Clock.schedule_once(partial(self.get_wifi_list, True), 1)
+        if self.state == 0:
+            self.update_clock = Clock.schedule_interval(self.get_wifi_list, self.update_freq)
+        
 
     def check_nmcli(self):
         # state codes:
@@ -60,6 +62,7 @@ class Wifi(EventDispatcher):
             return 3
 
     def on_update_freq(self, instance, value):
+        return
         if self.update_clock:
             self.update_clock.cancel()
         if self.state:
@@ -72,7 +75,7 @@ class Wifi(EventDispatcher):
         # no_rescan: when True set --rescan to no to immediately (still ~100ms delay) return a list, even if
         # it is too old. Otherwise rescan if necessary (handled by using 'auto'), possibly taking a few
         # seconds, unless the latest rescan was very recent.
-        # bind to networks property to receive the final list
+        # bind to on_networks event to receive the final list
         if self.state:
             return
         self.get_connection_types()
@@ -240,8 +243,9 @@ class Wifi(EventDispatcher):
                 values[0] = True
             elif i.endswith("ethernet"):
                 values[1] = True
-        self.wifi_connected = values[0]
-        self.eth_connected = values[1]
+        self.connection_types['wifi'] = values[0]
+        self.connection_types['eth'] = values[1]
+        
 
     def on_networks(self, value):
         Logger.debug('Wifi: Wifi scan complete returning {} networks'.format(len(value)))
@@ -290,6 +294,7 @@ class SI_Wifi(SetItem):
         return super(SI_Wifi, self).on_touch_down(touch)
 
     def on_pre_enter(self):
+        return
         wifi.update_freq = self.freq
 
     def bind_tab(self, dt):
@@ -298,6 +303,7 @@ class SI_Wifi(SetItem):
         tab.bind(current_tab=self.control_update)
 
     def control_update(self, instance, value):
+        return
         if value == instance.ids.set_tab:
             self.do_update = True
             wifi.get_wifi_list(no_rescan=True)
@@ -364,6 +370,7 @@ class WifiScreen(Screen):
         wifi.bind(on_networks=self.update)
 
     def on_pre_enter(self):
+        return
         # pre_enter: This function is executed when the animation starts
         wifi.get_wifi_list(no_rescan=True)
         wifi.update_freq = self.freq

@@ -65,8 +65,7 @@ class ConnectionIcon(Widget):
 
         self.show_wifi = False
         self.show_eth = False
-        wifi.bind(on_wifi_connected=self.set_wifi)
-        wifi.bind(on_eth_connected=self.set_eth)
+        wifi.bind(on_connection_types=self.set_icon)
         wifi.bind(on_networks=self.update_wifi)
 
     def init_drawing(self, dt):
@@ -116,18 +115,11 @@ class ConnectionIcon(Widget):
         self.width = 0
         self.eth_color.rgba = self.wifi_color.rgba = self.transparent
 
-    def set_wifi(self, instance, value):
-        if value and not self.show_eth:
-                self.show_wifi = True
-                self.draw_wifi()
-        if not(value) and self.show_wifi:
-            self.show_wifi = False
-            self.draw_nothing()
-
-    def set_eth(self, instance, value):
-        self.show_eth = value
-        if self.show_eth:
+    def set_icon(self, instance, value):
+        if value['eth']:
             self.draw_eth()
+        elif value['wifi']:
+            self.draw_wifi()
         else:
             self.draw_nothing()
 
