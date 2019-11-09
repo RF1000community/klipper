@@ -45,10 +45,10 @@ class FC(FileChooserIconView):
 
 class PrintPopup(BasePopup):
     
-    def __init__(self, filename, chooser, **kwargs):
-        self.prompt = "Start printing of\n%s/[b]%s[/b]"%split(filename)
-        super(PrintPopup, self).__init__(**kwargs)
+    def __init__(self, path, chooser, **kwargs):
+        self.prompt = path.split("/")[-1]
         self.chooser = chooser
+        super(PrintPopup, self).__init__(**kwargs)
 
     def dismiss(self):
         super(PrintPopup, self).dismiss()

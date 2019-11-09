@@ -56,17 +56,23 @@ class mainApp(App, threading.Thread):
         ])
 
     z_homed = BooleanProperty(False)
+    printer_objects_available = BooleanProperty(False)
 
     def __init__(self, config = None, **kwargs):# runs in klippy thread
         logging.info("Kivy app initializing...")
         self.testing = testing
         if not testing:
-            self.klipper_config = config
-            self.printer = self.klipper_config.get_printer()
+            self.kgui_config_section = config
+            self.printer = self.kgui_config_section.get_printer()
             self.reactor = self.printer.get_reactor()
             self.printer.register_event_handler("klippy:ready", self.handle_ready)
             self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
+            self.klipper_config = self.printer.config
+            self.pos_max_x = self.klipper_config.getsection('stepper_x').get_int('posistion_max')
+            self.pos_max_y = self.klipper_config.getsection('stepper_y').get_int('posistion_max')
+            self.pos_min_x = self.klipper_config.getsection('stepper_x').get_int('posistion_min')
+            self.pos_min_y = self.klipper_config.getsection('stepper_y').get_int('posistion_min')
         super(mainApp, self).__init__(**kwargs)
 
     def run(self):
@@ -74,7 +80,7 @@ class mainApp(App, threading.Thread):
         Clock.schedule_once(self.setup_after_run, 0)
         super(mainApp, self).run()
 
-    def handle_ready(self):
+    def handle_ready(self): # the handlers are not thread safe!
         self.gcode = self.printer.lookup_object('gcode')
         self.toolhead = self.printer.lookup_object('toolhead')
         self.sdcard = self.printer.lookup_object('virtual_sdcard', None)
@@ -82,6 +88,7 @@ class mainApp(App, threading.Thread):
         self.extruder0 = self.printer.lookup_object('extruder0', None)
         self.extruder1 = self.printer.lookup_object('extruder1', None)
         self.heater_bed = self.printer.lookup_object('heater_bed', None)
+        self.printer_objects_available = True
     def handle_shutdown(self):
         logging.info("hadnled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         self.stop()
@@ -89,6 +96,7 @@ class mainApp(App, threading.Thread):
         for rail in rails:
             if rail.name == 'z':
                 self.z_homed = True
+
     def recieve_speed(self):
         return 77
     def send_speed(self,val):
@@ -120,16 +128,24 @@ class mainApp(App, threading.Thread):
         return 77
     def send_temp_bed(self,val):
         print("send {} as Temp bed".format(val))
-
+    def send_xyz(self, x=None, y=None, z=None):
+        # resets all queued moves and sets pos
+        xyz = [x,y,z]
+        self.reactor.register_async_callback((lambda e: self.set_xyz(xyz)))
+    def set_xyz(self, xyz):
+        current_pos = self.toolhead.get_position()
+        xyz = [current_pos[i] if a is None else a for i,a in enumerate(xyz)]
+        self.toolhead.set_position(xyz)
+   
 
     def send_up_Z(self):
-        print("move Z up")
+        self.reactor.register_async_callback(lambda e: self.toolhead.move(self.toolhead.get_position()[0:2].append(0)))
     def send_down_Z(self):
-        print("move Z down")
+        self.reactor.register_async_callback(lambda e: self.toolhead.move(self.toolhead.get_position()[0:2].append(1000)))
     def send_stop_Z(self):
-        print("stop Z")
+        self.reactor.register_async_callback(lambda e: self.toolhead.move_queue.flush())
     def send_home_Z(self):
-        self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28("Z")))
+        self.reactor.register_async_callback(lambda e: self.gcode.cmd_G28("Z"))
     def send_stop(self):
         print("stop print")
         self.state = "normal"

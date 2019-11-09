@@ -2,6 +2,7 @@
 from kivy.properties import ListProperty, StringProperty
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
+from kivy.app import App
 from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Line
 from kivy.graphics.context_instructions import Color
 from elements import *
@@ -20,10 +21,8 @@ class XyField(Widget):
         self.point_radius = 9
         self.point_color = [1, 1, 1, 1]
         self.mm_pos = [0, 0]
-        #Probably temporary
+        self.app = App.get_running_app()
         self.printer_dimensions = [random.randint(50, 2000), random.randint(50, 2000)]
-        print(self.printer_dimensions)
-
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
@@ -47,29 +46,33 @@ class XyField(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             touch.grab(self)
-            self.update_pos(touch.pos)
+            self.update_with_px(touch.pos)
             return True
 
     def on_touch_move(self, touch):
         if touch.grab_current is self:
-            self.update_pos(touch.pos)
+            self.update_with_px(touch.pos)
             return True
 
     def on_touch_up(self, touch):
         if touch.grab_current is self:
             touch.ungrab(self)
-            self.update_pos(touch.pos)
+            self.update_with_px(touch.pos)
             self.hide_lines()
             return True
 
-    def update_pos(self, pos):
+    def update_with_px(self, pos):
         x = int(pos[0])
         y = int(pos[1])
-        x, y = self.check_bounds(x, y)
         self.update_drawing(x, y)
-        self.get_mm_pos(x, y)
+        self.get_mm_pos((x, y))
+        self.app.send_xyz(x = self.mm_pos[0], y = self.mm_pos[1])
 
-    def check_bounds(self, x, y):
+    def update_with_mm(self, mm):
+        self.update_drawing(self.get_px_pos(mm))
+        self.mm_pos = mm
+   
+    def update_drawing(self, x, y):
         if x < self.origin[0]:
             x = self.origin[0]
         elif x > self.limits[0]:
@@ -80,9 +83,6 @@ class XyField(Widget):
         elif y > self.limits[1]:
             y = self.limits[1]
 
-        return x, y
-        
-    def update_drawing(self, x, y):
         self.line_x.points=[x, self.y, x, self.top]
         self.line_y.points=[self.x, y, self.right, y]
         self.point.pos=[x-self.point_radius, y-self.point_radius]
@@ -91,13 +91,17 @@ class XyField(Widget):
         self.line_x.points=[0, 0]
         self.line_y.points=[0, 0]
 
-    def get_mm_pos(self, x, y):
+    def get_mm_pos(self, px):
         #Convert to float to avoid python2 integer division
-        ratio_x = float(x - self.origin[0]) / (self.limits[0] - self.origin[0])
-        ratio_y = float(y - self.origin[1]) / (self.limits[1] - self.origin[1])
+        ratio_x = float(px[0] - self.origin[0]) / (self.limits[0] - self.origin[0])
+        ratio_y = float(px[1] - self.origin[1]) / (self.limits[1] - self.origin[1])
         
         self.mm_pos = [self.printer_dimensions[0] * ratio_x, 
                        self.printer_dimensions[1] * ratio_y]
+
+    def get_px_pos(self, mm):
+        self.px = [(self.limits[0] -self.origin[0]) * self.printer_dimensions[0] / float(mm[0]),
+                   (self.limits[1] -self.origin[1]) * self.printer_dimensions[1] / float(mm[1])]
 
     def on_mm_pos(self, instance, value):
         self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)
