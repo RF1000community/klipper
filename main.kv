@@ -419,7 +419,7 @@ FloatLayout:
         id: btn_z_down
         on_press: app.send_down_Z()
         on_release: app.send_stop_Z()
-        enabled: app.z_homed
+        enabled: app.homed_z
         size: root.width, root.h1
         pos: root.x, root.y
         canvas.before:
@@ -437,7 +437,10 @@ FloatLayout:
         on_release: app.send_home_Z()
         size: root.width, root.h2
         pos: root.x, root.y+root.h1
+        enabled: app.printer_objects_available
         canvas:
+            Color:
+                rgba: [1,1,1,1] if self.enabled else p.medium_gray
             Rectangle:
                 source: p.kgui_dir+'/Logos/HomeIcon.png'
                 size: 64, 64
@@ -449,9 +452,9 @@ FloatLayout:
                 pos: self.pos
     BaseButton:
         id: btn_z_up
-        on_press: app.send_up_Z()
-        on_release: app.send_stop_Z()
-        enabled: app.z_homed
+        on_press: app.send_up_Z() if self.enabled
+        on_release: app.send_stop_Z() if self.enabled
+        enabled: app.homed_z
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
         canvas.before:

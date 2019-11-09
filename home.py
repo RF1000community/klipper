@@ -13,17 +13,16 @@ import random
 
 class XyField(Widget):
 
-    mm_pos = ListProperty()
+    mm_pos = ListProperty([0,0])
     display = StringProperty()
 
     def __init__(self, **kwargs):
         super(XyField, self).__init__(**kwargs)
         self.point_radius = 9
-        self.point_color = [1, 1, 1, 1]
-        self.mm_pos = [0, 0]
         self.app = App.get_running_app()
-        self.printer_dimensions = [random.randint(50, 2000), random.randint(50, 2000)]
+        self.printer_dimensions = (self.app.pos_max[0]-self.app.pos_min[0], self.app.pos_max[1]-self.app.pos_min[1])
         Clock.schedule_once(self.init_drawing, 0)
+
 
     def init_drawing(self, dt):
         with self.canvas:
@@ -36,7 +35,7 @@ class XyField(Widget):
             #Horizontal line
             self.line_y = Line(points=[0, 0])
 
-            Color(rgba=self.point_color)
+            Color(rgba=[1,1,1,1])
             self.point = Ellipse(pos=self.pos, size=2*[self.point_radius*2])
             
         #Calculate bounds of actual field
@@ -62,11 +61,10 @@ class XyField(Widget):
             return True
 
     def update_with_px(self, pos):
-        x = int(pos[0])
-        y = int(pos[1])
-        self.update_drawing(x, y)
-        self.get_mm_pos((x, y))
-        self.app.send_xyz(x = self.mm_pos[0], y = self.mm_pos[1])
+        pos = (int(pos[0]), int(pos[1]))
+        pos =  self.update_drawing(pos[0],pos[1])
+        self.get_mm_pos(pos)
+        self.app.send_xyz(x=self.mm_pos[0], y=self.mm_pos[1])
 
     def update_with_mm(self, mm):
         self.update_drawing(self.get_px_pos(mm))
@@ -86,6 +84,7 @@ class XyField(Widget):
         self.line_x.points=[x, self.y, x, self.top]
         self.line_y.points=[self.x, y, self.right, y]
         self.point.pos=[x-self.point_radius, y-self.point_radius]
+        return (x, y)
 
     def hide_lines(self):
         self.line_x.points=[0, 0]
@@ -97,7 +96,7 @@ class XyField(Widget):
         ratio_y = float(px[1] - self.origin[1]) / (self.limits[1] - self.origin[1])
         
         self.mm_pos = [self.printer_dimensions[0] * ratio_x, 
-                       self.printer_dimensions[1] * ratio_y]
+                       self.printer_dimensions[0] * ratio_y]
 
     def get_px_pos(self, mm):
         self.px = [(self.limits[0] -self.origin[0]) * self.printer_dimensions[0] / float(mm[0]),
