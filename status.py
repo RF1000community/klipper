@@ -221,15 +221,23 @@ class Notifications(FloatLayout):
                 elif level == "error":
                     Logger.error("Notify: " + message)
 
-        self.root_widget.add_widget(self)
+        window = self.root_widget.get_root_window()
+        window.add_widget(self)
         self.active = True
         # Schedule automatic hiding
         self.update_clock = Clock.schedule_once(self.hide, delay)
 
     def hide(self, *args):
         self.update_clock.cancel()
-        self.root_widget.remove_widget(self)
+        self.root_widget.get_root_window().remove_widget(self)
         self.active = False
+
+    def redraw(self):
+        # Redraw the notification on top of the window. Used in BasePopup.open()
+        if self.active:
+            window = self.root_widget.get_root_window()
+            window.remove_widget(self)
+            window.add_widget(self)
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
