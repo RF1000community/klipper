@@ -117,16 +117,6 @@ EOF
 }
 
 
-setup_boot_options()
-{
-    #disables printing debug info on boot and spash image by appending to cmdline.txt unless already there
-    if ! grep -Fxq "quiet" /boot/cmdline.txt
-    then
-        sudo /bin/sh -c "echo ' quiet disable_splash=1' >> /boot/cmdline.txt"
-    fi
-}
-
-
 
 # Display Driver installation for kgui, 7 inch 1024*600 touchscreen
 install_lcd_driver()
@@ -163,5 +153,4 @@ install_packages
 create_virtualenv
 install_klipper_service
 install_usb_automounting
-setup_boot_options
 install_lcd_driver
