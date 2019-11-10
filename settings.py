@@ -100,28 +100,43 @@ class Wifi(EventDispatcher):
             Clock.schedule_once(partial(self.poll, proc, callback), 0)
         # if process is done forward to callback
         else:
-            callback(proc)
+            if callback:
+                callback(proc)
+            else:
+                # If no callback was provided forward directly to error handling
+                self.nmcli_error_handling(proc)
+
+    def nmcli_error_handling(self, proc):
+        stdout, stderr = proc.communicate()
+        returncode = proc.returncode
+        notify = App.get_running_app().notify
+        if stderr:
+            Logger.info('NetworkManager: ' + stderr.strip())
+        if "Secrets were required, but not provided" in stdout:
+            self.dispatch('on_wrong_pw')
+            notify.show("Wrong password", "Secrets were required, but not provided.", level="warning")
+        if returncode ==3:
+            notify.show("NetworkManager timeout", "Operation timed out. Please try again later.", level="warning")
+        elif 4 <= returncode <= 7:
+            notify.show("NetworkManager", "Operation failed. Please try again later", level="warning")
+        elif returncode == 8:
+            Logger.error('Wifi: NetworkManager not running')
+            self.state = 3
+        elif returncode == 10:
+            notif.show("NetworkManager", "Network not found. Please try again later", level="warning")
+        elif returncode != 0:
+            self.state = 10
+            Logger.error("NetworkManager: nmcli failed, returning " + str(returncode))
+        else:
+            # Finally, if everything is fine, return standard output. Otherwise None is returned
+            return stdout
 
     def parse_connections(self, proc):
         self.parse_wifi_list(proc, True)
 
     def parse_wifi_list(self, proc, connections=False):
-        stdout, stderr = proc.communicate()
-        returncode = proc.returncode
-        if stderr:
-            Logger.warning('NetworkManager: ' + stderr)
-        if returncode == 8:
-            Logger.error('Wifi: NetworkManager not running:')
-            Logger.error('NetworkManager: ' + output[1])
-            self.state = 3
-            return
-        elif returncode == 3:
-            Logger.warning('NetworkManager: Operation timed out')
-            return
-        # catch all other returncodes
-        elif returncode != 0:
-            self.state = 10
-            Logger.error('NetworkManager: ' + str(returncode))
+        stdout = nmcli_error_handling(proc)
+        if not stdout:
             return
 
         # Remember the output for each command
@@ -185,26 +200,8 @@ class Wifi(EventDispatcher):
 
     def process_connections(self, proc):
         # Receive finished processes to change connections (up, down, delete, connect)
-        # Check for errors and run a rescan
-        stdout, stderr = proc.communicate()
-        returncode = proc.returncode
-
-        if stdout:
-            Logger.debug('NetworkManager: ' + stdout)
-        if stderr:
-            Logger.warning('NetworkManager: ' + stderr)
-        # If the password was wrong:
-        if stdout.rstrip('\n') == 'Error: Connection activation failed: (7) Secrets were required, but not provided.':
-            self.dispatch('on_wrong_pw')
-        if returncode == 3:
-            Logger.warning('NetworkManager: Operation timed out')
-            return
-        if 4 <= returncode <= 7:
-            Logger.warning('NetworkManager: Operation unsuccessful. Please Try again later.')
-            return
-        elif returncode:
-            self.state = 10
-            Logger.error('NetworkManager: ' + str(returncode))
+        stdout = nmcli_error_handling(proc)
+        if not stdout:
             return
 
         # Somehow requesting the wifi list right after some actions returns empty output
@@ -218,33 +215,18 @@ class Wifi(EventDispatcher):
         self.poll(proc, self.parse_connection_types)
 
     def parse_connection_types(self, proc):
-        # Returns a list of bools in form [Wifi, Ethernet]
-        stdout, stderr = proc.communicate()
-        returncode = proc.returncode
-        if stderr:
-            Logger.warning('NetworkManager: ' + stderr)
-        if returncode == 8:
-            Logger.error('Wifi: NetworkManager not running:')
-            Logger.error('NetworkManager: ' + output[1])
-            self.state = 3
-            return
-        elif returncode == 3:
-            Logger.warning('NetworkManager: Operation timed out')
-            return
-        # catch all other returncodes
-        elif returncode != 0:
-            self.state = 10
-            Logger.error('NetworkManager: ' + str(returncode))
+        stdout = nmcli_error_handling(proc)
+        if not stdout:
             return
 
-        values = [False, False]
+        wifi = eth = False
         for i in stdout.splitlines():
             if i.endswith("wireless"):
-                values[0] = True
+                wifi = True
             elif i.endswith("ethernet"):
-                values[1] = True
-        self.connection_types['wifi'] = values[0]
-        self.connection_types['eth'] = values[1]
+                eth = True
+        self.connection_types['wifi'] = wifi
+        self.connection_types['eth'] = wifi
         
 
     def on_networks(self, value):
