@@ -123,7 +123,7 @@ class Wifi(EventDispatcher):
             Logger.error('Wifi: NetworkManager not running')
             self.state = 3
         elif returncode == 10:
-            notif.show("NetworkManager", "Network not found. Please try again later", level="warning")
+            notify.show("NetworkManager", "Network not found. Please try again later", level="warning")
         elif returncode != 0:
             self.state = 10
             Logger.error("NetworkManager: nmcli failed, returning " + str(returncode))
