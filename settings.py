@@ -135,7 +135,7 @@ class Wifi(EventDispatcher):
         self.parse_wifi_list(proc, True)
 
     def parse_wifi_list(self, proc, connections=False):
-        stdout = nmcli_error_handling(proc)
+        stdout = self.nmcli_error_handling(proc)
         if not stdout:
             return
 
@@ -200,7 +200,7 @@ class Wifi(EventDispatcher):
 
     def process_connections(self, proc):
         # Receive finished processes to change connections (up, down, delete, connect)
-        stdout = nmcli_error_handling(proc)
+        stdout = self.nmcli_error_handling(proc)
         if not stdout:
             return
 
@@ -215,7 +215,7 @@ class Wifi(EventDispatcher):
         self.poll(proc, self.parse_connection_types)
 
     def parse_connection_types(self, proc):
-        stdout = nmcli_error_handling(proc)
+        stdout = self.nmcli_error_handling(proc)
         if not stdout:
             return
 
