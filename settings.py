@@ -350,24 +350,25 @@ class WifiScreen(Screen):
         wifi.bind(on_networks=self.update)
 
     def on_pre_enter(self):
-        return
         # pre_enter: This function is executed when the animation starts
         wifi.get_wifi_list(no_rescan=True)
+        return
         wifi.update_freq = self.freq
 
     def set_message(self, dt, msg=None):
         message = msg or self.message
         box = self.ids.wifi_box
         box.clear_widgets()
-        label = Label(text=message)
-        label.italic = True
-        label.color = p.medium_light_gray
-        label.size_hint = (1, None)
-        label.text_size = (p.screen_width, None)
-        label.height = 110
-        label.font_size = p.normal_font
-        label.padding = (p.padding,p.padding)
-        label.halign = 'center'
+        label = Label(
+                text = message,
+                italic = True,
+                color = p.medium_light_gray,
+                size_hint = (1, None),
+                text_size = (p.screen_width, None),
+                height = 110,
+                font_size = p.normal_font,
+                padding = (p.padding, p.padding),
+                halign = 'center')
         box.add_widget(label)
 
     def update(self, instance, value):
