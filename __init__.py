@@ -87,6 +87,7 @@ class mainApp(App, threading.Thread):
         self.extruder0 = self.printer.lookup_object('extruder0', None)
         self.extruder1 = self.printer.lookup_object('extruder1', None)
         self.heater_bed = self.printer.lookup_object('heater_bed', None)
+        self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
         self.printer_objects_available = True
     def handle_shutdown(self):
         logging.info("handled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
@@ -95,7 +96,7 @@ class mainApp(App, threading.Thread):
         for rail in rails:
             if rail.name == 'z':
                 self.homed_z = True
-    def handle_calc_print_time(self, curtime, est_print_time, print_time)
+    def handle_calc_print_time(self, curtime, est_print_time, print_time):
         pass 
 
     def recieve_speed(self):
@@ -161,7 +162,7 @@ class mainApp(App, threading.Thread):
         self.notify.show("Paused", level="warning", delay=4, color=[0, 0, 0.5, 0.5])
 
     def send_calibrate(self):
-        print("calibrate")
+        self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
 
     def send_acc(self, val):
         print("Sent Accelleration of {} to printer".format(val))
