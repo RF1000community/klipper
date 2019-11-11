@@ -1,14 +1,17 @@
 import time
+import math
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
+from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.properties import StringProperty
 from kivy.app import App
 from kivy.logger import Logger
-from kivy.graphics.vertex_instructions import RoundedRectangle
+from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Rectangle
 from kivy.graphics.context_instructions import Color
 import parameters as p
+from settings import wifi
 
 class TimeLabel(Label):
 
@@ -53,6 +56,78 @@ class TimeLabel(Label):
             return True
         return super(TimeLabel, self).on_touch_down(touch)
 
+class ConnectionIcon(Widget):
+    
+    def __init__(self, **kwargs):
+        self.topright = []
+        super(ConnectionIcon, self).__init__(**kwargs)
+        Clock.schedule_once(self.init_drawing, 0)
+
+        self.show_wifi = False
+        self.show_eth = False
+        wifi.bind(on_connection_types=self.set_icon)
+        wifi.bind(on_networks=self.update_wifi)
+
+    def init_drawing(self, dt):
+        self.icon_padding = 2
+        self.transparent = [0, 0, 0, 0]
+        with self.canvas:
+            self.wifi_color = Color(rgba=self.transparent)
+            self.wifi = Ellipse(pos=(0, 0), size=(0, 0), angle_start=315, angle_end=405)
+            self.eth_color = Color(rgba=p.red)
+            self.eth = Rectangle(pos=(0, 0), size=(0, 0), source="Logos/ethernet.png")
+        self.draw_nothing()
+
+    def draw_wifi(self):
+        padding = self.icon_padding
+        h = self.height - 2*padding        
+        full_size = [2*h, 2*h]
+        cutoff = int(h - math.cos(math.pi/4.0) * h + 0.5)
+        self.width = full_size[0] - 2*cutoff + padding
+        full_pos = [self.topright[0] - (full_size[0] - cutoff) - padding,
+                    self.topright[1] - full_size[1] - padding]
+        partial_size = [full_size[0] * self.signal, full_size[1] * self.signal]
+        difference = h*(1 - self.signal)
+        partial_pos = [full_pos[0] + difference, full_pos[1] + difference]
+
+        self.wifi_color.rgba = p.medium_gray
+        self.eth_color.rgba = self.transparent
+
+        self.wifi.pos = partial_pos
+        self.wifi.size = partial_size
+
+    def draw_eth(self):
+        padding = self.icon_padding
+        h = self.height - 2*padding
+        size = [h, h]
+        self.width = size[0] + padding
+        pos = [self.topright[0] - size[0] - padding, 
+               self.topright[1] - size[1] - padding]
+        print(size, pos)
+
+        self.eth_color.rgba = p.medium_gray
+        self.wifi_color.rgba = self.transparent
+
+        self.eth.pos = pos
+        self.eth.size = size
+
+    def draw_nothing(self):
+        self.width = 0
+        self.eth_color.rgba = self.wifi_color.rgba = self.transparent
+
+    def set_icon(self, instance, value):
+        if value['eth']:
+            self.draw_eth()
+        elif value['wifi']:
+            self.draw_wifi()
+        else:
+            self.draw_nothing()
+
+    def update_wifi(self, instance, value):
+        self.signal = value[0]['signal'] / 100.0
+        self.draw_wifi()
+        
+
 class Notifications(FloatLayout):
 
     def __init__(self, padding=(10, 10), height=100, **kwargs):
@@ -96,9 +171,8 @@ class Notifications(FloatLayout):
 
     def show(self, title="", message="", level="info", log=True, delay=10, color=None):
         """
-        Lowlevel method for the purpose of showing custom notifications.
-        Otherwise use the preset methods instead. If log is set, this will
-        log under info log level.
+        Show a notification popup with the given parameters. If log is set,
+        also write to the log file.
 
         Parameters:
         title   string      Title of the notification
@@ -147,15 +221,23 @@ class Notifications(FloatLayout):
                 elif level == "error":
                     Logger.error("Notify: " + message)
 
-        self.root_widget.add_widget(self)
+        window = self.root_widget.get_root_window()
+        window.add_widget(self)
         self.active = True
         # Schedule automatic hiding
         self.update_clock = Clock.schedule_once(self.hide, delay)
 
     def hide(self, *args):
         self.update_clock.cancel()
-        self.root_widget.remove_widget(self)
+        self.root_widget.get_root_window().remove_widget(self)
         self.active = False
+
+    def redraw(self):
+        # Redraw the notification on top of the window. Used in BasePopup.open()
+        if self.active:
+            window = self.root_widget.get_root_window()
+            window.remove_widget(self)
+            window.add_widget(self)
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):

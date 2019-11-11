@@ -44,13 +44,11 @@ FloatLayout:
         padding: 5, 2
 
 <RightItems@StackLayout>:
-    Label:
+    ConnectionIcon:
         id: con
-        text: "#"
-        size_hint_x: None
-        size: self.texture_size
-        font_size: root.height - 4
-        padding: 5, 2
+        size_hint: None, None
+        size: 0, root.height
+        topright: root.right, root.top
     TimeLabel:
         id: time
         text: self.time
