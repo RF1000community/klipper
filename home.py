@@ -5,6 +5,7 @@ from kivy.uix.widget import Widget
 from kivy.app import App
 from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Line
 from kivy.graphics.context_instructions import Color
+import logging
 from elements import *
 import parameters as p
 
@@ -15,15 +16,16 @@ class XyField(Widget):
 
     mm_pos = ListProperty([0,0])
     display = StringProperty()
-
+    enabled = BooleanProperty()
+    point_color = ListProperty(p.button_disabled)
     def __init__(self, **kwargs):
         super(XyField, self).__init__(**kwargs)
-        self.point_radius = 9
+        self.point_radius = 10
         self.app = App.get_running_app()
+        #self.bind(enabled=self.setter('app.printer_objects_available'))
         if not self.app.testing: self.printer_dimensions = (self.app.pos_max[0]-self.app.pos_min[0], self.app.pos_max[1]-self.app.pos_min[1])
         else: self.printer_dimensions = (777,777)
         Clock.schedule_once(self.init_drawing, 0)
-
 
     def init_drawing(self, dt):
         with self.canvas:
@@ -36,7 +38,7 @@ class XyField(Widget):
             #Horizontal line
             self.line_y = Line(points=[0, 0])
 
-            Color(rgba=[1,1,1,1])
+            Color(rgba=self.point_color)
             self.point = Ellipse(pos=self.pos, size=2*[self.point_radius*2])
             
         #Calculate bounds of actual field
@@ -48,11 +50,13 @@ class XyField(Widget):
             touch.grab(self)
             self.update_with_px(touch.pos)
             return True
+        return False
 
     def on_touch_move(self, touch):
         if touch.grab_current is self:
             self.update_with_px(touch.pos)
             return True
+        return False
 
     def on_touch_up(self, touch):
         if touch.grab_current is self:
@@ -60,12 +64,14 @@ class XyField(Widget):
             self.update_with_px(touch.pos)
             self.hide_lines()
             return True
+        return False
 
     def update_with_px(self, pos):
-        pos = (int(pos[0]), int(pos[1]))
-        pos =  self.update_drawing(pos[0],pos[1])
-        self.get_mm_pos(pos)
-        self.app.send_xyz(x=self.mm_pos[0], y=self.mm_pos[1])
+        if self.enabled:
+            pos = (int(pos[0]), int(pos[1]))
+            pos = self.update_drawing(pos[0],pos[1])
+            self.get_mm_pos(pos)
+            self.app.send_xyz(x=self.mm_pos[0], y=self.mm_pos[1])
 
     def update_with_mm(self, mm):
         self.update_drawing(self.get_px_pos(mm))
@@ -106,6 +112,10 @@ class XyField(Widget):
     def on_mm_pos(self, instance, value):
         self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)
 
+    def on_enabled(self, instance, value):
+        logging.info("set point_color@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        if self.enabled: self.point_color = [1,1,1,1]
+        else: self.point_color = p.button_disabled
 
 class SpeedSlider(UltraSlider):
     def init_drawing(self, dt):
@@ -187,7 +197,9 @@ class ExtTempSlider(UltraSlider):
     def init_drawing(self, dt):
         if   self.creator.idpy == "A": self.val = App.get_running_app().recieve_temp_A()
         elif self.creator.idpy == "B": self.val = App.get_running_app().recieve_temp_A()
-        self.buttons = [[0,14,"Off",None],[70,0,"PLA\ncold pull",None],[90,-68/2,"ABS/PETG\ncold pull",None],[210,68/2,"PLA",None],[230,0,"PETG",None],[250,-68/2,"ABS",None]]
+        self.buttons = [
+            [0,14,"Off",None],[70,0,"PLA\ncold pull",None],[90,-68/2,"ABS/PETG\ncold pull",None],
+            [210,68/2,"PLA",None],[230,0,"PETG",None],[250,-68/2,"ABS",None]]
         super(ExtTempSlider, self).init_drawing(dt)
     def get_val_from_px(self, x):
         v = int(((x-self.px_min)/self.px_width)*(280-40)+40)

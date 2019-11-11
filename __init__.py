@@ -67,6 +67,7 @@ class mainApp(App, threading.Thread):
             self.printer.register_event_handler("klippy:ready", self.handle_ready)
             self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
+            self.printer.register_event_handler("toolhead:sync_print_time", self.handle_calc_print_time)
             self.klipper_config = self.printer.objects['configfile'].read_main_config()
             stepper_conf = (self.klipper_config.getsection('stepper_x'), self.klipper_config.getsection('stepper_y'))
             self.pos_max = (stepper_conf[0].getint('position_max'), stepper_conf[0].getint('position_max'))
@@ -88,12 +89,14 @@ class mainApp(App, threading.Thread):
         self.heater_bed = self.printer.lookup_object('heater_bed', None)
         self.printer_objects_available = True
     def handle_shutdown(self):
-        logging.info("hadnled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        logging.info("handled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         self.stop()
     def handle_homed(self, homing, rails):
         for rail in rails:
             if rail.name == 'z':
                 self.homed_z = True
+    def handle_calc_print_time(self, curtime, est_print_time, print_time)
+        pass 
 
     def recieve_speed(self):
         return 77
@@ -137,13 +140,13 @@ class mainApp(App, threading.Thread):
    
 
     def send_up_Z(self):
-        self.reactor.register_async_callback(lambda e: self.toolhead.move(self.toolhead.get_position()[0:2].append(0), 100))
+        self.reactor.register_async_callback((lambda e: self.toolhead.move(self.toolhead.get_position()[0:2].append(0), 100)))
     def send_down_Z(self):
-        self.reactor.register_async_callback(lambda e: self.toolhead.move(self.toolhead.get_position()[0:2].append(1000), 100)) 
+        self.reactor.register_async_callback((lambda e: self.toolhead.move(self.toolhead.get_position()[0:2].append(1000), 100)))
     def send_stop_Z(self):
-        self.reactor.register_async_callback(lambda e: self.toolhead.move_queue.flush())
+        self.reactor.register_async_callback((lambda e: self.toolhead.move_queue.flush()))
     def send_home_Z(self):
-        self.reactor.register_async_callback(lambda e: self.gcode.cmd_G28("Z"))
+        self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28("Z")))
     def send_stop(self):
         print("stop print")
         self.state = "normal"
@@ -170,10 +173,13 @@ class mainApp(App, threading.Thread):
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
     def restart_klipper(self):
+        self.reactor.register_async_callback((lambda e: self.gcode.cmd_FIRMWARE_RESTART(0)))
+        self.stop()
+        """
         def restart(e=None):
             self.printer.run_result = 'fimrmware_restart'
             self.printer.reactor.end()
-        self.reactor.register_async_callback(restart())
+        self.reactor.register_async_callback(restart())"""
     def quit(self):
         Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
 

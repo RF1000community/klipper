@@ -227,6 +227,7 @@ FloatLayout:
         Btn_Outline:
             id: btn_calibrate
             on_release: app.send_calibrate()
+            enabled: app.printer_objects_available
             title: "Mesh Bed Leveling"
             size: btn_tr_B.size
             pos: btn_tr_B.x, btn_tr_A.top +p.padding
@@ -243,10 +244,9 @@ FloatLayout:
             id: xy_field
             size_hint: None, None
             size: 280, 3*p.btn_height + 2*p.padding
-            point_radius: 10
             x: p.padding
             top: root.height-p.padding-p.status_bar_height
-            activated: False
+            enabled: app.printer_objects_available
         Label:
             id: xy_display
             size: self.texture_size
@@ -269,6 +269,7 @@ FloatLayout:
     Label:
         text: root.title
         size: root.size
+        color: [1,1,1,1] if root.enabled else p.button_disabled
         text_size: self.size
         pos: root.pos        
         font_size: p.normal_font
