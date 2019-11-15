@@ -22,7 +22,7 @@ class Btn_Slider(BaseButton):
     s_title = StringProperty()
     offset = NumericProperty()
 
-class BasePopup(Popup):# makes this Popup recieve the instance of the calling button to access its methods and idpy
+class BasePopup(Popup): #makes this Popup recieve the instance of the calling button to access its methods and idpy
     def __init__(self,**kwargs):
         if 'instance' in kwargs: self.creator = kwargs['instance']
         super(BasePopup,self).__init__(**kwargs)
@@ -33,9 +33,9 @@ class BasePopup(Popup):# makes this Popup recieve the instance of the calling bu
 
 class UltraSlider(Widget):
     px = NumericProperty() #absolute position of dot in px
-    disp = StringProperty()#value displayed by label
+    disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
-    initializing = BooleanProperty(True)#Dont draw slider till its position can be calculated
+    initializing = BooleanProperty(True) #Dont draw slider till its position can be calculated
     def __init__(self, **kwargs):
         self.buttons = list() #list of lists: e.g. [[val,offset,"name",the instance]]
         self.val = float()    #value, passed to printer, not in px
@@ -58,7 +58,7 @@ class UltraSlider(Widget):
 
     def on_touch_down(self, touch):
         if touch.pos[0] > self.px_min-30 and touch.pos[0] < self.px_max+30 and \
-           touch.pos[1] > self.y + 95 -15 and touch.pos[1] < self.y + 95 + 15:
+           touch.pos[1] > self.y + 95-15 and touch.pos[1] < self.y + 95 + 15:
             self.pressed = True
             touch.grab(self)
             x = self.apply_bounds(touch.pos[0])

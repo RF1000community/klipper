@@ -9,38 +9,62 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="80"
-   height="80"
-   viewBox="0 0 21.166673 21.166674"
+   width="70"
+   height="70"
+   viewBox="0 0 18.520839 18.52084"
    version="1.1"
    id="svg8"
    inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
    sodipodi:docname="Nozzle.svg"
-   inkscape:export-filename="C:\Users\Konstantin\Dropbox\3dPrinter\CODE\Kivy Gui\Logos\SettingsIcon.png"
+   inkscape:export-filename="C:\Users\Konstantin\Desktop\klipperui\klippy\extras\kgui\Logos\Nozzle.png"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96">
   <defs
-     id="defs2" />
+     id="defs2">
+    <inkscape:path-effect
+       effect="mirror_symmetry"
+       start_point="9.2604166,283.19064"
+       end_point="9.2604166,291.57288"
+       center_point="9.2604166,287.38176"
+       id="path-effect3562"
+       is_visible="true"
+       mode="free"
+       discard_orig_path="false"
+       fuse_paths="false"
+       oposite_fuse="false"
+       split_items="false" />
+  </defs>
   <sodipodi:namedview
      id="base"
-     pagecolor="#ffffff"
+     pagecolor="#000000"
      bordercolor="#666666"
      borderopacity="1.0"
-     inkscape:pageopacity="0.0"
+     inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="15.839192"
-     inkscape:cx="26.424639"
-     inkscape:cy="39.465416"
-     inkscape:document-units="mm"
+     inkscape:zoom="11.2"
+     inkscape:cx="50.167942"
+     inkscape:cy="26.988566"
+     inkscape:document-units="px"
      inkscape:current-layer="layer1"
-     showgrid="false"
+     showgrid="true"
      units="px"
      inkscape:window-width="1920"
      inkscape:window-height="1027"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     inkscape:pagecheckerboard="true" />
+     inkscape:pagecheckerboard="false"
+     inkscape:document-rotation="0">
+    <sodipodi:guide
+       position="9.2604197,14.174111"
+       orientation="25.17857,0"
+       id="guide3556"
+       inkscape:locked="false" />
+    <inkscape:grid
+       type="xygrid"
+       id="grid4536"
+       dotted="true" />
+  </sodipodi:namedview>
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -59,10 +83,24 @@
      id="layer1"
      transform="translate(0,-275.83325)">
     <path
-       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0.69999999;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 10.306581,291.27033 -2.9232604,-2.58918 v -2.3052 H 8.753077 v -4.81085 h 3.390982 v 4.81085 h 1.353052 v 2.27179 l -2.739513,2.63929 z"
-       id="path5107"
+       style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 9.2604167,280.2036 v 7.06343"
+       id="path1481"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:1.32291996;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 9.2604166,278.19114 H 5.5562518 v 9.21763 H 3.9687513 v 2.39772 l 4.7625016,4.77316 h 0.5291637 m 0,-16.38851 h 3.7041644 v 9.21763 h 1.587501 v 2.39772 l -4.7625017,4.77316 H 9.2604166"
+       id="path3558"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccccccccc" />
+       inkscape:original-d="M 9.2604166,278.19114 H 5.5562518 v 9.21763 H 3.9687513 v 2.39772 l 4.7625016,4.77316 c 0.2362352,0 0.5291637,0 0.5291637,0"
+       inkscape:path-effect="#path-effect3562"
+       transform="translate(0,-1.2917253)"
+       sodipodi:nodetypes="ccccccc"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
   </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Layer 2" />
 </svg>

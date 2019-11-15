@@ -99,6 +99,16 @@ class mainApp(App, threading.Thread):
     def handle_calc_print_time(self, curtime, est_print_time, print_time):
         pass 
 
+    def recieve_pressure_advance(self):
+        return 0.1
+    def send_pressure_advance(self, val):
+        pass
+
+    def recieve_z_adjust(self):
+        return 0.1
+    def send_z_adjust(self, val):
+        pass
+
     def recieve_speed(self):
         return 77
     def send_speed(self,val):

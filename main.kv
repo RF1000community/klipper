@@ -149,19 +149,46 @@ FloatLayout:
             on_release: Factory.ExtTempPopup(instance=self).open()
             id: temp_B
             idpy: "B"
-            x: p.padding-20
+            x: p.padding-10
             center_y: p.padding+p.btn_height/2+top_divider.top
+            canvas:
+                Rectangle:
+                    source: p.kgui_dir+'/Logos/Nozzle.png'
+                    size: 70, 70
+                    pos: self.x, self.center_y - 35
+            Label:
+                text: "B"
+                color: p.background
+                center_x: temp_B.x + 35
+                center_y: temp_B.center_y        
+                font_size: p.large_font
         Btn_Temp:
             on_release: Factory.ExtTempPopup(instance=self).open()
             id: temp_A
             idpy: "A"
-            x: p.padding-20
+            x: p.padding-10
             center_y: p.padding+p.btn_height+temp_B.center_y
+            canvas:
+                Rectangle:
+                    source: p.kgui_dir+'/Logos/Nozzle.png'
+                    size: 70, 70
+                    pos: self.x, self.center_y - 35
+            Label:
+                text: "A"
+                color: p.background
+                center_x: temp_A.x + 35
+                center_y: temp_A.center_y        
+                font_size: p.large_font
         Btn_Temp:
             on_release: Factory.BedTempPopup(instance=self).open()
             id: temp_bed
-            x: p.padding-20
+            x: p.padding-10
             center_y: p.padding+p.btn_height+temp_A.center_y
+            canvas:
+                Rectangle:
+                    source: p.kgui_dir+'/Logos/BuildPlate.png'
+                    size: 70, 70
+                    pos: self.x, self.center_y - 35
 <PrintingScreen@Screen>:
     name: "printingscreen"
     FloatLayout:
@@ -172,22 +199,28 @@ FloatLayout:
             right: root.width -p.padding
             center_y: root.height-p.padding-p.status_bar_height-p.btn_height/2
         Btn_Temp:
+            id: pressure_advance
+            on_release: Factory.PressureAdvancePopup(instance=self).open()
+            small_value: "Pressure Advance"
+            right: root.width - p.padding
+            center_y: z_adjust.center_y - p.padding - p.btn_height
+        Btn_Temp:
             id: speed
             on_release: Factory.SpeedPopup(instance=self).open()
             small_value: "Print Speed"
-            x: p.padding-20
+            x: p.padding-10
             center_y: z_adjust.center_y
         Btn_Temp:
             id: flow
             on_release: Factory.FlowPopup(instance=self).open()
             small_value: "Material Flow"
-            x: p.padding-20
+            x: p.padding-10
             center_y: speed.center_y - p.padding - p.btn_height
         Btn_Temp:
             id: fan
             on_release: Factory.FanPopup(instance=self).open()
             small_value: "Print Cooling"
-            x: p.padding-20
+            x: p.padding-10
             center_y: flow.center_y - p.padding - p.btn_height
 
 
@@ -368,6 +401,7 @@ FloatLayout:
         size: root.w1, root.height
         pos: root.pos
         title: root.title1
+        enabled: app.printer_objects_available
         canvas:
             Color:
                 rgba: p.translucent_white if self.pressed else [0,0,0,0]
@@ -379,6 +413,7 @@ FloatLayout:
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
         title: root.title2
+        enabled: app.printer_objects_available
         canvas:
             Color:
                 rgba: p.translucent_white if self.pressed else [0,0,0,0]
@@ -389,11 +424,12 @@ FloatLayout:
         size: root.w3, root.height
         pos: root.x + root.w1+root.w2,root.y
         title: root.title3
+        enabled: app.printer_objects_available
         canvas:
             Color:
                 rgba: p.translucent_white if self.pressed else [0,0,0,0]
             RoundedRectangle:
-                radius: [0,p.radius,p.radius, 0]
+                radius: [0,p.radius,p.radius,0]
                 size: self.size
                 pos: self.pos        
 <Btn_TripleZ@Widget>:
@@ -471,30 +507,28 @@ FloatLayout:
                 points: self.center_x-u,self.center_y-t,  self.center_x+u,self.center_y-t,  self.center_x,self.center_y+t
 <Btn_Temp@RoundButton>:
     red: False
-    large_value: "--"
-    small_value: "--"
+    large_value: "200C"
+    small_value: "199"
     size: 190, 100
     Label:
-        padding_x: 15
         color: p.red if root.red else [1,1,1,1]
         text: root.large_value
         size_hint: None, None
         size: root.width, p.btn_height+16#to compensate for the font being 8px below top when set to 'top'
         text_size: self.size
         center_y: root.center_y
-        right: root.right
+        right: root.right-15
         font_size: p.large_font
         valign: 'top'
         halign: 'right'
     Label:
-        padding_x: 15
         color: p.light_gray
         text: root.small_value
         size_hint: None, None
         size: root.width, p.btn_height+9
         text_size: self.size
         center_y: root.center_y
-        right: root.right
+        right: root.right-15
         font_size: p.normal_font
         valign: 'bottom'
         halign: 'right'
@@ -613,16 +647,31 @@ FloatLayout:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: app.send_z_adjust("777"), root.dismiss()
+<PressureAdvancePopup@BasePopup>:
+    size_hint: 0.95, 0.4
+    title: "Set Pressure Advance"
+    FloatLayout:
+        PressureAdvanceSlider:
+            id: slider
+            width: root.width
+            pos_hint: {'center_x':0.5, 'y':0.35}
+        Btn_P_Cancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        Btn_P_Confirm:
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.send_pressure_advance("777"), root.dismiss()
 <SpeedPopup@BasePopup>:
-    size_hint: 0.95,0.4
+    size_hint: 0.95, 0.4
     title: "Set Speed Factor"
     FloatLayout:
         SpeedSlider:
-            creator: root.creator
             id: slider
             width: root.width
-            pos_hint: {'center_x':0.5}
-            y: btn_cancel.top+40
+            pos_hint: {'center_x':0.5, 'y':0.35}
         Btn_P_Cancel:
             id: btn_cancel
             width: root.width/2
@@ -633,15 +682,13 @@ FloatLayout:
             pos: root.center_x, root.y
             on_release: app.send_speed(slider.val), root.dismiss()
 <FlowPopup@BasePopup>:
-    size_hint: 0.95,0.4
+    size_hint: 0.95, 0.4
     title: "Set Material Flow"
     FloatLayout:
         FlowSlider:
-            creator: root.creator
             id: slider
             width: root.width
-            pos_hint: {'center_x':0.5}
-            y: btn_cancel.top+40
+            pos_hint: {'center_x':0.5, 'y':0.35}
         Btn_P_Cancel:
             id: btn_cancel
             width: root.width/2
@@ -652,15 +699,13 @@ FloatLayout:
             pos: root.center_x, root.y
             on_release: app.send_flow(slider.val), root.dismiss()
 <FanPopup@BasePopup>:
-    size_hint: 0.95,0.4
+    size_hint: 0.95, 0.4
     title: "Set Part Cooling"
     FloatLayout:
         FanSlider:
-            creator: root.creator
             id: slider
             width: root.width
-            pos_hint: {'center_x':0.5}
-            y: btn_cancel.top+40
+            pos_hint: {'center_x':0.5, 'y':0.35}
         Btn_P_Cancel:
             id: btn_cancel
             width: root.width/2
@@ -671,15 +716,13 @@ FloatLayout:
             pos: root.center_x, root.y
             on_release: app.send_fan(slider.val), root.dismiss()
 <BedTempPopup@BasePopup>:
-    size_hint: 0.95,0.4
+    size_hint: 0.95, 0.4
     title: "Set Buildplate Temperature"
     FloatLayout:
         BedTempSlider:
-            creator: root.creator
             id: slider
             width: root.width
-            pos_hint: {'center_x':0.5}
-            y: btn_cancel.top+40
+            pos_hint: {'center_x':0.5, 'y':0.35}
         Btn_P_Cancel:
             id: btn_cancel
             width: root.width/2
@@ -690,7 +733,7 @@ FloatLayout:
             pos: root.center_x, root.y
             on_release: app.send_temp_bed(slider.val), root.dismiss()
 <ExtTempPopup@BasePopup>:
-    size_hint: 0.95,0.4
+    size_hint: 0.95, 0.4
     title: "Set Nozzle "+self.creator.idpy+" Temperature"
 
     FloatLayout:
@@ -698,8 +741,7 @@ FloatLayout:
             creator: root.creator
             id: slider
             width: root.width
-            pos_hint: {'center_x':0.5}
-            y: btn_cancel.top+40
+            pos_hint: {'center_x':0.5, 'y':0.35}
         Btn_P_Cancel:
             id: btn_cancel
             width: root.width/2
@@ -711,6 +753,7 @@ FloatLayout:
             on_release:
                 if   root.creator.idpy == "A": app.send_temp_A(slider.val); root.dismiss()
                 elif root.creator.idpy == "B": app.send_temp_B(slider.val); root.dismiss()
+
 # FILE  ########################################################################
 <FileTab@TabbedPanelItem>:
     background_down: ''

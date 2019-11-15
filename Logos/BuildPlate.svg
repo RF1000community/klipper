@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
    xmlns:cc="http://creativecommons.org/ns#"
@@ -9,28 +7,41 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="80"
-   height="80"
-   viewBox="0 0 21.166673 21.166674"
+   width="70"
+   height="70"
+   viewBox="0 0 18.520839 18.52084"
    version="1.1"
    id="svg8"
-   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
+   inkscape:version="1.0beta1 (fe3e306, 2019-09-17)"
    sodipodi:docname="BuildPlate.svg"
-   inkscape:export-filename="C:\Users\Konstantin\Dropbox\3dPrinter\CODE\Kivy Gui\Logos\SettingsIcon.png"
+   inkscape:export-filename="C:\Users\Konstantin\Desktop\klipperui\klippy\extras\kgui\Logos\BuildPlate.png"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96">
   <defs
-     id="defs2" />
+     id="defs2">
+    <inkscape:path-effect
+       effect="mirror_symmetry"
+       start_point="9.2604166,286.01499"
+       end_point="9.2604166,290.21996"
+       center_point="9.2604166,288.16472"
+       id="path-effect1426"
+       is_visible="true"
+       mode="free"
+       discard_orig_path="false"
+       fuse_paths="false"
+       oposite_fuse="false"
+       split_items="false" />
+  </defs>
   <sodipodi:namedview
      id="base"
-     pagecolor="#ffffff"
+     pagecolor="#303030"
      bordercolor="#666666"
      borderopacity="1.0"
-     inkscape:pageopacity="0.0"
+     inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="3.959798"
-     inkscape:cx="38.751533"
-     inkscape:cy="101.0613"
+     inkscape:zoom="7.919596"
+     inkscape:cx="56.870929"
+     inkscape:cy="24.158115"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -40,7 +51,13 @@
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     inkscape:pagecheckerboard="true" />
+     inkscape:pagecheckerboard="false"
+     inkscape:document-rotation="0">
+    <sodipodi:guide
+       position="9.2604198,11.371377"
+       orientation="31.062198,0"
+       id="guide1420" />
+  </sodipodi:namedview>
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -49,7 +66,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -59,9 +76,15 @@
      id="layer1"
      transform="translate(0,-275.83325)">
     <path
-       style="fill:none;stroke:#fffffe;stroke-width:1.26499999;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 3.7846642,291.00312 3.3241643,-3.32417 h 6.9657125 l 3.307461,3.30746 z"
-       id="path5105"
-       inkscape:connector-curvature="0" />
+       style="fill:none;stroke:#ffffff;stroke-width:1.32292;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 9.2604166,285.50169 H 4.5536058 l -3.86852399,4.43479 H 9.2604166 m 0,-4.43479 h 4.7068104 l 3.868524,4.43479 H 9.2604166"
+       id="path1424"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccc"
+       inkscape:path-effect="#path-effect1426"
+       inkscape:original-d="M 9.2604166,285.50169 H 4.5536058 l -3.86852399,4.43479 H 9.2604166"
+       transform="translate(0,2.3151041)"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
   </g>
 </svg>

@@ -22,7 +22,7 @@ class XyField(Widget):
         super(XyField, self).__init__(**kwargs)
         self.point_radius = 10
         self.app = App.get_running_app()
-        #self.bind(enabled=self.setter('app.printer_objects_available'))
+        #self.bind(enabled=self.setter('self.app.printer_objects_available'))
         if not self.app.testing: self.printer_dimensions = (self.app.pos_max[0]-self.app.pos_min[0], self.app.pos_max[1]-self.app.pos_min[1])
         else: self.printer_dimensions = (777,777)
         Clock.schedule_once(self.init_drawing, 0)
@@ -39,7 +39,7 @@ class XyField(Widget):
             self.line_y = Line(points=[0, 0])
 
             Color(rgba=self.point_color)
-            self.point = Ellipse(pos=self.pos, size=2*[self.point_radius*2])
+            self.point = Ellipse(pos=self.pos, size=2*[self.point_radius*2],)
             
         #Calculate bounds of actual field
         self.origin = [self.x+self.point_radius, self.y+self.point_radius]
@@ -116,6 +116,21 @@ class XyField(Widget):
         logging.info("set point_color@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         if self.enabled: self.point_color = [1,1,1,1]
         else: self.point_color = p.button_disabled
+
+class PressureAdvanceSlider(UltraSlider):
+    def init_drawing(self, dt):
+        self.val = App.get_running_app().recieve_pressure_advance()
+        self.buttons = []
+        super(PressureAdvanceSlider, self).init_drawing(dt)
+
+    def get_val_from_px(self, x):
+        return float(((x-self.px_min)/(self.px_width))*(0.5))
+
+    def get_disp_from_val(self, val):
+        return "{:4.3f}mm/mm/s".format(val)
+
+    def get_px_from_val(self, val):
+        return int((float(val)/(0.5))*(self.px_width)+self.px_min)
 
 class SpeedSlider(UltraSlider):
     def init_drawing(self, dt):
