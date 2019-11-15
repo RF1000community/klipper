@@ -28,6 +28,8 @@ class BasePopup(Popup): #makes this Popup recieve the instance of the calling bu
         super(BasePopup,self).__init__(**kwargs)
     def open(self, animation=False, **kwargs):
         super(BasePopup, self).open(animation=animation, **kwargs)
+        app = App.get_running_app()
+        app.notify.redraw()
     def dismiss(self, animation=False, **kwargs):
         super(BasePopup, self).dismiss(animation=animation, **kwargs)
 
