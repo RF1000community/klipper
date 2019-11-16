@@ -68,7 +68,7 @@ create_virtualenv()
 install_klipper_service()
 {
     report_status "Install klipper systemd service..."
-    sudo /bin/sh -c "cat > /lib/systemd/system/klipper.service" <<EOF
+    sudo /bin/sh -c "cat > /etc/systemd/system/klipper.service" <<EOF
 [Unit]
 Description="Klipper with GUI running in Xorg"
 Requires=multi-user.target
@@ -78,6 +78,7 @@ Type=simple
 User=$USER
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=/bin/bash -c "/usr/bin/startx ${PYTHONDIR}/bin/python ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
+Nice=-4
 
 [Install]
 WantedBy=default.target
