@@ -18,32 +18,22 @@ class XyField(Widget):
     display = StringProperty()
     enabled = BooleanProperty()
     point_color = ListProperty(p.button_disabled)
+    point_pos = ListProperty([0,0])
+    line_x = ListProperty([0,0,0,0])
+    line_y = ListProperty([0,0,0,0])
     def __init__(self, **kwargs):
         super(XyField, self).__init__(**kwargs)
         self.point_radius = 10
         self.app = App.get_running_app()
-        #self.bind(enabled=self.setter('self.app.printer_objects_available'))
         if not self.app.testing: self.printer_dimensions = (self.app.pos_max[0]-self.app.pos_min[0], self.app.pos_max[1]-self.app.pos_min[1])
         else: self.printer_dimensions = (777,777)
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
-        with self.canvas:
-            Color(rgba=p.button_outline)
-            self.bg_rect = Line(width=1, rounded_rectangle=(self.x, self.y, self.width, self.height, p.radius))
-            
-            Color(rgba=p.button_outline)
-            #Vertical line, 
-            self.line_x = Line(points=[0, 0])
-            #Horizontal line
-            self.line_y = Line(points=[0, 0])
-
-            Color(rgba=self.point_color)
-            self.point = Ellipse(pos=self.pos, size=2*[self.point_radius*2],)
-            
         #Calculate bounds of actual field
         self.origin = [self.x+self.point_radius, self.y+self.point_radius]
         self.limits = [self.right-self.point_radius, self.top-self.point_radius]
+        self.point_pos = self.pos
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -88,14 +78,14 @@ class XyField(Widget):
         elif y > self.limits[1]:
             y = self.limits[1]
 
-        self.line_x.points=[x, self.y, x, self.top]
-        self.line_y.points=[self.x, y, self.right, y]
-        self.point.pos=[x-self.point_radius, y-self.point_radius]
+        self.line_x=[x, self.y, x, self.top]
+        self.line_y=[self.x, y, self.right, y]
+        self.point_pos=[x-self.point_radius, y-self.point_radius]
         return (x, y)
 
     def hide_lines(self):
-        self.line_x.points=[0, 0]
-        self.line_y.points=[0, 0]
+        self.line_x=[0, 0]
+        self.line_y=[0, 0]
 
     def get_mm_pos(self, px):
         #Convert to float to avoid python2 integer division
@@ -111,11 +101,6 @@ class XyField(Widget):
 
     def on_mm_pos(self, instance, value):
         self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)
-
-    def on_enabled(self, instance, value):
-        logging.info("set point_color@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-        if self.enabled: self.point_color = [1,1,1,1]
-        else: self.point_color = p.button_disabled
 
 class PressureAdvanceSlider(UltraSlider):
     def init_drawing(self, dt):

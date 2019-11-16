@@ -220,8 +220,6 @@ FloatLayout:
             small_value: "Print Cooling"
             x: p.padding-10
             center_y: flow.center_y - p.padding - p.btn_height
-
-
 <HomeScreen@Screen>:
     name: "homescreen"
     FloatLayout:
@@ -751,6 +749,24 @@ FloatLayout:
             on_release:
                 if   root.creator.idpy == "A": app.send_temp_A(slider.val); root.dismiss()
                 elif root.creator.idpy == "B": app.send_temp_B(slider.val); root.dismiss()
+<XyField>:
+    canvas:
+        Color:
+            rgba: p.button_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+        Line:
+            width: 1
+            points: self.line_y
+        Line:
+            width: 1
+            points: self.line_x
+        Color:
+            rgba: [1,1,1,1] if self.enabled else p.button_disabled
+        Ellipse:
+            pos: self.point_pos
+            size: [self.point_radius*2, self.point_radius*2]
 
 # FILE  ########################################################################
 <FileTab@TabbedPanelItem>:

@@ -1,40 +1,32 @@
 Raspian buster lite without desktop env.
-
 add new 'ssh' file with no extension to boot folder to enable ssh
 
 sudo apt update
-
 sudo raspi-config: memory split = 256, GL Driver, autologin
-
 sudo apt install git python-pip virtualenv
 
 ### Octoprint from source
 cd ~
+
 git clone https://github.com/foosel/OctoPrint.git
 cd OctoPrint/
 virtualenv venv
 ./venv/bin/python setup.py install
 
-#Autostart
-
-wget https://github.com/foosel/OctoPrint/raw/master/scripts/octoprint.init && sudo mv octoprint.init /etc/init.d/octoprint
-wget https://github.com/foosel/OctoPrint/raw/master/scripts/octoprint.default && sudo mv octoprint.default /etc/default/octoprint
-sudo chmod +x /etc/init.d/octoprint
-
-Adjust the paths to your octoprint binary in /etc/default/octoprint. If you set it up in a virtualenv as described above make sure your /etc/default/octoprint is modified like this:  
-   DAEMON=/home/pi/OctoPrint/venv/bin/octoprint
-sudo update-rc.d octoprint defaults.
-
-https://community.octoprint.org/t/setting-up-octoprint-on-a-raspberry-pi-running-raspbian/2337
+sudo cp ./scripts/octoprint.service /etc/systemd/system/octoprint.service
+sudo systemctl daemon-reload
+sudo systemctl enable octoprint
+#sudo journalctl -u octoprint
 
 ### Klipperui with KGUI
 cd ~
+
 git clone --recurse-submodules https://github.com/D4SK/klipperui
-./klipperui/scripts/install-kgui.sh # this runs all the kgui and klipper installation 
+./klipperui/scripts/install-kgui-systemd.sh
 
-#see install-kgui.sh and klippy-kgui-requirements.txt (where the pip packages are listed)
+put printer.cfg file in home folder
 
-then put printer.cfg file in home folder
+connect OctoPrint to /tmp/printer using web interface
 
 
 
@@ -53,6 +45,18 @@ then put printer.cfg file in home folder
 #git is for Klipper and LCD driver, pip and the rest is for Kivy maybe mtdev-tools is not needed
 
 #evtl expand filesystem
+
+### Old Octoprint Sysvinit autostart
+
+wget https://github.com/foosel/OctoPrint/raw/master/scripts/octoprint.init && sudo mv octoprint.init /etc/init.d/octoprint
+wget https://github.com/foosel/OctoPrint/raw/master/scripts/octoprint.default && sudo mv octoprint.default /etc/default/octoprint
+sudo chmod +x /etc/init.d/octoprint
+
+Adjust the paths to your octoprint binary in /etc/default/octoprint. If you set it up in a virtualenv as described above make sure your /etc/default/octoprint is modified like this:  
+   DAEMON=/home/pi/OctoPrint/venv/bin/octoprint
+sudo update-rc.d octoprint defaults.
+
+https://community.octoprint.org/t/setting-up-octoprint-on-a-raspberry-pi-running-raspbian/2337
 
 
 ### KGUI deps
