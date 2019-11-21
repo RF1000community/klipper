@@ -1,6 +1,5 @@
 #!/usr/bin/env python2
 # coding: utf-8
-
 from subprocess import Popen, PIPE, STDOUT
 import sys
 from os import stat, listdir, remove

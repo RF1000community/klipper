@@ -9,15 +9,13 @@ import logging
 from elements import *
 import parameters as p
 
-import random
-
 
 class XyField(Widget):
 
-    mm_pos = ListProperty([0,0])
     display = StringProperty()
     enabled = BooleanProperty()
     point_color = ListProperty(p.button_disabled)
+    mm_pos = ListProperty([0,0])
     point_pos = ListProperty([0,0])
     line_x = ListProperty([0,0,0,0])
     line_y = ListProperty([0,0,0,0])
@@ -25,8 +23,7 @@ class XyField(Widget):
         super(XyField, self).__init__(**kwargs)
         self.point_radius = 10
         self.app = App.get_running_app()
-        if not self.app.testing: self.printer_dimensions = (self.app.pos_max[0]-self.app.pos_min[0], self.app.pos_max[1]-self.app.pos_min[1])
-        else: self.printer_dimensions = (777,777)
+        self.printer_dimensions = (self.app.pos_max[0]-self.app.pos_min[0], self.app.pos_max[1]-self.app.pos_min[1])
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
@@ -169,7 +166,7 @@ class FanSlider(UltraSlider):
 
 class BedTempSlider(UltraSlider):
     def init_drawing(self, dt):
-        self.val = App.get_running_app().recieve_temp_bed()
+        App.get_running_app().recieve_temp()
         self.buttons = [[0,0,"Off",None],[60,0,"PLA",None],[90,0,"PETG",None],[110,0,"ABS",None]]
         super(BedTempSlider, self).init_drawing(dt)
     def get_val_from_px(self, x):
@@ -195,8 +192,7 @@ class BedTempSlider(UltraSlider):
 
 class ExtTempSlider(UltraSlider):
     def init_drawing(self, dt):
-        if   self.creator.idpy == "A": self.val = App.get_running_app().recieve_temp_A()
-        elif self.creator.idpy == "B": self.val = App.get_running_app().recieve_temp_A()
+        App.get_running_app().recieve_temp()
         self.buttons = [
             [0,14,"Off",None],[70,0,"PLA\ncold pull",None],[90,-68/2,"ABS/PETG\ncold pull",None],
             [210,68/2,"PLA",None],[230,0,"PETG",None],[250,-68/2,"ABS",None]]

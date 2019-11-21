@@ -1,6 +1,5 @@
 #!/usr/bin/env python2
 # coding: utf-8
-
 import os
 from sys import argv
 if '-t' in argv:
@@ -17,7 +16,7 @@ from kivy.lang import Builder
 from kivy.app import App
 from kivy.config import Config
 from kivy.clock import Clock
-from kivy.properties import OptionProperty, BooleanProperty
+from kivy.properties import OptionProperty, BooleanProperty, DictProperty
 from os.path import join
 from subprocess import Popen
 import threading
@@ -31,6 +30,7 @@ from files import *
 from status import *
 import parameters as p
 
+
 #add parent directory to sys.path so main.kv (parser.py) can import from it
 site.addsitedir(p.kgui_dir)
 
@@ -42,7 +42,7 @@ else:       Config.read(join(p.kgui_dir, "config.ini"))
 Builder.unload_file(join(kivy_data_dir, "style.kv"))
 Builder.load_file(join(p.kgui_dir, "style.kv"))
 
-#add threading.thread => inherits start() method to start in new thread
+#add threading.thread => inherits start() method to run() in new thread
 class mainApp(App, threading.Thread):
 
     # Property for controlling the state as shown in the statusbar.
@@ -56,22 +56,29 @@ class mainApp(App, threading.Thread):
         ])
     homed_z = BooleanProperty(False)
     printer_objects_available = BooleanProperty(False)
+    temp = DictProperty({}) #[setpoint, current, "setpoint", "current"]
 
     def __init__(self, config = None, **kwargs):# runs in klippy thread
         logging.info("Kivy app initializing...")
-        self.testing = testing
+        self.temp = {'T0':[0,0,'--','--'],
+                     'T1':[0,0,'--','--'],
+                      'B':[0,0,'--','--']}
         if not testing:
-            self.kgui_config_section = config
-            self.printer = self.kgui_config_section.get_printer()
+            self.kgui_config = config
+            self.printer = config.get_printer()
+            klipper_config = self.printer.objects['configfile'].read_main_config()
+            stepper_conf = (klipper_config.getsection('stepper_x'), klipper_config.getsection('stepper_y'))
+            self.pos_max = (stepper_conf[0].getint('position_max'), stepper_conf[0].getint('position_max'))
+            self.pos_min = (stepper_conf[0].getint('position_min'), stepper_conf[1].getint('position_min'))
             self.reactor = self.printer.get_reactor()
+
             self.printer.register_event_handler("klippy:ready", self.handle_ready)
             self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
             self.printer.register_event_handler("toolhead:sync_print_time", self.handle_calc_print_time)
-            self.klipper_config = self.printer.objects['configfile'].read_main_config()
-            stepper_conf = (self.klipper_config.getsection('stepper_x'), self.klipper_config.getsection('stepper_y'))
-            self.pos_max = (stepper_conf[0].getint('position_max'), stepper_conf[0].getint('position_max'))
-            self.pos_min = (stepper_conf[0].getint('position_min'), stepper_conf[1].getint('position_min'))
+        else:
+            self.pos_max = (200,200)
+            self.pos_min = (0,0)
         super(mainApp, self).__init__(**kwargs)
 
     def run(self):
@@ -86,9 +93,12 @@ class mainApp(App, threading.Thread):
         self.fan = self.printer.lookup_object('fan', None)
         self.extruder0 = self.printer.lookup_object('extruder0', None)
         self.extruder1 = self.printer.lookup_object('extruder1', None)
-        self.heater_bed = self.printer.lookup_object('heater_bed', None)
+        self.heaters = self.printer.lookup_object('heater', None)
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
+
         self.printer_objects_available = True
+        Clock.schedule_interval(self.recieve_temp, 0.7)
+
     def handle_shutdown(self):
         logging.info("handled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         self.stop()
@@ -116,7 +126,7 @@ class mainApp(App, threading.Thread):
 
     def recieve_flow(self):
         return 107
-    def send_flow(self,val):
+    def send_flow(self, val):
         print("send {} as flow".format(val))
 
     def recieve_fan(self):
@@ -124,22 +134,48 @@ class mainApp(App, threading.Thread):
     def send_fan(self,val):
         print("send {} as fan".format(val))
 
-    def recieve_temp_A(self):
-        return 77
-    def send_temp_A(self,val):
-        k = self
-        self.value = val#temporary should be recieve call afterwards
-        print("send {} as Temp A".format(val))
 
-    def recieve_temp_B(self):
-        return 77
-    def send_temp_B(self,val):
-        print("send {} as Temp B".format(val))
 
-    def recieve_temp_bed(self):
-        return 77
-    def send_temp_bed(self,val):
-        print("send {} as Temp bed".format(val))
+    def recieve_temp(self, dt=None):
+        # schedule reading temp in klipper then schedule setting temp in kgui
+        self.reactor.register_async_callback(self.read_temp)
+
+    def read_temp(self, e): #TODO Make this a local fuction in recieve_temp
+        if self.heaters is not None:
+            t = {'T0':[0,0,'--','--'],
+                 'T1':[0,0,'--','--'],
+                  'B':[0,0,'--','--']}
+            for heater_id, sensor in self.heaters.get_gcode_sensors():
+                current, target = sensor.get_temp(self.reactor.monotonic()) #get temp at current point in time
+                t[heater_id] = (target, current, str(target)+'°C', "{:4.1f}".format(current))
+            self.temp = t #not thread safe quick test
+            """
+            
+            Clock.schedule_once(self.set_temp(), 0) #write self.temp from gui thread, Clock.schedule_once is thread safe
+    def set_temp(self, t, *args, **kwargs):
+        self.temp = t"""
+
+
+
+
+    def send_temp(self, temp, heater_id):
+        logging.info("send {} as Temp {}".format(temp, heater_id))
+        for h_id, h in self.heaters.get_heaters():
+            if heater_id == h_id:
+                heater = h
+                break
+        print_time  = self.toolhead.get_last_move_time()
+        def _set_temp(heater, print_time, temp, *args, **kwargs):
+            try:
+                heater.set_temp(print_time, temp)
+            except heater.error as e:
+                raise self.error(str(e))
+        self.reactor.register_async_callback(_set_temp(heater, print_time, temp))
+
+
+
+ 
+  
     def send_xyz(self, x=None, y=None, z=None):
         # resets all queued moves and sets pos
         xyz = [x,y,z]
@@ -204,6 +240,5 @@ def load_config(config): #Entry point
     return kgui_object
 
 if __name__ == "__main__":
-    import time
     mainApp().run()
 
