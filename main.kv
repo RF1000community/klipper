@@ -737,7 +737,7 @@ FloatLayout:
             on_release: app.send_temp(slider.val, "B"), root.dismiss()
 <ExtTempPopup@BasePopup>:
     size_hint: 0.95, 0.4
-    title: "Set Nozzle "+root.creator.heater_id+" Temperature"
+    title: "Set "+root.creator.heater_id+" Temperature"
     FloatLayout:
         ExtTempSlider:
             val: app.temp[root.creator.heater_id][0]

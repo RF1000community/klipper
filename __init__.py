@@ -60,9 +60,9 @@ class mainApp(App, threading.Thread):
 
     def __init__(self, config = None, **kwargs):# runs in klippy thread
         logging.info("Kivy app initializing...")
-        self.temp = {'T0':[0,0,'--','--'],
-                     'T1':[0,0,'--','--'],
-                      'B':[0,0,'--','--']}
+        self.temp = {'T0':(0,0,'--','--'),
+                     'T1':(0,0,'--','--'),
+                      'B':(0,0,'--','--')}
         if not testing:
             self.kgui_config = config
             self.printer = config.get_printer()
@@ -93,11 +93,15 @@ class mainApp(App, threading.Thread):
         self.fan = self.printer.lookup_object('fan', None)
         self.extruder0 = self.printer.lookup_object('extruder0', None)
         self.extruder1 = self.printer.lookup_object('extruder1', None)
-        self.heaters = self.printer.lookup_object('heater', None)
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
-
-        self.printer_objects_available = True
-        Clock.schedule_interval(self.recieve_temp, 0.7)
+        self.heaters = self.printer.lookup_object('heater', None)
+        
+        self.heater = {'B': self.printer.lookup_object('heater_bed', None),
+                      'T0': self.heaters.lookup_heater('extruder0'),
+                      'T1': self.heaters.lookup_heater('extruder0')}#wip
+      
+        self.printer_objects_available = True # never read printer objects before!
+        Clock.schedule_interval(self.get_temp, 0.7)
 
     def handle_shutdown(self):
         logging.info("handled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
@@ -108,73 +112,58 @@ class mainApp(App, threading.Thread):
                 self.homed_z = True
     def handle_calc_print_time(self, curtime, est_print_time, print_time):
         pass 
+        """
+        def set_print_time(dt):
+            self.print_time = str(est_print_time)
+        Clock.schedule_once(set_print_time, 0) #needs print_time string_property
+        """
 
-    def recieve_pressure_advance(self):
+    def get_pressure_advance(self):
         return 0.1
     def send_pressure_advance(self, val):
         pass
 
-    def recieve_z_adjust(self):
+    def get_z_adjust(self):
         return 0.1
     def send_z_adjust(self, val):
         pass
 
-    def recieve_speed(self):
+    def get_speed(self):
         return 77
     def send_speed(self,val):
         print("send {} as speed".format(val))
 
-    def recieve_flow(self):
+    def get_flow(self):
         return 107
     def send_flow(self, val):
         print("send {} as flow".format(val))
 
-    def recieve_fan(self):
+    def get_fan(self):
         return 77
-    def send_fan(self,val):
-        print("send {} as fan".format(val))
+    def send_fan(self, speed):
+        logging.info("KGUI send {} as fan speed".format(speed))
+        self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed))
 
 
-
-    def recieve_temp(self, dt=None):
-        # schedule reading temp in klipper then schedule setting temp in kgui
-        self.reactor.register_async_callback(self.read_temp)
-
-    def read_temp(self, e): #TODO Make this a local fuction in recieve_temp
-        if self.heaters is not None:
-            t = {'T0':[0,0,'--','--'],
-                 'T1':[0,0,'--','--'],
-                  'B':[0,0,'--','--']}
-            for heater_id, sensor in self.heaters.get_gcode_sensors():
-                current, target = sensor.get_temp(self.reactor.monotonic()) #get temp at current point in time
-                t[heater_id] = (target, current, str(target)+'°C', "{:4.1f}".format(current))
-            self.temp = t #not thread safe quick test
-            """
-            
-            Clock.schedule_once(self.set_temp(), 0) #write self.temp from gui thread, Clock.schedule_once is thread safe
-    def set_temp(self, t, *args, **kwargs):
-        self.temp = t"""
-
-
-
-
+    def get_temp(self, dt=None):
+        # schedule reading temp in klipper thread which schedules displaying the read value in kgui thread
+        def read_temp(e):
+            if self.heaters is not None:
+                t = {}
+                for heater_id, sensor in self.heaters.get_gcode_sensors():
+                    current, target = sensor.get_temp(self.reactor.monotonic()) #get temp at current point in time
+                    if target == 0: target_str = "Off"
+                    else: target_str = str(target)+"°C"
+                    t[heater_id] = (target, current, target_str, "{:4.1f}".format(current))
+                def display_temp(dt):
+                    self.temp.update(t)
+                Clock.schedule_once(display_temp, 0)
+        self.reactor.register_async_callback(read_temp)
+                
     def send_temp(self, temp, heater_id):
-        logging.info("send {} as Temp {}".format(temp, heater_id))
-        for h_id, h in self.heaters.get_heaters():
-            if heater_id == h_id:
-                heater = h
-                break
-        print_time  = self.toolhead.get_last_move_time()
-        def _set_temp(heater, print_time, temp, *args, **kwargs):
-            try:
-                heater.set_temp(print_time, temp)
-            except heater.error as e:
-                raise self.error(str(e))
-        self.reactor.register_async_callback(_set_temp(heater, print_time, temp))
+        logging.info("KGUI set Temperature of {} to {}".format(heater_id, temp))
+        self.reactor.register_async_callback((lambda e: self.heater[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
 
-
-
- 
   
     def send_xyz(self, x=None, y=None, z=None):
         # resets all queued moves and sets pos

@@ -101,7 +101,7 @@ class XyField(Widget):
 
 class PressureAdvanceSlider(UltraSlider):
     def init_drawing(self, dt):
-        self.val = App.get_running_app().recieve_pressure_advance()
+        self.val = App.get_running_app().get_pressure_advance()
         self.buttons = []
         super(PressureAdvanceSlider, self).init_drawing(dt)
 
@@ -116,7 +116,7 @@ class PressureAdvanceSlider(UltraSlider):
 
 class SpeedSlider(UltraSlider):
     def init_drawing(self, dt):
-        self.val = App.get_running_app().recieve_speed()
+        self.val = App.get_running_app().get_speed()
         self.buttons = [[100,0,"no multiplier",None]]
         super(SpeedSlider, self).init_drawing(dt)
 
@@ -133,7 +133,7 @@ class SpeedSlider(UltraSlider):
 
 class FlowSlider(UltraSlider):        
     def init_drawing(self, dt):
-        self.val = App.get_running_app().recieve_flow()
+        self.val = App.get_running_app().get_flow()
         self.buttons = [[100,0,"no multiplier",None]]
         super(FlowSlider, self).init_drawing(dt)
 
@@ -150,7 +150,7 @@ class FlowSlider(UltraSlider):
 
 class FanSlider(UltraSlider):
     def init_drawing(self, dt):
-        self.val = App.get_running_app().recieve_fan()
+        self.val = App.get_running_app().get_fan()
         self.buttons = []
         super(FanSlider, self).init_drawing(dt)
 
@@ -166,7 +166,7 @@ class FanSlider(UltraSlider):
 
 class BedTempSlider(UltraSlider):
     def init_drawing(self, dt):
-        App.get_running_app().recieve_temp()
+        App.get_running_app().get_temp()
         self.buttons = [[0,0,"Off",None],[60,0,"PLA",None],[90,0,"PETG",None],[110,0,"ABS",None]]
         super(BedTempSlider, self).init_drawing(dt)
     def get_val_from_px(self, x):
@@ -192,7 +192,7 @@ class BedTempSlider(UltraSlider):
 
 class ExtTempSlider(UltraSlider):
     def init_drawing(self, dt):
-        App.get_running_app().recieve_temp()
+        App.get_running_app().get_temp()
         self.buttons = [
             [0,14,"Off",None],[70,0,"PLA\ncold pull",None],[90,-68/2,"ABS/PETG\ncold pull",None],
             [210,68/2,"PLA",None],[230,0,"PETG",None],[250,-68/2,"ABS",None]]
