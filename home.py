@@ -9,41 +9,28 @@ import logging
 from elements import *
 import parameters as p
 
-import random
-
 
 class XyField(Widget):
 
-    mm_pos = ListProperty([0,0])
     display = StringProperty()
     enabled = BooleanProperty()
     point_color = ListProperty(p.button_disabled)
+    mm_pos = ListProperty([0,0])
+    point_pos = ListProperty([0,0])
+    line_x = ListProperty([0,0,0,0])
+    line_y = ListProperty([0,0,0,0])
     def __init__(self, **kwargs):
         super(XyField, self).__init__(**kwargs)
         self.point_radius = 10
         self.app = App.get_running_app()
-        #self.bind(enabled=self.setter('self.app.printer_objects_available'))
-        if not self.app.testing: self.printer_dimensions = (self.app.pos_max[0]-self.app.pos_min[0], self.app.pos_max[1]-self.app.pos_min[1])
-        else: self.printer_dimensions = (777,777)
+        self.printer_dimensions = (self.app.pos_max[0]-self.app.pos_min[0], self.app.pos_max[1]-self.app.pos_min[1])
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
-        with self.canvas:
-            Color(rgba=p.button_outline)
-            self.bg_rect = Line(width=1, rounded_rectangle=(self.x, self.y, self.width, self.height, p.radius))
-            
-            Color(rgba=p.button_outline)
-            #Vertical line, 
-            self.line_x = Line(points=[0, 0])
-            #Horizontal line
-            self.line_y = Line(points=[0, 0])
-
-            Color(rgba=self.point_color)
-            self.point = Ellipse(pos=self.pos, size=2*[self.point_radius*2],)
-            
         #Calculate bounds of actual field
         self.origin = [self.x+self.point_radius, self.y+self.point_radius]
         self.limits = [self.right-self.point_radius, self.top-self.point_radius]
+        self.point_pos = self.pos
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -88,14 +75,14 @@ class XyField(Widget):
         elif y > self.limits[1]:
             y = self.limits[1]
 
-        self.line_x.points=[x, self.y, x, self.top]
-        self.line_y.points=[self.x, y, self.right, y]
-        self.point.pos=[x-self.point_radius, y-self.point_radius]
+        self.line_x=[x, self.y, x, self.top]
+        self.line_y=[self.x, y, self.right, y]
+        self.point_pos=[x-self.point_radius, y-self.point_radius]
         return (x, y)
 
     def hide_lines(self):
-        self.line_x.points=[0, 0]
-        self.line_y.points=[0, 0]
+        self.line_x=[0, 0]
+        self.line_y=[0, 0]
 
     def get_mm_pos(self, px):
         #Convert to float to avoid python2 integer division
@@ -111,11 +98,6 @@ class XyField(Widget):
 
     def on_mm_pos(self, instance, value):
         self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)
-
-    def on_enabled(self, instance, value):
-        logging.info("set point_color@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-        if self.enabled: self.point_color = [1,1,1,1]
-        else: self.point_color = p.button_disabled
 
 class PressureAdvanceSlider(UltraSlider):
     def init_drawing(self, dt):
@@ -184,7 +166,7 @@ class FanSlider(UltraSlider):
 
 class BedTempSlider(UltraSlider):
     def init_drawing(self, dt):
-        self.val = App.get_running_app().recieve_temp_bed()
+        App.get_running_app().recieve_temp()
         self.buttons = [[0,0,"Off",None],[60,0,"PLA",None],[90,0,"PETG",None],[110,0,"ABS",None]]
         super(BedTempSlider, self).init_drawing(dt)
     def get_val_from_px(self, x):
@@ -210,8 +192,7 @@ class BedTempSlider(UltraSlider):
 
 class ExtTempSlider(UltraSlider):
     def init_drawing(self, dt):
-        if   self.creator.idpy == "A": self.val = App.get_running_app().recieve_temp_A()
-        elif self.creator.idpy == "B": self.val = App.get_running_app().recieve_temp_A()
+        App.get_running_app().recieve_temp()
         self.buttons = [
             [0,14,"Off",None],[70,0,"PLA\ncold pull",None],[90,-68/2,"ABS/PETG\ncold pull",None],
             [210,68/2,"PLA",None],[230,0,"PETG",None],[250,-68/2,"ABS",None]]

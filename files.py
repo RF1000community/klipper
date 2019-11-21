@@ -6,7 +6,6 @@ from elements import *
 import parameters as p
 
 
-
 class FC(FileChooserIconView):
 
     def __init__(self, **kwargs):

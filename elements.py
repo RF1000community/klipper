@@ -1,4 +1,4 @@
-# coding: utf-8 #necessary to make non ascii caracters work on windows
+# coding: utf-8
 from kivy.uix.widget import Widget
 from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.popup import Popup
@@ -14,7 +14,6 @@ class BaseButton(ButtonBehavior, Widget):
 
 class RoundButton(BaseButton):
     pass
-
 
 class Btn_Slider(BaseButton):
     val = NumericProperty()

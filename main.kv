@@ -146,7 +146,9 @@ FloatLayout:
         Btn_Temp:
             on_release: Factory.ExtTempPopup(instance=self).open()
             id: temp_B
-            idpy: "B"
+            heater_id: "T1"
+            large_value: app.temp[self.heater_id][2]
+            small_value: app.temp[self.heater_id][3]
             x: p.padding-10
             center_y: p.padding+p.btn_height/2+top_divider.top
             canvas:
@@ -155,15 +157,17 @@ FloatLayout:
                     size: 70, 70
                     pos: self.x, self.center_y - 35
             Label:
-                text: "B"
+                text: "T1"
                 color: p.background
                 center_x: temp_B.x + 35
                 center_y: temp_B.center_y        
-                font_size: p.large_font
+                font_size: p.normal_font
         Btn_Temp:
             on_release: Factory.ExtTempPopup(instance=self).open()
             id: temp_A
-            idpy: "A"
+            heater_id: "T0"
+            large_value: app.temp[self.heater_id][2]
+            small_value: app.temp[self.heater_id][3]
             x: p.padding-10
             center_y: p.padding+p.btn_height+temp_B.center_y
             canvas:
@@ -172,14 +176,16 @@ FloatLayout:
                     size: 70, 70
                     pos: self.x, self.center_y - 35
             Label:
-                text: "A"
+                text: "T0"
                 color: p.background
                 center_x: temp_A.x + 35
                 center_y: temp_A.center_y        
-                font_size: p.large_font
+                font_size: p.normal_font
         Btn_Temp:
             on_release: Factory.BedTempPopup(instance=self).open()
             id: temp_bed
+            large_value: app.temp["B"][2]
+            small_value: app.temp["B"][3]
             x: p.padding-10
             center_y: p.padding+p.btn_height+temp_A.center_y
             canvas:
@@ -220,8 +226,6 @@ FloatLayout:
             small_value: "Print Cooling"
             x: p.padding-10
             center_y: flow.center_y - p.padding - p.btn_height
-
-
 <HomeScreen@Screen>:
     name: "homescreen"
     FloatLayout:
@@ -505,8 +509,8 @@ FloatLayout:
                 points: self.center_x-u,self.center_y-t,  self.center_x+u,self.center_y-t,  self.center_x,self.center_y+t
 <Btn_Temp@RoundButton>:
     red: False
-    large_value: "200C"
-    small_value: "199"
+    large_value: "-"
+    small_value: "-"
     size: 190, 100
     Label:
         color: p.red if root.red else [1,1,1,1]
@@ -719,6 +723,7 @@ FloatLayout:
     FloatLayout:
         BedTempSlider:
             id: slider
+            val: app.temp["B"][0]
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
         Btn_P_Cancel:
@@ -729,14 +734,13 @@ FloatLayout:
         Btn_P_Confirm:
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.send_temp_bed(slider.val), root.dismiss()
+            on_release: app.send_temp(slider.val, "B"), root.dismiss()
 <ExtTempPopup@BasePopup>:
     size_hint: 0.95, 0.4
-    title: "Set Nozzle "+self.creator.idpy+" Temperature"
-
+    title: "Set Nozzle "+root.creator.heater_id+" Temperature"
     FloatLayout:
         ExtTempSlider:
-            creator: root.creator
+            val: app.temp[root.creator.heater_id][0]
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -748,9 +752,25 @@ FloatLayout:
         Btn_P_Confirm:
             width: root.width/2
             pos: root.center_x, root.y
-            on_release:
-                if   root.creator.idpy == "A": app.send_temp_A(slider.val); root.dismiss()
-                elif root.creator.idpy == "B": app.send_temp_B(slider.val); root.dismiss()
+            on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
+<XyField>:
+    canvas:
+        Color:
+            rgba: p.button_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+        Line:
+            width: 1
+            points: self.line_y
+        Line:
+            width: 1
+            points: self.line_x
+        Color:
+            rgba: [1,1,1,1] if self.enabled else p.button_disabled
+        Ellipse:
+            pos: self.point_pos
+            size: [self.point_radius*2, self.point_radius*2]
 
 # FILE  ########################################################################
 <FileTab@TabbedPanelItem>:
