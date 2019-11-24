@@ -96,8 +96,7 @@ FloatLayout:
             size: p.screen_width-2*p.padding, p.progress_bar_height
             pos: p.padding, p.tab_height+p.padding+p.normal_font
         Label:
-            id: l_time_remaining
-            text: "2:32h remaining"
+            text: app.print_time
             size_hint: None, None
             size: p.screen_width-2*p.padding, p.normal_font
             text_size: self.size
@@ -122,7 +121,7 @@ FloatLayout:
             right: btn_stop.x
         Label:
             id: l_filename
-            text: "Cube_testfinalfinalnew2"
+            text: app.print_title
             size_hint: None, None
             size: 300,134
             text_size: self.size
@@ -259,7 +258,7 @@ FloatLayout:
             size: p.btn_height, p.btn_height
             y: btn_tr_A.y
             right: btn_tr_A.x
-        Btn_Outline:
+        Btn:
             id: btn_calibrate
             on_release: app.send_calibrate()
             enabled: app.printer_objects_available

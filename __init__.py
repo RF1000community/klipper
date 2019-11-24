@@ -46,17 +46,20 @@ Builder.load_file(join(p.kgui_dir, "style.kv"))
 class mainApp(App, threading.Thread):
 
     # Property for controlling the state as shown in the statusbar.
-    state = OptionProperty("normal", options=[
+    state = OptionProperty("ready", options=[
         # Every string set has to be in this list
-        "normal",
+        "ready",
         "printing",
         "paused",
         "error",
+        "error disconnected",
         "initializing",
         ])
     homed_z = BooleanProperty(False)
     printer_objects_available = BooleanProperty(False)
     temp = DictProperty({}) #[setpoint, current, "setpoint", "current"]
+    print_title = StringProperty()
+    print_time = StringProperty()
 
     def __init__(self, config = None, **kwargs):# runs in klippy thread
         logging.info("Kivy app initializing...")
@@ -66,13 +69,17 @@ class mainApp(App, threading.Thread):
         if not testing:
             self.kgui_config = config
             self.printer = config.get_printer()
-            klipper_config = self.printer.objects['configfile'].read_main_config()
-            stepper_conf = (klipper_config.getsection('stepper_x'), klipper_config.getsection('stepper_y'))
-            self.pos_max = (stepper_conf[0].getint('position_max'), stepper_conf[0].getint('position_max'))
-            self.pos_min = (stepper_conf[0].getint('position_min'), stepper_conf[1].getint('position_min'))
+            self.klipper_config = self.printer.objects['configfile'].read_main_config()
+            stepper_conf = (self.klipper_config.getsection('stepper_x'),
+                            self.klipper_config.getsection('stepper_y'),
+                            self.klipper_config.getsection('stepper_z'))
+            self.pos_max = [stepper_conf[i].getint('position_max') for i in (0,1,2)]
+            try: self.pos_min = [stepper_conf[i].getint('position_min') for i in (0,1)]
+            except: self.pos_min = (0,0)
             self.reactor = self.printer.get_reactor()
-
-            self.printer.register_event_handler("klippy:ready", self.handle_ready)
+            self.printer.register_event_handler("klippy:connect", self.handle_connect) # all printer_objects are available
+            self.printer.register_event_handler("klippy:ready", self.handle_ready) # all the connect handlers have run
+            self.printer.register_event_handler("klippy:disconnect", self.handle_disconnect)
             self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
             self.printer.register_event_handler("toolhead:sync_print_time", self.handle_calc_print_time)
@@ -86,7 +93,7 @@ class mainApp(App, threading.Thread):
         Clock.schedule_once(self.setup_after_run, 0)
         super(mainApp, self).run()
 
-    def handle_ready(self): # the handlers are not thread safe!
+    def handle_connect(self): # the handlers are not thread safe!
         self.gcode = self.printer.lookup_object('gcode')
         self.toolhead = self.printer.lookup_object('toolhead')
         self.sdcard = self.printer.lookup_object('virtual_sdcard', None)
@@ -95,32 +102,48 @@ class mainApp(App, threading.Thread):
         self.extruder1 = self.printer.lookup_object('extruder1', None)
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
         self.heaters = self.printer.lookup_object('heater', None)
-        
-        self.heater = {'B': self.printer.lookup_object('heater_bed', None),
-                      'T0': self.heaters.lookup_heater('extruder0'),
-                      'T1': self.heaters.lookup_heater('extruder0')}#wip
-      
-        self.printer_objects_available = True # never read printer objects before!
-        Clock.schedule_interval(self.get_temp, 0.7)
+        self.heater = {}
+        try: self.heater['B'] = self.printer.lookup_object('heater_bed', None)
+        except: logging.info("heated bed not found")
+        try: self.heater['T0'] = self.heaters.lookup_heater('extruder0')
+        except: logging.info("T0 not found")
+        try: self.heater['T1'] = self.heaters.lookup_heater('extruder0')
+        except: logging.info("T1 not found")
 
+        self.printer_objects_available = True
+        Clock.schedule_interval(self.get_temp, 0.7)
+    
+    def handle_ready(self):
+        self.state = "ready"
+    
+    def handle_disconnect(self):
+        self.state = "error disconnected"
+        
     def handle_shutdown(self):
         logging.info("handled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         self.stop()
+        
     def handle_homed(self, homing, rails):
         for rail in rails:
             if rail.name == 'z':
                 self.homed_z = True
+                
     def handle_calc_print_time(self, curtime, est_print_time, print_time):
-        pass 
-        """
-        def set_print_time(dt):
-            self.print_time = str(est_print_time)
-        Clock.schedule_once(set_print_time, 0) #needs print_time string_property
-        """
+        p_time = str(est_print_time)
+        self.print_time = p_time
 
     def get_pressure_advance(self):
         return 0.1
     def send_pressure_advance(self, val):
+        pass
+
+    def get_config(self, section, element):
+        def read_config(section, element):
+            Section = self.klipper_config.getsection(section)
+            #wip
+        self.reactor.register_async_callback(read_config(section, elements))
+
+    def write_config(self):
         pass
 
     def get_z_adjust(self):
@@ -144,7 +167,6 @@ class mainApp(App, threading.Thread):
         logging.info("KGUI send {} as fan speed".format(speed))
         self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed))
 
-
     def get_temp(self, dt=None):
         # schedule reading temp in klipper thread which schedules displaying the read value in kgui thread
         def read_temp(e):
@@ -155,37 +177,40 @@ class mainApp(App, threading.Thread):
                     if target == 0: target_str = "Off"
                     else: target_str = str(target)+"°C"
                     t[heater_id] = (target, current, target_str, "{:4.1f}".format(current))
-                def display_temp(dt):
-                    self.temp.update(t)
-                Clock.schedule_once(display_temp, 0)
+                self.temp.update(t)
         self.reactor.register_async_callback(read_temp)
                 
     def send_temp(self, temp, heater_id):
         logging.info("KGUI set Temperature of {} to {}".format(heater_id, temp))
         self.reactor.register_async_callback((lambda e: self.heater[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
 
-  
-    def send_xyz(self, x=None, y=None, z=None):
-        # resets all queued moves and sets pos
-        xyz = [x,y,z]
-        self.reactor.register_async_callback((lambda e: self.set_xyz(xyz)))
-    def set_xyz(self, xyz):
-        current_pos = self.toolhead.get_position()
-        xyz = [current_pos[i] if a is None else a for i,a in enumerate(xyz)]
-        self.toolhead.set_position(xyz)
-   
-
+    def send_pos(self, x=None, y=None, z=None, e1=None, e2=None):
+        def set_pos(e, pos):
+            current_pos = self.toolhead.get_position()
+            xyz = [current_pos[i] if p is None else p for i,p in enumerate(pos)]
+            self.toolhead.set_position(xyz) # resets all queued moves and sets pos
+        pos = (x,y,z,e1,e2)
+        self.reactor.register_async_callback(set_pos(pos=pos))
+    
+    def get_pos(self):
+        def read_pos():
+            pos = self.toolhead.get_pos()
+            self.pos = pos
+        self.reactor.register_async_callback(read_pos)
+    
     def send_up_Z(self):
-        self.reactor.register_async_callback((lambda e: self.toolhead.move(self.toolhead.get_position()[0:2].append(0), 100)))
+        self.send_pos(z=0)
     def send_down_Z(self):
-        self.reactor.register_async_callback((lambda e: self.toolhead.move(self.toolhead.get_position()[0:2].append(1000), 100)))
+        z = self.pos_max[2]
+        self.send_pos(z=z)
     def send_stop_Z(self):
         self.reactor.register_async_callback((lambda e: self.toolhead.move_queue.flush()))
     def send_home_Z(self):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28("Z")))
+
     def send_stop(self):
         print("stop print")
-        self.state = "normal"
+        self.state = "ready"
         self.notify.show(message="Printing stopped", level="error")
     def send_play(self):
         print("resume print")

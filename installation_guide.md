@@ -25,7 +25,6 @@ git clone --recurse-submodules https://github.com/D4SK/klipperui
 ./klipperui/scripts/install-kgui-systemd.sh
 
 put printer.cfg file in home folder
-
 connect OctoPrint to /tmp/printer using web interface
 
 
