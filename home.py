@@ -58,7 +58,7 @@ class XyField(Widget):
             pos = (int(pos[0]), int(pos[1]))
             pos = self.update_drawing(pos[0],pos[1])
             self.get_mm_pos(pos)
-            self.app.send_xyz(x=self.mm_pos[0], y=self.mm_pos[1])
+            self.app.send_pos(x=self.mm_pos[0], y=self.mm_pos[1])
 
     def update_with_mm(self, mm):
         self.update_drawing(self.get_px_pos(mm))

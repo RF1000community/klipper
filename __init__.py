@@ -139,14 +139,17 @@ class mainApp(App, threading.Thread):
     def send_pressure_advance(self, val):
         pass
 
-    def get_config(self, section, element, property_name):#TODO update acceleration when opening setting tab, in get_px_from_val a string is attempted to calculate
+    def get_config(self, section, element, property_name, ty=None):#TODO update acceleration when opening setting tab, in get_px_from_val a string is attempted to calculate
         logging.info("wrote {} from section {} to {}".format(element, section, property_name))
         if testing: 
             setattr(self, property_name, 77)
             return
         def read_config(e):
             Section = self.klipper_config.getsection(section)
-            val = Section.get(element)
+            if ty == 'int':
+                val = Section.getint(element)
+            else:
+                val = Section.get(element)
             setattr(self, property_name, val)
         self.reactor.register_async_callback(read_config)
 

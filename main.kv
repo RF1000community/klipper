@@ -146,7 +146,7 @@ FloatLayout:
             on_release: Factory.ExtTempPopup(instance=self).open()
             id: temp_B
             heater_id: "T1"
-            large_value: "{}°C".format(app.temp[self.heater_id][0])
+            large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             small_value: "{:4.1f}".format(app.temp[self.heater_id][1])
             x: p.padding-10
             center_y: p.padding+p.btn_height/2+top_divider.top
@@ -165,7 +165,7 @@ FloatLayout:
             on_release: Factory.ExtTempPopup(instance=self).open()
             id: temp_A
             heater_id: "T0"
-            large_value: "{}°C".format(app.temp[self.heater_id][0])
+            large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             small_value: "{:4.1f}".format(app.temp[self.heater_id][1])
             x: p.padding-10
             center_y: p.padding+p.btn_height+temp_B.center_y
@@ -183,7 +183,7 @@ FloatLayout:
         Btn_Temp:
             on_release: Factory.BedTempPopup(instance=self).open()
             id: temp_bed
-            large_value: "{}°C".format(app.temp['B'][0])
+            large_value: "{}°C".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "Off"
             small_value: "{:4.1f}".format(app.temp['B'][1])
             x: p.padding-10
             center_y: p.padding+p.btn_height+temp_A.center_y
@@ -874,7 +874,7 @@ FloatLayout:
                 RectangleButton:
                     pos: si_acc.pos
                     size: si_acc.size
-                    on_release: Factory.AccPopup().open(); app.get_config('printer', 'max_accel', 'acceleration')
+                    on_release: Factory.AccPopup().open(); app.get_config('printer', 'max_accel', 'acceleration', 'int')
             SI_Wifi:
                 title: "Wifi"
             SI_PowerMenu:

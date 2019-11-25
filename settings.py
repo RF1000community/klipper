@@ -11,6 +11,7 @@ from subprocess import Popen, PIPE, STDOUT
 from functools import partial
 from elements import *
 import parameters as p
+import logging
 
 
 class Wifi(EventDispatcher):
@@ -460,14 +461,14 @@ class AccSlider(UltraSlider):
 
     def init_drawing(self, dt):
         self.val = App.get_running_app().acceleration
-        self.buttons = [[36,0,"default",None],]
+        self.buttons = [[36000,0,"default",None],]
         super(AccSlider, self).init_drawing(dt)
 
     def get_val_from_px(self, x):
-        return int(((x-self.px_min)/(self.px_width))*(50-3)+3)
+        return int(((x-self.px_min)/(self.px_width))*(50000-3000)+3000)
 
     def get_disp_from_val(self, val):
-        return "{}m/s²".format(val)
+        return "{}mm/s²".format(val)
 
     def get_px_from_val(self, val):
-        return (float(val-3)/(50-3))*(self.px_width)+self.px_min
+        return (float(val-3000)/(50000-3000))*(self.px_width)+self.px_min
