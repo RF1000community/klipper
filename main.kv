@@ -146,8 +146,8 @@ FloatLayout:
             on_release: Factory.ExtTempPopup(instance=self).open()
             id: temp_B
             heater_id: "T1"
-            large_value: app.temp[self.heater_id][2]
-            small_value: app.temp[self.heater_id][3]
+            large_value: "{}°C".format(app.temp[self.heater_id][0])
+            small_value: "{:4.1f}".format(app.temp[self.heater_id][1])
             x: p.padding-10
             center_y: p.padding+p.btn_height/2+top_divider.top
             canvas:
@@ -165,8 +165,8 @@ FloatLayout:
             on_release: Factory.ExtTempPopup(instance=self).open()
             id: temp_A
             heater_id: "T0"
-            large_value: app.temp[self.heater_id][2]
-            small_value: app.temp[self.heater_id][3]
+            large_value: "{}°C".format(app.temp[self.heater_id][0])
+            small_value: "{:4.1f}".format(app.temp[self.heater_id][1])
             x: p.padding-10
             center_y: p.padding+p.btn_height+temp_B.center_y
             canvas:
@@ -183,8 +183,8 @@ FloatLayout:
         Btn_Temp:
             on_release: Factory.BedTempPopup(instance=self).open()
             id: temp_bed
-            large_value: app.temp["B"][2]
-            small_value: app.temp["B"][3]
+            large_value: "{}°C".format(app.temp['B'][0])
+            small_value: "{:4.1f}".format(app.temp['B'][1])
             x: p.padding-10
             center_y: p.padding+p.btn_height+temp_A.center_y
             canvas:
@@ -870,11 +870,11 @@ FloatLayout:
             SI_ValueSlider:
                 id: si_acc
                 title: "Max. printhead Acceleration"
-                value: '777'
+                value: "{}m/s²".format(app.acceleration) if app.acceleration != 0 else "--"
                 RectangleButton:
                     pos: si_acc.pos
                     size: si_acc.size
-                    on_release: Factory.AccPopup().open()
+                    on_release: Factory.AccPopup().open(); app.get_config('printer', 'max_accel', 'acceleration')
             SI_Wifi:
                 title: "Wifi"
             SI_PowerMenu:

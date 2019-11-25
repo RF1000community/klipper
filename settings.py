@@ -456,13 +456,10 @@ class SI_PowerMenu(SetItem):
 class SI_ValueSlider(SetItem):
     pass
 
-class SI_AccSlider(SI_ValueSlider):
-    pass
-
 class AccSlider(UltraSlider):
 
     def init_drawing(self, dt):
-        #self.val = App.get_running_app().request_acc()
+        self.val = App.get_running_app().acceleration
         self.buttons = [[36,0,"default",None],]
         super(AccSlider, self).init_drawing(dt)
 

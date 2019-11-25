@@ -16,7 +16,7 @@ from kivy.lang import Builder
 from kivy.app import App
 from kivy.config import Config
 from kivy.clock import Clock
-from kivy.properties import OptionProperty, BooleanProperty, DictProperty
+from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
 from os.path import join
 from subprocess import Popen
 import threading
@@ -45,7 +45,7 @@ Builder.load_file(join(p.kgui_dir, "style.kv"))
 #add threading.thread => inherits start() method to run() in new thread
 class mainApp(App, threading.Thread):
 
-    # Property for controlling the state as shown in the statusbar.
+    #Property for controlling the state as shown in the statusbar.
     state = OptionProperty("ready", options=[
         # Every string set has to be in this list
         "ready",
@@ -57,15 +57,17 @@ class mainApp(App, threading.Thread):
         ])
     homed_z = BooleanProperty(False)
     printer_objects_available = BooleanProperty(False)
-    temp = DictProperty({}) #[setpoint, current, "setpoint", "current"]
+    temp = DictProperty({}) #[setpoint, current]
     print_title = StringProperty()
     print_time = StringProperty()
+    speed = NumericProperty
+    #config
+    acceleration = NumericProperty
 
     def __init__(self, config = None, **kwargs):# runs in klippy thread
         logging.info("Kivy app initializing...")
-        self.temp = {'T0':(0,0,'--','--'),
-                     'T1':(0,0,'--','--'),
-                      'B':(0,0,'--','--')}
+        self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
+        self.acceleration = 0
         if not testing:
             self.kgui_config = config
             self.printer = config.get_printer()
@@ -112,13 +114,13 @@ class mainApp(App, threading.Thread):
 
         self.printer_objects_available = True
         Clock.schedule_interval(self.get_temp, 0.7)
-    
+
     def handle_ready(self):
         self.state = "ready"
-    
+
     def handle_disconnect(self):
         self.state = "error disconnected"
-        
+
     def handle_shutdown(self):
         logging.info("handled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         self.stop()
@@ -129,19 +131,24 @@ class mainApp(App, threading.Thread):
                 self.homed_z = True
                 
     def handle_calc_print_time(self, curtime, est_print_time, print_time):
-        p_time = str(est_print_time)
-        self.print_time = p_time
-
+        hours = int(est_print_time//360)
+        minutes = int(est_print_time%360)/60
+        self.print_time = "{}:{:02} remaining".format(hours, minutes)
     def get_pressure_advance(self):
         return 0.1
     def send_pressure_advance(self, val):
         pass
 
-    def get_config(self, section, element):
-        def read_config(section, element):
+    def get_config(self, section, element, property_name):#TODO update acceleration when opening setting tab, in get_px_from_val a string is attempted to calculate
+        logging.info("wrote {} from section {} to {}".format(element, section, property_name))
+        if testing: 
+            setattr(self, property_name, 77)
+            return
+        def read_config(e):
             Section = self.klipper_config.getsection(section)
-            #wip
-        self.reactor.register_async_callback(read_config(section, elements))
+            val = Section.get(element)
+            setattr(self, property_name, val)
+        self.reactor.register_async_callback(read_config)
 
     def write_config(self):
         pass
@@ -152,9 +159,15 @@ class mainApp(App, threading.Thread):
         pass
 
     def get_speed(self):
-        return 77
-    def send_speed(self,val):
-        print("send {} as speed".format(val))
+        self.speed = self.gcode.speed_factor*60*100 #speed factor also converts from mm/sec to mm/min
+    def send_speed(self, val):
+        logging.info("send {} as speed override".format(val))
+        self.speed = val
+        val = val/(60.*100.)
+        def set_speed(e):
+            self.gcode.speed = self.gcode._get_gcode_speed() * val
+            self.gcode.speed_factor = val
+        self.reactor.register_async_callback(set_speed)
 
     def get_flow(self):
         return 107
@@ -174,26 +187,25 @@ class mainApp(App, threading.Thread):
                 t = {}
                 for heater_id, sensor in self.heaters.get_gcode_sensors():
                     current, target = sensor.get_temp(self.reactor.monotonic()) #get temp at current point in time
-                    if target == 0: target_str = "Off"
-                    else: target_str = str(target)+"°C"
-                    t[heater_id] = (target, current, target_str, "{:4.1f}".format(current))
-                self.temp.update(t)
+                    self.temp[heater_id] = (target, current)
         self.reactor.register_async_callback(read_temp)
-                
+
     def send_temp(self, temp, heater_id):
         logging.info("KGUI set Temperature of {} to {}".format(heater_id, temp))
         self.reactor.register_async_callback((lambda e: self.heater[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
 
-    def send_pos(self, x=None, y=None, z=None, e1=None, e2=None):
-        def set_pos(e, pos):
+    def send_pos(self, x=None, y=None, z=None, e0=None, e1=None):
+        pos = [x,y,z,e0]
+        if self.extruder1 is not None: pos.append(e1) # not very clean
+        def set_pos(e):
             current_pos = self.toolhead.get_position()
             xyz = [current_pos[i] if p is None else p for i,p in enumerate(pos)]
-            self.toolhead.set_position(xyz) # resets all queued moves and sets pos
-        pos = (x,y,z,e1,e2)
-        self.reactor.register_async_callback(set_pos(pos=pos))
-    
+            logging.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$${}".format(xyz))
+            self.toolhead.set_position(xyz) # resets all queued moves and sets pos #TODO make work
+        self.reactor.register_async_callback(set_pos)
+
     def get_pos(self):
-        def read_pos():
+        def read_pos(e):
             pos = self.toolhead.get_pos()
             self.pos = pos
         self.reactor.register_async_callback(read_pos)
@@ -201,8 +213,7 @@ class mainApp(App, threading.Thread):
     def send_up_Z(self):
         self.send_pos(z=0)
     def send_down_Z(self):
-        z = self.pos_max[2]
-        self.send_pos(z=z)
+        self.send_pos(z=self.pos_max[2])
     def send_stop_Z(self):
         self.reactor.register_async_callback((lambda e: self.toolhead.move_queue.flush()))
     def send_home_Z(self):
@@ -224,11 +235,6 @@ class mainApp(App, threading.Thread):
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
 
-    def send_acc(self, val):
-        print("Sent Accelleration of {} to printer".format(val))
-    def request_acc(self):
-        return 36
-
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
     def reboot(self):
@@ -247,7 +253,7 @@ class mainApp(App, threading.Thread):
     def setup_after_run(self, dt):
         self.root_window.set_vkeyboard_class(UltraKeyboard)
         self.notify = Notifications(padding=(10, 10), height=100)
-    
+
 def load_config(config): #Entry point
     kgui_object = mainApp(config)
     kgui_object.start()
@@ -255,4 +261,3 @@ def load_config(config): #Entry point
 
 if __name__ == "__main__":
     mainApp().run()
-
