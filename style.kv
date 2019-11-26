@@ -76,9 +76,9 @@
 <ProgressBar>:
     canvas:
         Color:
-            rgba: p.medium_gray
+            rgba: p.button
         RoundedRectangle:
-            radius: [4]
+            radius: [2]
             pos: self.pos
             size: self.width, 8
         Color:
@@ -403,10 +403,9 @@
         Color:
             rgba: 1, 1, 1, 0.1 if self.selected else 0
         RoundedRectangle:
-            
             pos: root.pos
             size: root.size
-            radius: [p.radius,]
+            radius: (p.radius,)
 
     Image:
         size: '70dp', '70dp'
@@ -500,7 +499,7 @@
         Color:
             rgba: root.background_color[:3] + [root.background_color[-1] * self._anim_alpha]
         Rectangle:
-            size: (self._window.size[0], self._window.size[1] - p.status_bar_height) if self._window else (0, 0)
+            size: (self._window.size[0], self._window.size[1]) if self._window else (0, 0)
         Color:
             rgba: p.popup
         RoundedRectangle:

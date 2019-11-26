@@ -18,44 +18,40 @@ FloatLayout:
 <StatusBar@BoxLayout>:
     canvas:
         Color:
-            rgba: p.status_bar
+            rgba: p.red if 'error' in app.state else p.background
         Rectangle:
             size: self.size
             pos: self.pos
     orientation: 'horizontal'
-    LeftItems:
+    StackLayout:
         id: left
         orientation: 'lr-tb'
         width: self.minimum_width
         x: root.x
-    RightItems:
+        Label:
+            id: state
+            text: "state: " + app.state
+            size_hint_x: None
+            size: self.texture_size
+            font_size: root.height - 4
+            padding: 7, 0
+    StackLayout:
         id: right
         orientation: 'rl-tb'
         width: self.minimum_width
         right: root.right
-
-<LeftItems@StackLayout>:
-    Label:
-        id: state
-        text: "state: " + app.state
-        size_hint_x: None
-        size: self.texture_size
-        font_size: root.height - 4
-        padding: 5, 2
-
-<RightItems@StackLayout>:
-    ConnectionIcon:
-        id: con
-        size_hint: None, None
-        size: 0, root.height
-        topright: root.right, root.top
-    TimeLabel:
-        id: time
-        text: self.time
-        size_hint_x: None
-        size: self.texture_size
-        font_size: root.height - 4
-        padding: 5, 2
+        ConnectionIcon:
+            id: con
+            size_hint: None, None
+            size: 0, root.height
+            topright: root.right, root.top
+        TimeLabel:
+            id: time
+            text: self.time
+            size_hint_x: None
+            size: self.texture_size
+            font_size: root.height - 4
+            padding: 7, 0
 
 <MainTabs@TabbedPanel>:
     tab_pos: 'bottom_mid'
@@ -70,6 +66,7 @@ FloatLayout:
         id: set_tab
 
 # HOME ########################################################################
+
 <HomeTab@TabbedPanelItem>:
     background_down: '' # dadurch nimmt es background color an, sowieso immer mit dessen opacity auch waere es ein bild
     background_normal: p.kgui_dir+'/Logos/Black.png'
@@ -79,11 +76,6 @@ FloatLayout:
             source: p.kgui_dir+'/Logos/HomeIcon.png'
             size: 100, 100
             pos: 50, 0
-        Color:
-            rgba: p.accent if self.state == 'down' else [0, 0, 0, 0]
-        Rectangle:
-            size: self.width, 4
-            pos: self.pos
     FloatLayout:
         Background:
             pos_hint: {'x':0,'y':0}
@@ -93,16 +85,16 @@ FloatLayout:
             max: 1
             value: 0.3
             size_hint: None, None
-            size: p.screen_width-2*p.padding, p.progress_bar_height
-            pos: p.padding, p.tab_height+p.padding+p.normal_font
+            size: p.screen_width-2*p.h_padding, p.progress_bar_height+4
+            pos: p.h_padding-2, p.tab_height + p.h_padding
         Label:
             text: app.print_time
             size_hint: None, None
             size: p.screen_width-2*p.padding, p.normal_font
             text_size: self.size
             font_size: p.normal_font
-            x: p.padding
-            top: progress_bar.y - p.small_padding
+            x: p.h_padding - 2
+            top: progress_bar.y - 8
             halign: 'left'
             valign: 'bottom'
         Btn_Stop:
@@ -111,7 +103,7 @@ FloatLayout:
             id: btn_stop
             size: 118,118
             center_y: progress_bar.top + p.padding + p.btn_height/2
-            center_x: p.screen_width - p.btn_height/2 -p.padding
+            center_x: p.screen_width - p.btn_height/2 - p.h_padding
         Btn_Play:
             on_release:
                 if self.enabled and self.paused: app.send_play(); self.paused=False; hs_manager.current="printingscreen"
@@ -123,17 +115,17 @@ FloatLayout:
             id: l_filename
             text: app.print_title
             size_hint: None, None
-            size: 300,134
+            size: 280,134
             text_size: self.size
             font_size: p.large_font
-            x: p.padding
+            x: p.h_padding-3
             center_y: btn_stop.center_y
             shorten: True
             halign: 'left'
             valign: 'middle'
         Divider:
             id: top_divider
-            pos: 0, btn_stop.center_y + p.btn_height/2 + p.padding
+            y: btn_stop.center_y + p.btn_height/2 + p.padding
         ScreenManager:
             transition: screenmanager.NoTransition()
             id: hs_manager
@@ -143,55 +135,58 @@ FloatLayout:
             HomeScreen:
             PrintingScreen:
         Btn_Temp:
-            on_release: Factory.ExtTempPopup(instance=self).open()
-            id: temp_B
+            id: temp_T1
             heater_id: "T1"
-            large_value: "{}°C".format(app.temp[self.heater_id][0])
+            on_release: Factory.ExtTempPopup(instance=self).open()
+            large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             small_value: "{:4.1f}".format(app.temp[self.heater_id][1])
-            x: p.padding-10
-            center_y: p.padding+p.btn_height/2+top_divider.top
+            x: p.padding
+            center_y: p.padding+top_divider.top+p.btn_height/2
             canvas:
                 Rectangle:
                     source: p.kgui_dir+'/Logos/Nozzle.png'
-                    size: 70, 70
-                    pos: self.x, self.center_y - 35
+                    size: 45, 66
+                    pos: p.h_padding, self.center_y - 66/2
             Label:
                 text: "T1"
+                bold: True
                 color: p.background
-                center_x: temp_B.x + 35
-                center_y: temp_B.center_y        
+                center_x: p.h_padding + 45/2
+                center_y: temp_T1.center_y       
                 font_size: p.normal_font
         Btn_Temp:
-            on_release: Factory.ExtTempPopup(instance=self).open()
-            id: temp_A
+            id: temp_T0
             heater_id: "T0"
-            large_value: "{}°C".format(app.temp[self.heater_id][0])
+            on_release: Factory.ExtTempPopup(instance=self).open()
+            large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             small_value: "{:4.1f}".format(app.temp[self.heater_id][1])
-            x: p.padding-10
-            center_y: p.padding+p.btn_height+temp_B.center_y
+            x: p.padding
+            center_y: p.padding+p.btn_height+temp_T1.center_y
             canvas:
                 Rectangle:
                     source: p.kgui_dir+'/Logos/Nozzle.png'
-                    size: 70, 70
-                    pos: self.x, self.center_y - 35
+                    size: 45, 66
+                    pos: p.h_padding, self.center_y - 66/2
             Label:
                 text: "T0"
+                bold: True
                 color: p.background
-                center_x: temp_A.x + 35
-                center_y: temp_A.center_y        
+                center_x: p.h_padding + 45/2
+                center_y: temp_T0.center_y       
                 font_size: p.normal_font
         Btn_Temp:
             on_release: Factory.BedTempPopup(instance=self).open()
             id: temp_bed
-            large_value: "{}°C".format(app.temp['B'][0])
+            large_value: "{}°C".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "Off"
             small_value: "{:4.1f}".format(app.temp['B'][1])
             x: p.padding-10
-            center_y: p.padding+p.btn_height+temp_A.center_y
+            center_y: p.padding+p.btn_height+temp_T0.center_y
             canvas:
                 Rectangle:
                     source: p.kgui_dir+'/Logos/BuildPlate.png'
-                    size: 70, 70
-                    pos: self.x, self.center_y - 35
+                    size: 80, 40
+                    pos: p.h_padding + 45/2 - 80/2, self.center_y - p.btn_height/2
+
 <PrintingScreen@Screen>:
     name: "printingscreen"
     FloatLayout:
@@ -199,63 +194,64 @@ FloatLayout:
             id: z_adjust
             on_release: Factory.ZAdjustPopup(instance=self).open()
             small_value: "Nozzle Height"
-            right: root.width -p.padding
-            center_y: root.height-p.padding-p.status_bar_height-p.btn_height/2
+            right: root.width -p.h_padding
+            center_y: root.height - p.h_padding - p.btn_height/2
         Btn_Temp:
             id: pressure_advance
             on_release: Factory.PressureAdvancePopup(instance=self).open()
             small_value: "Pressure Advance"
-            right: root.width - p.padding
+            right: root.width - p.h_padding
             center_y: z_adjust.center_y - p.padding - p.btn_height
         Btn_Temp:
             id: speed
             on_release: Factory.SpeedPopup(instance=self).open()
             small_value: "Print Speed"
-            x: p.padding-10
+            x: p.h_padding-10
             center_y: z_adjust.center_y
         Btn_Temp:
             id: flow
             on_release: Factory.FlowPopup(instance=self).open()
             small_value: "Material Flow"
-            x: p.padding-10
+            x: p.h_padding-10
             center_y: speed.center_y - p.padding - p.btn_height
         Btn_Temp:
             id: fan
             on_release: Factory.FanPopup(instance=self).open()
             small_value: "Print Cooling"
-            x: p.padding-10
+            x: p.h_padding-10
             center_y: flow.center_y - p.padding - p.btn_height
+
 <HomeScreen@Screen>:
     name: "homescreen"
     FloatLayout:
         Btn_Arrow:
             dir_right: True
             id: btn_right_B
-            size: p.btn_height, p.btn_height
+            size: p.btn_height-10, p.btn_height
             y: p.padding
-            center_x: p.screen_width - p.padding - w/2
+            x: p.screen_width- p.h_padding
         Btn_Arrow:
             dir_right: True
             id: btn_right_A
-            size: p.btn_height, p.btn_height
+            size: p.btn_height-10, p.btn_height
             y: btn_right_B.top+p.padding
             x: btn_right_B.x
         Btn_Triple:
             id: btn_tr_B
             y: btn_right_B.y
-            right: btn_right_B.x
+            right: p.screen_width- p.h_padding
         Btn_Triple:
             id: btn_tr_A
             y: btn_right_A.y
-            right: btn_right_A.x
+            right: p.screen_width- p.h_padding
         Btn_Arrow:
             id: btn_left_B
-            size: p.btn_height, p.btn_height
+            size: p.btn_height-10, p.btn_height
             y: btn_right_B.y
             right: btn_tr_B.x
         Btn_Arrow:
             id: btn_left_A
-            size: p.btn_height, p.btn_height
+            size: p.btn_height-10, p.btn_height
             y: btn_tr_A.y
             right: btn_tr_A.x
         Btn:
@@ -278,7 +274,7 @@ FloatLayout:
             id: xy_field
             size_hint: None, None
             size: 280, 3*p.btn_height + 2*p.padding
-            x: p.padding
+            x: p.h_padding
             top: root.height-p.padding-p.status_bar_height
             enabled: app.printer_objects_available
         Label:
@@ -292,6 +288,7 @@ FloatLayout:
             text: xy_field.display
 
 # BUTTONS  ########################################################################
+
 <BaseButton>:
     pressed: False
     on_press: self.pressed = True
@@ -303,34 +300,38 @@ FloatLayout:
     Label:
         text: root.title
         size: root.size
-        color: [1,1,1,1] if root.enabled else p.button_disabled
+        color: (1,1,1,1) if root.enabled else p.button_disabled
         text_size: self.size
         pos: root.pos        
         font_size: p.normal_font
         valign: 'middle'
         halign: 'center'
+
 <RoundButton@BaseButton>:
     canvas:
         Color:
-            rgba: p.translucent_white if self.pressed else [0,0,0,0]
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
         RoundedRectangle:
-            radius: [p.radius]
+            radius: (p.radius,)
             size: self.size
             pos: self.pos
+
 <RectangleButton@BaseButton>:
     canvas:
         Color:
-            rgba: p.translucent_white if self.pressed else [0,0,0,0]
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
         Rectangle:
             size: self.size
             pos: self.pos
+
 <Btn_Stop@RoundButton>:
     canvas.before:
         Color:
-            rgba: p.red if self.enabled else [0,0,0,0]
+            rgba: p.red if self.enabled else (0,0,0,0)
         Rectangle:
             pos: self.center_x-p.btn_height/2,self.center_y-p.btn_height/2
             size: p.btn_height,p.btn_height
+
 <Btn_Play@RoundButton>:
     #:set h p.btn_height*1.155
     paused: True
@@ -343,20 +344,22 @@ FloatLayout:
         Rectangle:
             pos: self.center_x+p.btn_height/2-0.4*p.btn_height, self.center_y-p.btn_height/2
             size: 0.38*p.btn_height,p.btn_height
-            canvas:
+    canvas:
         Color:
             rgba: 1,1,1,1 if self.enabled and self.paused else 0
         Triangle:
             points: self.center_x-p.btn_height/2, self.center_y- h/2, self.center_x-p.btn_height/2, self.center_y+ h/2, self.center_x+p.btn_height/2, self.center_y
+
 <Btn@RoundButton>:
     title: ''
     canvas:
         Color:
             rgba: p.button
         RoundedRectangle:
-            radius: [p.radius,]
+            radius: (p.radius,)
             pos: self.pos
             size: self.size
+
 <Btn_Outline@RoundButton>:
     title: ''
     canvas.before:
@@ -365,22 +368,24 @@ FloatLayout:
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
             width: 1
+
 <Btn_Arrow@RoundButton>:
-    #:set v 48
-    #:set w 24
+    #:set v 44
+    #:set w 22
     dir_right: False
     canvas.before:
         Color:
             rgba: p.button
         Triangle:
             points: [self.x+self.width/2-w/2, self.center_y- v/2, self.x+self.width/2-w/2, self.center_y+ v/2, self.x+self.width/2+w/2, self.center_y] if self.dir_right else [self.x+self.width/2+w/2, self.center_y- v/2, self.x+self.width/2+w/2, self.center_y+ v/2, self.x+self.width/2-w/2, self.center_y]
+
 <Btn_Triple@Widget>:
     title1: 'Unload'
     title2: ''
     title3: 'Load'
     w1: 77
-    w2: 68
-    w3: 68
+    w2: 72
+    w3: 77
     size_hint: None, None
     size: self.w1+self.w2+self.w3, p.btn_height
     canvas:
@@ -389,7 +394,7 @@ FloatLayout:
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [p.radius,]
+            radius: (p.radius,)
         Color:
             rgba: p.medium_light_gray
         Rectangle:
@@ -405,9 +410,9 @@ FloatLayout:
         enabled: app.printer_objects_available
         canvas:
             Color:
-                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+                rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
-                radius: [p.radius, 0,0,p.radius]
+                radius: (p.radius, 0,0,p.radius)
                 size: self.size
                 pos: self.pos
     BaseButton:
@@ -417,7 +422,7 @@ FloatLayout:
         enabled: app.printer_objects_available
         canvas:
             Color:
-                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+                rgba: p.translucent_white if self.pressed else (0,0,0,0)
             Rectangle:
                 size: self.size
                 pos: self.pos
@@ -428,11 +433,12 @@ FloatLayout:
         enabled: app.printer_objects_available
         canvas:
             Color:
-                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+                rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
-                radius: [0,p.radius,p.radius,0]
+                radius: (0,p.radius,p.radius,0)
                 size: self.size
-                pos: self.pos        
+                pos: self.pos
+
 <Btn_TripleZ@Widget>:
     h1: 85
     h2: 85
@@ -462,13 +468,13 @@ FloatLayout:
         pos: root.x, root.y
         canvas.before:
             Color:
-                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+                rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
-                radius: [0,0,p.radius,p.radius]
+                radius: (0,0,p.radius,p.radius)
                 size: self.size
                 pos: self.pos
             Color:
-                rgba: [1,1,1,1] if self.enabled else p.medium_gray
+                rgba: (1,1,1,1) if self.enabled else p.medium_gray
             Triangle:
                 points: self.center_x-u,self.center_y+t,  self.center_x+u,self.center_y+t,  self.center_x,self.center_y-t
     BaseButton:
@@ -478,13 +484,13 @@ FloatLayout:
         enabled: app.printer_objects_available
         canvas:
             Color:
-                rgba: [1,1,1,1] if self.enabled else p.medium_gray
+                rgba: (1,1,1,1) if self.enabled else p.medium_gray
             Rectangle:
                 source: p.kgui_dir+'/Logos/HomeIcon.png'
                 size: 64, 64
                 pos: self.center_x-32, self.center_y-32
             Color:
-                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+                rgba: p.translucent_white if self.pressed else (0,0,0,0)
             Rectangle:
                 size: self.size
                 pos: self.pos
@@ -497,25 +503,26 @@ FloatLayout:
         pos: root.x, root.top-root.h3
         canvas.before:
             Color:
-                rgba: p.translucent_white if self.pressed else [0,0,0,0]
+                rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
-                radius: [p.radius,p.radius,0,0]
+                radius: (p.radius,p.radius,0,0)
                 size: self.size
                 pos: self.pos
             Color:
-                rgba: [1,1,1,1] if self.enabled else p.medium_gray
+                rgba: (1,1,1,1) if self.enabled else p.medium_gray
             Triangle:
                 points: self.center_x-u,self.center_y-t,  self.center_x+u,self.center_y-t,  self.center_x,self.center_y+t
+
 <Btn_Temp@RoundButton>:
     red: False
     large_value: "-"
     small_value: "-"
     size: 190, 100
     Label:
-        color: p.red if root.red else [1,1,1,1]
+        color: p.red if root.red else (1,1,1,1)
         text: root.large_value
         size_hint: None, None
-        size: root.width, p.btn_height+16#to compensate for the font being 8px below top when set to 'top'
+        size: root.width, p.btn_height+13#to compensate for the font being 6px below top when set to 'top'
         text_size: self.size
         center_y: root.center_y
         right: root.right-15
@@ -533,6 +540,7 @@ FloatLayout:
         font_size: p.normal_font
         valign: 'bottom'
         halign: 'right'
+
 <Btn_P_Cancel@BaseButton>:
     title: "Cancel"
     single: False
@@ -544,11 +552,12 @@ FloatLayout:
             size: self.width, 1
             pos: self.x, self.top-1
         Color:# Highlight pressed button
-            rgba: p.translucent_white if self.pressed else [0,0,0,0]    
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)    
         RoundedRectangle:
-            radius:[0,0,p.radius,p.popup_radius] if self.single else [0,0,0, p.popup_radius]
+            radius:(0,0,p.radius,p.popup_radius) if self.single else (0,0,0, p.popup_radius)
             pos: self.pos
             size: self.size
+
 <Btn_P_Confirm@BaseButton>:
     title: "Confirm"
     height: 70
@@ -562,11 +571,12 @@ FloatLayout:
             size: 1, self.height
             pos: self.pos
         Color:# Highlight pressed button
-            rgba: p.translucent_white if self.pressed else [0,0,0,0]    
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)    
         RoundedRectangle:
-            radius:[0,0,p.radius,0]
+            radius:(0,0,p.radius,0)
             pos: self.pos
             size: self.size
+
 <Btn_Slider>:
     #:set t 9  #half of width
     #:set j 15
@@ -578,13 +588,13 @@ FloatLayout:
         Color:
             rgba: p.medium_light_gray if self.active else p.medium_gray
         RoundedRectangle:
-            radius: [p.radius]
+            radius: (p.radius,)
             size: self.size
             pos: self.pos
         Triangle:
             points: [self.x+self.width/2+self.offset,self.top+j, self.x+self.width/2+t+self.offset,self.top, self.x+self.width/2-t+self.offset,self.top] if 2*abs(self.offset)!=self.width else [self.x+self.width/2+self.offset,self.top+j, self.x+self.width/2+self.offset,self.top-10, self.x+self.width/2+self.offset-(self.offset/abs(self.offset))*j,self.top]
     Label:
-        markup:'True'
+        markup: True
         text: root.s_title
         size: root.size
         text_size: self.size
@@ -592,26 +602,26 @@ FloatLayout:
         font_size: p.extra_small_font
         valign: 'middle'
         halign: 'center'
+
 <UltraSlider>:
     #:set slider_pos_y 95
     size_hint: None,None
     height: 200
-    
     canvas:
         Color:
-            rgba: [0,0,0,0] if root.initializing else [1,1,1,1] if root.pressed else p.button
+            rgba: (0,0,0,0) if root.initializing else (1,1,1,1) if root.pressed else p.button
         RoundedRectangle:
-            radius: [4,4,4,4]
+            radius: (4,)
             size: root.width-100, 8
             pos: root.x+50,slider_pos_y-4+root.y
         Color:
-            rgba: [0,0,0,0] if root.initializing else [1,1,1,1] if root.pressed else p.medium_light_gray
+            rgba: (0,0,0,0) if root.initializing else (1,1,1,1) if root.pressed else p.medium_light_gray
         RoundedRectangle:
-            radius: [4,4,4,4]
+            radius: (4,4,4,4)
             size: self.px-root.x-50, 8
             pos: root.x+50,slider_pos_y-4+root.y
         Color:
-            rgba: [0,0,0,0] if root.initializing else [0,0,0,0] if root.pressed  else [1,1,1,1] 
+            rgba: (0,0,0,0) if root.initializing else (0,0,0,0) if root.pressed  else (1,1,1,1) 
         Ellipse:
             size: 20,20
             pos: root.px-10,slider_pos_y-10+root.y
@@ -628,12 +638,14 @@ FloatLayout:
         font_size: p.large_font
         valign: 'middle'
         halign: 'center'
+
 <BasePopup>:
     title_size: p.large_font
     title_align: 'center'
-    background_color: [0,0,0,0.5] #reduces background darkening from 0.7
+    background_color: (0,0,0,0.5) #reduces background darkening from 0.7
     size_hint: 0.67, 0.3
     pos_hint: {'center_y': 0.55, 'center_x':0.5}
+
 <ZAdjustPopup@BasePopup>:
     size_hint: 0.95,0.4
     title: "Calibrate Nozzle Height"
@@ -648,6 +660,7 @@ FloatLayout:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: app.send_z_adjust("777"), root.dismiss()
+
 <PressureAdvancePopup@BasePopup>:
     size_hint: 0.95, 0.4
     title: "Set Pressure Advance"
@@ -665,6 +678,7 @@ FloatLayout:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: app.send_pressure_advance("777"), root.dismiss()
+
 <SpeedPopup@BasePopup>:
     size_hint: 0.95, 0.4
     title: "Set Speed Factor"
@@ -682,6 +696,7 @@ FloatLayout:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: app.send_speed(slider.val), root.dismiss()
+
 <FlowPopup@BasePopup>:
     size_hint: 0.95, 0.4
     title: "Set Material Flow"
@@ -699,6 +714,7 @@ FloatLayout:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: app.send_flow(slider.val), root.dismiss()
+
 <FanPopup@BasePopup>:
     size_hint: 0.95, 0.4
     title: "Set Part Cooling"
@@ -716,6 +732,7 @@ FloatLayout:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: app.send_fan(slider.val), root.dismiss()
+
 <BedTempPopup@BasePopup>:
     size_hint: 0.95, 0.4
     title: "Set Buildplate Temperature"
@@ -734,6 +751,7 @@ FloatLayout:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: app.send_temp(slider.val, "B"), root.dismiss()
+
 <ExtTempPopup@BasePopup>:
     size_hint: 0.95, 0.4
     title: "Set "+root.creator.heater_id+" Temperature"
@@ -752,6 +770,7 @@ FloatLayout:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
+
 <XyField>:
     canvas:
         Color:
@@ -766,10 +785,10 @@ FloatLayout:
             width: 1
             points: self.line_x
         Color:
-            rgba: [1,1,1,1] if self.enabled else p.button_disabled
+            rgba: (1,1,1,1) if self.enabled else p.button_disabled
         Ellipse:
             pos: self.point_pos
-            size: [self.point_radius*2, self.point_radius*2]
+            size: (self.point_radius*2, self.point_radius*2)
 
 # FILE  ########################################################################
 <FileTab@TabbedPanelItem>:
@@ -781,20 +800,13 @@ FloatLayout:
             source: p.kgui_dir+'/Logos/FilesIcon.png'
             size: 100,100
             pos: 250, 0
-        Color:
-            rgba: p.accent if self.state == 'down' else [0, 0, 0, 0]
-        Rectangle:
-            size: self.width, 4
-            pos: self.pos
     FC:
-
-<FC>:
-    id: fc
-    canvas.before:         
-        Color:
-            rgba: p.background
-        Rectangle:
-            size: root.size
+        id: fc
+        canvas.before:         
+            Color:
+                rgba: p.background
+            Rectangle:
+                size: self.size
 
 <PrintPopup>:
     title: 'Print now'
@@ -820,6 +832,7 @@ FloatLayout:
             on_release: root.confirm()
 
 # SETTING ########################################################################
+
 <SettingTab@TabbedPanelItem>:
     background_down: '' 
     background_normal: p.kgui_dir+'/Logos/Black.png'
@@ -829,12 +842,6 @@ FloatLayout:
             source: p.kgui_dir+'/Logos/SettingsIcon.png'
             size: 100, 100
             pos: 450, 0
-        Color:
-            rgba: p.accent if self.state == 'down' else [0, 0, 0, 0]
-        Rectangle:
-            size: self.width, 4
-            pos: self.pos
-
 
     ScreenManager:
         name: 'SettingScreenManager'
@@ -874,70 +881,44 @@ FloatLayout:
                 RectangleButton:
                     pos: si_acc.pos
                     size: si_acc.size
-                    on_release: Factory.AccPopup().open(); app.get_config('printer', 'max_accel', 'acceleration')
+                    on_release: Factory.AccPopup().open(); app.get_config('printer', 'max_accel', 'acceleration', 'int')
             SI_Wifi:
                 title: "Wifi"
             SI_PowerMenu:
                 title: "Shutdown..."
 
-                    
-
 <WifiScreen>:
     name: 'WifiScreen'
-    BoxLayout:
-        canvas:
+    canvas:
+        Color:
+            rgba: p.background
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+    ScrollView:
+        size_hint: None, None
+        size: p.screen_width, root.height-110
+        pos: root.pos
+        do_scroll_x: False
+        canvas.before:
             Color:
                 rgba: p.background
             Rectangle:
-                size: self.size
                 pos: self.pos
-        orientation:'vertical'
-        size_hint: 1, 1
-        
-        SetItem:
-            id: wifi_back
-            Button:#TODO Change to RectangleButton
-                canvas:
-                    Rectangle:
-                        source: p.kgui_dir+'/Logos/BackButton.png'
-                        size: 70, 70
-                        pos: 30, self.y+20
-                background_normal: p.kgui_dir+'/Logos/Transparent.png'
-                background_down: ''
-                background_color: p.translucent_white
-                pos_hint: {'x':0, 'y': 0}
-                size_hint_x: None
-                width: 110
-                on_press:
-                    #root.manager.transition.direction = 'right'
-                    root.manager.current = 'SettingScreen'
-            Label:
-                text: "Wifi"
-                font_size: p.large_font
-                text_size: self.size
-                size_hint: 1, 1
-                pos_hint: {'x': 0, 'y': 0}
-                valign: 'middle'
-                halign: 'center'
-        ScrollView:
-            do_scroll_x: False
-            canvas.before:
+                size: self.size
+        BoxLayout:
+            canvas:
                 Color:
                     rgba: p.background
                 Rectangle:
                     pos: self.pos
                     size: self.size
-            BoxLayout:
-                canvas:
-                    Color:
-                        rgba: p.background
-                    Rectangle:
-                        pos: self.pos
-                        size: self.size
-                id: wifi_box
-                orientation: 'vertical'
-                height: self.minimum_height
-                size_hint_y: None    
+            id: wifi_box
+            orientation: 'vertical'
+            height: self.minimum_height
+            size_hint_y: None    
+
 <SetItem>:
     size_hint_y: None
     height: 110
@@ -953,23 +934,28 @@ FloatLayout:
         pos: root.pos
         padding_x: p.padding
     Divider:
-        pos_hint: {'x': 0, 'y': 0}
+        y: root.y
+        
+
 <Divider@Widget>:
-    size_hint_y: None
+    size_hint: None, None
     height: 1
-    width: p.screen_width
+    width: p.screen_width - 2*p.small_padding
+    x: p.small_padding
     canvas:
         Color:
             rgba: p.divider
         Rectangle:
-            pos: self.x+15, self.y
-            size: self.width -2*p.small_padding, 1
+            pos: self.pos
+            size: self.width, 1
+
 <SI_Switch@SetItem>:
     Switch:
         id: knopf
         size_hint: None, None
         pos_hint: {'center_y': 0.5}
-        right: p.screen_width-p.padding
+        right: p.screen_width-p.padding +p.small_padding #to increase touch area
+
 <SI_ValueSlider@SetItem>:
     value: ''
     Label:
@@ -984,6 +970,7 @@ FloatLayout:
         y: root.y
         right: p.screen_width
         padding_x: p.padding
+
 <SI_Wifi>:
     Label:
         id: current_wifi
@@ -999,6 +986,7 @@ FloatLayout:
         y: root.y
         right: p.screen_width
         padding_x: p.padding
+
 <SI_WifiNetwork>:
     Label:
         text: root.network['ssid']
@@ -1118,7 +1106,6 @@ FloatLayout:
     title_size: p.large_font
     size_hint: 0.65, 0.5
     FloatLayout:
-        
         RectangleButton:
             id: btn_poweroff
             title: "Shutdown"
@@ -1169,8 +1156,30 @@ FloatLayout:
         Rectangle:
             pos: self.pos
             size: self.size
+
+# Override style.kv Switch widget
+<-Switch>:
+    active_norm_pos: max(0., min(1., (int(self.active) + self.touch_distance / sp(move))))
+    width: wdt - rad + Rad + 2*p.small_padding
+    canvas:
+        Color:
+            rgba: p.button
+        #: set wdt 65
+        #: set rad 12
+        #: set Rad 17
+        #: set move wdt-2*rad
+        RoundedRectangle:
+            size: sp(wdt), sp(rad*2)
+            pos: int(self.center_x - sp(wdt/2)), int(self.center_y - sp(rad))
+            radius: (int(sp(rad)),)
+        Color:
+            rgba: (1,1,1,1) if self.active else p.medium_light_gray
         
-<TabbedPanelStrip>:
+        Ellipse:
+            size: sp(Rad*2), sp(Rad*2)
+            pos: int(self.center_x - sp(move/2+Rad)  + self.active_norm_pos * sp(move)), int(self.center_y - sp(Rad))
+        
+<-TabbedPanelStrip>:
     canvas:
         Color:
             rgba: (0, 0, 0, 1) # black colour of the strip behind all 3 tab buttons
@@ -1179,5 +1188,5 @@ FloatLayout:
             pos: self.pos
 
 <StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
-    padding: [0,0,0,0]
+    padding: (0,0,0,0)
 

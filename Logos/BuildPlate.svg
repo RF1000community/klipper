@@ -7,56 +7,61 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="70"
-   height="70"
-   viewBox="0 0 18.520839 18.52084"
-   version="1.1"
-   id="svg8"
-   inkscape:version="1.0beta1 (fe3e306, 2019-09-17)"
-   sodipodi:docname="BuildPlate.svg"
-   inkscape:export-filename="C:\Users\Konstantin\Desktop\klipperui\klippy\extras\kgui\Logos\BuildPlate.png"
+   inkscape:export-ydpi="96"
    inkscape:export-xdpi="96"
-   inkscape:export-ydpi="96">
+   inkscape:export-filename="C:\Users\Konstantin\Desktop\klipperui\klippy\extras\kgui\Logos\BuildPlate.png"
+   sodipodi:docname="BuildPlate.svg"
+   inkscape:version="1.0beta1 (fe3e306, 2019-09-17)"
+   id="svg8"
+   version="1.1"
+   viewBox="0 0 21.166673 10.583337"
+   height="40"
+   width="80">
   <defs
      id="defs2">
     <inkscape:path-effect
-       effect="mirror_symmetry"
-       start_point="9.2604166,286.01499"
-       end_point="9.2604166,290.21996"
-       center_point="9.2604166,288.16472"
-       id="path-effect1426"
-       is_visible="true"
-       mode="free"
-       discard_orig_path="false"
-       fuse_paths="false"
+       split_items="false"
        oposite_fuse="false"
-       split_items="false" />
+       fuse_paths="false"
+       discard_orig_path="false"
+       mode="free"
+       is_visible="true"
+       id="path-effect1426"
+       center_point="9.2604166,288.16472"
+       end_point="9.2604166,290.2672"
+       start_point="9.2604166,286.06223"
+       effect="mirror_symmetry" />
   </defs>
   <sodipodi:namedview
-     id="base"
-     pagecolor="#303030"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="7.919596"
-     inkscape:cx="56.870929"
-     inkscape:cy="24.158115"
-     inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
-     showgrid="false"
-     units="px"
-     inkscape:window-width="1920"
-     inkscape:window-height="1027"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
-     inkscape:window-maximized="1"
+     inkscape:document-rotation="0"
      inkscape:pagecheckerboard="false"
-     inkscape:document-rotation="0">
+     inkscape:window-maximized="1"
+     inkscape:window-y="-8"
+     inkscape:window-x="1912"
+     inkscape:window-height="1027"
+     inkscape:window-width="1920"
+     units="px"
+     showgrid="true"
+     inkscape:current-layer="layer1"
+     inkscape:document-units="mm"
+     inkscape:cy="37.658457"
+     inkscape:cx="-7.1865876"
+     inkscape:zoom="4"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     borderopacity="1.0"
+     bordercolor="#666666"
+     pagecolor="#303030"
+     id="base">
     <sodipodi:guide
-       position="9.2604198,11.371377"
+       id="guide1420"
        orientation="31.062198,0"
-       id="guide1420" />
+       position="9.2604227,5.4239584" />
+    <inkscape:grid
+       spacingy="0.13229171"
+       spacingx="0.13229171"
+       id="grid833"
+       type="xygrid" />
   </sodipodi:namedview>
   <metadata
      id="metadata5">
@@ -71,20 +76,20 @@
     </rdf:RDF>
   </metadata>
   <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
+     transform="translate(0,-275.83325)"
      id="layer1"
-     transform="translate(0,-275.83325)">
+     inkscape:groupmode="layer"
+     inkscape:label="Layer 1">
     <path
-       style="fill:none;stroke:#ffffff;stroke-width:1.32292;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 9.2604166,285.50169 H 4.5536058 l -3.86852399,4.43479 H 9.2604166 m 0,-4.43479 h 4.7068104 l 3.868524,4.43479 H 9.2604166"
-       id="path1424"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cccc"
-       inkscape:path-effect="#path-effect1426"
-       inkscape:original-d="M 9.2604166,285.50169 H 4.5536058 l -3.86852399,4.43479 H 9.2604166"
-       transform="translate(0,2.3151041)"
+       inkscape:export-ydpi="96"
        inkscape:export-xdpi="96"
-       inkscape:export-ydpi="96" />
+       transform="translate(1.3229167,-4.1783341)"
+       inkscape:original-d="M 9.2604166,285.30325 H 4.2333351 l -4.89479325,4.63323 H 9.2604166"
+       inkscape:path-effect="#path-effect1426"
+       sodipodi:nodetypes="cccc"
+       inkscape:connector-curvature="0"
+       id="path1424"
+       d="M 9.2604166,285.30325 H 4.2333351 l -4.89479325,4.63323 H 9.2604166 m 0,-4.63323 h 5.0270814 l 4.894793,4.63323 H 9.2604166"
+       style="fill:none;stroke:#ffffff;stroke-width:1.32292;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
   </g>
 </svg>

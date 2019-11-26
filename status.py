@@ -19,42 +19,21 @@ class TimeLabel(Label):
 
     def __init__(self, **kwargs):
         self.update_clock = None
-        self.set_seconds(False)
+        self.get_time_str()
+        self.start_clock()
         super(TimeLabel, self).__init__(**kwargs)
     
     def start_clock(self):
-        if self.seconds:
-            self.update_clock = Clock.schedule_interval(self.get_time_str, 1)
-        else:
-            # How many seconds are left to the next full minute
-            offset = 60 - time.time() % 60
-            Clock.schedule_once(self.start_updates, offset)
+        # How many seconds are left to the next full minute
+        offset = 60 - time.time() % 60
+        Clock.schedule_once(self.start_updates, offset)
 
     def start_updates(self, dt):
         self.update_clock = Clock.schedule_interval(self.get_time_str, 60)
         Clock.schedule_once(self.get_time_str, 1)
 
     def get_time_str(self, *args):
-        if self.seconds:
-            string = time.strftime("%H:%M:%S")
-        else:
-            string = time.strftime("%H:%M")
-        self.time = string
-
-    def set_seconds(self, seconds):
-        # Can change how the time is displayed. Also takes care of the update cycle.
-        self.seconds = seconds
-        if self.update_clock:
-            self.update_clock.cancel()
-        self.get_time_str()
-        self.start_clock()
-
-    def on_touch_down(self, touch):
-        # Swap between seconds/no seconds time format when time is touched.
-        if self.collide_point(*touch.pos):
-            self.set_seconds(not(self.seconds))
-            return True
-        return super(TimeLabel, self).on_touch_down(touch)
+        self.time = time.strftime("%H:%M")
 
 class ConnectionIcon(Widget):
     
@@ -70,7 +49,7 @@ class ConnectionIcon(Widget):
 
     def init_drawing(self, dt):
         self.icon_padding = 2
-        self.transparent = [0, 0, 0, 0]
+        self.transparent = (0, 0, 0, 0)
         with self.canvas:
             self.wifi_color = Color(rgba=self.transparent)
             self.wifi = Ellipse(pos=(0, 0), size=(0, 0), angle_start=315, angle_end=405)

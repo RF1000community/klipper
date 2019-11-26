@@ -37,6 +37,7 @@ class UltraSlider(Widget):
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
     initializing = BooleanProperty(True) #Dont draw slider till its position can be calculated
+    
     def __init__(self, **kwargs):
         self.buttons = list() #list of lists: e.g. [[val,offset,"name",the instance]]
         self.val = float()    #value, passed to printer, not in px

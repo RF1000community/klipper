@@ -68,6 +68,7 @@ class mainApp(App, threading.Thread):
         logging.info("Kivy app initializing...")
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.acceleration = 0
+        self.scheduled_updating = None
         if not testing:
             self.kgui_config = config
             self.printer = config.get_printer()
@@ -79,8 +80,8 @@ class mainApp(App, threading.Thread):
             try: self.pos_min = [stepper_conf[i].getint('position_min') for i in (0,1)]
             except: self.pos_min = (0,0)
             self.reactor = self.printer.get_reactor()
-            self.printer.register_event_handler("klippy:connect", self.handle_connect) # all printer_objects are available
-            self.printer.register_event_handler("klippy:ready", self.handle_ready) # all the connect handlers have run
+            self.printer.register_event_handler("klippy:connect", self.handle_connect) #printer_objects are available
+            self.printer.register_event_handler("klippy:ready", self.handle_ready) #connect handlers have run
             self.printer.register_event_handler("klippy:disconnect", self.handle_disconnect)
             self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
@@ -113,7 +114,8 @@ class mainApp(App, threading.Thread):
         except: logging.info("T1 not found")
 
         self.printer_objects_available = True
-        Clock.schedule_interval(self.get_temp, 0.7)
+        Clock.schedule_once(self.bind_updating, 0)
+        Clock.schedule_once(self.control_updating, 0)
 
     def handle_ready(self):
         self.state = "ready"
@@ -122,7 +124,7 @@ class mainApp(App, threading.Thread):
         self.state = "error disconnected"
 
     def handle_shutdown(self):
-        logging.info("handled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        logging.info("handled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         self.stop()
         
     def handle_homed(self, homing, rails):
@@ -134,19 +136,50 @@ class mainApp(App, threading.Thread):
         hours = int(est_print_time//360)
         minutes = int(est_print_time%360)/60
         self.print_time = "{}:{:02} remaining".format(hours, minutes)
+
+    def bind_updating(self, *args):
+        self.root.ids.tabs.bind(current_tab=self.control_updating)
+        self.root.ids.tabs.ids.home_tab.ids.hs_manager.bind(current=self.control_updating)
+
+    def control_updating(self, *args):
+        tab = self.root.ids.tabs.current_tab
+        if self.scheduled_updating is not None:
+            Clock.unschedule(self.scheduled_updating)
+        if tab == self.root.ids.tabs.ids.home_tab:
+            if tab.ids.hs_manager.current == "homescreen":
+                self.update_home()
+                self.scheduled_updating = Clock.schedule_interval(self.update_home, 0.7)
+            if tab.ids.hs_manager.current == "printingscreen":
+                self.update_printing()
+                self.scheduled_updating = Clock.schedule_interval(self.update_printing, 0.6)
+        if tab == self.root.ids.tabs.ids.set_tab:
+            self.update_setting()
+            self.scheduled_updating = Clock.schedule_interval(self.update_setting, 1)
+
+    def update_home(self, *args):
+        self.get_temp()
+    def update_printing(self, *args):
+        pass
+    def update_setting(self, *args):
+        #self.get_config('printer', 'max_accel', 'acceleration', 'int')
+        pass
+
     def get_pressure_advance(self):
         return 0.1
     def send_pressure_advance(self, val):
         pass
 
-    def get_config(self, section, element, property_name):#TODO update acceleration when opening setting tab, in get_px_from_val a string is attempted to calculate
+    def get_config(self, section, element, property_name, ty=None):#TODO update acceleration when opening setting tab, in get_px_from_val a string is attempted to calculate
         logging.info("wrote {} from section {} to {}".format(element, section, property_name))
         if testing: 
             setattr(self, property_name, 77)
             return
         def read_config(e):
             Section = self.klipper_config.getsection(section)
-            val = Section.get(element)
+            if ty == 'int':
+                val = Section.getint(element)
+            else:
+                val = Section.get(element)
             setattr(self, property_name, val)
         self.reactor.register_async_callback(read_config)
 
@@ -200,7 +233,6 @@ class mainApp(App, threading.Thread):
         def set_pos(e):
             current_pos = self.toolhead.get_position()
             xyz = [current_pos[i] if p is None else p for i,p in enumerate(pos)]
-            logging.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$${}".format(xyz))
             self.toolhead.set_position(xyz) # resets all queued moves and sets pos #TODO make work
         self.reactor.register_async_callback(set_pos)
 

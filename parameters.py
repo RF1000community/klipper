@@ -2,42 +2,47 @@ from os.path import dirname
 kgui_dir = dirname(__file__)
 
 large_font = 34
-normal_font = 21
+normal_font = 22
 small_font = 17
 extra_small_font = 14
 screen_width = 600
 screen_height = 1024
-radius = 5
-popup_radius = 14
-
-status_bar_height = 22
+radius = 8
+popup_radius = 15
+icon_radius = 2.51
+status_bar_height = 23
+btn_height = 66
 progress_bar_height = 5
-btn_height = 64
 tab_height = 100
 #generate even spacing based on all contents on homescreen
-padding = (screen_height - tab_height - progress_bar_height-normal_font - status_bar_height - btn_height*7)/float(10)
+small_padding = 15
+padding = (screen_height\
+        - btn_height*7\
+        - progress_bar_height\
+        - tab_height)\
+        /float(8+2*1.5)
 home_col_height = padding+btn_height
 padding_hint = padding/screen_width
-small_padding = 15
+h_padding = 1.5*padding
 
-background = [0.07,0.07,0.07,1]
-popup = [0.15,0.15,0.15,1]
-divider = [1,1,1,0.1]
-button = [1,1,1,0.08]
-button_outline = [1,1,1,0.1]
-medium_gray = [0.2,0.2,0.2,1]
-medium_light_gray = [0.35,0.35,0.35,1]
-light_gray = [0.7,0.7,0.7,1]
-button_disabled = [1,1,1,0.2]
-translucent_white = [1,1,1,0.1]
-accent = [0,0.76,0.9,1]
+background = (0.066,0.066,0.066,1)
+popup = (0.15,0.15,0.15,1)
+divider = (1,1,1,0.1)
+button = (1,1,1,0.082)
+button_outline = (1,1,1,0.1)
+medium_gray = (0.2,0.2,0.2,1)
+medium_light_gray = (0.35,0.35,0.35,1)
+light_gray = (0.7,0.7,0.7,1)
+button_disabled = (1,1,1,0.2)
+translucent_white = (1,1,1,0.1)
+accent = (0.3,0.7,0.7,1)
 status_bar = accent
-red = [0.9,0,0,1]
+red = (0.83,0,0,1)
 
-notify_info = accent[:3] + [0.75]
-notify_warning = [0.75, 0.25, 0, 0.75]
-notify_error = [0.7, 0, 0, 1]
-notify_success = [0, 0.7, 0, 0.75]
+notify_info = accent[:3] + (0.75,)
+notify_warning = (0.75, 0.25, 0, 0.75)
+notify_error = (0.7, 0, 0, 1)
+notify_success = (0, 0.7, 0, 0.75)
 
 """
 Kivy Guide
@@ -55,8 +60,7 @@ How to access Instances or their methods:
     in py someinstance.bind(someinstances on_propertychange = self.method_to_bind) passes instance and every property
     by instantiating in python, storing instance
     in python self.ids["id"].method() instances of child widges can be accessed by id (ids is dict with instance as value)
-    get_id(instance) sloow
-    get_instance(id) also slow
+
 """
 
 

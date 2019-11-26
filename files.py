@@ -20,8 +20,8 @@ class FC(FileChooserIconView):
         Clock.schedule_once(self.bind_tab, 0)
 
     def bind_tab(self, e):
-        tab = App.get_running_app().root.ids.tabs
-        tab.bind(current_tab=self.control_updating)
+        tabs = App.get_running_app().root.ids.tabs
+        tabs.bind(current_tab=self.control_updating)
 
     def control_updating(self, instance, tab):
         if tab == instance.ids.file_tab:
