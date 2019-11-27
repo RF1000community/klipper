@@ -85,8 +85,8 @@ FloatLayout:
             max: 1
             value: 0.3
             size_hint: None, None
-            size: p.screen_width-2*p.h_padding, p.progress_bar_height+4
-            pos: p.h_padding-2, p.tab_height + p.h_padding
+            size: p.screen_width-2*p.h_padding+2, p.progress_bar_height
+            pos: p.h_padding-1, p.tab_height + p.h_padding
         Label:
             text: app.print_time
             size_hint: None, None
@@ -143,6 +143,8 @@ FloatLayout:
             x: p.padding
             center_y: p.padding+top_divider.top+p.btn_height/2
             canvas:
+                Color:
+                    rgba: p.red if app.temp[self.heater_id][1] > 50 else(1,1,1,1)
                 Rectangle:
                     source: p.kgui_dir+'/Logos/Nozzle.png'
                     size: 45, 66
@@ -163,6 +165,8 @@ FloatLayout:
             x: p.padding
             center_y: p.padding+p.btn_height+temp_T1.center_y
             canvas:
+                Color:
+                    rgba: p.red if app.temp[self.heater_id][1] > 50 else(1,1,1,1)
                 Rectangle:
                     source: p.kgui_dir+'/Logos/Nozzle.png'
                     size: 45, 66
@@ -182,6 +186,8 @@ FloatLayout:
             x: p.padding
             center_y: p.padding+p.btn_height+temp_T0.center_y
             canvas:
+                Color:
+                    rgba: p.red if app.temp['B'][1] > 50 else(1,1,1,1)
                 Rectangle:
                     source: p.kgui_dir+'/Logos/BuildPlate.png'
                     size: 80, 40
@@ -206,19 +212,19 @@ FloatLayout:
             id: speed
             on_release: Factory.SpeedPopup(instance=self).open()
             small_value: "Print Speed"
-            x: p.h_padding-10
+            x: p.padding
             center_y: z_adjust.center_y
         Btn_Temp:
             id: flow
             on_release: Factory.FlowPopup(instance=self).open()
             small_value: "Material Flow"
-            x: p.h_padding-10
+            x: p.padding
             center_y: speed.center_y - p.padding - p.btn_height
         Btn_Temp:
             id: fan
             on_release: Factory.FanPopup(instance=self).open()
             small_value: "Print Cooling"
-            x: p.h_padding-10
+            x: p.padding
             center_y: flow.center_y - p.padding - p.btn_height
 
 <HomeScreen@Screen>:
@@ -877,7 +883,7 @@ FloatLayout:
             SI_ValueSlider:
                 id: si_acc
                 left_title: "Max. printhead Acceleration"
-                value: '777'
+                value: str(app.acceleration)
                 RectangleButton:
                     pos: si_acc.pos
                     size: si_acc.size
@@ -897,7 +903,6 @@ FloatLayout:
             Rectangle:
                 pos: self.pos
                 size: self.size
-
         RectangleButton:
             id: btn
             #size_hint: 1, 0.1
@@ -919,21 +924,16 @@ FloatLayout:
             size_hint: 1, 0.12
             pos_hint: {'x':0, 'top':1}
             valign: 'middle'
-            halign: 'center'
-        Divider:
-            y: btn.y
-        
+            halign: 'center' 
         ScrollView:
             size_hint: 1, 1-0.12
             pos_hint: {'x':0, 'y':0}
             do_scroll_x: False
-
             BoxLayout:
                 id: wifi_box
                 orientation: 'vertical'
                 height: self.minimum_height
                 size_hint_y: None    
-            
 
 <SetItem>:
     size_hint_y: None
@@ -1043,7 +1043,7 @@ FloatLayout:
         Btn_P_Confirm:
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: (app.send_acc(slider.val), root.dismiss())
+            on_release: (app.write_config('printer', 'max_accel', slider.val), root.dismiss())
 
 <PasswordPopup>:
     txt_input: pwd_input

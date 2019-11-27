@@ -72,12 +72,13 @@ class mainApp(App, threading.Thread):
         if not testing:
             self.kgui_config = config
             self.printer = config.get_printer()
-            self.klipper_config = self.printer.objects['configfile'].read_main_config()
-            stepper_conf = (self.klipper_config.getsection('stepper_x'),
+            self.klipper_config_manager = self.printer.objects['configfile']
+            self.klipper_config = self.klipper_config_manager.read_main_config()
+            stepper_config = (self.klipper_config.getsection('stepper_x'),
                             self.klipper_config.getsection('stepper_y'),
                             self.klipper_config.getsection('stepper_z'))
-            self.pos_max = [stepper_conf[i].getint('position_max') for i in (0,1,2)]
-            try: self.pos_min = [stepper_conf[i].getint('position_min') for i in (0,1)]
+            self.pos_max = [stepper_config[i].getint('position_max') for i in (0,1,2)]
+            try: self.pos_min = [stepper_config[i].getint('position_min') for i in (0,1)]
             except: self.pos_min = (0,0)
             self.reactor = self.printer.get_reactor()
             self.printer.register_event_handler("klippy:connect", self.handle_connect) #printer_objects are available
@@ -161,30 +162,33 @@ class mainApp(App, threading.Thread):
     def update_printing(self, *args):
         pass
     def update_setting(self, *args):
-        #self.get_config('printer', 'max_accel', 'acceleration', 'int')
-        pass
+        self.get_config('printer', 'max_accel', 'acceleration', 'int')
 
     def get_pressure_advance(self):
         return 0.1
     def send_pressure_advance(self, val):
         pass
 
-    def get_config(self, section, element, property_name, ty=None):#TODO update acceleration when opening setting tab, in get_px_from_val a string is attempted to calculate
-        logging.info("wrote {} from section {} to {}".format(element, section, property_name))
+    def get_config(self, section, option, property_name, ty=None):
+        logging.info("wrote {} from section {} to {}".format(option, section, property_name))
         if testing: 
             setattr(self, property_name, 77)
             return
         def read_config(e):
             Section = self.klipper_config.getsection(section)
             if ty == 'int':
-                val = Section.getint(element)
+                val = Section.getint(option)
             else:
-                val = Section.get(element)
+                val = Section.get(option)
             setattr(self, property_name, val)
         self.reactor.register_async_callback(read_config)
 
-    def write_config(self):
-        pass
+    def write_config(self, section, option, value):
+        logging.info( 'trying to write section: {} option: {}, value: {} to config'.format(section, option, value))
+        def write_conf(e):
+            self.klipper_config_manager.set(section, option, value)
+            self.klipper_config_manager.cmd_SAVE_CONFIG(None)
+        self.reactor.register_async_callback(write_conf)
 
     def get_z_adjust(self):
         return 0.1
