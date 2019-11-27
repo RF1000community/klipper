@@ -242,7 +242,10 @@ wifi = Wifi()
 class PowerPopup(BasePopup):
     pass
 
-class SetItem(FloatLayout):
+class RectangleButton(BaseButton):
+    pass
+
+class SetItem(FloatLayout, RectangleButton):
     pass
 
 
@@ -266,13 +269,11 @@ class SI_Wifi(SetItem):
         # Bind to main tab switches after everything is set up and running
         Clock.schedule_once(self.bind_tab, 0)
 
-    def on_touch_down(self, touch):
+    def on_release(self, *args):
         # don't open wifiscreen when wifi doesn't work
-        if self.collide_point(*touch.pos) and not wifi.state:
+        if  not wifi.state:
             mgr = self.parent.parent.parent.manager
             mgr.current = 'WifiScreen'
-            return True
-        return super(SI_Wifi, self).on_touch_down(touch)
 
     def on_pre_enter(self):
         return
@@ -318,16 +319,13 @@ class SI_WifiNetwork(SetItem):
         self.network = network
         super(SI_WifiNetwork, self).__init__(**kwargs)
 
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            #Present different options when wifi is stored by NM
-            if self.network['stored']:
-                self.popup = ConnectionPopup(self.network)
-            else:
-                self.popup = PasswordPopup(self.network)
-            self.popup.open()
-            return True
-        return super(SI_WifiNetwork, self).on_touch_down(touch)
+    def on_release(self):
+        #Present different options when wifi is stored by NM
+        if self.network['stored']:
+            self.popup = ConnectionPopup(self.network)
+        else:
+            self.popup = PasswordPopup(self.network)
+        self.popup.open()
 
     def get_color(self):
         if self.network['stored']:
@@ -447,12 +445,9 @@ class ConnectionPopup(BasePopup):
 
 class SI_PowerMenu(SetItem):
 
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            self.popup = PowerPopup()
-            self.popup.open()
-            return True
-        return super(SI_PowerMenu, self).on_touch_down(touch)
+    def on_release(self):
+        self.popup = PowerPopup()
+        self.popup.open()
 
 class SI_ValueSlider(SetItem):
     pass

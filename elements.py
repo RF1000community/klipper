@@ -6,7 +6,7 @@ from kivy.properties import NumericProperty, BooleanProperty, StringProperty
 from kivy.uix.vkeyboard import VKeyboard
 from kivy.clock import Clock
 from kivy.app import App
-from collections import deque 
+from collections import deque
 
 
 class BaseButton(ButtonBehavior, Widget):

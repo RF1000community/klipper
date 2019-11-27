@@ -18,7 +18,7 @@ FloatLayout:
 <StatusBar@BoxLayout>:
     canvas:
         Color:
-            rgba: p.red if 'error' in app.state else p.background
+            rgba: p.red if 'error' in app.state else p.accent
         Rectangle:
             size: self.size
             pos: self.pos
@@ -138,7 +138,7 @@ FloatLayout:
             id: temp_T1
             heater_id: "T1"
             on_release: Factory.ExtTempPopup(instance=self).open()
-            large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
+            large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "---"
             small_value: "{:4.1f}".format(app.temp[self.heater_id][1])
             x: p.padding
             center_y: p.padding+top_divider.top+p.btn_height/2
@@ -158,7 +158,7 @@ FloatLayout:
             id: temp_T0
             heater_id: "T0"
             on_release: Factory.ExtTempPopup(instance=self).open()
-            large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
+            large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "---"
             small_value: "{:4.1f}".format(app.temp[self.heater_id][1])
             x: p.padding
             center_y: p.padding+p.btn_height+temp_T1.center_y
@@ -177,9 +177,9 @@ FloatLayout:
         Btn_Temp:
             on_release: Factory.BedTempPopup(instance=self).open()
             id: temp_bed
-            large_value: "{}°C".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "Off"
+            large_value: "{}°C".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "---"
             small_value: "{:4.1f}".format(app.temp['B'][1])
-            x: p.padding-10
+            x: p.padding
             center_y: p.padding+p.btn_height+temp_T0.center_y
             canvas:
                 Rectangle:
@@ -234,7 +234,7 @@ FloatLayout:
             dir_right: True
             id: btn_right_A
             size: p.btn_height-10, p.btn_height
-            y: btn_right_B.top+p.padding
+            y: 2*p.padding+p.btn_height
             x: btn_right_B.x
         Btn_Triple:
             id: btn_tr_B
@@ -260,7 +260,7 @@ FloatLayout:
             enabled: app.printer_objects_available
             title: "Mesh Bed Leveling"
             size: btn_tr_B.size
-            pos: btn_tr_B.x, btn_tr_A.top +p.padding
+            pos: btn_tr_A.x, 3*p.padding+2*p.btn_height
         Btn_TripleZ:
             id: btn_tr_Z
             height: xy_field.height
@@ -316,7 +316,7 @@ FloatLayout:
             size: self.size
             pos: self.pos
 
-<RectangleButton@BaseButton>:
+<RectangleButton>:
     canvas:
         Color:
             rgba: p.translucent_white if self.pressed else (0,0,0,0)
@@ -525,7 +525,7 @@ FloatLayout:
         size: root.width, p.btn_height+13#to compensate for the font being 6px below top when set to 'top'
         text_size: self.size
         center_y: root.center_y
-        right: root.right-15
+        right: root.right-16
         font_size: p.large_font
         valign: 'top'
         halign: 'right'
@@ -536,7 +536,7 @@ FloatLayout:
         size: root.width, p.btn_height+9
         text_size: self.size
         center_y: root.center_y
-        right: root.right-15
+        right: root.right-16
         font_size: p.normal_font
         valign: 'bottom'
         halign: 'right'
@@ -871,62 +871,78 @@ FloatLayout:
             size_hint_y: None
 
             SI_Switch:
-                title: "Light"
+                left_title: "Light"
             SI_Switch:
-                title: "Calibrate for every printjob"
+                left_title: "Calibrate for every printjob"
             SI_ValueSlider:
                 id: si_acc
-                title: "Max. printhead Acceleration"
-                value: "{}m/s²".format(app.acceleration) if app.acceleration != 0 else "--"
+                left_title: "Max. printhead Acceleration"
+                value: '777'
                 RectangleButton:
                     pos: si_acc.pos
                     size: si_acc.size
-                    on_release: Factory.AccPopup().open(); app.get_config('printer', 'max_accel', 'acceleration', 'int')
+                    on_release: Factory.AccPopup().open()
             SI_Wifi:
-                title: "Wifi"
+                left_title: "Wifi"
             SI_PowerMenu:
-                title: "Shutdown..."
+                left_title: "Shutdown..."
 
 <WifiScreen>:
     name: 'WifiScreen'
-    canvas:
-        Color:
-            rgba: p.background
-        Rectangle:
-            size: self.size
-            pos: self.pos
-
-    ScrollView:
-        size_hint: None, None
-        size: p.screen_width, root.height-110
-        pos: root.pos
-        do_scroll_x: False
+    FloatLayout:
+        id: float
         canvas.before:
             Color:
                 rgba: p.background
             Rectangle:
                 pos: self.pos
                 size: self.size
-        BoxLayout:
-            canvas:
+
+        RectangleButton:
+            id: btn
+            #size_hint: 1, 0.1
+            size: 150, 110
+            pos_hint: {'x':0, 'top':1}
+            #: set q 26
+            canvas.before:
                 Color:
-                    rgba: p.background
-                Rectangle:
-                    pos: self.pos
-                    size: self.size
-            id: wifi_box
-            orientation: 'vertical'
-            height: self.minimum_height
-            size_hint_y: None    
+                    rgba: 1,1,1,1
+                Triangle:
+                    points: (btn.center_x-q, btn.center_y, btn.center_x, btn.center_y-q, btn.center_x, btn.center_y+q)
+            on_release:
+                #root.manager.transition.direction = 'right'
+                root.manager.current = 'SettingScreen'
+        Label:
+            text: "Wifi"
+            font_size: p.large_font
+            text_size: self.size
+            size_hint: 1, 0.12
+            pos_hint: {'x':0, 'top':1}
+            valign: 'middle'
+            halign: 'center'
+        Divider:
+            y: btn.y
+        
+        ScrollView:
+            size_hint: 1, 1-0.12
+            pos_hint: {'x':0, 'y':0}
+            do_scroll_x: False
+
+            BoxLayout:
+                id: wifi_box
+                orientation: 'vertical'
+                height: self.minimum_height
+                size_hint_y: None    
+            
 
 <SetItem>:
     size_hint_y: None
     height: 110
     width: p.screen_width
-    title: ''
+    left_title: ''
     Label:
         id: switch_id
-        text: root.title
+        text: root.left_title
         font_size: p.normal_font
         text_size: self.size
         size: root.size
@@ -1164,9 +1180,9 @@ FloatLayout:
     canvas:
         Color:
             rgba: p.button
-        #: set wdt 65
-        #: set rad 12
-        #: set Rad 17
+        #: set wdt 60
+        #: set rad 11
+        #: set Rad 16
         #: set move wdt-2*rad
         RoundedRectangle:
             size: sp(wdt), sp(rad*2)
