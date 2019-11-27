@@ -74,15 +74,16 @@
         source: root.cursor_disabled_image if root.disabled else root.cursor_image
 
 <ProgressBar>:
+    enabled: False
     canvas:
         Color:
-            rgba: p.button
+            rgba: p.button if self.enabled == True else (0,0,0,0)
         RoundedRectangle:
             radius: [4]
             pos: self.pos
             size: self.width, 8
         Color:
-            rgba: p.accent
+            rgba: (0,0,0,0) if not self.enabled else p.green if self.value == self.max else p.accent
         RoundedRectangle:
             radius: [4]
             pos: self.pos

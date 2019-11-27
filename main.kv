@@ -33,7 +33,7 @@ FloatLayout:
             text: "state: " + app.state
             size_hint_x: None
             size: self.texture_size
-            font_size: root.height - 4
+            font_size: root.height - 5
             padding: 7, 0
     StackLayout:
         id: right
@@ -81,14 +81,15 @@ FloatLayout:
             pos_hint: {'x':0,'y':0}
             size_hint: 1,1
         ProgressBar:
+            enabled: True if app.state == 'printing' or app.state == 'paused' else False
             id: progress_bar
             max: 1
-            value: 0.3
+            value: app.progress
             size_hint: None, None
             size: p.screen_width-2*p.h_padding+2, p.progress_bar_height
             pos: p.h_padding-1, p.tab_height + p.h_padding
         Label:
-            text: app.print_time
+            text: app.print_time if app.state == 'printing' or app.state == 'paused' else ""
             size_hint: None, None
             size: p.screen_width-2*p.padding, p.normal_font
             text_size: self.size
@@ -113,7 +114,7 @@ FloatLayout:
             right: btn_stop.x
         Label:
             id: l_filename
-            text: app.print_title
+            text: app.print_title if app.state == 'printing' or app.state == 'paused' else "Ready to print" if app.state == 'ready' else ""
             size_hint: None, None
             size: 280,134
             text_size: self.size
@@ -316,7 +317,7 @@ FloatLayout:
 <RoundButton@BaseButton>:
     canvas:
         Color:
-            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+            rgba: p.translucent_white if self.pressed and self.enabled else (0,0,0,0)
         RoundedRectangle:
             radius: (p.radius,)
             size: self.size
@@ -325,7 +326,7 @@ FloatLayout:
 <RectangleButton>:
     canvas:
         Color:
-            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+            rgba: p.translucent_white if self.pressed and self.enabled else (0,0,0,0)
         Rectangle:
             size: self.size
             pos: self.pos
@@ -333,7 +334,7 @@ FloatLayout:
 <Btn_Stop@RoundButton>:
     canvas.before:
         Color:
-            rgba: p.red if self.enabled else (0,0,0,0)
+            rgba: p.red if self.enabled else p.red[:3] + (0.7,)
         Rectangle:
             pos: self.center_x-p.btn_height/2,self.center_y-p.btn_height/2
             size: p.btn_height,p.btn_height
@@ -341,6 +342,7 @@ FloatLayout:
 <Btn_Play@RoundButton>:
     #:set h p.btn_height*1.155
     paused: True
+    enabled: True if app.state == 'printing' or app.state == 'paused' else False
     canvas.before:
         Color:
             rgba: 1,1,1,1 if self.enabled and not self.paused else 0
@@ -612,22 +614,22 @@ FloatLayout:
 <UltraSlider>:
     #:set slider_pos_y 95
     size_hint: None,None
-    height: 200
+    size: p.screen_width - 2*p.small_padding - 2*p.padding, 200
     canvas:
         Color:
-            rgba: (0,0,0,0) if root.initializing else (1,1,1,1) if root.pressed else p.button
+            rgba: (1,1,1,1) if root.pressed else p.button
         RoundedRectangle:
             radius: (4,)
             size: root.width-100, 8
             pos: root.x+50,slider_pos_y-4+root.y
         Color:
-            rgba: (0,0,0,0) if root.initializing else (1,1,1,1) if root.pressed else p.medium_light_gray
+            rgba: (1,1,1,1) if root.pressed else p.medium_light_gray
         RoundedRectangle:
             radius: (4,4,4,4)
             size: self.px-root.x-50, 8
             pos: root.x+50,slider_pos_y-4+root.y
         Color:
-            rgba: (0,0,0,0) if root.initializing else (0,0,0,0) if root.pressed  else (1,1,1,1) 
+            rgba: (0,0,0,0) if root.pressed  else (1,1,1,1) 
         Ellipse:
             size: 20,20
             pos: root.px-10,slider_pos_y-10+root.y

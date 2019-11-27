@@ -36,7 +36,6 @@ class UltraSlider(Widget):
     px = NumericProperty() #absolute position of dot in px
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
-    initializing = BooleanProperty(True) #Dont draw slider till its position can be calculated
     
     def __init__(self, **kwargs):
         self.buttons = list() #list of lists: e.g. [[val,offset,"name",the instance]]
@@ -51,7 +50,6 @@ class UltraSlider(Widget):
         self.px_width = self.px_max-self.px_min
         self.px = self.get_px_from_val(self.val)
         self.disp = self.get_disp_from_val(self.val)
-        self.initializing = False
         for b in self.buttons:
             b[3] = Btn_Slider(y=self.y,  px=self.get_px_from_val(b[0]),  val=b[0],  offset=b[1],  s_title=b[2])
             b[3].bind(on_press=self.on_button)

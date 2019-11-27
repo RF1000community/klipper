@@ -109,13 +109,13 @@ class ConnectionIcon(Widget):
 
 class Notifications(FloatLayout):
 
-    def __init__(self, padding=(10, 10), height=100, **kwargs):
+    def __init__(self, height=100, **kwargs):
         super(Notifications, self).__init__(**kwargs)
         self.root_widget = App.get_running_app().root
         self.size_hint = (None, None)
-        self.size = self.root_widget.width - 2*padding[0], height
-        self.x = self.root_widget.x + padding[0]
-        self.top = self.root_widget.top - p.status_bar_height - padding[1]
+        self.size = self.root_widget.width - 2*p.small_padding, height
+        self.x = self.root_widget.x + p.small_padding
+        self.top = self.root_widget.top - p.status_bar_height - p.small_padding
         self.active = False
         Clock.schedule_once(self.init_drawing, 0)
 
@@ -126,6 +126,7 @@ class Notifications(FloatLayout):
 
         padding = (10, 10)
         title = Label(
+                color = (0,0,0,1),
                 size_hint = (None, None),
                 font_size = p.normal_font,
                 bold = True,
@@ -138,6 +139,7 @@ class Notifications(FloatLayout):
         self.title_label = title
 
         message = Label(
+                color = (0,0,0,1),
                 size_hint = (None, None),
                 font_size = p.normal_font,
                 padding = padding)

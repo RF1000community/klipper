@@ -46,7 +46,7 @@ Builder.load_file(join(p.kgui_dir, "style.kv"))
 class mainApp(App, threading.Thread):
 
     #Property for controlling the state as shown in the statusbar.
-    state = OptionProperty("ready", options=[
+    state = OptionProperty("initializing", options=[
         # Every string set has to be in this list
         "ready",
         "printing",
@@ -61,6 +61,7 @@ class mainApp(App, threading.Thread):
     print_title = StringProperty()
     print_time = StringProperty()
     speed = NumericProperty
+    progress = NumericProperty(1)
     #config
     acceleration = NumericProperty
 
@@ -266,7 +267,7 @@ class mainApp(App, threading.Thread):
     def send_pause(self):
         print("pause print")
         self.state = "paused"
-        self.notify.show("Paused", level="warning", delay=4, color=[0, 0, 0.5, 0.5])
+        self.notify.show("Paused", "Print paused", delay=4)
 
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))

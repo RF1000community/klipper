@@ -10,12 +10,12 @@ screen_height = 1024
 radius = 8
 popup_radius = 15
 icon_radius = 2.51
-status_bar_height = 25
+status_bar_height = 26
 btn_height = 66
 progress_bar_height = 5
 tab_height = 100
 #generate even spacing based on all contents on homescreen
-small_padding = 15
+small_padding = 25
 padding = (screen_height\
         - status_bar_height\
         - btn_height*7\
@@ -39,8 +39,9 @@ translucent_white = (1,1,1,0.1)
 accent = (0.15,0.4,0.45,1)
 status_bar = accent
 red = (0.83,0,0,1)
+green = (0,1,0.25,1)
 
-notify_info = accent[:3] + (0.75,)
+notify_info = (0.6,0.6,0.6,0.7)
 notify_warning = (0.75, 0.25, 0, 0.75)
 notify_error = (0.7, 0, 0, 1)
 notify_success = (0, 0.7, 0, 0.75)
