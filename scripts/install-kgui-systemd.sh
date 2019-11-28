@@ -1,9 +1,9 @@
 #!/bin/bash
-# This script installs Klipper on a Raspberry Pi machine running Octopi, with git installed
+# This script installs Klipperui on a Raspberry Pi machine running Octopi, with git installed
 
-PYTHONDIR="${HOME}/klippy-env"
 # Find SRCDIR from the pathname of this script
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
+PYTHONDIR="${SRCDIR}/klippy-environemt"
 
 
 install_packages()
