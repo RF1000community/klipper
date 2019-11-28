@@ -1,6 +1,5 @@
 import time
 import math
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
@@ -22,7 +21,7 @@ class TimeLabel(Label):
         self.get_time_str()
         self.start_clock()
         super(TimeLabel, self).__init__(**kwargs)
-    
+
     def start_clock(self):
         # How many seconds are left to the next full minute
         offset = 60 - time.time() % 60
@@ -36,7 +35,7 @@ class TimeLabel(Label):
         self.time = time.strftime("%H:%M")
 
 class ConnectionIcon(Widget):
-    
+
     def __init__(self, **kwargs):
         self.topright = []
         super(ConnectionIcon, self).__init__(**kwargs)
@@ -59,7 +58,7 @@ class ConnectionIcon(Widget):
 
     def draw_wifi(self):
         padding = self.icon_padding
-        h = self.height - 2*padding        
+        h = self.height - 2*padding
         full_size = [2*h, 2*h]
         cutoff = int(h - math.cos(math.pi/4.0) * h + 0.5)
         self.width = full_size[0] - 2*cutoff + padding
@@ -80,7 +79,7 @@ class ConnectionIcon(Widget):
         h = self.height - 2*padding
         size = [h, h]
         self.width = size[0] + padding
-        pos = [self.topright[0] - size[0] - padding, 
+        pos = [self.topright[0] - size[0] - padding,
                self.topright[1] - size[1] - padding]
         print(size, pos)
 
@@ -105,7 +104,7 @@ class ConnectionIcon(Widget):
     def update_wifi(self, instance, value):
         self.signal = value[0]['signal'] / 100.0
         self.draw_wifi()
-        
+
 
 class Notifications(FloatLayout):
 
@@ -122,11 +121,11 @@ class Notifications(FloatLayout):
     def init_drawing(self, dt):
         with self.canvas:
             self.bg_color = Color(rgba=p.red)
-            RoundedRectangle(pos=self.pos, size=self.size, radius=(p.radius,p.radius))
+            RoundedRectangle(pos=self.pos, size=self.size, radius=(p.radius, p.radius))
 
         padding = (10, 10)
         title = Label(
-                color = (0,0,0,1),
+                color = (0, 0, 0, 1),
                 size_hint = (None, None),
                 font_size = p.normal_font,
                 bold = True,
@@ -139,7 +138,7 @@ class Notifications(FloatLayout):
         self.title_label = title
 
         message = Label(
-                color = (0,0,0,1),
+                color = (0, 0, 0, 1),
                 size_hint = (None, None),
                 font_size = p.normal_font,
                 padding = padding)
@@ -170,7 +169,7 @@ class Notifications(FloatLayout):
                 "warning": p.notify_warning,
                 "error": p.notify_error,
                 "success": p.notify_success}
-        if not(level in color_presets.keys()):
+        if level not in color_presets.keys():
             raise Exception("Unrecognized log level preset " + level)
 
         # Only show one Notification at a time

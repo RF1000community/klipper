@@ -36,7 +36,7 @@ class UltraSlider(Widget):
     px = NumericProperty() #absolute position of dot in px
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
-    
+
     def __init__(self, **kwargs):
         self.buttons = list() #list of lists: e.g. [[val,offset,"name",the instance]]
         self.val = float()    #value, passed to printer, not in px
