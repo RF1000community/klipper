@@ -107,8 +107,8 @@ FloatLayout:
             center_x: p.screen_width - p.btn_height/2 - p.h_padding
         Btn_Play:
             on_release:
-                if self.enabled and self.paused: app.send_play(); self.paused=False; hs_manager.current="printingscreen"
-                elif self.enabled:               app.send_pause(); self.paused=True; hs_manager.current="homescreen"
+                if self.enabled and self.paused: app.send_play(); self.paused=False;
+                elif self.enabled:               app.send_pause(); self.paused=True;
             size: btn_stop.size
             y: btn_stop.y
             right: btn_stop.x
@@ -128,6 +128,7 @@ FloatLayout:
             id: top_divider
             y: btn_stop.center_y + p.btn_height/2 + p.padding
         ScreenManager:
+            current: 'printingscreen' if app.state == 'printing' else 'homescreen'
             transition: screenmanager.NoTransition()
             id: hs_manager
             size_hint: None, None

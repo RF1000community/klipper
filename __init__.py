@@ -183,6 +183,10 @@ class mainApp(App, threading.Thread):
                 val = Section.get(option)
             setattr(self, property_name, val)
         self.reactor.register_async_callback(read_config)
+    
+    def set_config(self, section, option, value):
+        logging.info("trying to set config section {} option {} to value {}".format(section, option, value))
+        self.reactor.register_async_callback(lambda e: self.klipper_config_manager.set(section, option, value))
 
     def write_config(self, section, option, value):
         logging.info( 'trying to write section: {} option: {}, value: {} to config'.format(section, option, value))

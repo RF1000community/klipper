@@ -21,7 +21,7 @@ class Btn_Slider(BaseButton):
     s_title = StringProperty()
     offset = NumericProperty()
 
-class BasePopup(Popup): #makes this Popup recieve the instance of the calling button to access its methods and idpy
+class BasePopup(Popup): #makes this Popup recieve the instance of the calling button to access its methods and e.g. heater_id
     def __init__(self,**kwargs):
         if 'instance' in kwargs: self.creator = kwargs['instance']
         super(BasePopup,self).__init__(**kwargs)

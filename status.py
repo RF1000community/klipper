@@ -105,7 +105,7 @@ class ConnectionIcon(Widget):
     def update_wifi(self, instance, value):
         self.signal = value[0]['signal'] / 100.0
         self.draw_wifi()
-        
+
 
 class Notifications(FloatLayout):
 
@@ -113,9 +113,9 @@ class Notifications(FloatLayout):
         super(Notifications, self).__init__(**kwargs)
         self.root_widget = App.get_running_app().root
         self.size_hint = (None, None)
-        self.size = self.root_widget.width - 2*p.small_padding, height
-        self.x = self.root_widget.x + p.small_padding
-        self.top = self.root_widget.top - p.status_bar_height - p.small_padding
+        self.size = self.root_widget.width - 2*p.notification_padding, height
+        self.x = self.root_widget.x + p.notification_padding
+        self.top = self.root_widget.top - p.status_bar_height - p.notification_padding
         self.active = False
         Clock.schedule_once(self.init_drawing, 0)
 

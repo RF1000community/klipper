@@ -1,4 +1,4 @@
-#### Raspberry Pi 4
+### Raspberry Pi 4
 Raspian buster lite without desktop env.  
 add new 'ssh' file with no extension to boot folder to enable ssh  
 
@@ -30,6 +30,10 @@ connect OctoPrint to /tmp/printer using web interface
 
 add "quiet disable_splash=1" to /boot/cmdline.txt  
 
+  
+  
+  
+  
 
 
 
@@ -42,11 +46,7 @@ add "quiet disable_splash=1" to /boot/cmdline.txt
 
 
 
-
-
-
-
-## KGUI deps
+#### KGUI deps
 sudo apt install --yes \ 
    git python-pip python-pygame libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
    pkg-config libgl1-mesa-dev libgles2-mesa-dev \
@@ -73,24 +73,24 @@ sudo ./LCD7C-show 90
 
 opengl driver only works with autologin enabled and a reinstall of the lcd driver  
 
-## Automount usb
+#### Automount usb
 https://raspberrypi.stackexchange.com/questions/66169/auto-mount-usb-stick-on-plug-in-without-uuid  
 
-## NetworkManager
+#### NetworkManager
 sudo apt install network-manager  
 sudo apt purge dhcpcd5  
 _maybe edit /etc/interfaces_  
 
-## Boot optimizations 
+#### Boot optimizations 
 add quiet disable_splash=1 to /boot/cmdline.txt  
 
-## Logs
+#### Logs
 Klipper: /tmp/klippy.log  
 Kivy:  ~/.kivy/logs  
 Xorg: /var/log/  
 
 
-## Shutdown without needing to provide password
+#### Shutdown without needing to provide password
 sudo echo "%sudo ALL=(ALL) NOPASSWD: /bin/systemctl" >> /etc/sudoers  
 
 

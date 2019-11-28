@@ -15,7 +15,8 @@ btn_height = 66
 progress_bar_height = 5
 tab_height = 100
 #generate even spacing based on all contents on homescreen
-small_padding = 25
+small_padding = 15
+notification_padding = 22
 padding = (screen_height\
         - status_bar_height\
         - btn_height*7\
