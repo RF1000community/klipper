@@ -50,8 +50,8 @@ notify_success = (0, 0.7, 0, 0.75)
 """
 Kivy Guide
 LABELS: try setting hints to None if it does shit e.g. setting size doesnt work
-    size: outer dimensions of the label widget, available space, can be set to texture_size to show everything 
-    text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits, 
+    size: outer dimensions of the label widget, available space, can be set to texture_size to show everything
+    text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits,
     texture_size: size of the actual text not cut off(outer dimensions), can set font_size
     always size_hint: None, None when setting size: needed
 in canvas: e.g. self.*** acceses the 'parent' widget of the canvas, unlike in other child Instances like Label:

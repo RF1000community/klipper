@@ -7,7 +7,7 @@ if '-t' in argv:
     argv.remove('-t')
 else:
     testing = False
-if not testing: 
+if not testing:
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'gl'
 from os.path import join
@@ -128,12 +128,12 @@ class mainApp(App, threading.Thread):
     def handle_shutdown(self):
         logging.info("handled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         self.stop()
-        
+
     def handle_homed(self, homing, rails):
         for rail in rails:
             if rail.name == 'z':
                 self.homed_z = True
-                
+
     def handle_calc_print_time(self, curtime, est_print_time, print_time):
         hours = int(est_print_time//360)
         minutes = int(est_print_time%360)/60
@@ -172,7 +172,7 @@ class mainApp(App, threading.Thread):
 
     def get_config(self, section, option, property_name, ty=None):
         logging.info("wrote {} from section {} to {}".format(option, section, property_name))
-        if testing: 
+        if testing:
             setattr(self, property_name, 77)
             return
         def read_config(e):
@@ -250,7 +250,7 @@ class mainApp(App, threading.Thread):
             pos = self.toolhead.get_pos()
             self.pos = pos
         self.reactor.register_async_callback(read_pos)
-    
+
     def send_up_Z(self):
         self.send_pos(z=0)
     def send_down_Z(self):

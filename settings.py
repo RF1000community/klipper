@@ -31,7 +31,6 @@ class Wifi(EventDispatcher):
         Clock.schedule_once(partial(self.get_wifi_list, True), 1)
         if self.state == 0:
             self.update_clock = Clock.schedule_interval(self.get_wifi_list, self.update_freq)
-        
 
     def check_nmcli(self):
         # state codes:
@@ -228,7 +227,7 @@ class Wifi(EventDispatcher):
                 eth = True
         self.connection_types['wifi'] = wifi
         self.connection_types['eth'] = wifi
-        
+
 
     def on_networks(self, value):
         Logger.debug('Wifi: Wifi scan complete returning {} networks'.format(len(value)))
@@ -250,9 +249,9 @@ class SetItem(FloatLayout, RectangleButton):
 
 
 class SI_Wifi(SetItem):
-    
-    # The string that is displayed by the label. 
-    # Holds the current wifi connection and possibly the signal strength as well. 
+
+    # The string that is displayed by the label.
+    # Holds the current wifi connection and possibly the signal strength as well.
     # [0]: ssid or message, [1]: formatted as ssid if true, as message otherwise
     display = ListProperty(['', False])
 
@@ -384,9 +383,9 @@ class WifiScreen(Screen):
 
 
 class PasswordPopup(BasePopup):
-    
+
     txt_input = ObjectProperty(None)
-    
+
     def __init__(self, network, **kwargs):
         self.network = network
         self.ssid = self.network['ssid']

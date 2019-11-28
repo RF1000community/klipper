@@ -63,7 +63,7 @@ class XyField(Widget):
     def update_with_mm(self, mm):
         self.update_drawing(self.get_px_pos(mm))
         self.mm_pos = mm
-   
+
     def update_drawing(self, x, y):
         if x < self.origin[0]:
             x = self.origin[0]
@@ -88,8 +88,8 @@ class XyField(Widget):
         #Convert to float to avoid python2 integer division
         ratio_x = float(px[0] - self.origin[0]) / (self.limits[0] - self.origin[0])
         ratio_y = float(px[1] - self.origin[1]) / (self.limits[1] - self.origin[1])
-        
-        self.mm_pos = [self.printer_dimensions[0] * ratio_x, 
+
+        self.mm_pos = [self.printer_dimensions[0] * ratio_x,
                        self.printer_dimensions[0] * ratio_y]
 
     def get_px_pos(self, mm):
@@ -131,7 +131,7 @@ class SpeedSlider(UltraSlider):
     def get_px_from_val(self, val):
         return int((float(val-10)/(500-10))*(self.px_width)+self.px_min)
 
-class FlowSlider(UltraSlider):        
+class FlowSlider(UltraSlider):
     def init_drawing(self, dt):
         self.val = App.get_running_app().get_flow()
         self.buttons = [[100,0,"no multiplier",None]]

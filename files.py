@@ -14,7 +14,7 @@ class FC(FileChooserIconView):
         self.filters = ['*.gco', '*.gcode']
         self.multiselect = False
         if exists("/media"):
-            self.rootpath = "/media"        
+            self.rootpath = "/media"
             self.path = "/media"
         self.scheduled_updating = False
         Clock.schedule_once(self.bind_tab, 0)
@@ -31,8 +31,8 @@ class FC(FileChooserIconView):
             Clock.unschedule(self.scheduled_updating)
 
     def modification_date_sort(self, files, filesystem):#sortierfunktion fuer Filechooser
-        return (sorted(f for f in files if filesystem.is_dir(f)) 
-            + sorted((f for f in files if not filesystem.is_dir(f)), 
+        return (sorted(f for f in files if filesystem.is_dir(f))
+            + sorted((f for f in files if not filesystem.is_dir(f)),
                 key = lambda F: getmtime(F)))
 
     def on_selection(self, instance, filenames):
@@ -43,7 +43,7 @@ class FC(FileChooserIconView):
 
 
 class PrintPopup(BasePopup):
-    
+
     def __init__(self, path, chooser, **kwargs):
         self.prompt = path.split("/")[-1]
         self.chooser = chooser
@@ -52,7 +52,7 @@ class PrintPopup(BasePopup):
     def dismiss(self):
         super(PrintPopup, self).dismiss()
         # Supposed to be read-only but still works that way
-        self.chooser.selection = [] 
+        self.chooser.selection = []
 
     def confirm(self):
         self.dismiss()
