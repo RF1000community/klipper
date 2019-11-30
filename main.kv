@@ -114,7 +114,7 @@ FloatLayout:
             right: btn_stop.x
         Label:
             id: l_filename
-            text: app.print_title if app.state == 'printing' or app.state == 'paused' else "Ready to print" if app.state == 'ready' else ""
+            text: app.print_title if app.state == 'printing' or app.state == 'paused' else ""
             size_hint: None, None
             size: 280,134
             text_size: self.size
@@ -141,7 +141,7 @@ FloatLayout:
             heater_id: "T1"
             on_release: Factory.ExtTempPopup(instance=self).open()
             large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "---"
-            small_value: "{:4.1f}".format(app.temp[self.heater_id][1])
+            small_value: "{:4.1f}".format(app.temp[self.heater_id][1]) if app.temp[self.heater_id][1] != 0 else ""
             x: p.padding
             center_y: p.padding+top_divider.top+p.btn_height/2
             canvas:
@@ -163,7 +163,7 @@ FloatLayout:
             heater_id: "T0"
             on_release: Factory.ExtTempPopup(instance=self).open()
             large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "---"
-            small_value: "{:4.1f}".format(app.temp[self.heater_id][1])
+            small_value: "{:4.1f}".format(app.temp[self.heater_id][1]) if app.temp[self.heater_id][1] != 0 else ""
             x: p.padding
             center_y: p.padding+p.btn_height+temp_T1.center_y
             canvas:
@@ -184,7 +184,7 @@ FloatLayout:
             on_release: Factory.BedTempPopup(instance=self).open()
             id: temp_bed
             large_value: "{}°C".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "---"
-            small_value: "{:4.1f}".format(app.temp['B'][1])
+            small_value: "{:4.1f}".format(app.temp['B'][1])  if app.temp['B'][1] != 0 else ""
             x: p.padding
             center_y: p.padding+p.btn_height+temp_T0.center_y
             canvas:
@@ -194,6 +194,8 @@ FloatLayout:
                     source: p.kgui_dir+'/Logos/BuildPlate.png'
                     size: 80, 40
                     pos: p.h_padding + 45/2 - 80/2, self.center_y - p.btn_height/2
+        Divider:
+            y: p.padding + p.btn_height/2 + temp_bed.center_y
 
 <PrintingScreen@Screen>:
     name: "printingscreen"

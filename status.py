@@ -1,12 +1,12 @@
 import time
 import math
+import logging
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.properties import StringProperty
 from kivy.app import App
-from kivy.logger import Logger
 from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Rectangle
 from kivy.graphics.context_instructions import Color
 import parameters as p
@@ -108,11 +108,11 @@ class ConnectionIcon(Widget):
 
 class Notifications(FloatLayout):
 
-    def __init__(self, height=100, **kwargs):
-        super(Notifications, self).__init__(**kwargs)
+    def __init__(self):
+        super(Notifications, self).__init__()
         self.root_widget = App.get_running_app().root
         self.size_hint = (None, None)
-        self.size = self.root_widget.width - 2*p.notification_padding, height
+        self.size = self.root_widget.width - 2*p.notification_padding, 110
         self.x = self.root_widget.x + p.notification_padding
         self.top = self.root_widget.top - p.status_bar_height - p.notification_padding
         self.active = False
@@ -188,18 +188,18 @@ class Notifications(FloatLayout):
         if log:
             if title:
                 if level in("info", "success"):
-                    Logger.info("Notify: " + title)
+                    logging.info("Notify: " + title)
                 elif level == "warning":
-                    Logger.warning("Notify: " + title)
+                    logging.warning("Notify: " + title)
                 elif level == "error":
-                    Logger.error("Notify: " + title)
+                    logging.error("Notify: " + title)
             if message:
                 if level in("info", "success"):
-                    Logger.info("Notify: " + message)
+                    logging.info("Notify: " + message)
                 elif level == "warning":
-                    Logger.warning("Notify: " + message)
+                    logging.warning("Notify: " + message)
                 elif level == "error":
-                    Logger.error("Notify: " + message)
+                    logging.error("Notify: " + message)
 
         window = self.root_widget.get_root_window()
         window.add_widget(self)

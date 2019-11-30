@@ -108,13 +108,10 @@ class mainApp(App, threading.Thread):
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
         self.heaters = self.printer.lookup_object('heater', None)
         self.heater = {}
-        try: self.heater['B'] = self.printer.lookup_object('heater_bed', None)
-        except: logging.info("heated bed not found")
-        try: self.heater['T0'] = self.heaters.lookup_heater('extruder0')
-        except: logging.info("T0 not found")
-        try: self.heater['T1'] = self.heaters.lookup_heater('extruder0')
-        except: logging.info("T1 not found")
-
+        if 'heater_bed' in self.heaters.heaters: self.heater['B'] = self.heaters.heaters['heater_bed']
+        if 'extruder' in self.heaters.heaters:  self.heater['T0'] = self.heaters.heaters['extruder']
+        if 'extruder0' in self.heaters.heaters: self.heater['T0'] = self.heaters.heaters['extruder0']
+        if 'extruder1' in self.heaters.heaters: self.heater['T1'] = self.heaters.heaters['extruder1']
         self.printer_objects_available = True
         Clock.schedule_once(self.bind_updating, 0)
         Clock.schedule_once(self.control_updating, 0)
@@ -126,12 +123,12 @@ class mainApp(App, threading.Thread):
         self.state = "error disconnected"
 
     def handle_shutdown(self):
-        logging.info("handled shutdown @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        logging.info("handled shutdown ")
         self.stop()
 
     def handle_homed(self, homing, rails):
         for rail in rails:
-            if rail.name == 'z':
+            if rail.steppers[0].get_name(short=True) == 'z':
                 self.homed_z = True
 
     def handle_calc_print_time(self, curtime, est_print_time, print_time):
@@ -160,10 +157,19 @@ class mainApp(App, threading.Thread):
 
     def update_home(self, *args):
         self.get_temp()
+        self.get_pos()
+
     def update_printing(self, *args):
-        pass
+        self.get_temp()
+        self.get_progress()
+
     def update_setting(self, *args):
         self.get_config('printer', 'max_accel', 'acceleration', 'int')
+
+    def get_progress(self):
+        def read_progress(e):
+            self.progress = self.sdcard.get_status(e)['progress']
+        self.reactor.register_async_callback(read_progress)
 
     def get_pressure_advance(self):
         return 0.1
@@ -247,7 +253,7 @@ class mainApp(App, threading.Thread):
 
     def get_pos(self):
         def read_pos(e):
-            pos = self.toolhead.get_pos()
+            pos = self.toolhead.get_position()
             self.pos = pos
         self.reactor.register_async_callback(read_pos)
 
@@ -260,18 +266,28 @@ class mainApp(App, threading.Thread):
     def send_home_Z(self):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28("Z")))
 
+    def send_start(self, file):
+        self.state = "printing"
+        logging.info("KGUI started printing of "+str(file))
+        def start(e):
+            self.sdcard.cmd_M23(file)#maybe dont give full path
+            self.sdcard.cmd_m24(None)
+        self.reactor.register_async_callback(start)
+
     def send_stop(self):
-        print("stop print")
         self.state = "ready"
         self.notify.show(message="Printing stopped", level="error")
+        self.reactor.register_async_callback(self.sdcard.cmd_M25)
+    
     def send_play(self):
-        print("resume print")
         self.state = "printing"
         self.notify.show("Printing", "Started printing now", log=False)
+        self.reactor.register_async_callback(self.sdcard.cmd_M24)#works because cmd_M24 takes one argument but doesnt read it 
+    
     def send_pause(self):
-        print("pause print")
         self.state = "paused"
         self.notify.show("Paused", "Print paused", delay=4)
+        self.reactor.register_async_callback(self.sdcard.cmd_M25)
 
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
@@ -281,19 +297,14 @@ class mainApp(App, threading.Thread):
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
     def restart_klipper(self):
-        self.reactor.register_async_callback((lambda e: self.gcode.cmd_FIRMWARE_RESTART(0)))
-        self.stop()
-        """
-        def restart(e=None):
-            self.printer.run_result = 'fimrmware_restart'
-            self.printer.reactor.end()
-        self.reactor.register_async_callback(restart())"""
+        self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART)
+        #self.stop()
     def quit(self):
         Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
 
     def setup_after_run(self, dt):
         self.root_window.set_vkeyboard_class(UltraKeyboard)
-        self.notify = Notifications(padding=(10, 10), height=100)
+        self.notify = Notifications()
 
 def load_config(config): #Entry point
     kgui_object = mainApp(config)

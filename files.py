@@ -55,8 +55,7 @@ class PrintPopup(BasePopup):
         self.chooser.selection = []
 
     def confirm(self):
-        self.dismiss()
-        root = App.get_running_app().root
-        tab = root.ids.tabs
-        tab.switch_to(tab.ids.home_tab)
+        App.get_running_app().send_start(self.chooser.selection)
+        
+
 
