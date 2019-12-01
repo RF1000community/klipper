@@ -43,13 +43,15 @@ Builder.unload_file(join(kivy_data_dir, "style.kv"))
 Builder.load_file(join(p.kgui_dir, "style.kv"))
 
 #add threading.thread => inherits start() method to run() in new thread
-class mainApp(App, threading.Thread):
+class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     #Property for controlling the state as shown in the statusbar.
     state = OptionProperty("initializing", options=[
         # Every string set has to be in this list
+        "busy",
         "ready",
         "printing",
+        "pausing",
         "paused",
         "error",
         "error disconnected",
@@ -57,7 +59,7 @@ class mainApp(App, threading.Thread):
         ])
     homed_z = BooleanProperty(False)
     printer_objects_available = BooleanProperty(False)
-    temp = DictProperty({}) #[setpoint, current]
+    temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ....}
     print_title = StringProperty()
     print_time = StringProperty()
     speed = NumericProperty
@@ -76,11 +78,12 @@ class mainApp(App, threading.Thread):
             self.klipper_config_manager = self.printer.objects['configfile']
             self.klipper_config = self.klipper_config_manager.read_main_config()
             stepper_config = (self.klipper_config.getsection('stepper_x'),
-                            self.klipper_config.getsection('stepper_y'),
-                            self.klipper_config.getsection('stepper_z'))
+                              self.klipper_config.getsection('stepper_y'),
+                              self.klipper_config.getsection('stepper_z'))
             self.pos_max = [stepper_config[i].getint('position_max') for i in (0,1,2)]
             try: self.pos_min = [stepper_config[i].getint('position_min') for i in (0,1)]
             except: self.pos_min = (0,0)
+            self.klipper_config.getsection("virtual_sdcard").get("path", None)#TODO to something with this
             self.reactor = self.printer.get_reactor()
             self.printer.register_event_handler("klippy:connect", self.handle_connect) #printer_objects are available
             self.printer.register_event_handler("klippy:ready", self.handle_ready) #connect handlers have run
@@ -93,28 +96,27 @@ class mainApp(App, threading.Thread):
             self.pos_min = (0,0)
         super(mainApp, self).__init__(**kwargs)
 
-    def run(self):
-        logging.info("Kivy app.run")
-        Clock.schedule_once(self.setup_after_run, 0)
-        super(mainApp, self).run()
-
-    def handle_connect(self): # the handlers are not thread safe!
+    def handle_connect(self): # runs in Klipper Thread
         self.gcode = self.printer.lookup_object('gcode')
         self.toolhead = self.printer.lookup_object('toolhead')
-        self.sdcard = self.printer.lookup_object('virtual_sdcard', None)
+        self.sdcard = self.printer.lookup_object('virtual_sdcard', None)#TODO seems to return None
+        logging.warning("&&&&&&&&&&&&&&&&&&&&& i only found {} as sdcard".format(self.sdcard))
         self.fan = self.printer.lookup_object('fan', None)
-        self.extruder0 = self.printer.lookup_object('extruder0', None)
-        self.extruder1 = self.printer.lookup_object('extruder1', None)
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
-        self.heaters = self.printer.lookup_object('heater', None)
-        self.heater = {}
-        if 'heater_bed' in self.heaters.heaters: self.heater['B'] = self.heaters.heaters['heater_bed']
-        if 'extruder' in self.heaters.heaters:  self.heater['T0'] = self.heaters.heaters['extruder']
-        if 'extruder0' in self.heaters.heaters: self.heater['T0'] = self.heaters.heaters['extruder0']
-        if 'extruder1' in self.heaters.heaters: self.heater['T1'] = self.heaters.heaters['extruder1']
+        self.extruders = [self.printer.lookup_object('extruder', None)]#maybe the first one is called extruder0 when there are multiple?
+        for i in range(1,10):
+		    ext = self.printer.lookup_object('extruder%d' % (i,), None)
+		    if ext: self.extruders.append(ext)
+        self.heater_manager = self.printer.lookup_object('heater', None)
+        self.heaters = {}
+        if 'heater_bed' in self.heater_manager.heaters: self.heaters['B'] = self.heater_manager.heaters['heater_bed']
+        for i, extruder in enumerate(self.extruders):
+            self.heaters['T'+str(i)] = extruder.get_heater
+
         self.printer_objects_available = True
         Clock.schedule_once(self.bind_updating, 0)
         Clock.schedule_once(self.control_updating, 0)
+        Clock.schedule_interval(self.update_always, 0.3)
 
     def handle_ready(self):
         self.state = "ready"
@@ -122,9 +124,13 @@ class mainApp(App, threading.Thread):
     def handle_disconnect(self):
         self.state = "error disconnected"
 
-    def handle_shutdown(self):
+    def handle_shutdown(self): # is called when system shuts down
         logging.info("handled shutdown ")
         self.stop()
+    
+	def shutdown(self): # reactor calls this on klippy restart
+		# kill the thread here
+		self.stop()
 
     def handle_homed(self, homing, rails):
         for rail in rails:
@@ -135,6 +141,19 @@ class mainApp(App, threading.Thread):
         hours = int(est_print_time//360)
         minutes = int(est_print_time%360)/60
         self.print_time = "{}:{:02} remaining".format(hours, minutes)
+
+### KLIPPER THREAD ^
+########################################################################################
+### KGUI    THREAD v
+        
+    def run(self):
+        logging.info("Kivy app.run")
+        Clock.schedule_once(self.setup_after_run, 0)
+        super(mainApp, self).run()
+
+    def setup_after_run(self, dt):
+        self.root_window.set_vkeyboard_class(UltraKeyboard)
+        self.notify = Notifications()
 
     def bind_updating(self, *args):
         self.root.ids.tabs.bind(current_tab=self.control_updating)
@@ -154,6 +173,21 @@ class mainApp(App, threading.Thread):
         if tab == self.root.ids.tabs.ids.set_tab:
             self.update_setting()
             self.scheduled_updating = Clock.schedule_interval(self.update_setting, 1)
+            
+    def update_always(self, *args):
+        if not self.sdcard:
+            logging.warning("sdcard not found")
+            return
+        if 'Printer is ready' != self.printer.get_state_message():
+		    s = 'initializing'
+        if self.gcode.is_processing_data:
+            s = 'busy'
+        if self.sdcard.current_file:
+            if self.sdcard.must_pause_work:
+                s = 'pausing' if self.sdcard.work_timer else 'paused'
+            elif self.sdcard.current_file and self.sdcard.work_timer:
+                s = 'printing'
+        self.state = s
 
     def update_home(self, *args):
         self.get_temp()
@@ -161,45 +195,19 @@ class mainApp(App, threading.Thread):
 
     def update_printing(self, *args):
         self.get_temp()
-        self.get_progress()
+        def get_progress(e):
+            self.progress = self.sdcard.get_status(e)['progress']
+        self.reactor.register_async_callback(get_progress)
 
     def update_setting(self, *args):
         self.get_config('printer', 'max_accel', 'acceleration', 'int')
 
-    def get_progress(self):
-        def read_progress(e):
-            self.progress = self.sdcard.get_status(e)['progress']
-        self.reactor.register_async_callback(read_progress)
-
-    def get_pressure_advance(self):
+#########################################################
+### TUNING
+    def get_pressure_advance(self):#TODO everything
         return 0.1
     def send_pressure_advance(self, val):
         pass
-
-    def get_config(self, section, option, property_name, ty=None):
-        logging.info("wrote {} from section {} to {}".format(option, section, property_name))
-        if testing:
-            setattr(self, property_name, 77)
-            return
-        def read_config(e):
-            Section = self.klipper_config.getsection(section)
-            if ty == 'int':
-                val = Section.getint(option)
-            else:
-                val = Section.get(option)
-            setattr(self, property_name, val)
-        self.reactor.register_async_callback(read_config)
-    
-    def set_config(self, section, option, value):
-        logging.info("trying to set config section {} option {} to value {}".format(section, option, value))
-        self.reactor.register_async_callback(lambda e: self.klipper_config_manager.set(section, option, value))
-
-    def write_config(self, section, option, value):
-        logging.info( 'trying to write section: {} option: {}, value: {} to config'.format(section, option, value))
-        def write_conf(e):
-            self.klipper_config_manager.set(section, option, value)
-            self.klipper_config_manager.cmd_SAVE_CONFIG(None)
-        self.reactor.register_async_callback(write_conf)
 
     def get_z_adjust(self):
         return 0.1
@@ -227,24 +235,25 @@ class mainApp(App, threading.Thread):
     def send_fan(self, speed):
         logging.info("KGUI send {} as fan speed".format(speed))
         self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed))
+### TUNING
+#####################################################################3
 
     def get_temp(self, dt=None):
         # schedule reading temp in klipper thread which schedules displaying the read value in kgui thread
         def read_temp(e):
-            if self.heaters is not None:
+            if self.heater_manager is not None:
                 t = {}
-                for heater_id, sensor in self.heaters.get_gcode_sensors():
+                for heater_id, sensor in self.heater_manager.get_gcode_sensors():
                     current, target = sensor.get_temp(self.reactor.monotonic()) #get temp at current point in time
                     self.temp[heater_id] = (target, current)
         self.reactor.register_async_callback(read_temp)
 
     def send_temp(self, temp, heater_id):
         logging.info("KGUI set Temperature of {} to {}".format(heater_id, temp))
-        self.reactor.register_async_callback((lambda e: self.heater[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
+        self.reactor.register_async_callback((lambda e: self.heaters[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
 
-    def send_pos(self, x=None, y=None, z=None, e0=None, e1=None):
-        pos = [x,y,z,e0]
-        if self.extruder1 is not None: pos.append(e1) # not very clean
+    def send_pos(self, x=None, y=None, z=None):
+        pos = [x,y,z]
         def set_pos(e):
             current_pos = self.toolhead.get_position()
             xyz = [current_pos[i] if p is None else p for i,p in enumerate(pos)]
@@ -266,7 +275,7 @@ class mainApp(App, threading.Thread):
     def send_home_Z(self):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28("Z")))
 
-    def send_start(self, file):
+    def send_start(self, file):#TODO needs Testing
         self.state = "printing"
         logging.info("KGUI started printing of "+str(file))
         def start(e):
@@ -292,21 +301,43 @@ class mainApp(App, threading.Thread):
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
 
+    def get_config(self, section, option, property_name, ty=None):
+        logging.info("wrote {} from section {} to {}".format(option, section, property_name))
+        if testing:
+            setattr(self, property_name, 77)
+            return
+        def read_config(e):
+            Section = self.klipper_config.getsection(section)
+            if ty == 'int':
+                val = Section.getint(option)
+            else:
+                val = Section.get(option)
+            setattr(self, property_name, val)
+        self.reactor.register_async_callback(read_config)
+    
+    def set_config(self, section, option, value):
+        logging.info("trying to set config section {} option {} to value {}".format(section, option, value))
+        self.reactor.register_async_callback(lambda e: self.klipper_config_manager.set(section, option, value))
+
+    def write_config(self, section, option, value):
+        logging.info( 'trying to write section: {} option: {}, value: {} to config'.format(section, option, value))
+        def write_conf(e):
+            self.klipper_config_manager.set(section, option, value)
+            self.klipper_config_manager.cmd_SAVE_CONFIG(None)
+        self.reactor.register_async_callback(write_conf)
+
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
-    def restart_klipper(self):
-        self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART)
-        #self.stop()
+    def restart_klipper(self):#TODO this freezes the gui and makes it not restart
+        logging.info("attempting a firmware restart")
+        self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
     def quit(self):
         Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
 
-    def setup_after_run(self, dt):
-        self.root_window.set_vkeyboard_class(UltraKeyboard)
-        self.notify = Notifications()
-
-def load_config(config): #Entry point
+#Entry point, order of execution: __init__()  run()  main.kv  setup_after_run()  handle_connect()  handle_ready()
+def load_config(config):
     kgui_object = mainApp(config)
     kgui_object.start()
     return kgui_object

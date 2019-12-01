@@ -109,7 +109,9 @@ class Wifi(EventDispatcher):
     def nmcli_error_handling(self, proc):
         stdout, stderr = proc.communicate()
         returncode = proc.returncode
-        notify = App.get_running_app().notify
+        app = App.get_running_app()
+        if not hasattr(app, 'notify'): return #to prevent an Exception when notify isnt available yet (happens on FIRMWARE_RESATRT)
+        notify = app.notify
         if stderr:
             Logger.info('NetworkManager: ' + stderr.strip())
         if "Secrets were required, but not provided" in stdout:

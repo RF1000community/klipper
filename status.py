@@ -68,7 +68,7 @@ class ConnectionIcon(Widget):
         difference = h*(1 - self.signal)
         partial_pos = [full_pos[0] + difference, full_pos[1] + difference]
 
-        self.wifi_color.rgba = p.medium_gray
+        self.wifi_color.rgba = p.translucent_white
         self.eth_color.rgba = self.transparent
 
         self.wifi.pos = partial_pos
