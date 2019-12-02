@@ -51,6 +51,7 @@ class XyField(Widget):
             self.update_with_px(touch.pos)
             self.hide_lines()
             return True
+        self.app.send_pos(x=self.mm_pos[0], y=self.mm_pos[1])
         return False
 
     def update_with_px(self, pos):
@@ -58,7 +59,6 @@ class XyField(Widget):
             pos = (int(pos[0]), int(pos[1]))
             pos = self.update_drawing(pos[0],pos[1])
             self.get_mm_pos(pos)
-            self.app.send_pos(x=self.mm_pos[0], y=self.mm_pos[1])
 
     def update_with_mm(self, mm):
         self.update_drawing(self.get_px_pos(mm))
@@ -167,7 +167,10 @@ class FanSlider(UltraSlider):
 class BedTempSlider(UltraSlider):
     def init_drawing(self, dt):
         App.get_running_app().get_temp()
-        self.buttons = [[0,0,"Off",None],[60,0,"PLA",None],[90,0,"PETG",None],[110,0,"ABS",None]]
+        self.buttons = [[0,0,"Off",None],
+                        [60,0,"PLA",None],
+                        [90,0,"PETG",None],
+                        [110,0,"ABS",None]]
         super(BedTempSlider, self).init_drawing(dt)
     def get_val_from_px(self, x):
         v = int(((x-self.px_min)/self.px_width)*(140-30)+30)
@@ -194,8 +197,12 @@ class ExtTempSlider(UltraSlider):
     def init_drawing(self, dt):
         App.get_running_app().get_temp()
         self.buttons = [
-            [0,14,"Off",None],[70,0,"PLA\ncold pull",None],[90,-68/2,"ABS/PETG\ncold pull",None],
-            [210,68/2,"PLA",None],[230,0,"PETG",None],[250,-68/2,"ABS",None]]
+            [0,14,"Off",None],
+            [70,0,"PLA\ncold pull",None],
+            [90,-68/2,"ABS/PETG\ncold pull",None],
+            [210,68/2,"PLA",None],
+            [230,0,"PETG",None],
+            [250,-68/2,"ABS",None]]
         super(ExtTempSlider, self).init_drawing(dt)
     def get_val_from_px(self, x):
         v = int(((x-self.px_min)/self.px_width)*(280-40)+40)
@@ -212,6 +219,35 @@ class ExtTempSlider(UltraSlider):
         else:
             s = "{}°C".format(self.val)
         return s
+    def get_px_from_val(self, val):
+        x = (float(val-40)/float(280-40))*self.px_width+self.px_min
+        if x < self.px_min: x = self.px_min
+        return x
+
+class ExtTempOffsetSlider(UltraOffsetSlider):
+    def init_drawing(self, dt):
+        App.get_running_app().get_temp()
+        self.buttons = [
+            [0,14,"Off",None],
+            [210,68/2,"PLA",None],
+            [230,0,"PETG",None],
+            [250,-68/2,"ABS",None]]
+        super(ExtTempSlider, self).init_drawing(dt)
+    def get_val_from_px(self, x):
+        v = int(((x-self.px_min)/self.px_width)*(280-40)+40)
+        for b in self.buttons:
+            if v >= b[0]-2 and v <= b[0]+2:
+                v = b[0]
+                self.px = self.get_px_from_val(v)
+                break
+        if v <= 42: v = 0
+        return v
+    def get_disp_from_val(self, val):
+        offset = str(self.offset)
+        if self.offset >= 0: offset = "+"+ offset
+        if self.val == 0:  return "Off {}".format(offset)
+        else:              return "{}°C {}".format(self.val, offset)
+
     def get_px_from_val(self, val):
         x = (float(val-40)/float(280-40))*self.px_width+self.px_min
         if x < self.px_min: x = self.px_min

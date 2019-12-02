@@ -7,6 +7,7 @@ from kivy.uix.vkeyboard import VKeyboard
 from kivy.clock import Clock
 from kivy.app import App
 from collections import deque
+import parameters as p
 
 
 class BaseButton(ButtonBehavior, Widget):
@@ -45,9 +46,9 @@ class UltraSlider(Widget):
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
-        self.px_max = self.right-54
-        self.px_min = self.x+54
-        self.px_width = self.px_max-self.px_min
+        self.px_max = self.right - p.padding
+        self.px_min = self.x + p.padding
+        self.px_width = self.px_max - self.px_min
         self.px = self.get_px_from_val(self.val)
         self.disp = self.get_disp_from_val(self.val)
         for b in self.buttons:
@@ -57,8 +58,8 @@ class UltraSlider(Widget):
         self.highlight_button()
 
     def on_touch_down(self, touch):
-        if touch.pos[0] > self.px_min-30 and touch.pos[0] < self.px_max+30 and \
-           touch.pos[1] > self.y + 95-15 and touch.pos[1] < self.y + 95 + 15:
+        if touch.pos[0] > self.px_min - 30 and touch.pos[0] < self.px_max + 30 and\
+           touch.pos[1] > self.y + 95 - 18 and touch.pos[1] < self.y + 95 + 18:
             self.pressed = True
             touch.grab(self)
             x = self.apply_bounds(touch.pos[0])
@@ -113,6 +114,9 @@ class UltraSlider(Widget):
         self.px = int(val)
         return self.px
 
+
+class UltraOffsetSlider(UltraSlider):
+    pass
 
 def get_id(inst, root_widget = None):#doesnt work :)
     if root_widget is None: root_widget = App.get_running_app().root

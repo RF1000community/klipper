@@ -63,7 +63,6 @@ How to access Instances or their methods:
     in py someinstance.bind(someinstances on_propertychange = self.method_to_bind) passes instance and every property
     by instantiating in python, storing instance
     in python self.ids["id"].method() instances of child widges can be accessed by id (ids is dict with instance as value)
-
 """
 
 

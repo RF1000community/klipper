@@ -67,11 +67,11 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     #config
     acceleration = NumericProperty
 
-    def __init__(self, config = None, **kwargs):# runs in klippy thread
+    def __init__(self, config = None, **kwargs): #runs in klippy thread
         logging.info("Kivy app initializing...")
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
-        self.acceleration = 0
         self.scheduled_updating = None
+        self.acceleration = 0
         if not testing:
             self.kgui_config = config
             self.printer = config.get_printer()
@@ -103,7 +103,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         logging.warning("&&&&&&&&&&&&&&&&&&&&& i only found {} as sdcard".format(self.sdcard))
         self.fan = self.printer.lookup_object('fan', None)
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
-        self.extruders = [self.printer.lookup_object('extruder', None)]#maybe the first one is called extruder0 when there are multiple?
+        self.extruders = [self.printer.lookup_object('extruder', None)]#maybe the first is called extruder0 when there are multiple?
         for i in range(1,10):
 		    ext = self.printer.lookup_object('extruder%d' % (i,), None)
 		    if ext: self.extruders.append(ext)
@@ -128,9 +128,10 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         logging.info("handled shutdown ")
         self.stop()
     
-	def shutdown(self): # reactor calls this on klippy restart
-		# kill the thread here
-		self.stop()
+    def shutdown(self): # reactor calls this on klippy restart
+        logging.info("shutdown() ++++++++++++++++++++++++++++++++++++++++++++")
+        self.stop()
+        exit()
 
     def handle_homed(self, homing, rails):
         for rail in rails:
@@ -148,12 +149,14 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         
     def run(self):
         logging.info("Kivy app.run")
-        Clock.schedule_once(self.setup_after_run, 0)
+        Clock.schedule_once(self.setup_after_run, 3)
         super(mainApp, self).run()
 
     def setup_after_run(self, dt):
-        self.root_window.set_vkeyboard_class(UltraKeyboard)
-        self.notify = Notifications()
+        try:
+            self.root_window.set_vkeyboard_class(UltraKeyboard)
+            self.notify = Notifications()
+        except: logging.warning("root_window wasnt available")
 
     def bind_updating(self, *args):
         self.root.ids.tabs.bind(current_tab=self.control_updating)
@@ -178,6 +181,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         if not self.sdcard:
             logging.warning("sdcard not found")
             return
+        s = 'ready'
         if 'Printer is ready' != self.printer.get_state_message():
 		    s = 'initializing'
         if self.gcode.is_processing_data:
@@ -252,12 +256,13 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         logging.info("KGUI set Temperature of {} to {}".format(heater_id, temp))
         self.reactor.register_async_callback((lambda e: self.heaters[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
 
-    def send_pos(self, x=None, y=None, z=None):
-        pos = [x,y,z]
+    def send_pos(self, x=None, y=None, z=None, e=None):
+        new_pos = [x,y,z,e]
         def set_pos(e):
-            current_pos = self.toolhead.get_position()
-            xyz = [current_pos[i] if p is None else p for i,p in enumerate(pos)]
-            self.toolhead.set_position(xyz) # resets all queued moves and sets pos #TODO make work
+            pos = self.toolhead.get_position()
+            for i, p in enumerate(new_pos):
+                if p is not None: pos[i] = p
+            self.toolhead.drip_move(pos, 15)
         self.reactor.register_async_callback(set_pos)
 
     def get_pos(self):
@@ -271,13 +276,14 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def send_down_Z(self):
         self.send_pos(z=self.pos_max[2])
     def send_stop_Z(self):
-        self.reactor.register_async_callback((lambda e: self.toolhead.move_queue.flush()))
+        self.reactor.register_async_callback((lambda e: self.toolhead.signal_drip_mode_end()))
     def send_home_Z(self):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28("Z")))
 
     def send_start(self, file):#TODO needs Testing
         self.state = "printing"
         logging.info("KGUI started printing of "+str(file))
+        self.print_title = str(file)
         def start(e):
             self.sdcard.cmd_M23(file)#maybe dont give full path
             self.sdcard.cmd_m24(None)
