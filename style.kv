@@ -431,49 +431,31 @@
         size: '137.5dp', '16sp'
         pos: root.x, root.y + dp(5)
         halign: 'center'
+        
 <FileChooserProgress>:
     pos_hint: {'x': 0, 'y': 0}
-    canvas:
-        Color:
-            rgba: 0, 0, 0, .8
-        Rectangle:
-            pos: self.pos
-            size: self.size
+    size_hint: 1, 1
+    Button:
+        canvas.before:
+            Clear
+        canvas:
+            Clear
+            Color:
+                rgba: 1,1,1,1
+            Rectangle:
+                size: root.index*root.width/float(root.total), 2
+                pos: 0, self.top-2
+        size_hint: 0.2, 0.03
+        pos_hint: {'x':0.01, 'top':1}
+        on_press: root.cancel()
     Label:
-        pos_hint: {'x': .2, 'y': .6}
-        size_hint: .6, .2
-        text: 'Opening %s' % root.path
+        pos_hint: {'x':0.01, 'top':0.994}
+        text: "Cancel Opening {}".format(root.path)
         text_size: self.size
-        halign: 'center'
-        valign: 'middle'
-    FloatLayout:
-        pos_hint: {'x': .2, 'y': .4}
-        size_hint: .6, .2
-        ProgressBar:
-            id: pb
-            pos_hint: {'x': 0, 'center_y': .5}
-            max: root.total
-            value: root.index
-        Label:
-            pos_hint: {'x': 0}
-            text: '%d / %d' % (root.index, root.total)
-            size_hint_y: None
-            height: self.texture_size[1]
-            y: pb.center_y - self.height - 8
-            font_size: '13sp'
-            color: (.8, .8, .8, .8)
-
-    AnchorLayout:
-        pos_hint: {'x': .2, 'y': .2}
-        size_hint: .6, .2
-
-        Button:
-            text: 'Cancel'
-            size_hint: None, None
-            size: 150, 44
-            on_release: root.cancel()
-
-
+        halign: 'left'
+        valign: 'top'
+        font_size: p.small_font
+        color: p.medium_gray
 
 # Switch widget
 <Switch>:

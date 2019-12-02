@@ -13,9 +13,9 @@ class FC(FileChooserIconView):
         self.sort_func = self.modification_date_sort
         self.filters = ['*.gco', '*.gcode']
         self.multiselect = False
-        if exists("/media"):
-            self.rootpath = "/media"
-            self.path = "/media"
+        if exists("/home/pi/sdcard"):
+            self.rootpath = "/home/pi/sdcard"
+            self.path = "/home/pi/sdcard"
         self.scheduled_updating = False
         Clock.schedule_once(self.bind_tab, 0)
 
@@ -26,7 +26,7 @@ class FC(FileChooserIconView):
     def control_updating(self, instance, tab):
         if tab == instance.ids.file_tab:
             self._update_files()
-            self.scheduled_updating = Clock.schedule_interval(self._update_files, 1)
+            self.scheduled_updating = Clock.schedule_interval(self._update_files, 5)
         elif self.scheduled_updating:
             Clock.unschedule(self.scheduled_updating)
 

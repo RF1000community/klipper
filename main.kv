@@ -194,8 +194,6 @@ FloatLayout:
                     source: p.kgui_dir+'/Logos/BuildPlate.png'
                     size: 80, 40
                     pos: p.h_padding + 45/2 - 80/2, self.center_y - p.btn_height/2
-        Divider:
-            y: p.padding + p.btn_height/2 + temp_bed.center_y
 
 <PrintingScreen@Screen>:
     name: "printingscreen"
@@ -264,7 +262,7 @@ FloatLayout:
             size: p.btn_height-10, p.btn_height
             y: btn_tr_A.y
             right: btn_tr_A.x
-        Btn:
+        Btn_Outline:
             id: btn_calibrate
             on_release: app.send_calibrate()
             enabled: app.printer_objects_available
@@ -386,34 +384,33 @@ FloatLayout:
     dir_right: False
     canvas.before:
         Color:
-            rgba: p.button
-        Triangle:
-            points: [self.x+self.width/2-w/2, self.center_y- v/2, self.x+self.width/2-w/2, self.center_y+ v/2, self.x+self.width/2+w/2, self.center_y] if self.dir_right else [self.x+self.width/2+w/2, self.center_y- v/2, self.x+self.width/2+w/2, self.center_y+ v/2, self.x+self.width/2-w/2, self.center_y]
+            rgba: p.button_outline
+        Line:
+            points: (self.x+self.width/2-w/2, self.center_y- v/2, self.x+self.width/2-w/2, self.center_y+ v/2, self.x+self.width/2+w/2, self.center_y) if self.dir_right else (self.x+self.width/2+w/2, self.center_y- v/2, self.x+self.width/2+w/2, self.center_y+ v/2, self.x+self.width/2-w/2, self.center_y)
+            close: True
+            width: 1
 
 <Btn_Triple@Widget>:
     title1: 'Unload'
     title2: ''
     title3: 'Load'
-    w1: 77
-    w2: 72
-    w3: 77
+    w1: 78
+    w2: 78
+    w3: 78
     size_hint: None, None
     size: self.w1+self.w2+self.w3, p.btn_height
     canvas:
         Color:
-            rgba: p.button
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: (p.radius,)
-        Color:
-            rgba: p.medium_light_gray
+            rgba: p.button_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
         Rectangle:
             pos: self.x+self.w1, self.y+6
-            size: 1,self.height-12
+            size: 1, self.height-12
         Rectangle:
             pos: self.x+self.w1+1+self.w2, self.y+6
-            size: 1,self.height-12
+            size: 1, self.height-12
     BaseButton:
         size: root.w1, root.height
         pos: root.pos
@@ -460,8 +457,6 @@ FloatLayout:
             rgba: p.button_outline
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
-        Color:
-            rgba: p.button_outline
         Rectangle:
             pos: self.x+6, self.y+self.h1
             size: self.width-12,1
@@ -884,7 +879,7 @@ FloatLayout:
                 size: self.size
 
 <PrintPopup>:
-    title: 'Print now'
+    title: 'Print'
     title_size: p.large_font
     size_hint: 0.8, 0.3
     FloatLayout:
@@ -892,16 +887,19 @@ FloatLayout:
             text: root.prompt
             markup: True
             halign: 'center'
-            font_size: p.normal_font
-            text_size: root.width * 0.9, None
-            size: self.texture_size
-            size_hint: None, None
-            pos_hint: {'x': 0.05, 'top': 0.85}
+            valign: 'middle'
+            max_lines: 2
+            size_hint: 0.9, 0.5
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.2}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
         Btn_P_Cancel:
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
         Btn_P_Confirm:
+            enabled: True
             width: root.width/2
             pos: root.center_x, root.y
             on_release: root.confirm()
