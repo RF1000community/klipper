@@ -6,6 +6,7 @@ SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
 PYTHONDIR="${SRCDIR}/klippy-environemt"
 
 
+
 install_packages()
 {
     # Packages for python cffi
@@ -36,7 +37,7 @@ install_packages()
     #Wifi
     PKGLIST="${PKGLIST} network-manager"
     #Usb Stick Automounting
-    PKGLIST="${PKGLIST} pmount"
+    PKGLIST="${PKGLIST} usbmount"
 
     # Update system package info
     report_status "Running apt-get update..."
@@ -53,6 +54,8 @@ install_packages()
     # -i for in place (just modify file), s for substitute (this line)
 }
 
+
+
 # Step 2: Create python virtual environment
 create_virtualenv()
 {
@@ -63,6 +66,7 @@ create_virtualenv()
     # Install/update dependencies                             v  custom KGUI list of pip packages
     ${PYTHONDIR}/bin/pip install -r ${SRCDIR}/scripts/klippy-kgui-requirements.txt
 }
+
 
 
 install_klipper_service()
@@ -93,28 +97,14 @@ EOF
 
 install_usb_automounting()
 {
-    report_status "Install USB Automount Udev Rule..."
-    sudo /bin/sh -c "cat > /etc/udev/rules.d/usbstick.rules" <<EOF
-ACTION=="add", KERNEL=="sd[a-z][0-9]", TAG+="systemd", ENV{SYSTEMD_WANTS}="usbstick-handler@%k"
-EOF
-
-
-    report_status "Install USB Automount systemd service"
-    sudo /bin/sh -c "cat > /lib/systemd/system/usbstick-handler@.service" <<EOF
-[Unit]
-Description=Mount USB sticks
-BindsTo=dev-%i.device
-After=dev-%i.device
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/home/pi/klipperui/scripts/usb-automount /dev/%I
-ExecStop=/usr/bin/pumount /dev/%I
-EOF
-    sudo chmod +x /lib/systemd/system/usbstick-handler@.service
-    sudo systemctl daemon-reload
-    sudo systemctl enable usbstick-handler@.service
+    report_status "Install usbmount.conf..."
+    mkdir -p ~/sdcard/USB-Device
+    sudo cp ${SRCDIR}/klippy/extras/kgui/usbmount.conf /etc/usbmount/usbmount.comf
+    #https://raspberrypi.stackexchange.com/questions/100312/raspberry-4-usbmount-not-working
+    #https://www.oguska.com/blog.php?p=Using_usbmount_with_ntfs_and_exfat_filesystems
+    
+    #maybe needed TODO test this
+    #sudo sed -i 's/PrivateMounts=yes/PrivateMounts=no/' /lib/systemd/system/systemd-udevd.service
 }
 
 
@@ -131,12 +121,13 @@ install_lcd_driver()
     sudo ./LCD7C-show 90
 }
 
+
+
 # Helper functions
 report_status()
 {
     echo -e "\n\n###### $1"
 }
-
 verify_ready()
 {
     if [ "$EUID" -eq 0 ]; then
@@ -144,9 +135,10 @@ verify_ready()
         exit -1
     fi
 }
-
 # Force script to exit if an error occurs
 set -e
+
+
 
 # Run installation steps defined above
 verify_ready
