@@ -3,7 +3,7 @@
 
 # Find SRCDIR from the pathname of this script
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
-PYTHONDIR="${SRCDIR}/klippy-environemt"
+PYTHONDIR="${SRCDIR}/klippy-environment"
 
 
 

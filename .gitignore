@@ -4,6 +4,7 @@ out
 .config
 .config.old
 klippy/.version
+/klippy-environment/*
 
 .dropbox
 desktop.ini

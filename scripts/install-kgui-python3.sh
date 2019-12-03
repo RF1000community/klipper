@@ -3,7 +3,7 @@
 
 # Find SRCDIR from the pathname of this script
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
-PYTHONDIR="${SRCDIR}/klippy-environemt"
+PYTHONDIR="${SRCDIR}/klippy-environment"
 
 
 
@@ -21,8 +21,9 @@ install_packages()
     PKGLIST="${PKGLIST} stm32flash dfu-util libnewlib-arm-none-eabi"
     PKGLIST="${PKGLIST} gcc-arm-none-eabi binutils-arm-none-eabi"
 
-    # KGUI
-    PKGLIST="${PKGLIST} libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
+    # KGUI                   v venv, the new more better virtualenv
+    PKGLIST="${PKGLIST} python3-venv \
+    libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
     libsdl2-ttf-dev pkg-config libgl1-mesa-dev libgles2-mesa-dev \
     python3-setuptools libgstreamer1.0-dev \
     gstreamer1.0-plugins-bad \
@@ -61,7 +62,7 @@ create_virtualenv()
 {
     report_status "Updating python virtual environment..."
     # Create virtualenv if it doesn't already exist
-    [ ! -d ${PYTHONDIR} ] && virtualenv ${PYTHONDIR}
+    [ ! -d ${PYTHONDIR} ] && python3 -m venv ${PYTHONDIR}
     report_status "install pip packages..."
     # Install/update dependencies                             v  custom KGUI list of pip packages
     ${PYTHONDIR}/bin/pip3 install -r ${SRCDIR}/scripts/klippy-kgui-requirements.txt
