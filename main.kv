@@ -140,60 +140,81 @@ FloatLayout:
             id: temp_T1
             heater_id: "T1"
             on_release: Factory.ExtTempPopup(instance=self).open()
-            large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "---"
-            small_value: "{:4.1f}".format(app.temp[self.heater_id][1]) if app.temp[self.heater_id][1] != 0 else ""
-            x: p.padding
+            large_value: "{:4.1f}".format(app.temp[self.heater_id][1])
+            small_value: "{:4.1f}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
+            red: app.temp[self.heater_id][1] > 50
+            width: 100
+            right: temp_bed.right
             center_y: p.padding+top_divider.top+p.btn_height/2
-            canvas:
-                Color:
-                    rgba: p.red if app.temp[self.heater_id][1] > 50 else(1,1,1,1)
-                Rectangle:
-                    source: p.kgui_dir+'/Logos/Nozzle.png'
-                    size: 45, 66
-                    pos: p.h_padding, self.center_y - 66/2
-            Label:
-                text: "T1"
-                bold: True
-                color: p.background
-                center_x: p.h_padding + 45/2
-                center_y: temp_T1.center_y       
-                font_size: p.normal_font
+        Btn_Extruder:
+            heater_id: 'T1'
+            x: p.h_padding
+            center_y: temp_T1.center_y
         Btn_Temp:
             id: temp_T0
             heater_id: "T0"
             on_release: Factory.ExtTempOffsetPopup(instance=self).open()
-            large_value: "{}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "---"
-            small_value: "{:4.1f}".format(app.temp[self.heater_id][1]) if app.temp[self.heater_id][1] != 0 else ""
-            x: p.padding
+            large_value: "{:4.1f}".format(app.temp[self.heater_id][1])
+            small_value: "{:4.1f}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
+            red: app.temp[self.heater_id][1] > 50
+            width: 100
+            right: temp_bed.right
             center_y: p.padding+p.btn_height+temp_T1.center_y
-            canvas:
-                Color:
-                    rgba: p.red if app.temp[self.heater_id][1] > 50 else(1,1,1,1)
-                Rectangle:
-                    source: p.kgui_dir+'/Logos/Nozzle.png'
-                    size: 45, 66
-                    pos: p.h_padding, self.center_y - 66/2
-            Label:
-                text: "T0"
-                bold: True
-                color: p.background
-                center_x: p.h_padding + 45/2
-                center_y: temp_T0.center_y       
-                font_size: p.normal_font
+        Btn_Extruder:
+            heater_id: 'T0'
+            x: p.h_padding
+            center_y: temp_T0.center_y
         Btn_Temp:
             on_release: Factory.BedTempPopup(instance=self).open()
             id: temp_bed
-            large_value: "{}°C".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "---"
-            small_value: "{:4.1f}".format(app.temp['B'][1])  if app.temp['B'][1] != 0 else ""
+            large_value: "{:4.1f}".format(app.temp['B'][1])
+            small_value: "{:4.1f}°C".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "Off"
+            red: app.temp[self.heater_id][1] > 50
             x: p.padding
             center_y: p.padding+p.btn_height+temp_T0.center_y
-            canvas:
+            canvas.before:
                 Color:
-                    rgba: p.red if app.temp['B'][1] > 50 else(1,1,1,1)
+                    rgba: p.red if app.temp['B'][1] > 50 else p.medium_gray
+                #:set bwu 155
+                #:set bwo 80
+                #:set bh 40
+                #:set by 15
                 Rectangle:
-                    source: p.kgui_dir+'/Logos/BuildPlate.png'
-                    size: 80, 40
-                    pos: p.h_padding + 45/2 - 80/2, self.center_y - p.btn_height/2
+                    size: bwo, bh
+                    pos: self.center_x - bwo/2, self.y + by
+                Triangle:
+                    points: (self.center_x - bwu/2, self.y + by, self.center_x - bwo/2, self.y + by, self.center_x - bwo/2, self.y + bh + by)
+                Triangle:
+                    points: (self.center_x + bwu/2, self.y + by, self.center_x + bwo/2, self.y + by, self.center_x + bwo/2, self.y + bh + by)
+                Line:
+                    width: 5
+                    points: (self.center_x + bwu/2, self.y + by, self.center_x + bwo/2, self.y + bh + by,        self.center_x - bwo/2, self.y + bh + by,  self.center_x - bwu/2, self.y + by)
+                    close: True
+
+<Btn_Extruder@BaseButton>:
+    size: 43, 70
+    heater_id: 'T0'
+    selected: True
+    canvas:
+        Color:
+            rgba: p.medium_gray if self.selected else p.medium_dark_gray
+        #:set esh 18 #ExtruderSmallHeight
+        Rectangle:
+            size: self.width, self.height-esh
+            pos: self.center_x - self.width/2, self.center_y - self.height/2 + esh
+        Triangle:
+            points: (self.center_x - self.width/2, self.center_y - self.height/2 + esh,    self.center_x, self.y,    self.center_x + self.width/2, self.center_y - self.height/2 + esh)
+        Line:
+            width: 5
+            points: (self.center_x - self.width/2, self.center_y - self.height/2 + esh,    self.center_x, self.y,    self.center_x + self.width/2, self.center_y - self.height/2 + esh,    self.center_x +self.width/2, self.center_y + self.height/2,    self.center_x - self.width/2, self.center_y + self.height/2) 
+            close: True
+    Label:
+        text: root.heater_id
+        bold: True
+        color: p.background
+        center_x: root.center_x
+        center_y: root.center_y       
+        font_size: p.large_font
 
 <PrintingScreen@Screen>:
     name: "printingscreen"
@@ -290,9 +311,9 @@ FloatLayout:
             size: self.texture_size
             size_hint: None, None
             x: xy_field.x
-            y: xy_field.y - self.height
+            top: xy_field.top
             color: p.button_outline
-            font_size: p.small_font
+            font_size: p.normal_font
             text: xy_field.display
 
 # BUTTONS  ########################################################################
@@ -545,7 +566,7 @@ FloatLayout:
         size: root.width, p.btn_height+13#to compensate for the font being 6px below top when set to 'top'
         text_size: self.size
         center_y: root.center_y
-        right: root.right-16
+        right: root.right - 20
         font_size: p.large_font
         valign: 'top'
         halign: 'right'
@@ -556,7 +577,7 @@ FloatLayout:
         size: root.width, p.btn_height+9
         text_size: self.size
         center_y: root.center_y
-        right: root.right-16
+        right: root.right - 20
         font_size: p.normal_font
         valign: 'bottom'
         halign: 'right'

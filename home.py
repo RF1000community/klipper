@@ -50,8 +50,8 @@ class XyField(Widget):
             touch.ungrab(self)
             self.update_with_px(touch.pos)
             self.hide_lines()
+            self.app.send_pos(x=self.mm_pos[0], y=self.mm_pos[1])
             return True
-        self.app.send_pos(x=self.mm_pos[0], y=self.mm_pos[1])
         return False
 
     def update_with_px(self, pos):
@@ -97,7 +97,7 @@ class XyField(Widget):
                    (self.limits[1] -self.origin[1]) * self.printer_dimensions[1] / float(mm[1])]
 
     def on_mm_pos(self, instance, value):
-        self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)
+        self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)#TODO add showing z value
 
 class PressureAdvanceSlider(UltraSlider):
     def init_drawing(self, dt):
