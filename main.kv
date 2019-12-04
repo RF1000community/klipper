@@ -140,10 +140,10 @@ FloatLayout:
             id: temp_T1
             heater_id: "T1"
             on_release: Factory.ExtTempPopup(instance=self).open()
-            large_value: "{:4.1f}".format(app.temp[self.heater_id][1])
-            small_value: "{:4.1f}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
+            large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
+            small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             red: app.temp[self.heater_id][1] > 50
-            width: 100
+            width: 130
             right: temp_bed.right
             center_y: p.padding+top_divider.top+p.btn_height/2
         Btn_Extruder:
@@ -154,10 +154,10 @@ FloatLayout:
             id: temp_T0
             heater_id: "T0"
             on_release: Factory.ExtTempOffsetPopup(instance=self).open()
-            large_value: "{:4.1f}".format(app.temp[self.heater_id][1])
-            small_value: "{:4.1f}°C".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
+            large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
+            small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             red: app.temp[self.heater_id][1] > 50
-            width: 100
+            width: 130
             right: temp_bed.right
             center_y: p.padding+p.btn_height+temp_T1.center_y
         Btn_Extruder:
@@ -167,17 +167,17 @@ FloatLayout:
         Btn_Temp:
             on_release: Factory.BedTempPopup(instance=self).open()
             id: temp_bed
-            large_value: "{:4.1f}".format(app.temp['B'][1])
-            small_value: "{:4.1f}°C".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "Off"
+            large_value: "{:3.0f}°C".format(app.temp['B'][1])
+            small_value: "{:3.0f}".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "Off"
             red: app.temp[self.heater_id][1] > 50
             x: p.padding
             center_y: p.padding+p.btn_height+temp_T0.center_y
             canvas.before:
                 Color:
                     rgba: p.red if app.temp['B'][1] > 50 else p.medium_gray
-                #:set bwu 155
-                #:set bwo 80
-                #:set bh 40
+                #:set bwu 180
+                #:set bwo 110
+                #:set bh 38
                 #:set by 15
                 Rectangle:
                     size: bwo, bh
@@ -558,7 +558,7 @@ FloatLayout:
     red: False
     large_value: "-"
     small_value: "-"
-    size: 190, 100
+    size: 205, 100
     Label:
         color: p.red if root.red else (1,1,1,1)
         text: root.large_value
@@ -566,7 +566,7 @@ FloatLayout:
         size: root.width, p.btn_height+13#to compensate for the font being 6px below top when set to 'top'
         text_size: self.size
         center_y: root.center_y
-        right: root.right - 20
+        right: root.right - 25
         font_size: p.large_font
         valign: 'top'
         halign: 'right'
@@ -577,7 +577,7 @@ FloatLayout:
         size: root.width, p.btn_height+9
         text_size: self.size
         center_y: root.center_y
-        right: root.right - 20
+        right: root.right - 25
         font_size: p.normal_font
         valign: 'bottom'
         halign: 'right'
