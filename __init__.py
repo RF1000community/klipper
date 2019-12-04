@@ -81,7 +81,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
                               self.klipper_config.getsection('stepper_y'),
                               self.klipper_config.getsection('stepper_z'))
             self.pos_max = [stepper_config[i].getint('position_max') for i in (0,1,2)]
-            try: self.pos_min = [stepper_config[i].getint('position_min') for i in (0,1)]
+            try: self.pos_min = [stepper_config[i].getint('position_min') for i in (0,1)]#maybe use position_min, position_max = rail.get_range()
             except: self.pos_min = (0,0)
             self.klipper_config.getsection("virtual_sdcard").get("path", None)#TODO to something with this
             self.reactor = self.printer.get_reactor()
@@ -97,15 +97,13 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         super(mainApp, self).__init__(**kwargs)
 
     def handle_connect(self): # runs in Klipper Thread
-        self.gcode = self.printer.lookup_object('gcode')
-        self.toolhead = self.printer.lookup_object('toolhead')
-        self.sdcard = self.printer.lookup_object('virtual_sdcard', None)#TODO seems to return None
-        logging.warning("&&&&&&&&&&&&&&&&&&&&& i only found {} as sdcard".format(self.sdcard))
         self.fan = self.printer.lookup_object('fan', None)
+        self.gcode = self.printer.lookup_object('gcode')
+        self.sdcard = self.printer.lookup_object('virtual_sdcard', None)
+        self.toolhead = self.printer.lookup_object('toolhead')
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
-        self.extruders = [self.printer.lookup_object('extruder', None)]#maybe the first is called extruder0 when there are multiple?
-        for i in range(1,10):
-		    ext = self.printer.lookup_object('extruder%d' % (i,), None)
+        for i in range(0,10):
+		    ext = self.printer.lookup_object('extruder{}'.format('' if i==0 else i), None)
 		    if ext: self.extruders.append(ext)
         self.heater_manager = self.printer.lookup_object('heater', None)
         self.heaters = {}
@@ -128,7 +126,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         logging.info("handled shutdown ")
         self.stop()
     
-    def shutdown(self): # reactor calls this on klippy restart
+    def shutdown(self): # reactor calls this on klippy restart maybe
         logging.info("shutdown() ++++++++++++++++++++++++++++++++++++++++++++")
         self.stop()
         exit()

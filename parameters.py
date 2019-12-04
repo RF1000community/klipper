@@ -63,6 +63,13 @@ How to access Instances or their methods:
     in py someinstance.bind(someinstances on_propertychange = self.method_to_bind) passes instance and every property
     by instantiating in python, storing instance
     in python self.ids["id"].method() instances of child widges can be accessed by id (ids is dict with instance as value)
+THREAD SAFETY: 
+    Clock methods (e.g. Clock.schedule_once()) are thread safe, can be used do execute methods in Kivy thread from somewhere else
+    reactor.register_async_callback should also be thread safe, since it uses a Queue
+    Simple Assignments are thread safe because of GIL
+
+
+
 """
 
 
