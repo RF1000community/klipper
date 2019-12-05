@@ -37,12 +37,15 @@ class BaseButton(Widget):
             return False
         if self in touch.ud:
             return False
-        if not self.enabled:
-            return True
+        #a button with enabled=False can be placed above other buttons and they keep working
+        if not self.enabled: 
+            return False
         self.pressed = True
+        self.dispatch('on_press')
         touch.grab(self)
         touch.ud[self] = True
-        self.dispatch('on_press')
+        #set pressed=True for at least 200ms to allow gpu to render highlighting of the button. choose lower for faster gpu
+        self.pressed_at_least_till = time() + 200
         return True
 
     def on_touch_move(self, touch):
@@ -53,17 +56,20 @@ class BaseButton(Widget):
         return self in touch.ud
 
     def on_touch_up(self, touch):
-        self.pressed = False
         if touch.grab_current is not self:
             return super(BaseButton, self).on_touch_up(touch)
         assert(self in touch.ud)
         touch.ungrab(self)
-        self.last_touch = touch
-
         if not self.collide_point(*touch.pos) or not self.enabled:
             return
         self.dispatch('on_release')
+        t = time()
+        if t < self.pressed_at_least_till:
+            Clock.schedule_once(self.do_release, self.pressed_at_least_till - t)
+        else: self.pressed = False
         return True
+    def do_release(self):
+        self.pressed = False
     def on_press(self):
         pass
     def on_release(self):

@@ -56,7 +56,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         "error disconnected",
         "initializing",
         ])
-    homed_z = BooleanProperty(False) #updated with handle_homed event handler
+    homed = DictProperty({}) #updated with handle_homed event handler
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
     temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ....} updated with scheduled update_home -> get_temp
     print_title = StringProperty() #updated with on_state watching state chages to 'printing'
@@ -69,6 +69,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def __init__(self, config = None, **kwargs): #runs in klippy thread
         logging.info("Kivy app initializing...")
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
+        self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
         self.acceleration = 0
         if not testing:
@@ -79,12 +80,12 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
             self.klipper_config = self.klipper_config_manager.read_main_config()
 
             #read config
+            p.invert_z_controls = self.kgui_config.get('invert_z_controls', False)
             stepper_config = (self.klipper_config.getsection('stepper_x'),
                               self.klipper_config.getsection('stepper_y'),
                               self.klipper_config.getsection('stepper_z'))
-            self.pos_max = [stepper_config[i].getint('position_max') for i in (0,1,2)]
-            try: self.pos_min = [stepper_config[i].getint('position_min') for i in (0,1)]#maybe use position_min, position_max = rail.get_range()
-            except: self.pos_min = (0,0)
+            self.pos_max = [stepper_config[i].getint('position_max', 200) for i in (0,1,2)]
+            self.pos_min = [stepper_config[i].getint('position_min', 0) for i in (0,1)]#maybe use position_min, position_max = rail.get_range()
             #check whether the right sdcard path is configured
             configured_sdpath = expanduser(self.klipper_config.getsection("virtual_sdcard").get("path", None))
             if abspath(configured_sdpath) != abspath(p.sdcard_path):
@@ -140,8 +141,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     def handle_homed(self, homing, rails):
         for rail in rails:
-            if rail.steppers[0].get_name(short=True) == 'z':
-                self.homed_z = True
+            self.homed[rail.steppers[0].get_name(short=True)] = True
 
     def handle_calc_print_time(self, curtime, est_print_time, print_time):
         hours = int(est_print_time//360)
@@ -281,13 +281,13 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
             self.toolhead.drip_move(pos, 15)
         self.reactor.register_async_callback(set_pos)
 
-    def send_up_Z(self):
+    def send_z_up(self):
         self.send_pos(z=0)
-    def send_down_Z(self):
+    def send_z_down(self):
         self.send_pos(z=self.pos_max[2])
-    def send_stop_Z(self):
+    def send_z_stop(self):
         self.reactor.register_async_callback((lambda e: self.toolhead.signal_drip_mode_end()))
-    def send_home_Z(self):
+    def send_z_home(self):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28("Z")))
 
     def send_calibrate(self):

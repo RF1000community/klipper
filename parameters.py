@@ -53,6 +53,9 @@ notify_warning = (0.75, 0.25, 0, 0.75)
 notify_error = (0.7, 0, 0, 1)
 notify_success = (0, 0.7, 0, 0.75)
 
+#config values
+invert_z_controls = False
+
 """
 Kivy Guide
 LABELS: try setting hints to None if it does shit e.g. setting size doesnt work

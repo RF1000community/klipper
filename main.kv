@@ -522,10 +522,9 @@ FloatLayout:
     #:set t 12
     #:set u 24 #Triangle has this size x2
     BaseButton:
-        id: btn_z_down
-        on_press: app.send_down_Z()
-        on_release: app.send_stop_Z()
-        enabled: app.homed_z
+        on_press: app.send_z_up() if p.inverted_z_controls else app.send_z_down()
+        on_release: app.send_z_stop()
+        enabled: app.homed['z']
         size: root.width, root.h1
         pos: root.x, root.y
         canvas.before:
@@ -540,7 +539,7 @@ FloatLayout:
             Triangle:
                 points: self.center_x-u,self.center_y+t,  self.center_x+u,self.center_y+t,  self.center_x,self.center_y-t
     BaseButton:
-        on_release: app.send_home_Z()
+        on_release: app.send_z_home()
         size: root.width, root.h2
         pos: root.x, root.y+root.h1
         enabled: app.printer_objects_available
@@ -557,10 +556,9 @@ FloatLayout:
                 size: self.size
                 pos: self.pos
     BaseButton:
-        id: btn_z_up
-        on_press: app.send_up_Z()
-        on_release: app.send_stop_Z()
-        enabled: app.homed_z
+        on_press: app.send_z_down() if p.inverted_z_controls else app.send_z_up()
+        on_release: app.send_z_stop()
+        enabled: app.homed['z']
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
         canvas.before:
