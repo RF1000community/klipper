@@ -33,7 +33,7 @@ import parameters as p
 #add parent directory to sys.path so main.kv (parser.py) can import from it
 site.addsitedir(p.kgui_dir)
 
-#this needs an absolute path otherwise config will only be loaded when working directory is the parent directory
+#this needs an absolute path otherwise config will only be loaded when working directory is its parent directory
 if testing: Config.read(join(p.kgui_dir, "config-test.ini"))
 else:       Config.read(join(p.kgui_dir, "config.ini"))
 
@@ -56,13 +56,18 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         "error disconnected",
         "initializing",
         ])
-    homed = DictProperty({}) #updated with handle_homed event handler
+    homed = DictProperty({}) #updated by handle_homed event handler
+    temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ....} updated by scheduled update_home -> get_temp
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
-    temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ....} updated with scheduled update_home -> get_temp
-    print_title = StringProperty() #updated with on_state watching state chages to 'printing'
-    print_time = StringProperty() #updated with handle_print_time_calc
-    progress = NumericProperty() #updated with scheduled update_home
-    speed = NumericProperty() #updated with hopes and dreams
+    print_title = StringProperty() #updated by on_state watching state chages to 'printing'
+    print_time = StringProperty() #updated by handle_print_time_calc
+    progress = NumericProperty() #updated by scheduled update_home
+    #tuning
+    speed = NumericProperty(100)
+    flow = NumericProperty(100)
+    fan_speed = NumericProperty(0)
+    pressure_advance = NumericProperty(0)
+    z_adjust = NumericProperty(0)
     #config
     acceleration = NumericProperty()
 
@@ -81,15 +86,16 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
             #read config
             p.invert_z_controls = self.kgui_config.get('invert_z_controls', False)
-            stepper_config = (self.klipper_config.getsection('stepper_x'),
-                              self.klipper_config.getsection('stepper_y'),
-                              self.klipper_config.getsection('stepper_z'))
-            self.pos_max = [stepper_config[i].getint('position_max', 200) for i in (0,1,2)]
-            self.pos_min = [stepper_config[i].getint('position_min', 0) for i in (0,1)]#maybe use position_min, position_max = rail.get_range()
+            stepper_config = {'x': self.klipper_config.getsection('stepper_x'),
+                              'y': self.klipper_config.getsection('stepper_y'),
+                              'z': self.klipper_config.getsection('stepper_z')}
+            self.pos_max = {i:stepper_config[i].getint('position_max', 200) for i in ('x','y','z')}
+            self.pos_min = {i:stepper_config[i].getint('position_min', 0) for i in ('x','y')}#maybe use position_min, position_max = rail.get_range()
+        
             #check whether the right sdcard path is configured
             configured_sdpath = expanduser(self.klipper_config.getsection("virtual_sdcard").get("path", None))
             if abspath(configured_sdpath) != abspath(p.sdcard_path):
-                logging.warning("The configured virtual_sdcard path {} isnt {} printing may be impossible".format(configured_sdpath, p.sdcard_path))
+                logging.warning("virtual_sdcard path misconfigured: is {} and not {}".format(configured_sdpath, p.sdcard_path))
 
             #register event handlers
             self.printer.register_event_handler("klippy:connect", self.handle_connect) #printer_objects are available
@@ -99,8 +105,8 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
             self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
             self.printer.register_event_handler("toolhead:sync_print_time", self.handle_calc_print_time)
         else:
-            self.pos_max = (200,200)
-            self.pos_min = (0,0)
+            self.pos_max = {'x':200, 'y':0}
+            self.pos_min = {'x':0, 'y':0}
         super(mainApp, self).__init__(**kwargs)
 
     def handle_connect(self): # runs in Klipper Thread
@@ -203,6 +209,13 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.get_pos()
 
     def update_printing(self, *args):
+        #tuning
+        self.get_pressure_advance()
+        self.get_z_adjust()
+        self.get_speed()
+        self.get_flow()
+        self.get_fan()
+
         self.get_temp()
         def get_progress(e):
             self.progress = self.sdcard.get_status(e)['progress']
@@ -218,15 +231,16 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
 ##################################################################
 ### TUNING
-    def get_pressure_advance(self):#TODO everything
+    def get_pressure_advance(self):
         return 0.1
     def send_pressure_advance(self, val):
         pass
 
     def get_z_adjust(self):
-        return 0.1
+        pass #lol
     def send_z_adjust(self, val):
-        pass
+        def set_z_adj:
+            self.gcode.cmd_SET_GCODE_OFFSET()
 
     def get_speed(self):
         self.speed = self.gcode.speed_factor*60*100 #speed factor also converts from mm/sec to mm/min
@@ -240,14 +254,21 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.reactor.register_async_callback(set_speed)
 
     def get_flow(self):
-        return 107
+        self.flow = self.gcode.extrude_factor*100
     def send_flow(self, val):
-        print("send {} as flow".format(val))
+        self.flow = val
+        def set_flow(e):
+            new_extrude_factor = val/100.
+            last_e_pos = self.gcode.last_position[3]
+            e_value = (last_e_pos - self.gcode.base_position[3]) / self.gcode.extrude_factor
+            self.gcode.base_position[3] = last_e_pos - e_value * new_extrude_factor
+            self.gcode.extrude_factor = new_extrude_factor
+        self.reactor.register_async_callback(set_flow)
 
     def get_fan(self):
-        return 77
+        self.fan_speed = self.fan.last_fan_value
     def send_fan(self, speed):
-        logging.info("KGUI send {} as fan speed".format(speed))
+        self.fan_speed = speed
         self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed))
 ### TUNING
 #####################################################################
@@ -265,6 +286,10 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def send_temp(self, temp, heater_id):
         logging.info("KGUI set Temperature of {} to {}".format(heater_id, temp))
         self.reactor.register_async_callback((lambda e: self.heaters[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
+    def get_home(self):
+        if self.stepper_enable.lookup_enable(name).is_motor_enabled():
+    def send_home(self, axis):
+        self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
 
     def get_pos(self):
         def read_pos(e):
@@ -282,13 +307,11 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.reactor.register_async_callback(set_pos)
 
     def send_z_up(self):
-        self.send_pos(z=0)
+        self.send_pos(z=self.pos_min['z'])
     def send_z_down(self):
-        self.send_pos(z=self.pos_max[2])
+        self.send_pos(z=self.pos_max['z'])
     def send_z_stop(self):
         self.reactor.register_async_callback((lambda e: self.toolhead.signal_drip_mode_end()))
-    def send_z_home(self):
-        self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28("Z")))
 
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))

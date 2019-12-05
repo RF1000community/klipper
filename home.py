@@ -23,7 +23,7 @@ class XyField(Widget):
         super(XyField, self).__init__(**kwargs)
         self.point_radius = 10
         self.app = App.get_running_app()
-        self.printer_dimensions = (self.app.pos_max[0]-self.app.pos_min[0], self.app.pos_max[1]-self.app.pos_min[1])
+        self.printer_dimensions = (self.app.pos_max['x']-self.app.pos_min['x'], self.app.pos_max['y']-self.app.pos_min['y'])
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
@@ -33,7 +33,7 @@ class XyField(Widget):
         self.point_pos = self.pos
 
     def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
+        if self.collide_point(*touch.pos) and self.enabled:
             touch.grab(self)
             self.update_with_px(touch.pos)
             return True

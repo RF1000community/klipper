@@ -6,17 +6,9 @@ from kivy.properties import NumericProperty, BooleanProperty, StringProperty
 from kivy.uix.vkeyboard import VKeyboard
 from kivy.clock import Clock
 from kivy.app import App
+from time import time
 from collections import deque
 import parameters as p
-
-
-
-
-from kivy.clock import Clock
-from kivy.config import Config
-from kivy.properties import OptionProperty, ObjectProperty, \
-    BooleanProperty, NumericProperty
-from time import time
 
 class BaseButton(Widget):
 
@@ -44,8 +36,8 @@ class BaseButton(Widget):
         self.dispatch('on_press')
         touch.grab(self)
         touch.ud[self] = True
-        #set pressed=True for at least 200ms to allow gpu to render highlighting of the button. choose lower for faster gpu
-        self.pressed_at_least_till = time() + 200
+        #set pressed=True for at least 180ms to allow gpu to render highlighting of the button. choose lower for faster gpu
+        self.pressed_at_least_till = time() + 0.18
         return True
 
     def on_touch_move(self, touch):
@@ -68,7 +60,7 @@ class BaseButton(Widget):
             Clock.schedule_once(self.do_release, self.pressed_at_least_till - t)
         else: self.pressed = False
         return True
-    def do_release(self):
+    def do_release(self, arg):
         self.pressed = False
     def on_press(self):
         pass

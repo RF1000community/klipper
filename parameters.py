@@ -77,9 +77,6 @@ THREAD SAFETY:
     Clock methods (e.g. Clock.schedule_once()) are thread safe, can be used do execute methods in Kivy thread from somewhere else
     reactor.register_async_callback should also be thread safe, since it uses a Queue
     Simple Assignments are thread safe because of GIL
-
-
-
 """
 
 

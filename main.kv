@@ -328,10 +328,24 @@ FloatLayout:
         XyField:
             id: xy_field
             size_hint: None, None
-            size: 280, 3*p.btn_height + 2*p.padding
+            height: 3*p.btn_height + 2*p.padding
+            width: self.height
             x: p.h_padding
             top: root.height-p.padding-p.status_bar_height
-            enabled: app.printer_objects_available
+            enabled: app.printer_objects_available and app.homed['x'] and app.homed['y']
+            RoundButton:
+                on_release: app.send_home('xy')
+                enabled: app.printer_objects_available and (not app.homed['x'] or not app.homed['y'])
+                visible: not app.homed['x'] or not app.homed['y']
+                size: 64, 64
+                pos: xy_field.pos
+                canvas:
+                    Color:
+                        rgba: (0,0,0,0) if not self.visible else (1,1,1,1) if self.enabled else p.button_disabled
+                    Rectangle:
+                        source: p.kgui_dir+'/Logos/HomeIcon.png'
+                        size: self.size
+                        pos: self.pos
         Label:
             id: xy_display
             size: self.texture_size
@@ -522,7 +536,7 @@ FloatLayout:
     #:set t 12
     #:set u 24 #Triangle has this size x2
     BaseButton:
-        on_press: app.send_z_up() if p.inverted_z_controls else app.send_z_down()
+        on_press: app.send_z_up() if p.invert_z_controls else app.send_z_down()
         on_release: app.send_z_stop()
         enabled: app.homed['z']
         size: root.width, root.h1
@@ -535,17 +549,17 @@ FloatLayout:
                 size: self.size
                 pos: self.pos
             Color:
-                rgba: (1,1,1,1) if self.enabled else p.medium_gray
+                rgba: (1,1,1,1) if self.enabled else p.button_disabled
             Triangle:
                 points: self.center_x-u,self.center_y+t,  self.center_x+u,self.center_y+t,  self.center_x,self.center_y-t
     BaseButton:
-        on_release: app.send_z_home()
+        on_release: app.send_home('z')
         size: root.width, root.h2
         pos: root.x, root.y+root.h1
         enabled: app.printer_objects_available
         canvas:
             Color:
-                rgba: (1,1,1,1) if self.enabled else p.medium_gray
+                rgba: (1,1,1,1) if self.enabled else p.button_disabled
             Rectangle:
                 source: p.kgui_dir+'/Logos/HomeIcon.png'
                 size: 64, 64
@@ -556,7 +570,7 @@ FloatLayout:
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: app.send_z_down() if p.inverted_z_controls else app.send_z_up()
+        on_press: app.send_z_down() if p.invert_z_controls else app.send_z_up()
         on_release: app.send_z_stop()
         enabled: app.homed['z']
         size: root.width, root.h3
@@ -569,7 +583,7 @@ FloatLayout:
                 size: self.size
                 pos: self.pos
             Color:
-                rgba: (1,1,1,1) if self.enabled else p.medium_gray
+                rgba: (1,1,1,1) if self.enabled else p.button_disabled
             Triangle:
                 points: self.center_x-u,self.center_y-t,  self.center_x+u,self.center_y-t,  self.center_x,self.center_y+t
 
@@ -927,7 +941,7 @@ FloatLayout:
             width: 1
             points: self.line_x
         Color:
-            rgba: (1,1,1,1) if self.enabled else p.button_disabled
+            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
         Ellipse:
             pos: self.point_pos
             size: (self.point_radius*2, self.point_radius*2)
