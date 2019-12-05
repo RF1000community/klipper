@@ -1,5 +1,6 @@
-from os.path import dirname
+from os.path import dirname, expanduser
 kgui_dir = dirname(__file__)
+sdcard_path = expanduser('/home/pi/sdcard')
 
 large_font = 34
 normal_font = 22
@@ -8,6 +9,7 @@ extra_small_font = 14
 screen_width = 600
 screen_height = 1024
 radius = 8
+icon_radius = 8
 popup_radius = 15
 icon_radius = 2.51
 status_bar_height = 26
@@ -32,15 +34,19 @@ popup = (0.15,0.15,0.15,1)
 divider = (1,1,1,0.09)
 button = (1,1,1,0.08)
 button_outline = (1,1,1,0.095)
-medium_dark_gray = (0.15, 0.15, 0.15, 1)
-medium_gray = (0.2,0.2,0.2,1)
-medium_light_gray = (0.35,0.35,0.35,1)
-light_gray = (0.7,0.7,0.7,1)
 button_disabled = (1,1,1,0.2)
+nozzle = (0.15, 0.15, 0.15, 1)
+nozzle_selected = (0.3, 0.3, 0.3, 1)
+
+
 translucent_white = (1,1,1,0.1)
 accent = (0.15,0.4,0.45,1)
 red = (0.83,0.05,0,1)
 green = (0,1,0.25,1)
+medium_dark_gray = (0.15, 0.15, 0.15, 1)
+medium_gray = (0.2,0.2,0.2,1)
+medium_light_gray = (0.35,0.35,0.35,1)
+light_gray = (0.7,0.7,0.7,1)
 
 notify_info = (0.6,0.6,0.6,0.7)
 notify_warning = (0.75, 0.25, 0, 0.75)

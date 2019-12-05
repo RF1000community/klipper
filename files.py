@@ -1,7 +1,7 @@
 from kivy.uix.filechooser import FileChooserIconView
 from kivy.app import App
 from kivy.clock import Clock
-from os.path import expanduser, getmtime, split, exists, abspath
+from os.path import getmtime, split, exists, abspath
 from elements import *
 import parameters as p
 
@@ -13,14 +13,15 @@ class FC(FileChooserIconView):
         self.sort_func = self.modification_date_sort
         self.filters = ['*.gco', '*.gcode']
         self.multiselect = False
-        if exists("/home/pi/sdcard"):
-            self.rootpath = "/home/pi/sdcard"
-            self.path = "/home/pi/sdcard"
+        self.app = App.get_running_app()
+        if exists(p.sdcard_path):
+            self.rootpath = p.sdcard_path
+            self.path = p.sdcard_path
         self.scheduled_updating = False
         Clock.schedule_once(self.bind_tab, 0)
 
     def bind_tab(self, e):
-        tabs = App.get_running_app().root.ids.tabs
+        tabs = self.app.root.ids.tabs
         tabs.bind(current_tab=self.control_updating)
 
     def control_updating(self, instance, tab):
@@ -55,7 +56,4 @@ class PrintPopup(BasePopup):
         self.chooser.selection = []
 
     def confirm(self):
-        App.get_running_app().send_start(self.chooser.selection)
-        
-
-
+        self.app.send_start(self.chooser.selection)

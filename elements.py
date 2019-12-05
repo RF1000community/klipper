@@ -10,8 +10,64 @@ from collections import deque
 import parameters as p
 
 
-class BaseButton(ButtonBehavior, Widget):
-    pass
+
+
+from kivy.clock import Clock
+from kivy.config import Config
+from kivy.properties import OptionProperty, ObjectProperty, \
+    BooleanProperty, NumericProperty
+from time import time
+
+class BaseButton(Widget):
+
+    pressed = BooleanProperty(False)
+    enabled = BooleanProperty(True)
+    def __init__(self, **kwargs):
+        self.register_event_type('on_press')
+        self.register_event_type('on_release')
+        super(BaseButton, self).__init__(**kwargs)
+
+
+    def on_touch_down(self, touch):
+        if super(BaseButton, self).on_touch_down(touch):
+            return True
+        if touch.is_mouse_scrolling:
+            return False
+        if not self.collide_point(touch.x, touch.y):
+            return False
+        if self in touch.ud:
+            return False
+        if not self.enabled:
+            return True
+        self.pressed = True
+        touch.grab(self)
+        touch.ud[self] = True
+        self.dispatch('on_press')
+        return True
+
+    def on_touch_move(self, touch):
+        if touch.grab_current is self:
+            return True
+        if super(BaseButton, self).on_touch_move(touch):
+            return True
+        return self in touch.ud
+
+    def on_touch_up(self, touch):
+        self.pressed = False
+        if touch.grab_current is not self:
+            return super(BaseButton, self).on_touch_up(touch)
+        assert(self in touch.ud)
+        touch.ungrab(self)
+        self.last_touch = touch
+
+        if not self.collide_point(*touch.pos) or not self.enabled:
+            return
+        self.dispatch('on_release')
+        return True
+    def on_press(self):
+        pass
+    def on_release(self):
+        pass
 
 class RoundButton(BaseButton):
     pass
@@ -37,6 +93,7 @@ class UltraSlider(Widget):
     px = NumericProperty() #absolute position of dot in px
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
+    changed = BooleanProperty(False)
 
     def __init__(self, **kwargs):
         self.buttons = list() #list of lists: e.g. [[val,offset,"name",the instance]]
@@ -66,6 +123,7 @@ class UltraSlider(Widget):
             self.val = self.get_val_from_px(x)
             self.disp = self.get_disp_from_val(self.val)
             if self.btn_last_active is not None: self.btn_last_active[3].active = False
+            self.changed = True
             return True
         return super(UltraSlider, self).on_touch_down(touch)
 

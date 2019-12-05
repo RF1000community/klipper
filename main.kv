@@ -99,16 +99,15 @@ FloatLayout:
             halign: 'left'
             valign: 'bottom'
         Btn_Stop:
-            on_release:
-                if self.enabled: app.send_stop()
+            on_release: app.send_stop()
             id: btn_stop
             size: 118,118
             center_y: progress_bar.top + p.padding + p.btn_height/2
             center_x: p.screen_width - p.btn_height/2 - p.h_padding
         Btn_Play:
             on_release:
-                if self.enabled and self.paused: app.send_play(); self.paused=False;
-                elif self.enabled:               app.send_pause(); self.paused=True;
+                if self.paused: app.send_play(); self.paused=False;
+                else:           app.send_pause(); self.paused=True;
             size: btn_stop.size
             y: btn_stop.y
             right: btn_stop.x
@@ -169,15 +168,17 @@ FloatLayout:
             id: temp_bed
             large_value: "{:3.0f}°C".format(app.temp['B'][1])
             small_value: "{:3.0f}".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "Off"
-            red: app.temp[self.heater_id][1] > 50
-            x: p.padding
+            red: app.temp['B'][1] > 50
+            x: p.h_padding
             center_y: p.padding+p.btn_height+temp_T0.center_y
             canvas.before:
                 Color:
-                    rgba: p.red if app.temp['B'][1] > 50 else p.medium_gray
-                #:set bwu 180
-                #:set bwo 110
-                #:set bh 38
+                    rgba: p.nozzle
+                #:set bwu 188
+                #:set bwu10 (bwu+p.icon_radius*2)/10.
+                #:set bwo 188-2*35
+                #:set bwo10 (bwo+p.icon_radius*2)/10.
+                #:set bh 35
                 #:set by 15
                 Rectangle:
                     size: bwo, bh
@@ -190,23 +191,48 @@ FloatLayout:
                     width: 5
                     points: (self.center_x + bwu/2, self.y + by, self.center_x + bwo/2, self.y + bh + by,        self.center_x - bwo/2, self.y + bh + by,  self.center_x - bwu/2, self.y + by)
                     close: True
+                Color:
+                    rgba: (0,0,0,0.2)
+                Line:
+                    width: 1
+                    points: self.center_x + bwo10, self.y+by+bh,    self.center_x + bwu10, self.y+by
+                Line:
+                    width: 1
+                    points: self.center_x + bwo10, self.y+by+bh,    self.center_x + 1 + bwu10, self.y+by
+                Line:
+                    width: 1
+                    points: self.center_x - bwo10, self.y+by+bh,     self.center_x - bwu10, self.y+by
+                Line:
+                    width: 1
+                    points: self.center_x - bwo10, self.y+by+bh,    self.center_x - 1 - bwu10, self.y+by
+                Line:
+                    width: 1
+                    points: self.center_x + 3*bwo10, self.y+by+bh,    self.center_x + 3*bwu10, self.y+by
+                Line:
+                    width: 1
+                    points: self.center_x + 3*bwo10, self.y+by+bh,    self.center_x + 1 + 3*bwu10, self.y+by
+                Line:
+                    width: 1
+                    points: self.center_x - 3*bwo10, self.y+by+bh,    self.center_x - 3*bwu10, self.y+by
+                Line:
+                    width: 1
+                    points: self.center_x - 3*bwo10, self.y+by+bh,    self.center_x - 1 - 3*bwu10, self.y+by
 
 <Btn_Extruder@BaseButton>:
-    size: 43, 70
+    size: 41, p.btn_height - p.radius*2
     heater_id: 'T0'
-    selected: True
+    selected: False
     canvas:
         Color:
-            rgba: p.medium_gray if self.selected else p.medium_dark_gray
-        #:set esh 18 #ExtruderSmallHeight
+            rgba: p.nozzle_selected if self.selected else p.nozzle
         Rectangle:
-            size: self.width, self.height-esh
-            pos: self.center_x - self.width/2, self.center_y - self.height/2 + esh
+            size: self.width, self.height-self.width/2
+            pos: self.x, self.y + root.width/2
         Triangle:
-            points: (self.center_x - self.width/2, self.center_y - self.height/2 + esh,    self.center_x, self.y,    self.center_x + self.width/2, self.center_y - self.height/2 + esh)
+            points: (self.x, self.y + self.width/2,    self.center_x, self.y,    self.right, self.y + self.width/2)
         Line:
-            width: 5
-            points: (self.center_x - self.width/2, self.center_y - self.height/2 + esh,    self.center_x, self.y,    self.center_x + self.width/2, self.center_y - self.height/2 + esh,    self.center_x +self.width/2, self.center_y + self.height/2,    self.center_x - self.width/2, self.center_y + self.height/2) 
+            width: p.radius
+            points: (self.x, self.y + self.width/2,    self.center_x, self.y,    self.right, self.y + self.width/2,    self.right, self.top,    self.x, self.top) 
             close: True
     Label:
         text: root.heater_id
@@ -319,13 +345,8 @@ FloatLayout:
 # BUTTONS  ########################################################################
 
 <BaseButton>:
-    pressed: False
-    on_press: self.pressed = True
-    on_release: self.pressed = False
-    on_touch_up: self.pressed = False
     title: ''
     size_hint: None, None
-    enabled: True
     Label:
         text: root.title
         size: root.size
@@ -558,7 +579,7 @@ FloatLayout:
     red: False
     large_value: "-"
     small_value: "-"
-    size: 205, 100
+    size: 190, 100
     Label:
         color: p.red if root.red else (1,1,1,1)
         text: root.large_value
@@ -1161,6 +1182,7 @@ FloatLayout:
             pos: root.pos
             on_release: root.dismiss()
         Btn_P_Confirm:
+            enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
             on_release: (app.write_config('printer', 'max_accel', slider.val), root.dismiss())

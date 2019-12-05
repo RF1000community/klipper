@@ -10,24 +10,23 @@ else:
 if not testing:
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'gl'
-from os.path import join
 from kivy import kivy_data_dir
 from kivy.lang import Builder
 from kivy.app import App
 from kivy.config import Config
 from kivy.clock import Clock
 from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
-from os.path import join
+from os.path import join, abspath, expanduser
 from subprocess import Popen
 import threading
 import logging
 import site
 
 from elements import UltraKeyboard
-from settings import *
 from home import *
 from files import *
 from status import *
+from settings import *
 import parameters as p
 
 
@@ -57,15 +56,15 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         "error disconnected",
         "initializing",
         ])
-    homed_z = BooleanProperty(False)
-    printer_objects_available = BooleanProperty(False)
-    temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ....}
-    print_title = StringProperty()
-    print_time = StringProperty()
-    speed = NumericProperty
-    progress = NumericProperty(1)
+    homed_z = BooleanProperty(False) #updated with handle_homed event handler
+    printer_objects_available = BooleanProperty(False) #updated with handle_connect
+    temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ....} updated with scheduled update_home -> get_temp
+    print_title = StringProperty() #updated with on_state watching state chages to 'printing'
+    print_time = StringProperty() #updated with handle_print_time_calc
+    progress = NumericProperty() #updated with scheduled update_home
+    speed = NumericProperty() #updated with hopes and dreams
     #config
-    acceleration = NumericProperty
+    acceleration = NumericProperty()
 
     def __init__(self, config = None, **kwargs): #runs in klippy thread
         logging.info("Kivy app initializing...")
@@ -75,21 +74,28 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         if not testing:
             self.kgui_config = config
             self.printer = config.get_printer()
+            self.reactor = self.printer.get_reactor()
             self.klipper_config_manager = self.printer.objects['configfile']
             self.klipper_config = self.klipper_config_manager.read_main_config()
+
+            #read config
             stepper_config = (self.klipper_config.getsection('stepper_x'),
                               self.klipper_config.getsection('stepper_y'),
                               self.klipper_config.getsection('stepper_z'))
             self.pos_max = [stepper_config[i].getint('position_max') for i in (0,1,2)]
             try: self.pos_min = [stepper_config[i].getint('position_min') for i in (0,1)]#maybe use position_min, position_max = rail.get_range()
             except: self.pos_min = (0,0)
-            self.klipper_config.getsection("virtual_sdcard").get("path", None)#TODO to something with this
-            self.reactor = self.printer.get_reactor()
+            #check whether the right sdcard path is configured
+            configured_sdpath = expanduser(self.klipper_config.getsection("virtual_sdcard").get("path", None))
+            if abspath(configured_sdpath) != abspath(p.sdcard_path):
+                logging.warning("The configured virtual_sdcard path {} isnt {} printing may be impossible".format(configured_sdpath, p.sdcard_path))
+
+            #register event handlers
             self.printer.register_event_handler("klippy:connect", self.handle_connect) #printer_objects are available
             self.printer.register_event_handler("klippy:ready", self.handle_ready) #connect handlers have run
             self.printer.register_event_handler("klippy:disconnect", self.handle_disconnect)
-            self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
+            self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
             self.printer.register_event_handler("toolhead:sync_print_time", self.handle_calc_print_time)
         else:
             self.pos_max = (200,200)
@@ -102,6 +108,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.sdcard = self.printer.lookup_object('virtual_sdcard', None)
         self.toolhead = self.printer.lookup_object('toolhead')
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
+        self.extruders = []
         for i in range(0,10):
 		    ext = self.printer.lookup_object('extruder{}'.format('' if i==0 else i), None)
 		    if ext: self.extruders.append(ext)
@@ -204,7 +211,12 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def update_setting(self, *args):
         self.get_config('printer', 'max_accel', 'acceleration', 'int')
 
-#########################################################
+    def on_state(self, instance, state):
+        logging.info("changed to state {}".format(state))
+        if state == 'printing' or state == 'busy':
+            self.print_title = str(self.sdcard.current_file)
+
+##################################################################
 ### TUNING
     def get_pressure_advance(self):#TODO everything
         return 0.1
@@ -238,7 +250,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         logging.info("KGUI send {} as fan speed".format(speed))
         self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed))
 ### TUNING
-#####################################################################3
+#####################################################################
 
     def get_temp(self, dt=None):
         # schedule reading temp in klipper thread which schedules displaying the read value in kgui thread
@@ -254,6 +266,12 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         logging.info("KGUI set Temperature of {} to {}".format(heater_id, temp))
         self.reactor.register_async_callback((lambda e: self.heaters[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
 
+    def get_pos(self):
+        def read_pos(e):
+            pos = self.toolhead.get_position()
+            self.pos = pos
+        self.reactor.register_async_callback(read_pos)
+
     def send_pos(self, x=None, y=None, z=None, e=None):
         new_pos = [x,y,z,e]
         def set_pos(e):
@@ -263,12 +281,6 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
             self.toolhead.drip_move(pos, 15)
         self.reactor.register_async_callback(set_pos)
 
-    def get_pos(self):
-        def read_pos(e):
-            pos = self.toolhead.get_position()
-            self.pos = pos
-        self.reactor.register_async_callback(read_pos)
-
     def send_up_Z(self):
         self.send_pos(z=0)
     def send_down_Z(self):
@@ -277,6 +289,9 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.reactor.register_async_callback((lambda e: self.toolhead.signal_drip_mode_end()))
     def send_home_Z(self):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28("Z")))
+
+    def send_calibrate(self):
+        self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
 
     def send_start(self, file):#TODO needs Testing
         self.state = "printing"
@@ -301,9 +316,6 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.state = "paused"
         self.notify.show("Paused", "Print paused", delay=4)
         self.reactor.register_async_callback(self.sdcard.cmd_M25)
-
-    def send_calibrate(self):
-        self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
 
     def get_config(self, section, option, property_name, ty=None):
         logging.info("wrote {} from section {} to {}".format(option, section, property_name))
