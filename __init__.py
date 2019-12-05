@@ -239,7 +239,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def get_z_adjust(self):
         pass #lol
     def send_z_adjust(self, val):
-        def set_z_adj:
+        def set_z_adj(e):
             self.gcode.cmd_SET_GCODE_OFFSET()
 
     def get_speed(self):
@@ -286,8 +286,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def send_temp(self, temp, heater_id):
         logging.info("KGUI set Temperature of {} to {}".format(heater_id, temp))
         self.reactor.register_async_callback((lambda e: self.heaters[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
-    def get_home(self):
-        if self.stepper_enable.lookup_enable(name).is_motor_enabled():
+
     def send_home(self, axis):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
 
