@@ -17,6 +17,8 @@ btn_height = 78
 btn_width = 3*btn_height
 progress_bar_height = 8
 tab_height = 100
+#never assume pixels are square :}
+disp_vertical_stretch = 1.05 
 #generate even spacing based on all contents on homescreen
 small_padding = 15
 notification_padding = 22
@@ -30,7 +32,7 @@ padding = (screen_height\
 int_pad = int(padding)
 home_col_height = padding+btn_height
 padding_hint = padding/screen_width
-h_padding = padding
+h_padding = padding*disp_vertical_stretch
 
 background = (0.065,0.065,0.065,1)
 popup = (0.15,0.15,0.15,1)
