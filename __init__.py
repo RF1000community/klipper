@@ -232,15 +232,22 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 ##################################################################
 ### TUNING
     def get_pressure_advance(self):
-        return 0.1
+        self.get_config('extruder', 'pressure_advance', 'pressure_advance')
     def send_pressure_advance(self, val):
-        pass
-
+        self.set_config('extruder', 'pressure_advance', val)
+    def get_acceleration(self):
+    def set_acceleration()
+        self.set_config('printer', 'max_accel', val)
     def get_z_adjust(self):
-        pass #lol
-    def send_z_adjust(self, val):
-        def set_z_adj(e):
-            self.gcode.cmd_SET_GCODE_OFFSET()
+        self.z_adjust = self.gcode.homing_position[2]
+    def send_z_adjust(self, offset):
+        self.z_adjust = offset
+        def set_z_offset(e):  
+            #keeps the difference between base_position and homing_position the same
+            #works like this: if base_position = 5, put origin of gcode coordinate system at + 5, used for z tuning or G92 zeroing
+            self.gcode.base_position[2] = self.gcode.base_position[2] - self.gcode.homing_position[2] + offset
+            self.gcode.homing_position[2] = offset
+        self.reactor.register_async_callback(set_z_offset)
 
     def get_speed(self):
         self.speed = self.gcode.speed_factor*60*100 #speed factor also converts from mm/sec to mm/min
