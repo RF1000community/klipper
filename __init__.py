@@ -235,9 +235,12 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.get_config('extruder', 'pressure_advance', 'pressure_advance')
     def send_pressure_advance(self, val):
         self.set_config('extruder', 'pressure_advance', val)
+
     def get_acceleration(self):
-    def set_acceleration()
-        self.set_config('printer', 'max_accel', val)
+        self.get_config('printer', 'max_accel', 'acceleration')
+    def set_acceleration():
+        self.set_config('printer', 'max_accel', val) #move to kv, desc
+
     def get_z_adjust(self):
         self.z_adjust = self.gcode.homing_position[2]
     def send_z_adjust(self, offset):
@@ -277,8 +280,34 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def send_fan(self, speed):
         self.fan_speed = speed
         self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed))
+
+    def get_config(self, section, option, property_name, ty=None):
+        logging.info("wrote {} from section {} to {}".format(option, section, property_name))
+        if testing:
+            setattr(self, property_name, 77)
+            return
+        def read_config(e):
+            Section = self.klipper_config.getsection(section)
+            if ty == 'int':
+                val = Section.getint(option)
+            else:
+                val = Section.get(option)
+            setattr(self, property_name, val)
+        self.reactor.register_async_callback(read_config)
+    
+    def set_config(self, section, option, value):
+        logging.info("trying to set config section {} option {} to value {}".format(section, option, value))
+        self.reactor.register_async_callback(lambda e: self.klipper_config_manager.set(section, option, value))
+
 ### TUNING
 #####################################################################
+
+    def write_config(self, section, option, value):
+        logging.info( 'trying to write section: {} option: {}, value: {} to config'.format(section, option, value))
+        def write_conf(e):
+            self.klipper_config_manager.set(section, option, value)
+            self.klipper_config_manager.cmd_SAVE_CONFIG(None)
+        self.reactor.register_async_callback(write_conf)
 
     def get_temp(self, dt=None):
         # schedule reading temp in klipper thread which schedules displaying the read value in kgui thread
@@ -345,31 +374,6 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.state = "paused"
         self.notify.show("Paused", "Print paused", delay=4)
         self.reactor.register_async_callback(self.sdcard.cmd_M25)
-
-    def get_config(self, section, option, property_name, ty=None):
-        logging.info("wrote {} from section {} to {}".format(option, section, property_name))
-        if testing:
-            setattr(self, property_name, 77)
-            return
-        def read_config(e):
-            Section = self.klipper_config.getsection(section)
-            if ty == 'int':
-                val = Section.getint(option)
-            else:
-                val = Section.get(option)
-            setattr(self, property_name, val)
-        self.reactor.register_async_callback(read_config)
-    
-    def set_config(self, section, option, value):
-        logging.info("trying to set config section {} option {} to value {}".format(section, option, value))
-        self.reactor.register_async_callback(lambda e: self.klipper_config_manager.set(section, option, value))
-
-    def write_config(self, section, option, value):
-        logging.info( 'trying to write section: {} option: {}, value: {} to config'.format(section, option, value))
-        def write_conf(e):
-            self.klipper_config_manager.set(section, option, value)
-            self.klipper_config_manager.cmd_SAVE_CONFIG(None)
-        self.reactor.register_async_callback(write_conf)
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
