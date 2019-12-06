@@ -88,6 +88,23 @@ class BasePopup(Popup): #makes this Popup recieve the instance of the calling bu
         super(BasePopup, self).dismiss(animation=animation, **kwargs)
 
 class UltraSlider(Widget):
+    """
+    Simple slider widget
+
+    kwargs:
+    val_min, val_max    Minimum and Maximum for the output value,
+                        used for px <-> conversion.
+                        Defaults to 0 and 100
+    unit                Unit string, appended to display value.
+                        Defaults to "" (no unit)
+
+    attributes:
+    buttons     list of lists: e.g. [[val,offset,"name",the instance]]
+    val         value, passed to printer, not in px
+
+    The conversion methods get_px_from_val() and get_val_from_px()
+    can be safely overwritten by inheritors for nonlinear conversion.
+    """
     px = NumericProperty() #absolute position of dot in px
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
@@ -96,6 +113,9 @@ class UltraSlider(Widget):
     def __init__(self, **kwargs):
         self.buttons = list() #list of lists: e.g. [[val,offset,"name",the instance]]
         self.val = float()    #value, passed to printer, not in px
+        self.val_min = kwargs.get('val_min', 0)
+        self.val_max = kwargs.get('val_max', 100)
+        self.unit = kwargs.get('unit', "")
         self.btn_last_active = None
         super(UltraSlider, self).__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
@@ -107,7 +127,8 @@ class UltraSlider(Widget):
         self.px = self.get_px_from_val(self.val)
         self.disp = self.get_disp_from_val(self.val)
         for b in self.buttons:
-            b[3] = Btn_Slider(y=self.y,  px=self.get_px_from_val(b[0]),  val=b[0],  offset=b[1],  s_title=b[2])
+            b[3] = Btn_Slider(y=self.y, px=self.get_px_from_val(b[0]), 
+                              val=b[0], offset=b[1],  s_title=b[2])
             b[3].bind(on_press=self.on_button)
             self.add_widget(b[3])
         self.highlight_button()
@@ -162,13 +183,35 @@ class UltraSlider(Widget):
         self.highlight_button()
         self.disp = self.get_disp_from_val(instance.val)
 
-    def get_val_from_px(self,x):
-        return x
+    def get_px_from_val(self, val):
+        """
+        Function that converts values between val_min and val_max
+        linearly, returning absolute pixel values between px_min and
+        px_max.
+        Raises ValueError if val is outside val_min and val_max.
+        Requires px_max to be set, do not use in __init__
+        """
+        if val < self.val_min or val > self.val_max:
+            raise ValueError("val {} outside range".format(val))
+        m = float(self.px_max - self.px_min)/(self.val_max - self.val_min)
+        px = self.px_min + m*(val - self.val_min)
+        return px
+
+    def get_val_from_px(self, px):
+        """
+        Inverse function of get_px_from_val(),
+        returns val rounded to an integer.
+        Raises ValueError if px is outside px_min and px_max.
+        """
+        if px < self.px_min or px > self.px_max:
+            raise ValueError("px {} outside range".format(px))
+        m = float(self.val_max - self.val_min)/(self.px_max - self.px_min)
+        val = self.val_min + m*(px - self.px_min)
+        return int(val + 0.5)
+
     def get_disp_from_val(self, val):
-        return ""
-    def get_px_from_val(self,val):#requires px_max to be set, do not use in __init__
-        self.px = int(val)
-        return self.px
+        """Returns string of the value and the given unit string"""
+        return str(val) + " " + self.unit
 
 
 class UltraOffsetSlider(UltraSlider):

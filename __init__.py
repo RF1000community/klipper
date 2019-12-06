@@ -69,14 +69,13 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     pressure_advance = NumericProperty(0)
     z_adjust = NumericProperty(0)
     #config
-    acceleration = NumericProperty()
+    acceleration = NumericProperty(3000)
 
     def __init__(self, config = None, **kwargs): #runs in klippy thread
         logging.info("Kivy app initializing...")
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
-        self.acceleration = 0
         if not testing:
             self.kgui_config = config
             self.printer = config.get_printer()
@@ -160,14 +159,15 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         
     def run(self):
         logging.info("Kivy app.run")
-        Clock.schedule_once(self.setup_after_run, 3)
+        Clock.schedule_once(self.setup_after_run, 1)
         super(mainApp, self).run()
 
     def setup_after_run(self, dt):
+        self.notify = Notifications()
         try:
             self.root_window.set_vkeyboard_class(UltraKeyboard)
-            self.notify = Notifications()
-        except: logging.warning("root_window wasnt available")
+        except:
+            logging.warning("root_window wasnt available")
 
     def bind_updating(self, *args):
         self.root.ids.tabs.bind(current_tab=self.control_updating)
