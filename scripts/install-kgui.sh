@@ -83,6 +83,8 @@ User=$USER
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=/bin/bash -c "/usr/bin/startx ${PYTHONDIR}/bin/python ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
 Nice=-4
+Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=default.target
