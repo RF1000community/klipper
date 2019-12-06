@@ -703,10 +703,10 @@ FloatLayout:
             size: root.width-2*p.padding, 8
             pos: root.x+p.padding, slider_pos_y-4+root.y
         Color:
-            rgba: (1,1,1,1) if root.pressed else p.medium_light_gray
+            rgba: (0, 0, 0, 0) if root.pressed else p.medium_light_gray
         RoundedRectangle:
             radius: (4,4,4,4)
-            size: self.px-root.x-p.padding, 8
+            size: self.px - p.int_pad - self.x, 8
             pos: root.x+p.padding, slider_pos_y-4+root.y
         Color:
             rgba: (0,0,0,0) if root.pressed  else (1,1,1,1) 

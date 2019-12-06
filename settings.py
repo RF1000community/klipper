@@ -455,16 +455,10 @@ class SI_ValueSlider(SetItem):
 
 class AccSlider(UltraSlider):
 
-    def init_drawing(self, dt):
+    def __init__(self, **kwargs):
+        super(AccSlider, self).__init__(**kwargs)
         self.val = App.get_running_app().acceleration
+        self.val_min = 3000
+        self.val_max = 50000
+        self.unit = "mm/s²"
         self.buttons = [[36000,0,"default",None],]
-        super(AccSlider, self).init_drawing(dt)
-
-    def get_val_from_px(self, x):
-        return int(((x-self.px_min)/(self.px_width))*(50000-3000)+3000)
-
-    def get_disp_from_val(self, val):
-        return "{}mm/s²".format(val)
-
-    def get_px_from_val(self, val):
-        return (float(val-3000)/(50000-3000))*(self.px_width)+self.px_min

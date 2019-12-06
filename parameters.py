@@ -27,6 +27,7 @@ padding = (screen_height\
         - progress_bar_height\
         - tab_height)\
         /float(7)#remaining space has to contain 9* padding and 1* hpadding
+int_pad = int(padding)
 home_col_height = padding+btn_height
 padding_hint = padding/screen_width
 h_padding = padding
