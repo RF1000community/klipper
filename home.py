@@ -100,78 +100,58 @@ class XyField(Widget):
         self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)#TODO add showing z value
 
 class PressureAdvanceSlider(UltraSlider):
-    def init_drawing(self, dt):
+    def __init__(self):
         self.val = App.get_running_app().get_pressure_advance()
         self.buttons = []
-        super(PressureAdvanceSlider, self).init_drawing(dt)
+        self.val_min = 0
+        self.val_max = 0.5
+        self.unit = "mm/mm/s"
+        self.roundto = 3
+        super(PressureAdvanceSlider, self).__init__()
 
-    def get_val_from_px(self, x):
-        return float(((x-self.px_min)/(self.px_width))*(0.5))
-
-    def get_disp_from_val(self, val):
-        return "{:4.3f}mm/mm/s".format(val)
-
-    def get_px_from_val(self, val):
-        return int((float(val)/(0.5))*(self.px_width)+self.px_min)
 
 class SpeedSlider(UltraSlider):
-    def init_drawing(self, dt):
+    def __init__(self):
         self.val = App.get_running_app().get_speed()
         self.buttons = [[100,0,"no multiplier",None]]
-        super(SpeedSlider, self).init_drawing(dt)
+        self.val_min = 10
+        self.val_max = 500
+        self.unit = "%"
+        self.roundto = 0
+        super(SpeedSlider, self).__init__()
 
-    def get_val_from_px(self, x):
-        return int(((x-self.px_min)/(self.px_width))*(500-10)+10)
-
-    def get_disp_from_val(self, val):
-        if val == 100:
-            self.px = self.get_px_from_val(val)
-        return "{}%".format(val)
-
-    def get_px_from_val(self, val):
-        return int((float(val-10)/(500-10))*(self.px_width)+self.px_min)
 
 class FlowSlider(UltraSlider):
-    def init_drawing(self, dt):
+    def __init__(self):
         self.val = App.get_running_app().get_flow()
         self.buttons = [[100,0,"no multiplier",None]]
-        super(FlowSlider, self).init_drawing(dt)
+        self.val_min = 90
+        self.val_max = 110
+        self.unit = "%"
+        self.roundto = 1
+        super(FlowSlider, self).__init__()
 
-    def get_val_from_px(self, x):
-        return int(((x-self.px_min)/(self.px_width))*(110-90)+90)
-
-    def get_disp_from_val(self, val):
-        if val == 100:
-            self.px = self.get_px_from_val(val)
-        return "{}%".format(val)
-
-    def get_px_from_val(self, val):
-        return int((float(val-90)/(110-90))*(self.px_width)+self.px_min)
 
 class FanSlider(UltraSlider):
-    def init_drawing(self, dt):
+    def __init__(self):
         self.val = App.get_running_app().get_fan()
         self.buttons = []
-        super(FanSlider, self).init_drawing(dt)
-
-    def get_val_from_px(self, x):
-        return int(((x-self.px_min)/(self.px_width))*(100))
-
-    def get_disp_from_val(self, val):
-        return "{}%".format(val)
-
-    def get_px_from_val(self, val):
-        return int((float(val)/(100))*(self.px_width)+self.px_min)
+        self.val_min = 0
+        self.val_max = 100
+        self.unit = "%"
+        self.roundto = 0
+        super(FanSlider, self).__init__()
 
 
 class BedTempSlider(UltraSlider):
-    def init_drawing(self, dt):
+    def __init__(self):
+        super(BedTempSlider, self).__init__()
         App.get_running_app().get_temp()
         self.buttons = [[0,0,"Off",None],
                         [60,0,"PLA",None],
                         [90,0,"PETG",None],
                         [110,0,"ABS",None]]
-        super(BedTempSlider, self).init_drawing(dt)
+
     def get_val_from_px(self, x):
         v = int(((x-self.px_min)/self.px_width)*(140-30)+30)
         for b in self.buttons:
@@ -194,7 +174,8 @@ class BedTempSlider(UltraSlider):
 
 
 class ExtTempSlider(UltraSlider):
-    def init_drawing(self, dt):
+    def __init__(self):
+        super(ExtTempSlider, self).__init__()
         App.get_running_app().get_temp()
         self.buttons = [
             [0,14,"Off",None],
@@ -203,7 +184,6 @@ class ExtTempSlider(UltraSlider):
             [210,68/2,"PLA",None],
             [230,0,"PETG",None],
             [250,-68/2,"ABS",None]]
-        super(ExtTempSlider, self).init_drawing(dt)
     def get_val_from_px(self, x):
         v = int(((x-self.px_min)/self.px_width)*(280-40)+40)
         for b in self.buttons:
@@ -225,14 +205,14 @@ class ExtTempSlider(UltraSlider):
         return x
 
 class ExtTempOffsetSlider(UltraOffsetSlider):
-    def init_drawing(self, dt):
+    def __init__(self):
+        super(ExtTempSlider, self).__init__()
         App.get_running_app().get_temp()
         self.buttons = [
             [0,14,"Off",None],
             [210,68/2,"PLA",None],
             [230,0,"PETG",None],
             [250,-68/2,"ABS",None]]
-        super(ExtTempSlider, self).init_drawing(dt)
     def get_val_from_px(self, x):
         v = int(((x-self.px_min)/self.px_width)*(280-40)+40)
         for b in self.buttons:

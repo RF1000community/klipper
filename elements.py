@@ -97,6 +97,8 @@ class UltraSlider(Widget):
                         Defaults to 0 and 100
     unit                Unit string, appended to display value.
                         Defaults to "" (no unit)
+    roundto             How many decimals to round val to.
+                        Is passed to round().
 
     attributes:
     buttons     list of lists: e.g. [[val,offset,"name",the instance]]
@@ -116,6 +118,7 @@ class UltraSlider(Widget):
         self.val_min = kwargs.get('val_min', 0)
         self.val_max = kwargs.get('val_max', 100)
         self.unit = kwargs.get('unit', "")
+        self.roundto = kwargs.get('roundto', 2)
         self.btn_last_active = None
         super(UltraSlider, self).__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
@@ -187,27 +190,26 @@ class UltraSlider(Widget):
         """
         Function that converts values between val_min and val_max
         linearly, returning absolute pixel values between px_min and
-        px_max.
-        Raises ValueError if val is outside val_min and val_max.
+        px_max.  If val is outside val_min and val_max, the returned
+        pixel value is still cast within the slider.
         Requires px_max to be set, do not use in __init__
         """
-        if val < self.val_min or val > self.val_max:
-            raise ValueError("val {} outside range".format(val))
+        if val < self.val_min:
+            val = self.val_min
+        elif val > self.val_max:
+            val = self.val_max
         m = float(self.px_max - self.px_min)/(self.val_max - self.val_min)
         px = self.px_min + m*(val - self.val_min)
-        return px
+        return int(px)
 
     def get_val_from_px(self, px):
         """
         Inverse function of get_px_from_val(),
         returns val rounded to an integer.
-        Raises ValueError if px is outside px_min and px_max.
         """
-        if px < self.px_min or px > self.px_max:
-            raise ValueError("px {} outside range".format(px))
         m = float(self.val_max - self.val_min)/(self.px_max - self.px_min)
         val = self.val_min + m*(px - self.px_min)
-        return int(val + 0.5)
+        return round(val, self.roundto)
 
     def get_disp_from_val(self, val):
         """Returns string of the value and the given unit string"""

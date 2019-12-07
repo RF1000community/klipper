@@ -69,7 +69,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     pressure_advance = NumericProperty(0)
     z_adjust = NumericProperty(0)
     #config
-    acceleration = NumericProperty(3000)
+    acceleration = NumericProperty(2000)
 
     def __init__(self, config = None, **kwargs): #runs in klippy thread
         logging.info("Kivy app initializing...")
