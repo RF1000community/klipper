@@ -1,0 +1,32 @@
+KGUI:
+    Z stop
+
+    extrude retract
+
+    unload/load:
+        chose impl.
+            Gcode file, Macro, Python Module, Python
+
+    fix gui crash on FIRMWARE_RESTART (or restart_klipper())
+
+    https://wiki.archlinux.org/index.php/Display_Power_Management_Signaling    
+
+    OTA Updates of klipperui + dependencies
+
+    microcontroller flashing
+
+    Dynamic extruder count
+
+    Schedule Full sdcard handling e.g. with, add deletion when more than 100 elements except for the USB stick, notification
+
+    Delete button on print popup
+
+    Material Database, with popups
+
+CURA COONNECTION
+    Klipper Module
+        h264 streaming,
+    Cura Plugin
+
+HIGH SPEED ODRIVE COONNECTION
+    
