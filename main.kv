@@ -123,16 +123,13 @@ FloatLayout:
             shorten: True
             halign: 'left'
             valign: 'middle'
-        Divider:
-            id: top_divider
-            y: btn_stop.center_y + p.btn_height/2 + p.padding
         ScreenManager:
             current: 'printingscreen' if app.state == 'printing' else 'homescreen'
             transition: screenmanager.NoTransition()
             id: hs_manager
             size_hint: None, None
-            size: p.screen_width, p.screen_height-top_divider.top
-            pos: root.x, top_divider.top
+            size: p.screen_width, p.screen_height-btn_stop.center_y-p.btn_height/2
+            pos: root.x, btn_stop.center_y+p.btn_height/2
             HomeScreen:
             PrintingScreen:
         Btn_Temp:
@@ -144,15 +141,15 @@ FloatLayout:
             red: app.temp[self.heater_id][1] > 50
             width: 130
             right: temp_bed.right
-            center_y: p.padding+top_divider.top+p.btn_height/2
+            center_y: p.padding+btn_stop.center_y+p.btn_height/2+p.btn_height/2
         Btn_Extruder:
             heater_id: 'T1'
-            x: p.h_padding
-            center_y: temp_T1.center_y
+            x: p.h_padding + p.icon_radius
+            top: p.padding+btn_stop.center_y+p.btn_height/2+ p.btn_height - p.icon_radius
         Btn_Temp:
             id: temp_T0
             heater_id: "T0"
-            on_release: Factory.ExtTempOffsetPopup(instance=self).open()
+            on_release: Factory.ExtTempPopup(instance=self).open()
             large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
             small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             red: app.temp[self.heater_id][1] > 50
@@ -161,8 +158,8 @@ FloatLayout:
             center_y: p.padding+p.btn_height+temp_T1.center_y
         Btn_Extruder:
             heater_id: 'T0'
-            x: p.h_padding
-            center_y: temp_T0.center_y
+            x: p.h_padding + p.icon_radius
+            top: p.padding+ 1.5* p.btn_height + temp_T1.center_y - p.icon_radius
         Btn_Temp:
             on_release: Factory.BedTempPopup(instance=self).open()
             id: temp_bed
@@ -188,7 +185,7 @@ FloatLayout:
                 Triangle:
                     points: (self.center_x + bwu/2, self.y + by, self.center_x + bwo/2, self.y + by, self.center_x + bwo/2, self.y + bh + by)
                 Line:
-                    width: 5
+                    width: p.icon_radius
                     points: (self.center_x + bwu/2, self.y + by, self.center_x + bwo/2, self.y + bh + by,        self.center_x - bwo/2, self.y + bh + by,  self.center_x - bwu/2, self.y + by)
                     close: True
                 Color:
@@ -219,7 +216,7 @@ FloatLayout:
                     points: self.center_x - 3*bwo10, self.y+by+bh,    self.center_x - 1 - 3*bwu10, self.y+by
 
 <Btn_Extruder@BaseButton>:
-    size: 41, p.btn_height - p.radius*2
+    size: 46, p.btn_height - p.icon_radius*2 + 3
     heater_id: 'T0'
     selected: False
     canvas:
@@ -231,7 +228,7 @@ FloatLayout:
         Triangle:
             points: (self.x, self.y + self.width/2,    self.center_x, self.y,    self.right, self.y + self.width/2)
         Line:
-            width: p.radius
+            width: p.icon_radius
             points: (self.x, self.y + self.width/2,    self.center_x, self.y,    self.right, self.y + self.width/2,    self.right, self.top,    self.x, self.top) 
             close: True
     Label:
@@ -282,13 +279,11 @@ FloatLayout:
         Btn_Arrow:
             dir_right: True
             id: btn_right_B
-            size: p.btn_height-10, p.btn_height
             y: p.padding
             x: p.screen_width- p.h_padding
         Btn_Arrow:
             dir_right: True
             id: btn_right_A
-            size: p.btn_height-10, p.btn_height
             y: 2*p.padding+p.btn_height
             x: btn_right_B.x
         Btn_Triple:
@@ -301,12 +296,10 @@ FloatLayout:
             right: p.screen_width- p.h_padding
         Btn_Arrow:
             id: btn_left_B
-            size: p.btn_height-10, p.btn_height
             y: btn_right_B.y
             right: btn_tr_B.x
         Btn_Arrow:
             id: btn_left_A
-            size: p.btn_height-10, p.btn_height
             y: btn_tr_A.y
             right: btn_tr_A.x
         Btn_Outline:
@@ -322,30 +315,25 @@ FloatLayout:
             h1: self.height/3
             h2: self.height/3
             h3: self.height/3
-            width: self.height/3
-            right: btn_calibrate.right
+            width: p.btn_height*p.disp_vertical_stretch
+            right: root.right- p.h_padding
             top: root.height-p.padding-p.status_bar_height
         XyField:
             id: xy_field
             size_hint: None, None
-            height: 3*p.btn_height + 2*p.padding
-            width: self.height
+            height: p.btn_width
+            width: self.height + 40
             x: p.h_padding
             top: root.height-p.padding-p.status_bar_height
             enabled: app.printer_objects_available and app.homed['x'] and app.homed['y']
-            RoundButton:
-                on_release: app.send_home('xy')
-                enabled: app.printer_objects_available and (not app.homed['x'] or not app.homed['y'])
-                visible: not app.homed['x'] or not app.homed['y']
-                size: 64, 64
-                pos: xy_field.pos
-                canvas:
-                    Color:
-                        rgba: (0,0,0,0) if not self.visible else (1,1,1,1) if self.enabled else p.button_disabled
-                    Rectangle:
-                        source: p.kgui_dir+'/Logos/HomeIcon.png'
-                        size: self.size
-                        pos: self.pos
+        HomeButton:
+            axis_id: 'Y'
+            size: p.btn_height, p.btn_height
+            pos: xy_field.right, xy_field.y
+        HomeButton:
+            axis_id: 'X'
+            size: p.btn_height, p.btn_height
+            pos: xy_field.right, xy_field.y + p.btn_height
         Label:
             id: xy_display
             size: self.texture_size
@@ -372,7 +360,7 @@ FloatLayout:
         halign: 'center'
 
 <RoundButton@BaseButton>:
-    canvas:
+    canvas.after:
         Color:
             rgba: p.translucent_white if self.pressed and self.enabled else (0,0,0,0)
         RoundedRectangle:
@@ -438,6 +426,7 @@ FloatLayout:
 <Btn_Arrow@RoundButton>:
     #:set v 44
     #:set w 22
+    size: p.btn_height-26, p.btn_height
     dir_right: False
     canvas.before:
         Color:
@@ -453,6 +442,7 @@ FloatLayout:
     title1: 'Unload'
     title2: ''
     title3: 'Load'
+    width: p.btn_width
     w1: 78
     w2: 78
     w3: 78
@@ -518,9 +508,9 @@ FloatLayout:
                 pos: self.pos
 
 <Btn_TripleZ@Widget>:
-    h1: 85
-    h2: 85
-    h3: 85
+    h1: 0
+    h2: 0
+    h3: 0
     size_hint: None, None
     canvas:
         Color:
@@ -533,8 +523,8 @@ FloatLayout:
         Rectangle:
             pos: self.x+6, self.y+self.h1+self.h2
             size: self.width-12,1
-    #:set t 12
-    #:set u 24 #Triangle has this size x2
+    #:set t 11
+    #:set u 22 #Triangle has this size x2
     BaseButton:
         on_press: app.send_z_up() if p.invert_z_controls else app.send_z_down()
         on_release: app.send_z_stop()
@@ -552,18 +542,12 @@ FloatLayout:
                 rgba: (1,1,1,1) if self.enabled else p.button_disabled
             Triangle:
                 points: self.center_x-u,self.center_y+t,  self.center_x+u,self.center_y+t,  self.center_x,self.center_y-t
-    BaseButton:
-        on_release: app.send_home('z')
+    HomeButton:
+        axis_id: 'Z'
         size: root.width, root.h2
-        pos: root.x, root.y+root.h1
-        enabled: app.printer_objects_available
-        canvas:
-            Color:
-                rgba: (1,1,1,1) if self.enabled else p.button_disabled
-            Rectangle:
-                source: p.kgui_dir+'/Logos/HomeIcon.png'
-                size: 64, 64
-                pos: self.center_x-32, self.center_y-32
+        pos: root.x, root.h1 + root.y
+        canvas.after:
+            Clear
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
             Rectangle:
@@ -586,6 +570,35 @@ FloatLayout:
                 rgba: (1,1,1,1) if self.enabled else p.button_disabled
             Triangle:
                 points: self.center_x-u,self.center_y-t,  self.center_x+u,self.center_y-t,  self.center_x,self.center_y+t
+
+<HomeButton@RoundButton>:
+    axis_id: 'Z'
+    on_release: app.send_home(self.axis_id)
+    enabled: app.printer_objects_available
+    canvas:
+        Color:
+            rgba: (1,1,1,1) if self.enabled else p.button_disabled
+        Rectangle:
+            source: p.kgui_dir+'/Logos/HomeAxisIcon.png'
+            size: 64, 64
+            pos: self.center_x-32, self.center_y-32
+        Color:
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    Label:
+        pos: root.x, root.y-2
+        text: root.axis_id
+        color: p.background
+        font_size: p.normal_font
+        bold: True
+        size: root.size
+        text_size: self.size
+        center_x: root.center_x
+        center_y: root.center_y
+        halign: 'center'
+        valign: 'middle'
 
 <Btn_Temp@RoundButton>:
     red: False
@@ -715,48 +728,49 @@ FloatLayout:
         valign: 'middle'
         halign: 'center'
 
-<UltraOffsetSlider>:
-    offset: 0
-    RoundButton:
-        id: btn_plus
-        on_release: self.offset += 2.5
-        size: 62, 62
-        right: root.right-p.padding
-        y: root.y + 120
-        canvas:
-            Color:
-                rgba: 1,1,1,1
-            Rectangle:
-                size: 34, 5
-                pos: self.center_x - 34/2, self.center_y - 5/2
-            Rectangle:
-                size: 5, 34
-                pos: self.center_x - 5/2, self.center_y - 34/2
-    RoundButton:
-        id: btn_minus
-        on_release: self.offset -= 2.5
-        size: 62, 62
-        right: btn_plus.x
-        y: btn_plus.y
-        canvas:
-            Color:
-                rgba: 1,1,1,1
-            Rectangle:
-                size: 34, 5
-                pos: self.center_x - 34/2, self.center_y - 5/2
-    RoundButton:
-        on_release: self.offset = 0
-        size: 62, 62
-        right: btn_minus.x
-        y: btn_plus.y
-        canvas:
-            Color:
-                rgba: (0,0,0,0) if root.offset == 0 else (1,1,1,1)
-            Line:
-                width: 2.6
-                circle: (self.center_x, self.center_y, 15, 0, 270)
-            Triangle:
-                points: (self.center_x - 8, self.center_y + 15, self.center_x, self.center_y + 15 + 8, self.center_x, self.center_y + 15 - 8)
+# Not used, this is for when klipper supports temperature offset
+# <UltraOffsetSlider>:
+#     offset: 0
+#     RoundButton:
+#         id: btn_plus
+#         on_release: self.offset += 2.5
+#         size: 62, 62
+#         right: root.right-p.padding
+#         y: root.y + 120
+#         canvas:
+#             Color:
+#                 rgba: 1,1,1,1
+#             Rectangle:
+#                 size: 34, 5
+#                 pos: self.center_x - 34/2, self.center_y - 5/2
+#             Rectangle:
+#                 size: 5, 34
+#                 pos: self.center_x - 5/2, self.center_y - 34/2
+#     RoundButton:
+#         id: btn_minus
+#         on_release: self.offset -= 2.5
+#         size: 62, 62
+#         right: btn_plus.x
+#         y: btn_plus.y
+#         canvas:
+#             Color:
+#                 rgba: 1,1,1,1
+#             Rectangle:
+#                 size: 34, 5
+#                 pos: self.center_x - 34/2, self.center_y - 5/2
+#     RoundButton:
+#         on_release: self.offset = 0
+#         size: 62, 62
+#         right: btn_minus.x
+#         y: btn_plus.y
+#         canvas:
+#             Color:
+#                 rgba: (0,0,0,0) if root.offset == 0 else (1,1,1,1)
+#             Line:
+#                 width: 2.6
+#                 circle: (self.center_x, self.center_y, 15, 0, 270)
+#             Triangle:
+#                 points: (self.center_x - 8, self.center_y + 15, self.center_x, self.center_y + 15 + 8, self.center_x, self.center_y + 15 - 8)
                 
 <BasePopup>:
     title_size: p.large_font
@@ -782,7 +796,8 @@ FloatLayout:
 
 <PressureAdvancePopup@BasePopup>:
     size_hint: 0.95, 0.4
-    title: "Set Pressure Advance"
+    write_config: False
+    title: "Write Pressure Advance to Config" if self.write_config else "Set Pressure Advance"
     FloatLayout:
         PressureAdvanceSlider:
             id: slider
@@ -796,7 +811,8 @@ FloatLayout:
         Btn_P_Confirm:
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.send_pressure_advance("777"), root.dismiss()
+            on_release: 
+                if self.write_config: app.send_pressure_advance("777"), root.dismiss()
 
 <SpeedPopup@BasePopup>:
     size_hint: 0.95, 0.4
@@ -890,25 +906,26 @@ FloatLayout:
             pos: root.center_x, root.y
             on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
 
-<ExtTempOffsetPopup@BasePopup>:
-    size_hint: 0.95, 0.4
-    title: "Set "+root.creator.heater_id+" Temperature"
-    FloatLayout:
-        ExtTempOffsetSlider:
-            val: app.temp[root.creator.heater_id][0]
-            id: slider
-            width: root.width
-            pos_hint: {'center_x':0.5, 'y':0.35}
-        Btn_P_Cancel:
-            id: btn_cancel
-            width: root.width/2
-            pos: root.pos
-            on_release: root.dismiss()
-        Btn_P_Confirm:
-            title: "Set Offset" if slider.offset != 0 else "Set Temperature"
-            width: root.width/2
-            pos: root.center_x, root.y
-            on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
+# Not used, this is for when klipper gets temperature offsets
+# <ExtTempOffsetPopup@BasePopup>:
+#     size_hint: 0.95, 0.4
+#     title: "Set "+root.creator.heater_id+" Temperature"
+#     FloatLayout:
+#         ExtTempOffsetSlider:
+#             val: app.temp[root.creator.heater_id][0]
+#             id: slider
+#             width: root.width
+#             pos_hint: {'center_x':0.5, 'y':0.35}
+#         Btn_P_Cancel:
+#             id: btn_cancel
+#             width: root.width/2
+#             pos: root.pos
+#             on_release: root.dismiss()
+#         Btn_P_Confirm:
+#             title: "Set Offset" if slider.offset != 0 else "Set Temperature"
+#             width: root.width/2
+#             pos: root.center_x, root.y
+#             on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
 
 <FilamentChooserPopup@BasePopup>:
     size_hint: 0.95, 0.44

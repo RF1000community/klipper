@@ -2,33 +2,37 @@ from os.path import dirname, expanduser
 kgui_dir = dirname(__file__)
 sdcard_path = expanduser('/home/pi/sdcard')
 
-large_font = 34
-normal_font = 22
+large_font = 32
+normal_font = 23
 small_font = 17
 extra_small_font = 14
 screen_width = 600
 screen_height = 1024
 radius = 8
-icon_radius = 8
+icon_radius = 3
 popup_radius = 15
 icon_radius = 2.51
 status_bar_height = 26
-btn_height = 70
-progress_bar_height = 5
+btn_height = 78
+btn_width = 3*btn_height
+progress_bar_height = 8
 tab_height = 100
+#never assume pixels are square :}
+disp_vertical_stretch = 1.05 
 #generate even spacing based on all contents on homescreen
 small_padding = 15
 notification_padding = 22
 padding = (screen_height\
         - status_bar_height\
-        - btn_height*7\
+        - btn_height*4\
+        - btn_width\
         - progress_bar_height\
         - tab_height)\
-        /float(9+1.5)#remaining space has to contain 9* padding and 1* hpadding
+        /float(7)#remaining space has to contain 9* padding and 1* hpadding
 int_pad = int(padding)
 home_col_height = padding+btn_height
 padding_hint = padding/screen_width
-h_padding = 1.5*padding
+h_padding = padding*disp_vertical_stretch
 
 background = (0.065,0.065,0.065,1)
 popup = (0.15,0.15,0.15,1)
