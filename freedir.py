@@ -4,10 +4,14 @@
 """
 freedir() for removing files until enough space is available on the
 disk.
+
+Can be used from the command line as well as follows:
+
+./freedir.py path1[,path2,...] [threshold] [stop]
 """
 
 from os import stat, listdir, remove
-from os.path import isdir, isfile, expanduser, join, getmtime
+from os.path import isdir, isfile, islink, expanduser, join, getmtime
 from subprocess import Popen, PIPE, STDOUT
 import sys
 
@@ -29,45 +33,72 @@ def freedir(directory, threshold=100, stop=500):
                             space is reached.  Available partition space
                             in MiB, defaults to 500.
 
-    Return values:
-    0           Deleted files and reached specified amount of space.
-    1           More space left than specified threshold.
-                Nothing deleted.
-    2           Not enough files specified to reach space set in stop.
-    3           Error while deleting files (Permission denied)
+    Returns a tuple (number of files deleted, space freed in MiB)
     """
 
-    dirs = check_input(directory)
+    dirs = _check_input(directory)
     avail = get_space(dirs[0])
     print("Available space: " + str(avail) + "M")
 
     # Enough space left, return
     if avail > threshold:
-        return 1
+        return (0, 0)
 
     files = []
     for i in dirs:
         for j in listdir(i):
             path = join(i, j)
-            # Ignore contained directories
-            if isfile(path):
+            # Ignore contained directories and symlinks
+            if not(isdir(path) or islink(path)):
                 files.append(path)
     # Sort to oldest files last (as of last modification time)
     files.sort(key=getmtime, reverse=True)
 
+    fcount = 0
     while get_space(dirs[0]) < stop and files:
         cur_file = files.pop()
         # Uncomment to disable safeguard
         ###remove(cur_file)
         print("Deleted " + cur_file)
+        fcount += 1
 
-    if get_space(dirs[0]) < stop:
-        # Not enough files to delete
-        return 2
-    return 0
+    return (fcount, get_space(dirs[0]) - avail)
 
 
-def check_input(dirs):
+def reducedir(directory, nfiles):
+    """
+    Reduce a directory to the specified amount of files.
+
+    Parameters:
+    directory   string/list Directory in which to delete files.  If
+                            list of dirs is given, delete the oldest
+                            files out of all dirs.
+    nfiles      int         Maximum amount of files to keep.
+
+    Returns the number of files that were deleted.
+    """
+
+    dirs = _check_input(directory)
+    files = []
+    for i in dirs:
+        for j in listdir(i):
+            path = join(i, j)
+            # Ignore directories, but take symlinks
+            if isfile(path):
+                files.append(path)
+    if len(files) <= nfiles:
+        return 0
+    files.sort(key=getmtime)
+    # How many files to delete
+    ndel = len(files) - nfiles
+
+    for i in range(ndel):
+        print("Deleted " + files[i])
+        ###remove(files[i])
+    return ndel
+
+
+def _check_input(dirs):
     """
     Parses the specified str/list of directories and checks for wrong
     arguments.
@@ -90,7 +121,7 @@ def check_input(dirs):
     return dirs
 
 
-def get_space(path):
+def get_space(path='.'):
     """
     Get available disk space. -BM gives output in M (1,048,576 Bytes)
     """
