@@ -65,7 +65,7 @@ def freedir(directory, threshold=100, stop=500):
     return (fcount, get_space(dirs[0]) - avail)
 
 
-def reducedir(directory, nfiles):
+def reducedir(directory, nfiles=100):
     """
     Reduce a directory to the specified amount of files.
 
@@ -74,6 +74,7 @@ def reducedir(directory, nfiles):
                             list of dirs is given, delete the oldest
                             files out of all dirs.
     nfiles      int         Maximum amount of files to keep.
+                            Defaults to 100.
 
     Returns the number of files that were deleted.
     """

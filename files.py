@@ -1,7 +1,10 @@
-from kivy.uix.filechooser import FileChooserIconView
+from os import remove
+from os.path import getmtime, basename, exists, abspath
+
 from kivy.app import App
 from kivy.clock import Clock
-from os.path import getmtime, split, exists, abspath
+from kivy.uix.filechooser import FileChooserIconView
+
 from elements import *
 import parameters as p
 
@@ -39,21 +42,45 @@ class FC(FileChooserIconView):
     def on_selection(self, instance, filenames):
         if not filenames:
             return
-        self.popup = PrintPopup(filenames[0], self)
+        self.popup = PrintPopup(filenames[0], creator=self)
         self.popup.open()
 
 
 class PrintPopup(BasePopup):
 
-    def __init__(self, path, chooser, **kwargs):
-        self.prompt = path.split("/")[-1]
-        self.chooser = chooser
+    def __init__(self, path, **kwargs):
+        self.path = path
+        # Extract only the filename from the path
+        self.prompt = basename(self.path)
         super(PrintPopup, self).__init__(**kwargs)
 
     def dismiss(self):
         super(PrintPopup, self).dismiss()
+        # Deselects the file in the filechooser when canceled
         # Supposed to be read-only but still works that way
-        self.chooser.selection = []
+        self.creator.selection = []
 
     def confirm(self):
-        self.app.send_start(self.chooser.selection)
+        self.app.send_start(self.path)
+
+    def delete(self):
+        """Open a confirmation dialog to delete the file"""
+        super(PrintPopup, self).dismiss() # dismiss bypassing deselection
+        self.confirm_del = DelPopup(creator=self)
+        self.confirm_del.open()
+
+
+class DelPopup(BasePopup):
+    """Popup to confirm file deletion"""
+
+    def dismiss(self):
+        super(DelPopup, self).dismiss()
+        # Deselect in the filechooser
+        self.creator.creator.selection = []
+
+    def confirm(self):
+        """Deletes the file and closes the popup"""
+        remove(self.creator.path)
+        # Update the files in the filechooser instance
+        self.creator.creator._update_files()
+        self.dismiss()

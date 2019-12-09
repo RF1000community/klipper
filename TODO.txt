@@ -19,8 +19,6 @@ KGUI:
 
     Schedule Full sdcard handling e.g. with, add deletion when more than 100 elements except for the USB stick, notification
 
-    Delete button on print popup
-
     Material Database, with popups
 
 CURA COONNECTION

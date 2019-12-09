@@ -649,9 +649,8 @@ FloatLayout:
     canvas:
         Color:
             rgba: p.divider
-        Rectangle:
-            size: self.width, 1
-            pos: self.x, self.top-1
+        Line:
+            points: self.x, self.top, self.right, self.top
         Color:# Highlight pressed button
             rgba: p.translucent_white if self.pressed else (0,0,0,0)    
         RoundedRectangle:
@@ -666,12 +665,8 @@ FloatLayout:
     canvas:
         Color:
             rgba: p.divider
-        Rectangle:
-            size: self.width, 1
-            pos: self.x, self.top-1
-        Rectangle:
-            size: 1, self.height
-            pos: self.pos
+        Line:
+            points: self.x, self.y, self.x, self.top, self.right, self.top
         Color:# Highlight pressed button
             rgba: p.translucent_white if self.pressed else (0,0,0,0)    
         RoundedRectangle:
@@ -1066,7 +1061,44 @@ FloatLayout:
     FloatLayout:
         Label:
             text: root.prompt
-            markup: True
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 2
+            size_hint: 0.9, 0.5
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.2}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        Btn_P_Cancel:
+            id: btn_cancel
+            width: root.width/3
+            pos: root.pos
+            on_release: root.dismiss()
+        BaseButton:
+            id: btn_del
+            canvas:
+                Color:
+                    rgba: p.divider
+                Line:
+                    points: self.x, self.y, self.x, self.top, self.right, self.top
+            title: 'Delete'
+            size: root.width/3, 70
+            pos: btn_cancel.right, root.y
+            on_release: root.delete()
+        Btn_P_Confirm:
+            title: 'Print'
+            enabled: True
+            width: root.width/3
+            pos: btn_del.right, root.y
+            on_release: root.confirm()
+
+<DelPopup>:
+    title: 'Delete'
+    title_size: p.large_font
+    size_hint: 0.8, 0.3
+    FloatLayout:
+        Label:
+            text: root.creator.prompt
             halign: 'center'
             valign: 'middle'
             max_lines: 2
@@ -1080,10 +1112,12 @@ FloatLayout:
             pos: root.pos
             on_release: root.dismiss()
         Btn_P_Confirm:
-            enabled: True
+            title: 'Delete'
             width: root.width/2
+            enabled: True
             pos: root.center_x, root.y
             on_release: root.confirm()
+
 
 # SETTING ########################################################################
 

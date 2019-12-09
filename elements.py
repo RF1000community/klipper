@@ -76,18 +76,25 @@ class Btn_Slider(BaseButton):
     s_title = StringProperty()
     offset = NumericProperty()
 
-class BasePopup(Popup): #makes this Popup recieve the instance of the calling button to access its methods and e.g. heater_id
+class BasePopup(Popup):
+
     def __init__(self,**kwargs):
-        if 'creator' in kwargs: self.creator = kwargs['creator']
-        #a popup holds a value that can be passed to a slider, this avoids the value being updated, and the slider reseting
-        if 'val' in kwargs: self.val = kwargs['val']
+        # makes this Popup recieve the instance of the calling button to
+        # access its methods and e.g. heater_id
+        self.creator = kwargs.get('creator', None)
+        # a popup holds a value that can be passed to a slider, this
+        # avoids the value being updated, and the slider reseting
+        self.val = kwargs.get('val', None)
         super(BasePopup,self).__init__(**kwargs)
+
     def open(self, animation=False, **kwargs):
         super(BasePopup, self).open(animation=animation, **kwargs)
         app = App.get_running_app()
         app.notify.redraw()
+
     def dismiss(self, animation=False, **kwargs):
         super(BasePopup, self).dismiss(animation=animation, **kwargs)
+
 
 class UltraSlider(Widget):
     """
