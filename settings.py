@@ -452,14 +452,3 @@ class SI_PowerMenu(SetItem):
 
 class SI_ValueSlider(SetItem):
     pass
-
-class AccSlider(UltraSlider):
-
-    def __init__(self, **kwargs):
-        super(AccSlider, self).__init__(**kwargs)
-        self.val = App.get_running_app().acceleration
-        self.val_min = 2000
-        self.val_max = 50000
-        self.unit = "mm/s²"
-        self.roundto = -2 # round val to multiples of 10
-        self.buttons = [[36000,0,"default",None],]

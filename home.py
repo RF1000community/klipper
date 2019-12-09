@@ -99,54 +99,12 @@ class XyField(Widget):
     def on_mm_pos(self, instance, value):
         self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)#TODO add showing z value
 
-class PressureAdvanceSlider(UltraSlider):
-    def __init__(self):
-        self.val = App.get_running_app().get_pressure_advance()
-        self.buttons = []
-        self.val_min = 0
-        self.val_max = 0.5
-        self.unit = "mm/mm/s"
-        self.roundto = 3
-        super(PressureAdvanceSlider, self).__init__()
-
-
-class SpeedSlider(UltraSlider):
-    def __init__(self):
-        self.val = App.get_running_app().get_speed()
-        self.buttons = [[100,0,"no multiplier",None]]
-        self.val_min = 10
-        self.val_max = 500
-        self.unit = "%"
-        self.roundto = 0
-        super(SpeedSlider, self).__init__()
-
-
-class FlowSlider(UltraSlider):
-    def __init__(self):
-        self.val = App.get_running_app().get_flow()
-        self.buttons = [[100,0,"no multiplier",None]]
-        self.val_min = 90
-        self.val_max = 110
-        self.unit = "%"
-        self.roundto = 1
-        super(FlowSlider, self).__init__()
-
-
-class FanSlider(UltraSlider):
-    def __init__(self):
-        self.val = App.get_running_app().get_fan()
-        self.buttons = []
-        self.val_min = 0
-        self.val_max = 100
-        self.unit = "%"
-        self.roundto = 0
-        super(FanSlider, self).__init__()
-
 
 class BedTempSlider(UltraSlider):
     def __init__(self):
         super(BedTempSlider, self).__init__()
         App.get_running_app().get_temp()
+        self.val = app.temp['B'][0]
         self.buttons = [[0,0,"Off",None],
                         [60,0,"PLA",None],
                         [90,0,"PETG",None],
@@ -203,7 +161,7 @@ class ExtTempSlider(UltraSlider):
         x = (float(val-40)/float(280-40))*self.px_width+self.px_min
         if x < self.px_min: x = self.px_min
         return x
-
+"""
 class ExtTempOffsetSlider(UltraOffsetSlider):
     def __init__(self):
         super(ExtTempSlider, self).__init__()
@@ -232,3 +190,4 @@ class ExtTempOffsetSlider(UltraOffsetSlider):
         x = (float(val-40)/float(280-40))*self.px_width+self.px_min
         if x < self.px_min: x = self.px_min
         return x
+"""

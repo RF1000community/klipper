@@ -2,7 +2,7 @@
 from kivy.uix.widget import Widget
 from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.popup import Popup
-from kivy.properties import NumericProperty, BooleanProperty, StringProperty
+from kivy.properties import NumericProperty, BooleanProperty, StringProperty, ListProperty
 from kivy.uix.vkeyboard import VKeyboard
 from kivy.clock import Clock
 from kivy.app import App
@@ -78,7 +78,7 @@ class Btn_Slider(BaseButton):
 
 class BasePopup(Popup): #makes this Popup recieve the instance of the calling button to access its methods and e.g. heater_id
     def __init__(self,**kwargs):
-        if 'instance' in kwargs: self.creator = kwargs['instance']
+        if 'creator' in kwargs: self.creator = kwargs['creator']
         super(BasePopup,self).__init__(**kwargs)
     def open(self, animation=False, **kwargs):
         super(BasePopup, self).open(animation=animation, **kwargs)
@@ -107,18 +107,18 @@ class UltraSlider(Widget):
     The conversion methods get_px_from_val() and get_val_from_px()
     can be safely overwritten by inheritors for nonlinear conversion.
     """
+    buttons = ListProperty()  #list of lists: e.g. [[val,offset,"name",the instance]]
+    val = NumericProperty() #value, passed to printer, not in px
+    val_min = NumericProperty()
+    val_max = NumericProperty()
+    unit = StringProperty()
+    roundto = NumericProperty()
     px = NumericProperty() #absolute position of dot in px
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
     changed = BooleanProperty(False)
-
+    
     def __init__(self, **kwargs):
-        self.buttons = list() #list of lists: e.g. [[val,offset,"name",the instance]]
-        self.val = float()    #value, passed to printer, not in px
-        self.val_min = kwargs.get('val_min', 0)
-        self.val_max = kwargs.get('val_max', 100)
-        self.unit = kwargs.get('unit', "")
-        self.roundto = kwargs.get('roundto', 2)
         self.btn_last_active = None
         super(UltraSlider, self).__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
@@ -213,7 +213,7 @@ class UltraSlider(Widget):
 
     def get_disp_from_val(self, val):
         """Returns string of the value and the given unit string"""
-        return str(val) + " " + self.unit
+        return "{:.{p}f}{}".format(val, self.unit, p = self.roundto)
 
 
 class UltraOffsetSlider(UltraSlider):

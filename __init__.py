@@ -45,7 +45,7 @@ Builder.load_file(join(p.kgui_dir, "style.kv"))
 class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     #Property for controlling the state as shown in the statusbar.
-    state = OptionProperty("initializing", options=[
+    state = OptionProperty("printing", options=[
         # Every string set has to be in this list
         "busy",
         "ready",
@@ -210,7 +210,8 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     def update_printing(self, *args):
         #tuning
-        self.get_pressure_advance()
+        self.get_config('extruder', 'pressure_advance', 'pressure_advance')
+        self.get_config('printer', 'max_accel', 'acceleration')
         self.get_z_adjust()
         self.get_speed()
         self.get_flow()
@@ -231,15 +232,6 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
 ##################################################################
 ### TUNING
-    def get_pressure_advance(self):
-        self.get_config('extruder', 'pressure_advance', 'pressure_advance')
-    def send_pressure_advance(self, val):
-        self.set_config('extruder', 'pressure_advance', val)
-
-    def get_acceleration(self):
-        self.get_config('printer', 'max_accel', 'acceleration')
-    def set_acceleration():
-        self.set_config('printer', 'max_accel', val) #move to kv, desc
 
     def get_z_adjust(self):
         self.z_adjust = self.gcode.homing_position[2]
@@ -281,6 +273,10 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.fan_speed = speed
         self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed))
 
+    def send_pressure_advance(self, val):
+        for i in range(len(self.extruders)):
+            self.set_config('extruder{}'.format(i if i != '0' else ''), 'pressure_advance', val)
+
     def get_config(self, section, option, property_name, ty=None):
         logging.info("wrote {} from section {} to {}".format(option, section, property_name))
         if testing:
@@ -308,6 +304,10 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
             self.klipper_config_manager.set(section, option, value)
             self.klipper_config_manager.cmd_SAVE_CONFIG(None)
         self.reactor.register_async_callback(write_conf)
+
+    def write_pressure_advance(self, val):
+        for i in range(len(self.extruders)):
+            self.write_config('extruder{}'.format(i if i != '0' else ''), 'pressure_advance', val)
 
     def get_temp(self, dt=None):
         # schedule reading temp in klipper thread which schedules displaying the read value in kgui thread

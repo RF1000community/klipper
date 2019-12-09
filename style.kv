@@ -79,15 +79,15 @@
         Color:
             rgba: p.button if self.enabled == True else (0,0,0,0)
         RoundedRectangle:
-            radius: [4]
+            radius: [5]
             pos: self.pos
-            size: self.width, 8
+            size: self.width, 10
         Color:
             rgba: (0,0,0,0) if not self.enabled else p.green if self.value == self.max else p.accent
         RoundedRectangle:
-            radius: [4]
+            radius: [5]
             pos: self.pos
-            size: self.width*self.value/float(self.max), 8
+            size: self.width*self.value/float(self.max), 10
     
 
 <SplitterStrip>:

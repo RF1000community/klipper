@@ -15,7 +15,7 @@ icon_radius = 2.51
 status_bar_height = 26
 btn_height = 78
 btn_width = 3*btn_height
-progress_bar_height = 8
+progress_bar_height = 10
 tab_height = 100
 #never assume pixels are square :}
 disp_vertical_stretch = 1.05 
@@ -30,7 +30,7 @@ padding = (screen_height\
         - tab_height)\
         /float(7)#remaining space has to contain 9* padding and 1* hpadding
 int_pad = int(padding)
-home_col_height = padding+btn_height
+btn_spacing = padding + btn_height
 padding_hint = padding/screen_width
 h_padding = padding*disp_vertical_stretch
 
