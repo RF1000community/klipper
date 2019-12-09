@@ -5,7 +5,7 @@ KGUI:
 
     unload/load:
         chose impl.
-            Gcode file, Macro, Python Module, Python
+            Python
 
     fix gui crash on FIRMWARE_RESTART (or restart_klipper())
 
@@ -29,4 +29,3 @@ CURA COONNECTION
     Cura Plugin
 
 HIGH SPEED ODRIVE COONNECTION
-    

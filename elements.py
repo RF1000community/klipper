@@ -79,6 +79,8 @@ class Btn_Slider(BaseButton):
 class BasePopup(Popup): #makes this Popup recieve the instance of the calling button to access its methods and e.g. heater_id
     def __init__(self,**kwargs):
         if 'creator' in kwargs: self.creator = kwargs['creator']
+        #a popup holds a value that can be passed to a slider, this avoids the value being updated, and the slider reseting
+        if 'val' in kwargs: self.val = kwargs['val']
         super(BasePopup,self).__init__(**kwargs)
     def open(self, animation=False, **kwargs):
         super(BasePopup, self).open(animation=animation, **kwargs)
