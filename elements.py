@@ -185,6 +185,7 @@ class UltraSlider(Widget):
         self.px = self.get_px_from_val(instance.val)
         self.highlight_button()
         self.disp = self.get_disp_from_val(instance.val)
+        self.changed = True
 
     def get_px_from_val(self, val):
         """

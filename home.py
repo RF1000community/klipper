@@ -101,10 +101,9 @@ class XyField(Widget):
 
 
 class BedTempSlider(UltraSlider):
-    def __init__(self):
-        super(BedTempSlider, self).__init__()
+    def __init__(self, **kwargs):
+        super(BedTempSlider, self).__init__(**kwargs)
         App.get_running_app().get_temp()
-        self.val = app.temp['B'][0]
         self.buttons = [[0,0,"Off",None],
                         [60,0,"PLA",None],
                         [90,0,"PETG",None],
@@ -132,8 +131,8 @@ class BedTempSlider(UltraSlider):
 
 
 class ExtTempSlider(UltraSlider):
-    def __init__(self):
-        super(ExtTempSlider, self).__init__()
+    def __init__(self, **kwargs):
+        super(ExtTempSlider, self).__init__(**kwargs)
         App.get_running_app().get_temp()
         self.buttons = [
             [0,14,"Off",None],
@@ -163,8 +162,8 @@ class ExtTempSlider(UltraSlider):
         return x
 """
 class ExtTempOffsetSlider(UltraOffsetSlider):
-    def __init__(self):
-        super(ExtTempSlider, self).__init__()
+    def __init__(self, **kwargs:
+        super(ExtTempSlider, self).__init__(**kwargs)
         App.get_running_app().get_temp()
         self.buttons = [
             [0,14,"Off",None],

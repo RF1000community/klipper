@@ -88,8 +88,8 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
             stepper_config = {'x': self.klipper_config.getsection('stepper_x'),
                               'y': self.klipper_config.getsection('stepper_y'),
                               'z': self.klipper_config.getsection('stepper_z')}
-            self.pos_max = {i:stepper_config[i].getint('position_max', 200) for i in ('x','y','z')}
-            self.pos_min = {i:stepper_config[i].getint('position_min', 0) for i in ('x','y')}#maybe use position_min, position_max = rail.get_range()
+            self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
+            self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y')}#maybe use position_min, position_max = rail.get_range()
         
             #check whether the right sdcard path is configured
             configured_sdpath = expanduser(self.klipper_config.getsection("virtual_sdcard").get("path", None))
