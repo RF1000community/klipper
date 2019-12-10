@@ -135,7 +135,7 @@ FloatLayout:
         Btn_Temp:
             id: temp_T1
             heater_id: "T1"
-            on_release: Factory.ExtTempPopup(creator=self).open()
+            on_release: Factory.ExtTempPopup(creator=self, val=app.temp).open()
             large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
             small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             red: app.temp[self.heater_id][1] > 50
@@ -149,7 +149,7 @@ FloatLayout:
         Btn_Temp:
             id: temp_T0
             heater_id: "T0"
-            on_release: Factory.ExtTempPopup(creator=self).open()
+            on_release: Factory.ExtTempPopup(creator=self, val=app.temp).open()
             large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
             small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             red: app.temp[self.heater_id][1] > 50
@@ -161,7 +161,7 @@ FloatLayout:
             x: p.h_padding + p.icon_radius
             top: p.padding+ 1.5* p.btn_height + temp_T1.center_y - p.icon_radius
         Btn_Temp:
-            on_release: Factory.BedTempPopup(creator=self).open()
+            on_release: Factory.BedTempPopup(creator=self, val=app.temp).open()
             id: temp_bed
             large_value: "{:3.0f}°C".format(app.temp['B'][1])
             small_value: "{:3.0f}".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "Off"
@@ -245,28 +245,28 @@ FloatLayout:
 
         Btn_Temp:
             id: fan
-            on_release: Factory.FanPopup().open()
+            on_release: Factory.FanPopup(val=app.fan_speed).open()
             large_value: "{:3.0f}%".format(app.fan_speed)
             small_value: "Print Cooling"
             right: p.screen_width - p.h_padding + 25
             center_y: p.padding + p.btn_height/2 + p.btn_spacing
         Btn_Temp:
             id: z_adjust
-            on_release: Factory.ZAdjustPopup().open()
+            on_release: Factory.ZAdjustPopup(val=app.z_adjust).open()
             large_value: "{:1.0f}mm".format(app.z_adjust)
             small_value: "Z Calibration"
             right: p.screen_width - p.h_padding + 25
             center_y: fan.center_y + p.btn_spacing
         Btn_Temp:
             id: pressure_advance
-            on_release: Factory.PressureAdvancePopup().open()
+            on_release: Factory.PressureAdvancePopup(val=app.pressure_advance).open()
             large_value: "{:4.3f}s".format(app.pressure_advance)
             small_value: "Pressure Advance"
             right: p.screen_width - p.h_padding + 25
             center_y: z_adjust.center_y + p.btn_spacing
         Btn_Temp:
             id: acceleration
-            on_release: Factory.AccPopup(write=False).open()
+            on_release: Factory.AccPopup(write=False, val=app.acceleration).open()
             large_value: "{:5.0f}mm/s²".format(app.acceleration)
             small_value: "Acceleration"
             right: p.screen_width - p.h_padding + 25
@@ -274,14 +274,14 @@ FloatLayout:
 
         Btn_Temp:
             id: speed
-            on_release: Factory.SpeedPopup().open()
+            on_release: Factory.SpeedPopup(val=app.speed).open()
             large_value: "{:3.0f}%".format(app.speed)
             small_value: "Print Speed"
             x: p.padding
             center_y: acceleration.center_y
         Btn_Temp:
             id: flow
-            on_release: Factory.FlowPopup().open()
+            on_release: Factory.FlowPopup(val=app.flow).open()
             large_value: "{:3.0f}%".format(app.flow)
             small_value: "Material Flow"
             x: p.padding
@@ -649,9 +649,8 @@ FloatLayout:
     canvas:
         Color:
             rgba: p.divider
-        Rectangle:
-            size: self.width, 1
-            pos: self.x, self.top-1
+        Line:
+            points: self.x, self.top, self.right, self.top
         Color:# Highlight pressed button
             rgba: p.translucent_white if self.pressed else (0,0,0,0)    
         RoundedRectangle:
@@ -666,12 +665,8 @@ FloatLayout:
     canvas:
         Color:
             rgba: p.divider
-        Rectangle:
-            size: self.width, 1
-            pos: self.x, self.top-1
-        Rectangle:
-            size: 1, self.height
-            pos: self.pos
+        Line:
+            points: self.x, self.y, self.x, self.top, self.right, self.top
         Color:# Highlight pressed button
             rgba: p.translucent_white if self.pressed else (0,0,0,0)    
         RoundedRectangle:
@@ -798,7 +793,7 @@ FloatLayout:
     title: "Calibrate Z Height"
     FloatLayout:
         UltraSlider:
-            val: app.z_adjust
+            val: root.val
             buttons: [[0,0,"default", None]]
             val_min: -0.5
             val_max: 0.5
@@ -824,7 +819,7 @@ FloatLayout:
     title: "Write Pressure Advance to Config" if self.write else "Set Pressure Advance"
     FloatLayout:
         UltraSlider:
-            val: app.pressure_advance
+            val: root.val
             buttons: []
             val_min: 0
             val_max: 0.5
@@ -852,7 +847,7 @@ FloatLayout:
     size_hint: 0.83,0.4
     FloatLayout:
         UltraSlider:
-            val: app.acceleration
+            val: root.val
             val_min: 2000
             val_max: 50000
             unit: "mm/s²"
@@ -880,7 +875,7 @@ FloatLayout:
     title: "Set Speed Factor"
     FloatLayout:
         UltraSlider:
-            val: app.speed
+            val: root.val
             buttons: [[100,0,"no multiplier",None]]
             val_min: 10
             val_max: 500
@@ -905,7 +900,7 @@ FloatLayout:
     title: "Set Material Flow"
     FloatLayout:
         UltraSlider:
-            val: app.flow
+            val: root.val
             buttons: [[100,0,"no multiplier",None]]
             val_min: 90
             val_max: 110
@@ -930,7 +925,7 @@ FloatLayout:
     title: "Set Part Cooling"
     FloatLayout:
         UltraSlider:
-            val: app.fan_speed
+            val: root.val
             buttons: []
             val_min: 0
             val_max: 100
@@ -956,7 +951,7 @@ FloatLayout:
     FloatLayout:
         BedTempSlider:
             id: slider
-            val: app.temp["B"][0]
+            val: root.val['B'][0]
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
         Btn_P_Cancel:
@@ -975,7 +970,7 @@ FloatLayout:
     title: "Set "+root.creator.heater_id+" Temperature"
     FloatLayout:
         ExtTempSlider:
-            val: app.temp[root.creator.heater_id][0]
+            val: root.val[root.creator.heater_id][0]
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -996,7 +991,7 @@ FloatLayout:
 #     title: "Set "+root.creator.heater_id+" Temperature"
 #     FloatLayout:
 #         ExtTempOffsetSlider:
-#             val: app.temp[root.creator.heater_id][0]
+#             val: root.val[root.creator.heater_id][0]
 #             id: slider
 #             width: root.width
 #             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -1073,7 +1068,44 @@ FloatLayout:
     FloatLayout:
         Label:
             text: root.prompt
-            markup: True
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 2
+            size_hint: 0.9, 0.5
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.2}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        Btn_P_Cancel:
+            id: btn_cancel
+            width: root.width/3
+            pos: root.pos
+            on_release: root.dismiss()
+        BaseButton:
+            id: btn_del
+            canvas:
+                Color:
+                    rgba: p.divider
+                Line:
+                    points: self.x, self.y, self.x, self.top, self.right, self.top
+            title: 'Delete'
+            size: root.width/3, 70
+            pos: btn_cancel.right, root.y
+            on_release: root.delete()
+        Btn_P_Confirm:
+            title: 'Print'
+            enabled: True
+            width: root.width/3
+            pos: btn_del.right, root.y
+            on_release: root.confirm()
+
+<DelPopup>:
+    title: 'Delete'
+    title_size: p.large_font
+    size_hint: 0.8, 0.3
+    FloatLayout:
+        Label:
+            text: root.creator.prompt
             halign: 'center'
             valign: 'middle'
             max_lines: 2
@@ -1087,10 +1119,12 @@ FloatLayout:
             pos: root.pos
             on_release: root.dismiss()
         Btn_P_Confirm:
-            enabled: True
+            title: 'Delete'
             width: root.width/2
+            enabled: True
             pos: root.center_x, root.y
             on_release: root.confirm()
+
 
 # SETTING ########################################################################
 
@@ -1138,11 +1172,11 @@ FloatLayout:
             SI_ValueSlider:
                 id: si_acc
                 left_title: "Max. printhead Acceleration"
-                value: str(app.acceleration)
+                value: str(app.acceleration)+"mm/2²"
                 RectangleButton:
                     pos: si_acc.pos
                     size: si_acc.size
-                    on_release: Factory.AccPopup(write=True).open()
+                    on_release: Factory.AccPopup(write=True, val=app.acceleration).open()
             SI_Wifi:
                 left_title: "Wifi"
             SI_PowerMenu:
