@@ -716,7 +716,7 @@ FloatLayout:
             rgba: (0, 0, 0, 0) if root.pressed else p.medium_light_gray
         RoundedRectangle:
             radius: (4,4,4,4)
-            size: self.px - p.padding - self.x, 8
+            size: self.px - p.padding - self.x + 1, 8
             pos: root.x+p.padding, slider_pos_y-4+root.y
         Color:
             rgba: (0,0,0,0) if root.pressed  else (1,1,1,1) 
@@ -1169,18 +1169,16 @@ FloatLayout:
                 left_title: "Light"
             SI_Switch:
                 left_title: "Calibrate for every printjob"
-            SI_ValueSlider:
+            SetItem:
                 id: si_acc
                 left_title: "Max. printhead Acceleration"
-                value: str(app.acceleration)+"mm/2²"
-                RectangleButton:
-                    pos: si_acc.pos
-                    size: si_acc.size
-                    on_release: Factory.AccPopup(write=True, val=app.acceleration).open()
+                right_title: str(app.acceleration)+"mm/s²"
+                on_release: Factory.AccPopup(write=True, val=app.acceleration).open()
             SI_Wifi:
                 left_title: "Wifi"
-            SI_PowerMenu:
+            SetItem:
                 left_title: "Shutdown..."
+                on_release: Factory.PowerPopup().open()
 
 <WifiScreen>:
     name: 'WifiScreen'
@@ -1228,15 +1226,29 @@ FloatLayout:
     size_hint_y: None
     height: 110
     width: p.screen_width
-    left_title: ''
+    left_title: ""
+    right_title: ""
     Label:
-        id: switch_id
+        id: left_label
         text: root.left_title
         font_size: p.normal_font
         text_size: self.size
         size: root.size
         valign: 'middle'
         pos: root.pos
+        padding_x: p.padding
+    Label:
+        id: right_label
+        text: root.right_title
+        font_size: p.normal_font
+        text_size: self.size
+        color: p.light_gray
+        size: 250, root.height
+        size_hint: None, None
+        valign: 'middle'
+        halign: 'right'
+        y: root.y
+        right: p.screen_width
         padding_x: p.padding
     Divider:
         y: root.y
@@ -1255,42 +1267,12 @@ FloatLayout:
             size: self.width, 1
 
 <SI_Switch@SetItem>:
+    enabled: False
     Switch:
         id: knopf
         size_hint: None, None
         pos_hint: {'center_y': 0.5}
         right: p.screen_width-p.padding +p.small_padding #to increase touch area
-
-<SI_ValueSlider@SetItem>:
-    value: ''
-    Label:
-        text: root.value
-        font_size: p.normal_font
-        text_size: self.size
-        color: p.light_gray
-        size: 200, root.height
-        size_hint: None, None
-        valign: 'middle'
-        halign: 'right'
-        y: root.y
-        right: p.screen_width
-        padding_x: p.padding
-
-<SI_Wifi>:
-    Label:
-        id: current_wifi
-        text: root.default
-        font_size: p.normal_font        
-        text_size: self.size
-        color: p.medium_light_gray
-        italic: True
-        size: 400, root.height
-        size_hint: None, None
-        valign: 'middle'
-        halign: 'right'
-        y: root.y
-        right: p.screen_width
-        padding_x: p.padding
 
 <SI_WifiNetwork>:
     Label:
@@ -1315,11 +1297,8 @@ FloatLayout:
         color: root.get_color()
         pos: root.pos
 
-
-
 <PasswordPopup>:
     txt_input: pwd_input
-
     FloatLayout:
         Label:
             text: 'Password'
@@ -1357,6 +1336,7 @@ FloatLayout:
             pos: root.pos
             on_release: root.dismiss()
         Btn_P_Confirm:
+            enabled: len(pwd_input.text) > 3
             width: root.width/2
             pos: root.center_x, root.y
             on_release: root.confirm()

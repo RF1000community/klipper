@@ -45,7 +45,7 @@ Builder.load_file(join(p.kgui_dir, "style.kv"))
 class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     #Property for controlling the state as shown in the statusbar.
-    state = OptionProperty("printing", options=[
+    state = OptionProperty("initializing", options=[
         # Every string set has to be in this list
         "busy",
         "ready",

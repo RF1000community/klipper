@@ -261,9 +261,9 @@ class SI_Wifi(SetItem):
         super(SI_Wifi, self).__init__(**kwargs)
         self.freq = 10
         if wifi.state:
-            self.default = 'not available'
+            self.right_title = 'not available'
         else:
-            self.default = '...'
+            self.right_title = '...'
         # Assuming very much that the Setting Screen will NEVER be the default on load
         self.do_update = False
         wifi.bind(on_networks=self.update)
@@ -277,7 +277,7 @@ class SI_Wifi(SetItem):
             mgr.current = 'WifiScreen'
 
     def on_pre_enter(self):
-        return
+        return # is this right?
         wifi.update_freq = self.freq
 
     def bind_tab(self, dt):
@@ -286,7 +286,7 @@ class SI_Wifi(SetItem):
         tab.bind(current_tab=self.control_update)
 
     def control_update(self, instance, value):
-        return
+        return # is this right?
         if value == instance.ids.set_tab:
             self.do_update = True
             wifi.get_wifi_list(no_rescan=True)
@@ -304,7 +304,7 @@ class SI_Wifi(SetItem):
 
     def on_display(self, instance, value):
         # Applys the new text to display in the Label whenever the text got updated
-        label = self.ids.current_wifi
+        label = self.ids.right_label
         label.text = value[0]
         if value[1]:
             label.color = p.light_gray
@@ -443,12 +443,3 @@ class ConnectionPopup(BasePopup):
         wifi.delete(self.ssid)
         self.dismiss()
 
-
-class SI_PowerMenu(SetItem):
-
-    def on_release(self):
-        self.popup = PowerPopup()
-        self.popup.open()
-
-class SI_ValueSlider(SetItem):
-    pass

@@ -223,7 +223,7 @@ class UltraSlider(Widget):
 
     def get_disp_from_val(self, val):
         """Returns string of the value and the given unit string"""
-        return "{:.{p}f}{}".format(val, self.unit, p = self.roundto)
+        return "{:.{p}f}{}".format(val, self.unit, p = max(0, self.roundto))
 
 
 class UltraOffsetSlider(UltraSlider):
