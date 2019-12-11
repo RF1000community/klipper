@@ -17,6 +17,8 @@ class GCodeParser:
         printer.register_event_handler("klippy:shutdown", self._handle_shutdown)
         printer.register_event_handler("klippy:disconnect",
                                        self._handle_disconnect)
+        printer.register_event_handler("extruder:activate_extruder",
+                                       self._handle_activate_extruder)
         # Input handling
         self.reactor = printer.get_reactor()
         self.is_processing_data = False
@@ -175,6 +177,10 @@ class GCodeParser:
             self.fd_handle = self.reactor.register_fd(self.fd,
                                                       self._process_data)
         self._respond_state("Ready")
+    def _handle_activate_extruder(self):
+        self.reset_last_position()
+        self.extrude_factor = 1.
+        self.base_position[3] = self.last_position[3]
     def reset_last_position(self):
         self.last_position = self.position_with_transform()
     def _dump_debug(self):
@@ -427,11 +433,7 @@ class GCodeParser:
         if not cmd:
             logging.debug(params['#original'])
             return
-        if cmd[0] == 'T' and len(cmd) > 1 and cmd[1].isdigit():
-            # Tn command has to be handled specially
-            self.cmd_Tn(params)
-            return
-        elif cmd.startswith("M117 "):
+        if cmd.startswith("M117 "):
             # Handle M117 gcode with numeric and special characters
             handler = self.gcode_handlers.get("M117", None)
             if handler is not None:
@@ -442,27 +444,6 @@ class GCodeParser:
             # Don't warn about requests to turn off fan when fan not present
             return
         self.respond_info('Unknown command:"%s"' % (cmd,))
-    def cmd_Tn(self, params):
-        # Select Tool
-        index = self.get_int('T', params, minval=0)
-        section = 'extruder'
-        if index:
-            section = 'extruder%d' % (index,)
-        new_extruder = self.printer.lookup_object(section, None)
-        if new_extruder is None:
-            raise self.error("Unknown extruder %d on Tn command" % (index,))
-        old_extruder = self.toolhead.get_extruder()
-        if old_extruder is new_extruder:
-            return
-        self.run_script_from_command(old_extruder.get_activate_gcode(False))
-        print_time = self.toolhead.get_last_move_time()
-        old_extruder.set_active(print_time, False)
-        extrude_pos = new_extruder.set_active(print_time, True)
-        self.toolhead.set_extruder(new_extruder, extrude_pos)
-        self.reset_last_position()
-        self.extrude_factor = 1.
-        self.base_position[3] = self.last_position[3]
-        self.run_script_from_command(new_extruder.get_activate_gcode(True))
     def _cmd_mux(self, params):
         key, values = self.mux_commands[params['#command']]
         if None in values:
@@ -476,7 +457,7 @@ class GCodeParser:
     all_handlers = [
         'G1', 'G4', 'G28', 'M400',
         'G20', 'M82', 'M83', 'G90', 'G91', 'G92', 'M114', 'M220', 'M221',
-        'SET_GCODE_OFFSET', 'M206', 'SAVE_GCODE_STATE', 'RESTORE_GCODE_STATE',
+        'SET_GCODE_OFFSET', 'SAVE_GCODE_STATE', 'RESTORE_GCODE_STATE',
         'M105', 'M104', 'M109', 'M140', 'M190',
         'M112', 'M115', 'IGNORE', 'GET_POSITION',
         'RESTART', 'FIRMWARE_RESTART', 'ECHO', 'STATUS', 'HELP']
@@ -599,14 +580,6 @@ class GCodeParser:
             for pos, delta in enumerate(move_delta):
                 self.last_position[pos] += delta
             self.move_with_transform(self.last_position, speed)
-    def cmd_M206(self, params):
-        # Offset axes
-        offsets = { self.axis2pos[a]: -self.get_float(a, params)
-                    for a in 'XYZ' if a in params }
-        for pos, offset in offsets.items():
-            delta = offset - self.homing_position[pos]
-            self.base_position[pos] += delta
-            self.homing_position[pos] = offset
     cmd_SAVE_GCODE_STATE_help = "Save G-Code coordinate state"
     def cmd_SAVE_GCODE_STATE(self, params):
         state_name = self.get_str('NAME', params, 'default')
