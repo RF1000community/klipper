@@ -19,7 +19,7 @@ class XyField(Widget):
         super(XyField, self).__init__(**kwargs)
         self.point_radius = 10
         self.app = App.get_running_app()
-        self.printer_dimensions = (self.app.pos_max['x'] - self.app.pos_min['x'],\
+        self.printer_dimensions = (self.app.pos_max['x'] - self.app.pos_min['x'],
                                    self.app.pos_max['y'] - self.app.pos_min['y'])
         self.app.bind(pos=self.update_with_mm)
         Clock.schedule_once(self.init_drawing, 0)
@@ -67,7 +67,6 @@ class XyField(Widget):
         self.mm[1] = mm[1]
 
     def apply_bounds(self, x, y):
-        logging.info("applying bounds to {}, {}".format(x, y))
         if x < self.origin[0]:
             x = self.origin[0]
         elif x > self.limits[0]:
@@ -77,7 +76,6 @@ class XyField(Widget):
             y = self.origin[1]
         elif y > self.limits[1]:
             y = self.limits[1]
-        logging.info("gives {}, {}".format(x, y))
         return [x, y]
 
     def set_mm_with_px(self, px):

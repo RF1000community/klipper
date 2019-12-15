@@ -227,11 +227,12 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.get_config('printer', 'max_accel', 'acceleration', 'int')
 
     def on_state(self, instance, state):
-        logging.info("changed to state {}".format(state))
         if state == 'printing' or state == 'busy':
-            try: self.print_title = splitext(basename(self.sdcard.current_file.name))[0] #remove file extension
-            except: logging.info('sdcard.current_file.name maybe NoneType')
-
+            file = self.sdcard.current_file
+            if file: 
+                self.print_title = splitext(basename(file.name))[0] #remove file extension
+                self.notify.show("Started printing", "Started printing {}".format(basename(file.name)))
+            
 ##################################################################
 ### TUNING
 
@@ -355,13 +356,14 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
 
-    def send_start(self, file):#TODO needs Testing
+    def send_start(self, file):
+        filename = basename(file) # remove path
+        self.print_title = splitext(filename)[0] #remove file extension
         self.state = "printing"
-        logging.info("KGUI started printing of "+str(file))
-        self.print_title = splitext(basename(file))[0]
+        params = {'#original': "M23 " + filename}
         def start(e):
-            self.sdcard.cmd_M23(file)#maybe dont give full path
-            self.sdcard.cmd_m24(None)
+            self.sdcard.cmd_M23(params)
+            self.sdcard.cmd_M24(None)
         self.reactor.register_async_callback(start)
 
     def send_stop(self):
@@ -371,7 +373,6 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     
     def send_play(self):
         self.state = "printing"
-        self.notify.show("Printing", "Started printing now", log=False)
         self.reactor.register_async_callback(self.sdcard.cmd_M24)#works because cmd_M24 takes one argument but doesnt read it 
     
     def send_pause(self):

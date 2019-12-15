@@ -61,7 +61,12 @@ class PrintPopup(BasePopup):
         self.creator.selection = []
 
     def confirm(self):
-        self.app.send_start(self.path)
+        app = App.get_running_app()
+        app.send_start(self.path)
+        tabs = app.root.ids.tabs
+        tabs.switch_to(tabs.ids.home_tab)
+        self.dismiss()
+        
 
     def delete(self):
         """Open a confirmation dialog to delete the file"""

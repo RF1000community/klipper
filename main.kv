@@ -387,9 +387,10 @@ FloatLayout:
     canvas.before:
         Color:
             rgba: p.red if self.enabled else (0,0,0,0)
-        Rectangle:
+        RoundedRectangle:
             pos: self.center_x-p.btn_height/2,self.center_y-p.btn_height/2
             size: p.btn_height,p.btn_height
+            radius: (p.icon_radius,)
 
 <Btn_Play@RoundButton>:
     #:set h p.btn_height*1.155
@@ -398,17 +399,23 @@ FloatLayout:
     canvas.before:
         Color:
             rgba: 1,1,1,1 if self.enabled and not self.paused else 0
-        Rectangle:
+        RoundedRectangle:
             pos: self.center_x-p.btn_height/2, self.center_y-p.btn_height/2
             size: 0.39*p.btn_height,p.btn_height
-        Rectangle:
+            radius: (p.icon_radius,)
+        RoundedRectangle:
             pos: self.center_x+p.btn_height/2-0.4*p.btn_height, self.center_y-p.btn_height/2
             size: 0.39*p.btn_height,p.btn_height
+            radius: (p.icon_radius,)
     canvas:
         Color:
             rgba: 1,1,1,1 if self.enabled and self.paused else 0
         Triangle:
             points: self.center_x-p.btn_height/2, self.center_y- h/2, self.center_x-p.btn_height/2, self.center_y+ h/2, self.center_x+p.btn_height/2, self.center_y
+        Line:
+            width: p.icon_radius
+            points: self.center_x-p.btn_height/2, self.center_y- h/2, self.center_x-p.btn_height/2, self.center_y+ h/2, self.center_x+p.btn_height/2, self.center_y
+            close: True
 
 <Btn@RoundButton>:
     title: ''
@@ -1097,7 +1104,7 @@ FloatLayout:
             on_release: root.delete()
         Btn_P_Confirm:
             title: 'Print'
-            enabled: True
+            enabled: app.printer_objects_available
             width: root.width/3
             pos: btn_del.right, root.y
             on_release: root.confirm()
