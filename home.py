@@ -12,30 +12,31 @@ import parameters as p
 
 class XyField(Widget):
 
-    display = StringProperty()
-    enabled = BooleanProperty()
-    point_color = ListProperty(p.button_disabled)
-    mm_pos = ListProperty([0,0])
-    point_pos = ListProperty([0,0])
-    line_x = ListProperty([0,0,0,0])
-    line_y = ListProperty([0,0,0,0])
+    pressed = BooleanProperty(False)
+    enabled = BooleanProperty(False)
+
     def __init__(self, **kwargs):
         super(XyField, self).__init__(**kwargs)
         self.point_radius = 10
         self.app = App.get_running_app()
-        self.printer_dimensions = (self.app.pos_max['x']-self.app.pos_min['x'], self.app.pos_max['y']-self.app.pos_min['y'])
+        self.printer_dimensions = (self.app.pos_max['x'] - self.app.pos_min['x'],\
+                                   self.app.pos_max['y'] - self.app.pos_min['y'])
+        self.app.bind(pos=self.update_with_mm)
         Clock.schedule_once(self.init_drawing, 0)
+        
 
     def init_drawing(self, dt):
         #Calculate bounds of actual field
         self.origin = [self.x+self.point_radius, self.y+self.point_radius]
         self.limits = [self.right-self.point_radius, self.top-self.point_radius]
-        self.point_pos = self.pos
+        self.px = self.origin
+    
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos) and self.enabled:
             touch.grab(self)
             self.update_with_px(touch.pos)
+            self.pressed = True
             return True
         return False
 
@@ -49,22 +50,24 @@ class XyField(Widget):
         if touch.grab_current is self:
             touch.ungrab(self)
             self.update_with_px(touch.pos)
-            self.hide_lines()
-            self.app.send_pos(x=self.mm_pos[0], y=self.mm_pos[1], speed=40)
+            self.app.send_pos(x=self.mm[0], y=self.mm[1], speed=40)
+            self.pressed = False
             return True
         return False
 
-    def update_with_px(self, pos):
+    def update_with_px(self, px_input):
         if self.enabled:
-            pos = (int(pos[0]), int(pos[1]))
-            pos = self.update_drawing(pos[0],pos[1])
-            self.get_mm_pos(pos)
+            px_input = (int(px_input[0]), int(px_input[1]))
+            self.px = self.apply_bounds(px_input[0], px_input[1])
+            self.set_mm_with_px(self.px)
 
-    def update_with_mm(self, mm):
-        self.update_drawing(self.get_px_pos(mm))
-        self.mm_pos = mm
+    def update_with_mm(self, instance=None, mm=(0,0)):
+        self.set_px_with_mm(mm)
+        self.mm[0] = mm[0]
+        self.mm[1] = mm[1]
 
-    def update_drawing(self, x, y):
+    def apply_bounds(self, x, y):
+        logging.info("applying bounds to {}, {}".format(x, y))
         if x < self.origin[0]:
             x = self.origin[0]
         elif x > self.limits[0]:
@@ -74,30 +77,19 @@ class XyField(Widget):
             y = self.origin[1]
         elif y > self.limits[1]:
             y = self.limits[1]
+        logging.info("gives {}, {}".format(x, y))
+        return [x, y]
 
-        self.line_x=[x, self.y, x, self.top]
-        self.line_y=[self.x, y, self.right, y]
-        self.point_pos=[x-self.point_radius, y-self.point_radius]
-        return (x, y)
-
-    def hide_lines(self):
-        self.line_x=[0, 0]
-        self.line_y=[0, 0]
-
-    def get_mm_pos(self, px):
-        #Convert to float to avoid python2 integer division
+    def set_mm_with_px(self, px):
         ratio_x = float(px[0] - self.origin[0]) / (self.limits[0] - self.origin[0])
         ratio_y = float(px[1] - self.origin[1]) / (self.limits[1] - self.origin[1])
 
-        self.mm_pos = [self.printer_dimensions[0] * ratio_x,
-                       self.printer_dimensions[1] * ratio_y]
+        self.mm[0] = self.printer_dimensions[0] * ratio_x
+        self.mm[1] = self.printer_dimensions[1] * ratio_y
 
-    def get_px_pos(self, mm):
-        self.px = [(self.limits[0] -self.origin[0]) * self.printer_dimensions[0] / float(mm[0]),
-                   (self.limits[1] -self.origin[1]) * self.printer_dimensions[1] / float(mm[1])]
-
-    def on_mm_pos(self, instance, value):
-        self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)#TODO add showing z value
+    def set_px_with_mm(self, mm):
+        self.px = [(self.limits[0] - self.origin[0]) * float(mm[0]) / self.printer_dimensions[0] + self.origin[0],
+                   (self.limits[1] - self.origin[1]) * float(mm[1]) / self.printer_dimensions[1] + self.origin[1]]
 
 
 

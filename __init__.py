@@ -62,6 +62,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     print_title = StringProperty() #updated by on_state watching state chages to 'printing'
     print_time = StringProperty() #updated by handle_print_time_calc
     progress = NumericProperty() #updated by scheduled update_home
+    pos = ListProperty([0,0,0])
     #tuning
     speed = NumericProperty(100)
     flow = NumericProperty(100)

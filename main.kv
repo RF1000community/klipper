@@ -348,15 +348,7 @@ FloatLayout:
             axis_id: 'X'
             size: p.btn_height, p.btn_height
             pos: xy_field.right, xy_field.y + p.btn_height
-        Label:
-            id: xy_display
-            size: self.texture_size
-            size_hint: None, None
-            x: xy_field.x
-            top: xy_field.top
-            color: p.button_outline
-            font_size: p.normal_font
-            text: xy_field.display
+
 
 # BUTTONS  ########################################################################
 
@@ -1025,23 +1017,34 @@ FloatLayout:
             on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
 
 <XyField>:
-    canvas:
+    mm: [0, 0, 0]
+    px: [0, 0]
+    canvas.after:
         Color:
             rgba: p.button_outline
         Line:
             width: 1
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+        Color:
+            rgba: p.button_outline if self.pressed else (0,0,0,0)
         Line:
             width: 1
-            points: self.line_y
+            points: self.x, self.px[1],   self.right, self.px[1]
         Line:
             width: 1
-            points: self.line_x
+            points: self.px[0], self.y,   self.px[0], self.top
         Color:
             rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
         Ellipse:
-            pos: self.point_pos
+            pos: self.px[0] - self.point_radius, self.px[1] - self.point_radius
             size: (self.point_radius*2, self.point_radius*2)
+    Label:
+        text: "X: {:.0f}mm  Y: {:.0f}mm  Z: {:.0f}mm".format(root.mm[0], root.mm[1], root.mm[2])
+        size_hint: None, None
+        size: self.texture_size
+        pos: root.x + 5, root.y + 5
+        font_size: p.small_font
+        color: p.medium_gray
 
 # FILE  ########################################################################
 <FileTab@TabbedPanelItem>:
