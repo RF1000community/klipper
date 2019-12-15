@@ -66,7 +66,6 @@ class PrintPopup(BasePopup):
         tabs = app.root.ids.tabs
         tabs.switch_to(tabs.ids.home_tab)
         self.dismiss()
-        
 
     def delete(self):
         """Open a confirmation dialog to delete the file"""
