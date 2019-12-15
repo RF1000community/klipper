@@ -255,8 +255,7 @@ class SI_Wifi(SetItem):
     # The string that is displayed by the label.
     # Holds the current wifi connection and possibly the signal strength as well.
     # [0]: ssid or message, [1]: formatted as ssid if true, as message otherwise
-    display = ListProperty(['', False])
-
+    right_title = StringProperty()
     def __init__(self, **kwargs):
         super(SI_Wifi, self).__init__(**kwargs)
         self.freq = 10
@@ -298,20 +297,9 @@ class SI_Wifi(SetItem):
 
     def update(self, instance, value):
         if value[0]['in-use']:
-            self.display = [value[0]['ssid'], True]
+            self.right_title = value[0]['ssid']
         else:
-            self.display = ['not connected', False]
-
-    def on_display(self, instance, value):
-        # Applys the new text to display in the Label whenever the text got updated
-        label = self.ids.right_label
-        label.text = value[0]
-        if value[1]:
-            label.color = p.light_gray
-            label.italic = False
-        else:
-            label.color = p.medium_light_gray
-            label.italic = True
+            self.right_title = 'not available'
 
 
 class SI_WifiNetwork(SetItem):

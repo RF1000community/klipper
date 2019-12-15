@@ -100,6 +100,30 @@ class XyField(Widget):
         self.display = 'X: {:.0f}mm  Y: {:.0f}mm'.format(*value)#TODO add showing z value
 
 
+
+class TempSlider(UltraSlider):
+
+    def __init__(self, **kwargs):
+        super(ExtTempSlider, self).__init__(**kwargs)
+        App.get_running_app().get_temp()
+        self.buttons = []
+    def get_val_from_px(self, x):
+        v = int(((x-self.px_min)/self.px_width)*(280-40)+40)
+        for b in self.buttons:
+            if v >= b[0]-2 and v <= b[0]+2:
+                v = b[0]
+                self.px = self.get_px_from_val(v)
+                break
+        if v <= 42: v = 0
+        return v
+    def get_disp_from_val(self, val):
+        if self.val == 0:
+            s = "Off"
+        else:
+            s = "{}°C".format(self.val)
+        return s
+ 
+
 class BedTempSlider(UltraSlider):
     def __init__(self, **kwargs):
         super(BedTempSlider, self).__init__(**kwargs)

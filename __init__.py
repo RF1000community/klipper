@@ -66,9 +66,9 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     speed = NumericProperty(100)
     flow = NumericProperty(100)
     fan_speed = NumericProperty(0)
-    pressure_advance = NumericProperty(0)
     z_adjust = NumericProperty(0)
-    #config
+    pressure_advance = NumericProperty(0)
+    #config/tuning
     acceleration = NumericProperty(2000)
 
     def __init__(self, config = None, **kwargs): #runs in klippy thread
@@ -239,7 +239,8 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.z_adjust = offset
         def set_z_offset(e):  
             #keeps the difference between base_position and homing_position the same
-            #works like this: if base_position = 5, put origin of gcode coordinate system at + 5, used for z tuning or G92 zeroing
+            #works like this: if base_position = 5, put origin of gcode coordinate system at + 5, 
+            #used for z tuning or G92 zeroing
             self.gcode.base_position[2] = self.gcode.base_position[2] - self.gcode.homing_position[2] + offset
             self.gcode.homing_position[2] = offset
         self.reactor.register_async_callback(set_z_offset)

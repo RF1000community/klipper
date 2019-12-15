@@ -1,11 +1,10 @@
 KGUI:
+
+    display exceptions in klipper thread as notifications, octoprint does this by recieving the errors via serial connection
+
     Z stop
 
     extrude retract
-
-    unload/load:
-        chose impl.
-            Python
 
     fix gui crash on FIRMWARE_RESTART (or restart_klipper())
 
@@ -19,7 +18,7 @@ KGUI:
 
     Schedule Full sdcard handling e.g. with, add deletion when more than 100 elements except for the USB stick, notification
 
-    Material Database, with popups
+    Material Database, with popups, unload load
 
 CURA COONNECTION
     Klipper Module
