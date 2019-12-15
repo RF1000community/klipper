@@ -140,12 +140,12 @@ FloatLayout:
             small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             red: app.temp[self.heater_id][1] > 50
             width: 130
-            right: temp_bed.right
-            center_y: p.padding+btn_stop.center_y+p.btn_height/2+p.btn_height/2
+            right: temp_bed.right if app.extruder_count > 1 else p.mars
+            center_y: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_height/2 + p.btn_spacing if app.extruder_count > 1 else p.mars
         Btn_Extruder:
             heater_id: 'T1'
-            x: p.h_padding + p.icon_radius
-            top: p.padding+btn_stop.center_y+p.btn_height/2+ p.btn_height - p.icon_radius
+            x: p.h_padding + p.icon_radius if app.extruder_count > 1 else p.mars
+            top: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_height + p.btn_spacing - p.icon_radius if app.extruder_count > 1 else p.mars
         Btn_Temp:
             id: temp_T0
             heater_id: "T0"
@@ -155,11 +155,11 @@ FloatLayout:
             red: app.temp[self.heater_id][1] > 50
             width: 130
             right: temp_bed.right
-            center_y: p.padding+p.btn_height+temp_T1.center_y
+            center_y: p.tab_height + p.progress_bar_height + 4*p.padding + 2.5*p.btn_height
         Btn_Extruder:
             heater_id: 'T0'
             x: p.h_padding + p.icon_radius
-            top: p.padding+ 1.5* p.btn_height + temp_T1.center_y - p.icon_radius
+            top: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_height + 2*p.btn_spacing - p.icon_radius
         Btn_Temp:
             on_release: Factory.BedTempPopup(creator=self, val=app.temp).open()
             id: temp_bed
@@ -167,7 +167,7 @@ FloatLayout:
             small_value: "{:3.0f}".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "Off"
             red: app.temp['B'][1] > 50
             x: p.h_padding
-            center_y: p.padding+p.btn_height+temp_T0.center_y
+            center_y: p.tab_height + p.progress_bar_height + 5*p.padding + 3.5*p.btn_height
             canvas.before:
                 Color:
                     rgba: p.nozzle
@@ -292,37 +292,37 @@ FloatLayout:
     FloatLayout:
         Btn_Arrow:
             dir_right: True
-            id: btn_right_B
-            y: p.padding
+            id: btn_right_T1
+            y: p.padding if app.extruder_count > 1 else p.mars
             x: p.screen_width- p.h_padding
         Btn_Arrow:
             dir_right: True
-            id: btn_right_A
+            id: btn_right_T0
             y: 2*p.padding+p.btn_height
-            x: btn_right_B.x
+            x: btn_right_T1.x
         Btn_Triple:
-            id: btn_tr_B
-            y: btn_right_B.y
+            id: btn_tr_T1
+            y: btn_right_T1.y if app.extruder_count > 1 else p.mars
             right: p.screen_width- p.h_padding
         Btn_Triple:
-            id: btn_tr_A
-            y: btn_right_A.y
+            id: btn_tr_T0
+            y: btn_right_T0.y
             right: p.screen_width- p.h_padding
         Btn_Arrow:
-            id: btn_left_B
-            y: btn_right_B.y
-            right: btn_tr_B.x
+            id: btn_left_T1 if app.extruder_count > 1 else p.mars
+            y: btn_right_T1.y
+            right: btn_tr_T1.x
         Btn_Arrow:
-            id: btn_left_A
-            y: btn_tr_A.y
-            right: btn_tr_A.x
+            id: btn_left_T0
+            y: btn_tr_T0.y
+            right: btn_tr_T0.x
         Btn_Outline:
             id: btn_calibrate
             on_release: app.send_calibrate()
             enabled: app.printer_objects_available
             title: "Mesh Bed Leveling"
-            size: btn_tr_B.size
-            pos: btn_tr_A.x, 3*p.padding+2*p.btn_height
+            size: btn_tr_T1.size
+            pos: btn_tr_T0.x, 3*p.padding+2*p.btn_height
         Btn_TripleZ:
             id: btn_tr_Z
             height: xy_field.height

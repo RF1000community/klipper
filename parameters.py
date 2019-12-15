@@ -8,6 +8,7 @@ small_font = 17
 extra_small_font = 14
 screen_width = 600
 screen_height = 1024
+mars = 1.1 * screen_height
 radius = 8
 icon_radius = 4
 popup_radius = 15
