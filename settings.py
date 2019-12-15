@@ -278,6 +278,8 @@ class SI_Wifi(SetItem):
 
     def on_pre_enter(self):
         return # is this right?
+        # Yes, update control logic is currently bypassed to update
+        # every 10 seconds for the icon in the status bar.
         wifi.update_freq = self.freq
 
     def bind_tab(self, dt):

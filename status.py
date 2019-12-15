@@ -1,14 +1,15 @@
-import time
-import math
 import logging
+import time
+
+from kivy.app import App
+from kivy.clock import Clock
+from kivy.graphics.context_instructions import Color
+from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Rectangle
+from kivy.properties import StringProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
-from kivy.clock import Clock
-from kivy.properties import StringProperty
-from kivy.app import App
-from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Rectangle
-from kivy.graphics.context_instructions import Color
+
 import parameters as p
 from settings import wifi
 
@@ -60,7 +61,9 @@ class ConnectionIcon(Widget):
         padding = self.icon_padding
         h = self.height - 2*padding
         full_size = [2*h, 2*h]
-        cutoff = int(h - math.cos(math.pi/4.0) * h + 0.5)
+        # cutoff = width of square h*h - width of cake slice (on one side)
+        # 1/sqrt(2) = cos(pi/4) avoid trigonometric functions
+        cutoff = int(h*(1 - 1/(2**(1./2))) + 0.5)
         self.width = full_size[0] - 2*cutoff + padding
         full_pos = [self.topright[0] - (full_size[0] - cutoff) - padding,
                     self.topright[1] - full_size[1] - padding]
@@ -81,7 +84,6 @@ class ConnectionIcon(Widget):
         self.width = size[0] + padding
         pos = [self.topright[0] - size[0] - padding,
                self.topright[1] - size[1] - padding]
-        print(size, pos)
 
         self.eth_color.rgba = p.medium_gray
         self.wifi_color.rgba = self.transparent
@@ -178,9 +180,9 @@ class Notifications(FloatLayout):
         self.title_label.text = title
         self.message_label.text = message
 
-        if type(color) is str and color in color_presets.keys():
+        if isinstance(color, str) and color in color_presets.keys():
             self.bg_color.rgba = color_presets[color]
-        elif type(color) in (list, tuple):
+        elif isinstance(color, (list, tuple)):
             self.bg_color.rgba = color
         else:
             self.bg_color.rgba = color_presets[level]

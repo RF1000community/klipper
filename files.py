@@ -37,7 +37,7 @@ class FC(FileChooserIconView):
     def modification_date_sort(self, files, filesystem):#sortierfunktion fuer Filechooser
         return (sorted(f for f in files if filesystem.is_dir(f))
             + sorted((f for f in files if not filesystem.is_dir(f)),
-                key = lambda F: getmtime(F)))
+                key=getmtime))
 
     def on_selection(self, instance, filenames):
         if not filenames:
