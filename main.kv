@@ -141,11 +141,11 @@ FloatLayout:
             red: app.temp[self.heater_id][1] > 50
             width: 130
             right: temp_bed.right if app.extruder_count > 1 else p.mars
-            center_y: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_height/2 + p.btn_spacing if app.extruder_count > 1 else p.mars
+            center_y: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_height/2 + p.btn_spacing
         Btn_Extruder:
             heater_id: 'T1'
             x: p.h_padding + p.icon_radius if app.extruder_count > 1 else p.mars
-            top: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_height + p.btn_spacing - p.icon_radius if app.extruder_count > 1 else p.mars
+            top: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_height + p.btn_spacing - p.icon_radius
         Btn_Temp:
             id: temp_T0
             heater_id: "T0"
@@ -294,7 +294,7 @@ FloatLayout:
             dir_right: True
             id: btn_right_T1
             y: p.padding if app.extruder_count > 1 else p.mars
-            x: p.screen_width- p.h_padding
+            x: p.screen_width - p.h_padding
         Btn_Arrow:
             dir_right: True
             id: btn_right_T0
@@ -303,14 +303,14 @@ FloatLayout:
         Btn_Triple:
             id: btn_tr_T1
             y: btn_right_T1.y if app.extruder_count > 1 else p.mars
-            right: p.screen_width- p.h_padding
+            right: p.screen_width - p.h_padding
         Btn_Triple:
             id: btn_tr_T0
             y: btn_right_T0.y
-            right: p.screen_width- p.h_padding
+            right: p.screen_width - p.h_padding
         Btn_Arrow:
-            id: btn_left_T1 if app.extruder_count > 1 else p.mars
-            y: btn_right_T1.y
+            id: btn_left_T1
+            y: btn_right_T1.y if app.extruder_count > 1 else p.mars
             right: btn_tr_T1.x
         Btn_Arrow:
             id: btn_left_T0
