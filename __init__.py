@@ -16,7 +16,7 @@ from kivy.app import App
 from kivy.config import Config
 from kivy.clock import Clock
 from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
-from os.path import join, abspath, expanduser
+from os.path import join, abspath, expanduser, basename, splitext
 from subprocess import Popen
 import threading
 import logging
@@ -122,7 +122,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.heaters = {}
         if 'heater_bed' in self.heater_manager.heaters: self.heaters['B'] = self.heater_manager.heaters['heater_bed']
         for i, extruder in enumerate(self.extruders):
-            self.heaters['T'+str(i)] = extruder.get_heater
+            self.heaters['T'+str(i)] = self.heater_manager.heaters[extruder.get_name()]
 
         self.printer_objects_available = True
         Clock.schedule_once(self.bind_updating, 0)
@@ -228,7 +228,8 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def on_state(self, instance, state):
         logging.info("changed to state {}".format(state))
         if state == 'printing' or state == 'busy':
-            self.print_title = str(self.sdcard.current_file)
+            try: self.print_title = splitext(basename(self.sdcard.current_file.name))[0] #remove file extension
+            except: logging.info('sdcard.current_file.name maybe NoneType')
 
 ##################################################################
 ### TUNING
@@ -269,10 +270,10 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.reactor.register_async_callback(set_flow)
 
     def get_fan(self):
-        self.fan_speed = self.fan.last_fan_value
+        self.fan_speed = self.fan.last_fan_value * 100
     def send_fan(self, speed):
         self.fan_speed = speed
-        self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed))
+        self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed/100.))
 
     def send_pressure_advance(self, val):
         for i in range(len(self.extruders)):
@@ -333,13 +334,14 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
             self.pos = pos
         self.reactor.register_async_callback(read_pos)
 
-    def send_pos(self, x=None, y=None, z=None, e=None):
+    def send_pos(self, x=None, y=None, z=None, e=None, speed=15):
         new_pos = [x,y,z,e]
+        logging.info('this is the new position {}'.format(new_pos))
         def set_pos(e):
             pos = self.toolhead.get_position()
             for i, p in enumerate(new_pos):
                 if p is not None: pos[i] = p
-            self.toolhead.drip_move(pos, 15)
+            self.toolhead.drip_move(pos, speed)
         self.reactor.register_async_callback(set_pos)
 
     def send_z_up(self):
@@ -355,7 +357,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def send_start(self, file):#TODO needs Testing
         self.state = "printing"
         logging.info("KGUI started printing of "+str(file))
-        self.print_title = str(file)
+        self.print_title = splitext(basename(file))[0]
         def start(e):
             self.sdcard.cmd_M23(file)#maybe dont give full path
             self.sdcard.cmd_m24(None)

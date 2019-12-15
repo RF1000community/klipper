@@ -50,7 +50,7 @@ class XyField(Widget):
             touch.ungrab(self)
             self.update_with_px(touch.pos)
             self.hide_lines()
-            self.app.send_pos(x=self.mm_pos[0], y=self.mm_pos[1])
+            self.app.send_pos(x=self.mm_pos[0], y=self.mm_pos[1], speed=40)
             return True
         return False
 
@@ -90,7 +90,7 @@ class XyField(Widget):
         ratio_y = float(px[1] - self.origin[1]) / (self.limits[1] - self.origin[1])
 
         self.mm_pos = [self.printer_dimensions[0] * ratio_x,
-                       self.printer_dimensions[0] * ratio_y]
+                       self.printer_dimensions[1] * ratio_y]
 
     def get_px_pos(self, mm):
         self.px = [(self.limits[0] -self.origin[0]) * self.printer_dimensions[0] / float(mm[0]),
