@@ -255,19 +255,17 @@ class SI_Wifi(SetItem):
     # The string that is displayed by the label.
     # Holds the current wifi connection and possibly the signal strength as well.
     # [0]: ssid or message, [1]: formatted as ssid if true, as message otherwise
-    right_title = StringProperty()
+    display = ListProperty(['', False])
+
     def __init__(self, **kwargs):
         super(SI_Wifi, self).__init__(**kwargs)
         self.freq = 10
-        if wifi.state:
-            self.right_title = 'not available'
-        else:
-            self.right_title = '...'
         # Assuming very much that the Setting Screen will NEVER be the default on load
         self.do_update = False
         wifi.bind(on_networks=self.update)
-        # Bind to main tab switches after everything is set up and running
-        Clock.schedule_once(self.bind_tab, 0)
+        # Set default messages and maybe bind to main tab switches
+        # after everything is set up and running
+        Clock.schedule_once(self.late_setup, 0)
 
     def on_release(self, *args):
         # don't open wifiscreen when wifi doesn't work
@@ -277,12 +275,18 @@ class SI_Wifi(SetItem):
 
     def on_pre_enter(self):
         return # is this right?
+        # Yes, update control logic is currently bypassed to update
+        # every 10 seconds for the icon in the status bar.
         wifi.update_freq = self.freq
 
-    def bind_tab(self, dt):
-        root = App.get_running_app().root
-        tab = root.ids.tabs
-        tab.bind(current_tab=self.control_update)
+    def late_setup(self, dt):
+        if wifi.state:
+            self.display = ['not available', False]
+        else:
+            self.display = ['...', False]
+        #root = App.get_running_app().root
+        #tab = root.ids.tabs
+        #tab.bind(current_tab=self.control_update)
 
     def control_update(self, instance, value):
         return # is this right?
@@ -296,10 +300,25 @@ class SI_Wifi(SetItem):
             wifi.update_freq = 30
 
     def update(self, instance, value):
+        """Process the wifi list and check if the first entry is in use"""
         if value[0]['in-use']:
-            self.right_title = value[0]['ssid']
+            self.display = [value[0]['ssid'], True]
         else:
-            self.right_title = 'not available'
+            self.display = ['not connected', False]
+
+    def on_display(self, instance, value):
+        """
+        Applies the new text to display in the Label whenever the
+        text got updated
+        """
+        label = self.ids.right_label
+        label.text = value[0]
+        if value[1]:
+            label.color = p.light_gray
+            label.italic = False
+        else:
+            label.color = p.medium_light_gray
+            label.italic = True
 
 
 class SI_WifiNetwork(SetItem):
