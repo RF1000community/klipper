@@ -144,8 +144,8 @@ FloatLayout:
             center_y: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_height/2 + p.btn_spacing
         Btn_Extruder:
             heater_id: 'T1'
-            x: p.h_padding + p.icon_radius if app.extruder_count > 1 else p.mars
-            top: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_height + p.btn_spacing - p.icon_radius
+            x: p.h_padding if app.extruder_count > 1 else p.mars
+            y: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_spacing
         Btn_Temp:
             id: temp_T0
             heater_id: "T0"
@@ -158,8 +158,8 @@ FloatLayout:
             center_y: p.tab_height + p.progress_bar_height + 4*p.padding + 2.5*p.btn_height
         Btn_Extruder:
             heater_id: 'T0'
-            x: p.h_padding + p.icon_radius
-            top: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_height + 2*p.btn_spacing - p.icon_radius
+            x: p.h_padding
+            y: p.tab_height + p.padding*2 + p.progress_bar_height + 2*p.btn_spacing
         Btn_Temp:
             on_release: Factory.BedTempPopup(creator=self, val=app.temp).open()
             id: temp_bed
@@ -171,72 +171,50 @@ FloatLayout:
             canvas.before:
                 Color:
                     rgba: p.nozzle
-                #:set bwu 188
-                #:set bwu10 (bwu+p.icon_radius*2)/10.
-                #:set bwo 188-2*35
-                #:set bwo10 (bwo+p.icon_radius*2)/10.
-                #:set bh 35
-                #:set by 15
-                Rectangle:
-                    size: bwo, bh
-                    pos: self.center_x - bwo/2, self.y + by
-                Triangle:
-                    points: (self.center_x - bwu/2, self.y + by, self.center_x - bwo/2, self.y + by, self.center_x - bwo/2, self.y + bh + by)
-                Triangle:
-                    points: (self.center_x + bwu/2, self.y + by, self.center_x + bwo/2, self.y + by, self.center_x + bwo/2, self.y + bh + by)
+                #:set bw 80
+                #:set bx1 -20
+                #:set bx2 +20
+                #:set bh 42
+                #:set bo 16
+                #:set icon_center 27
                 Line:
                     width: p.icon_radius
-                    points: (self.center_x + bwu/2, self.y + by, self.center_x + bwo/2, self.y + bh + by,        self.center_x - bwo/2, self.y + bh + by,  self.center_x - bwu/2, self.y + by)
-                    close: True
-                Color:
-                    rgba: (0,0,0,0.2)
+                    points: self.x + icon_center - bw/2, self.center_y - p.btn_height/2 + p.icon_radius,   self.x + icon_center + bw/2, self.center_y - p.btn_height/2 + p.icon_radius
+
                 Line:
-                    width: 1
-                    points: self.center_x + bwo10, self.y+by+bh,    self.center_x + bwu10, self.y+by
+                    width: p.icon_radius - 0.5
+                    bezier: self.x + icon_center + bx1, self.center_y + p.btn_height/2 - p.icon_radius,   self.x + icon_center + bx1 - bo, self.center_y + p.btn_height/2 - bh*0.35 - p.icon_radius,   self.x + icon_center + bx1 + bo, self.center_y + p.btn_height/2 - bh*0.65 - p.icon_radius,   self.x + icon_center + bx1, self.center_y + p.btn_height/2 - bh - p.icon_radius
                 Line:
-                    width: 1
-                    points: self.center_x + bwo10, self.y+by+bh,    self.center_x + 1 + bwu10, self.y+by
+                    width: p.icon_radius - 0.5
+                    bezier: self.x + icon_center + bx2, self.center_y + p.btn_height/2 - p.icon_radius,   self.x + icon_center + bx2 - bo, self.center_y + p.btn_height/2 - bh*0.35 - p.icon_radius,   self.x + icon_center + bx2 + bo, self.center_y + p.btn_height/2 - bh*0.65 - p.icon_radius,   self.x + icon_center + bx2, self.center_y + p.btn_height/2 - bh - p.icon_radius
                 Line:
-                    width: 1
-                    points: self.center_x - bwo10, self.y+by+bh,     self.center_x - bwu10, self.y+by
-                Line:
-                    width: 1
-                    points: self.center_x - bwo10, self.y+by+bh,    self.center_x - 1 - bwu10, self.y+by
-                Line:
-                    width: 1
-                    points: self.center_x + 3*bwo10, self.y+by+bh,    self.center_x + 3*bwu10, self.y+by
-                Line:
-                    width: 1
-                    points: self.center_x + 3*bwo10, self.y+by+bh,    self.center_x + 1 + 3*bwu10, self.y+by
-                Line:
-                    width: 1
-                    points: self.center_x - 3*bwo10, self.y+by+bh,    self.center_x - 3*bwu10, self.y+by
-                Line:
-                    width: 1
-                    points: self.center_x - 3*bwo10, self.y+by+bh,    self.center_x - 1 - 3*bwu10, self.y+by
+                    width: p.icon_radius - 0.5
+                    bezier: self.x + icon_center, self.center_y + p.btn_height/2 - p.icon_radius,   self.x + icon_center - bo, self.center_y + p.btn_height/2 - bh*0.35 - p.icon_radius,   self.x + icon_center  + bo, self.center_y + p.btn_height/2 - bh*0.65 - p.icon_radius,   self.x + icon_center, self.center_y + p.btn_height/2 - bh - p.icon_radius
+
 
 <Btn_Extruder@BaseButton>:
-    size: 46, p.btn_height - p.icon_radius*2 + 3
+    #:set esh 17
+    size: icon_center*2, p.btn_height
     heater_id: 'T0'
     selected: False
     canvas:
         Color:
             rgba: p.nozzle_selected if self.selected else p.nozzle
         Rectangle:
-            size: self.width, self.height-self.width/2
-            pos: self.x, self.y + root.width/2
+            size: self.width - 2*p.icon_radius, self.height - esh - p.icon_radius
+            pos: self.x + p.icon_radius, self.y + esh
         Triangle:
-            points: (self.x, self.y + self.width/2,    self.center_x, self.y,    self.right, self.y + self.width/2)
+            points: self.x + p.icon_radius, self.y + esh,   self.center_x, self.y,   self.right - p.icon_radius, self.y + esh
         Line:
             width: p.icon_radius
-            points: (self.x, self.y + self.width/2,    self.center_x, self.y,    self.right, self.y + self.width/2,    self.right, self.top,    self.x, self.top) 
+            points: self.x + p.icon_radius, self.y + esh,   self.center_x, self.y,   self.right - p.icon_radius, self.y + esh,   self.right - p.icon_radius, self.top - p.icon_radius,   self.x + p.icon_radius, self.top - p.icon_radius
             close: True
     Label:
         text: root.heater_id
         bold: True
         color: p.background
         center_x: root.center_x
-        center_y: root.center_y       
+        center_y: root.center_y + 2      
         font_size: p.large_font
 
 <PrintingScreen@Screen>:
@@ -411,10 +389,10 @@ FloatLayout:
         Color:
             rgba: 1,1,1,1 if self.enabled and self.paused else 0
         Triangle:
-            points: self.center_x-p.btn_height/2, self.center_y- h/2, self.center_x-p.btn_height/2, self.center_y+ h/2, self.center_x+p.btn_height/2, self.center_y
+            points: self.center_x-p.btn_height/2, self.center_y- h/2,   self.center_x-p.btn_height/2, self.center_y+ h/2,   self.center_x+p.btn_height/2, self.center_y
         Line:
             width: p.icon_radius
-            points: self.center_x-p.btn_height/2, self.center_y- h/2, self.center_x-p.btn_height/2, self.center_y+ h/2, self.center_x+p.btn_height/2, self.center_y
+            points: self.center_x-p.btn_height/2, self.center_y- h/2,   self.center_x-p.btn_height/2, self.center_y+ h/2,   self.center_x+p.btn_height/2, self.center_y
             close: True
 
 <Btn@RoundButton>:
@@ -450,8 +428,8 @@ FloatLayout:
             width: 1
 
 <Btn_Triple@Widget>:
-    filament_color: (1,0,0)
-    filament_amount: 0.5
+    filament_color: (0,0,0)
+    filament_amount: 0
     title1: 'Unload'
     title2: ''
     title3: 'Load'
@@ -554,7 +532,7 @@ FloatLayout:
             Color:
                 rgba: (1,1,1,1) if self.enabled else p.button_disabled
             Triangle:
-                points: self.center_x-u,self.center_y+t,  self.center_x+u,self.center_y+t,  self.center_x,self.center_y-t
+                points: self.center_x-u,self.center_y+t,   self.center_x+u,self.center_y+t,   self.center_x,self.center_y-t
     HomeButton:
         axis_id: 'Z'
         size: root.width, root.h2
@@ -582,7 +560,7 @@ FloatLayout:
             Color:
                 rgba: (1,1,1,1) if self.enabled else p.button_disabled
             Triangle:
-                points: self.center_x-u,self.center_y-t,  self.center_x+u,self.center_y-t,  self.center_x,self.center_y+t
+                points: self.center_x-u,self.center_y-t,   self.center_x+u,self.center_y-t,   self.center_x,self.center_y+t
 
 <HomeButton@RoundButton>:
     axis_id: 'Z'
@@ -688,7 +666,7 @@ FloatLayout:
             size: self.size
             pos: self.pos
         Triangle:
-            points: [self.x+self.width/2+self.offset,self.top+j, self.x+self.width/2+t+self.offset,self.top, self.x+self.width/2-t+self.offset,self.top] if 2*abs(self.offset)!=self.width else [self.x+self.width/2+self.offset,self.top+j, self.x+self.width/2+self.offset,self.top-10, self.x+self.width/2+self.offset-(self.offset/abs(self.offset))*j,self.top]
+            points: [self.x+self.width/2+self.offset,self.top+j,   self.x+self.width/2+t+self.offset,self.top,    self.x+self.width/2-t+self.offset,self.top] if 2*abs(self.offset)!=self.width else [self.x+self.width/2+self.offset,self.top+j, self.x+self.width/2+self.offset,self.top-10, self.x+self.width/2+self.offset-(self.offset/abs(self.offset))*j,self.top]
     Label:
         markup: True
         text: root.s_title
@@ -821,7 +799,7 @@ FloatLayout:
             val: root.val
             buttons: []
             val_min: 0
-            val_max: 0.5
+            val_max: 0.05
             unit: "mm/mm/s"
             roundto: 3
             id: slider
@@ -837,7 +815,7 @@ FloatLayout:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: 
-                if self.write: app.write_pressure_advance(slider.val), root.dismiss()
+                if root.write: app.write_pressure_advance(slider.val), root.dismiss()
                 else: app.send_pressure_advance(slider.val), root.dismiss()
 
 <AccPopup@BasePopup>:
@@ -866,7 +844,7 @@ FloatLayout:
             width: root.width/2
             pos: root.center_x, root.y
             on_release:
-                if self.write: (app.write_config('printer', 'max_accel', slider.val), root.dismiss())
+                if root.write: (app.write_config('printer', 'max_accel', slider.val), root.dismiss())
                 else: (app.set_config('printer', 'max_accel', slider.val), root.dismiss())
 
 <SpeedPopup@BasePopup>:
@@ -925,7 +903,7 @@ FloatLayout:
     FloatLayout:
         UltraSlider:
             val: root.val
-            buttons: []
+            buttons: [[0,0,"Off",None]]
             val_min: 0
             val_max: 100
             unit: "%"
@@ -1046,12 +1024,13 @@ FloatLayout:
             pos: self.px[0] - self.point_radius, self.px[1] - self.point_radius
             size: (self.point_radius*2, self.point_radius*2)
     Label:
-        text: "X: {:.0f}mm  Y: {:.0f}mm  Z: {:.0f}mm".format(root.mm[0], root.mm[1], root.mm[2])
+        text: "X:{:.0f} Y:{:.0f} Z:{:.0f}".format(root.mm[0], root.mm[1], root.mm[2])
         size_hint: None, None
         size: self.texture_size
-        pos: root.x + 5, root.y + 5
-        font_size: p.small_font
-        color: p.medium_gray
+        pos: root.x + 7, root.y + 4
+        font_size: p.normal_font
+        color: p.nozzle
+
 
 # FILE  ########################################################################
 <FileTab@TabbedPanelItem>:
@@ -1210,7 +1189,7 @@ FloatLayout:
                 Color:
                     rgba: 1,1,1,1
                 Triangle:
-                    points: (btn.center_x-q, btn.center_y, btn.center_x, btn.center_y-q, btn.center_x, btn.center_y+q)
+                    points: btn.center_x-q, btn.center_y,   btn.center_x, btn.center_y-q,   btn.center_x, btn.center_y+q
             on_release:
                 #root.manager.transition.direction = 'right'
                 root.manager.current = 'SettingScreen'

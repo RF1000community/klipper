@@ -89,7 +89,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
                               'y': self.klipper_config.getsection('stepper_y'),
                               'z': self.klipper_config.getsection('stepper_z')}
             self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
-            self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y')}#maybe use position_min, position_max = rail.get_range()
+            self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}#maybe use position_min, position_max = rail.get_range()
             for i in range(1, 10): #count how many extruders exist before drawing homescreen
                 try: klipper_config.getsection('extruder' + str(i))
                 except: self.extruder_count = i; break
