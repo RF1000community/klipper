@@ -21,7 +21,6 @@ from subprocess import Popen
 import threading
 import logging
 import site
-
 from elements import UltraKeyboard
 from home import *
 from files import *
@@ -126,8 +125,8 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.heater_manager = self.printer.lookup_object('heater', None)
         self.heaters = {}
         if 'heater_bed' in self.heater_manager.heaters: self.heaters['B'] = self.heater_manager.heaters['heater_bed']
-        for i, extruder in enumerate(self.extruders):
-            self.heaters['T'+str(i)] = self.heater_manager.heaters[extruder.get_name()]
+        for i in range(self.extruder_count):
+            self.heaters['T'+str(i)] = self.heater_manager.heaters['extruder' + '' if i==0 else i]
 
         self.printer_objects_available = True
         Clock.schedule_once(self.bind_updating, 0)
@@ -185,13 +184,13 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         if tab == self.root.ids.tabs.ids.home_tab:
             if tab.ids.hs_manager.current == "homescreen":
                 self.update_home()
-                self.scheduled_updating = Clock.schedule_interval(self.update_home, 0.7)
+                self.scheduled_updating = Clock.schedule_interval(self.update_home, 1)
             if tab.ids.hs_manager.current == "printingscreen":
                 self.update_printing()
-                self.scheduled_updating = Clock.schedule_interval(self.update_printing, 0.6)
+                self.scheduled_updating = Clock.schedule_interval(self.update_printing, 1.5)
         if tab == self.root.ids.tabs.ids.set_tab:
             self.update_setting()
-            self.scheduled_updating = Clock.schedule_interval(self.update_setting, 1)
+            self.scheduled_updating = Clock.schedule_interval(self.update_setting, 2)
             
     def update_always(self, *args):
         if not self.sdcard:
@@ -211,16 +210,23 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     def update_home(self, *args):
         self.get_temp()
+        
         self.get_pos()
 
     def update_printing(self, *args):
         #tuning
         self.get_config('extruder', 'pressure_advance', 'pressure_advance')
+        
         self.get_config('printer', 'max_accel', 'acceleration')
+        
         self.get_z_adjust()
+        
         self.get_speed()
+        
         self.get_flow()
+        
         self.get_fan()
+        
 
         self.get_temp()
         def get_progress(e):
@@ -276,13 +282,13 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.reactor.register_async_callback(set_flow)
 
     def get_fan(self):
-        self.fan_speed = self.fan.last_fan_value * 100
+        self.fan_speed = self.fan.last_fan_value * 100 / self.fan.max_power
     def send_fan(self, speed):
         self.fan_speed = speed
         self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed/100.))
 
     def send_pressure_advance(self, val):
-        for i in range(len(self.extruders)):
+        for i in range(self.extruder_count):
             self.set_config('extruder{}'.format(i if i != '0' else ''), 'pressure_advance', val)
 
     def get_config(self, section, option, property_name, ty=None):
@@ -314,7 +320,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.reactor.register_async_callback(write_conf)
 
     def write_pressure_advance(self, val):
-        for i in range(len(self.extruders)):
+        for i in range(self.extruder_count):
             self.write_config('extruder{}'.format(i if i != '0' else ''), 'pressure_advance', val)
 
     def get_temp(self, dt=None):
