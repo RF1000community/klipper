@@ -177,8 +177,8 @@ class MoveQueue:
 MIN_KIN_TIME = 0.100
 MOVE_BATCH_TIME = 0.500
 
-DRIP_SEGMENT_TIME = 0.050
-DRIP_TIME = 0.100
+DRIP_SEGMENT_TIME = 0.100 #need to be higher with kgui... maybe cpu load is to high or some locks are held
+DRIP_TIME = 0.200
 class DripModeEndSignal(Exception):
     pass
 
