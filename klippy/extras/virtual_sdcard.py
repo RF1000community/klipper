@@ -89,7 +89,7 @@ class VirtualSD:
             self.file_position = self.file_size = 0
         try:
             orig = params['#original']
-            filename = orig[orig.find("M23") + 4:].split()[0].strip()
+            filename = orig[orig.find("M23")+4 : max(orig.find(".gco")+4, orig.find(".gcode")+6)].strip()
             if '*' in filename:
                 filename = filename[:filename.find('*')].strip()
         except:
