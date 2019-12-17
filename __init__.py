@@ -384,10 +384,16 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         Popen(['sudo','systemctl', 'poweroff'])
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
-    def restart_klipper(self):#TODO this freezes the gui and makes it not restart
+    def restart_klipper(self):
+        """Quit and restart klipper and GUI"""
         logging.info("attempting a firmware restart")
-        self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
+        # this freezes the gui and makes it not restart
+        #self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
+
+        # Working fix, maybe not totally as intended, but it works
+        Popen(['sudo', 'systemctl', 'restart', 'klipper.service'])
     def quit(self):
+        """Stop klipper and GUI, returns to tty"""
         Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
 
 #Entry point, order of execution: __init__()  run()  main.kv  setup_after_run()  handle_connect()  handle_ready()
