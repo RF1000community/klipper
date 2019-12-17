@@ -2,22 +2,24 @@ from os.path import dirname, expanduser
 kgui_dir = dirname(__file__)
 sdcard_path = expanduser('/home/pi/sdcard')
 
+#never assume pixels are square :}
+disp_vertical_stretch = 1.05 
+
 large_font = 32
 normal_font = 23
 small_font = 17
 extra_small_font = 14
 screen_width = 600
 screen_height = 1024
+mars = 1.1 * screen_height
 radius = 8
 icon_radius = 4
 popup_radius = 15
 status_bar_height = 26
 btn_height = 78
-btn_width = 3*btn_height
+btn_width = 3*btn_height*disp_vertical_stretch
 progress_bar_height = 10
 tab_height = 100
-#never assume pixels are square :}
-disp_vertical_stretch = 1.05 
 #generate even spacing based on all contents on homescreen
 small_padding = 15
 notification_padding = 22

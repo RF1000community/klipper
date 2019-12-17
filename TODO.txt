@@ -14,8 +14,6 @@ KGUI:
 
     microcontroller flashing
 
-    Dynamic extruder count
-
     Schedule Full sdcard handling e.g. with, add deletion when more than 100 elements except for the USB stick, notification
 
     Material Database, with popups, unload load

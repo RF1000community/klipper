@@ -1,5 +1,6 @@
-from os import remove
-from os.path import getmtime, basename, exists, abspath
+from os import remove, symlink
+from os.path import getmtime, basename, dirname, exists, abspath, join
+import shutil
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -62,10 +63,20 @@ class PrintPopup(BasePopup):
 
     def confirm(self):
         app = App.get_running_app()
-        app.send_start(self.path)
+        self.dismiss()
+        new_path = self.path
+        if dirname(self.path) != p.sdcard_path:
+            new_path = join(p.sdcard_path, basename(self.path))
+            if 'USB-Device' in self.path:
+                app.notify.show("Copying {} to Printer...".format(basename(self.path)))
+                shutil.copy(self.path, new_path)
+            else:
+                symlink(self.path, new_path)
+
+        app.send_start(new_path)
         tabs = app.root.ids.tabs
         tabs.switch_to(tabs.ids.home_tab)
-        self.dismiss()
+
 
     def delete(self):
         """Open a confirmation dialog to delete the file"""
