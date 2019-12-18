@@ -10,6 +10,10 @@ KGUI:
 
     https://wiki.archlinux.org/index.php/Display_Power_Management_Signaling    
 
+    fix acc tuning
+
+    fix pressure_advance tuning
+
     OTA Updates of klipperui + dependencies
 
     microcontroller flashing

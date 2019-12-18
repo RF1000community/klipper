@@ -116,38 +116,35 @@ class Notifications(FloatLayout):
         self.size_hint = (None, None)
         self.size = self.root_widget.width - 2*p.notification_padding, 110
         self.x = self.root_widget.x + p.notification_padding
-        self.top = self.root_widget.top - p.status_bar_height - p.notification_padding
+        self.top = self.root_widget.top - p.notification_padding
         self.active = False
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
         with self.canvas:
+            self.shadow_color = Color(rgba=p.notification_shadow)
+            Rectangle(pos=(0, p.screen_height-220) ,size=(p.screen_width, 220))
             self.bg_color = Color(rgba=p.red)
             RoundedRectangle(pos=self.pos, size=self.size, radius=(p.radius, p.radius))
 
-        padding = (10, 10)
         title = Label(
-                color = (0, 0, 0, 1),
                 size_hint = (None, None),
                 font_size = p.normal_font,
-                bold = True,
-                padding = padding)
-        title.size = (self.width, title.font_size + 2*padding[1])
+                bold = True,)
+        title.size = (self.width, title.font_size)
         title.text_size = title.size
-        title.x = self.x
-        title.top = self.top
+        title.x = self.x + p.notification_text_padding
+        title.top = self.top - p.notification_text_padding
         self.add_widget(title)
         self.title_label = title
 
         message = Label(
-                color = (0, 0, 0, 1),
                 size_hint = (None, None),
-                font_size = p.normal_font,
-                padding = padding)
-        message.size = (self.width, message.font_size + 2*padding[1])
+                font_size = p.normal_font,)
+        message.size = (self.width, message.font_size)
         message.text_size = message.size
-        message.x = self.x
-        message.top = title.y
+        message.x = self.x + p.notification_text_padding
+        message.top = title.y - p.notification_text_padding/2
         self.add_widget(message)
         self.message_label = message
 

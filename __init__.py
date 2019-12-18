@@ -32,7 +32,7 @@ import parameters as p
 #add parent directory to sys.path so main.kv (parser.py) can import from it
 site.addsitedir(p.kgui_dir)
 
-#this needs an absolute path otherwise config will only be loaded when working directory is its parent directory
+#this needs an absolute path otherwise config will only be loaded when working directory is the parent directory
 if testing: Config.read(join(p.kgui_dir, "config-test.ini"))
 else:       Config.read(join(p.kgui_dir, "config.ini"))
 
@@ -61,14 +61,15 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     print_title = StringProperty() #updated by on_state watching state chages to 'printing'
     print_time = StringProperty() #updated by handle_print_time_calc
     progress = NumericProperty() #updated by scheduled update_home
-    pos = ListProperty([0,0,0])
-    #tuning
+    #self.progress = self.sdcard.get_status(e)['progress']
+    pos = ListProperty([0,0,0]) #updated by scheduled update_home
+    #tuning  #updated by upate_printing
     speed = NumericProperty(100)
     flow = NumericProperty(100)
     fan_speed = NumericProperty(0)
     z_adjust = NumericProperty(0)
-    pressure_advance = NumericProperty(0)
     #config/tuning
+    pressure_advance = NumericProperty(0)
     acceleration = NumericProperty(2000)
 
     def __init__(self, config = None, **kwargs): #runs in klippy thread
@@ -90,15 +91,14 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
                               'z': self.klipper_config.getsection('stepper_z')}
             self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
             self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}#maybe use position_min, position_max = rail.get_range()
-            for i in range(1, 10): #count how many extruders exist before drawing homescreen
+            #count how many extruders exist before drawing homescreen
+            for i in range(1, 10):
                 try: klipper_config.getsection('extruder' + str(i))
                 except: self.extruder_count = i; break
-        
             #check whether the right sdcard path is configured
             configured_sdpath = expanduser(self.klipper_config.getsection("virtual_sdcard").get("path", None))
             if abspath(configured_sdpath) != abspath(p.sdcard_path):
                 logging.warning("virtual_sdcard path misconfigured: is {} and not {}".format(configured_sdpath, p.sdcard_path))
-
             #register event handlers
             self.printer.register_event_handler("klippy:connect", self.handle_connect) #printer_objects are available
             self.printer.register_event_handler("klippy:ready", self.handle_ready) #connect handlers have run
@@ -112,7 +112,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
             self.extruder_count = 3
         super(mainApp, self).__init__(**kwargs)
 
-    def handle_connect(self): # runs in Klipper Thread
+    def handle_connect(self): #runs in klippy thread
         self.fan = self.printer.lookup_object('fan', None)
         self.gcode = self.printer.lookup_object('gcode')
         self.sdcard = self.printer.lookup_object('virtual_sdcard', None)
@@ -138,24 +138,22 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     def handle_disconnect(self):
         self.state = "error disconnected"
+        logging.info("run handle_disconnect -> shutdown gui")
+        self.handle_shutdown()
 
     def handle_shutdown(self): # is called when system shuts down
         logging.info("handled shutdown ")
         self.stop()
-    
-    def shutdown(self): # reactor calls this on klippy restart maybe
-        logging.info("shutdown() ++++++++++++++++++++++++++++++++++++++++++++")
-        self.stop()
-        exit()
 
     def handle_homed(self, homing, rails):
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
     def handle_calc_print_time(self, curtime, est_print_time, print_time):
-        hours = int(est_print_time//360)
-        minutes = int(est_print_time%360)/60
+        hours = int(est_print_time//3600)
+        minutes = int(est_print_time%3600)/60
         self.print_time = "{}:{:02} remaining".format(hours, minutes)
+        self.progress = print_time/float(est_print_time)
 
 ### KLIPPER THREAD ^
 ########################################################################################
@@ -210,28 +208,17 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     def update_home(self, *args):
         self.get_temp()
-        
         self.get_pos()
+        self.get_homing_state()
 
     def update_printing(self, *args):
-        #tuning
         self.get_config('extruder', 'pressure_advance', 'pressure_advance')
-        
         self.get_config('printer', 'max_accel', 'acceleration')
-        
         self.get_z_adjust()
-        
         self.get_speed()
-        
         self.get_flow()
-        
         self.get_fan()
-        
-
         self.get_temp()
-        def get_progress(e):
-            self.progress = self.sdcard.get_status(e)['progress']
-        self.reactor.register_async_callback(get_progress)
 
     def update_setting(self, *args):
         self.get_config('printer', 'max_accel', 'acceleration', 'int')
@@ -254,8 +241,12 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
             #keeps the difference between base_position and homing_position the same
             #works like this: if base_position = 5, put origin of gcode coordinate system at + 5, 
             #used for z tuning or G92 zeroing
-            self.gcode.base_position[2] = self.gcode.base_position[2] - self.gcode.homing_position[2] + offset
+            delta = offset - self.gcode.homing_position[2] #difference between old and new offset
+            self.gcode.base_position[2] += delta
             self.gcode.homing_position[2] = offset
+            #Move to offset
+            self.gcode.last_position[2] += delta
+            self.gcode.move_with_transform(self.gcode.last_position, 5) #sets speed for adjustment move
         self.reactor.register_async_callback(set_z_offset)
 
     def get_speed(self):
@@ -334,8 +325,12 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.reactor.register_async_callback(read_temp)
 
     def send_temp(self, temp, heater_id):
-        logging.info("KGUI set Temperature of {} to {}".format(heater_id, temp))
         self.reactor.register_async_callback((lambda e: self.heaters[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
+
+    def get_homing_state(self):
+        homed_axes_string = self.toolhead.get_status()['homed_axes']
+        for axis in self.homed.keys():
+            self.homed[axis] = axis in homed_axes_string
 
     def send_home(self, axis):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
@@ -346,13 +341,13 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
             self.pos = pos
         self.reactor.register_async_callback(read_pos)
 
-    def send_pos(self, x=None, y=None, z=None, e=None, speed=15):
+    def send_pos(self, x=None, y=None, z=None, e=None, speed=15):  
         new_pos = [x,y,z,e]
-        logging.info('this is the new position {}'.format(new_pos))
         def set_pos(e):
             pos = self.toolhead.get_position()
-            for i, p in enumerate(new_pos):
-                if p is not None: pos[i] = p
+            homed_axes = self.toolhead.get_state()['homed_axes']
+            new_pos = [new_pos[i] if p in homed_axes else None for i,p in enumerate('xyz')] #check whether axes are still homed
+            pos = [p if p is not None else pos[i] for p in enumerate(new_pos)] #replace coordinates not given with current pos
             self.toolhead.drip_move(pos, speed)
         self.reactor.register_async_callback(set_pos)
 
@@ -383,12 +378,14 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     
     def send_play(self):
         self.state = "printing"
+        self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1")
         self.reactor.register_async_callback(self.sdcard.cmd_M24)#works because cmd_M24 takes one argument but doesnt read it 
-    
+
     def send_pause(self):
         self.state = "paused"
         self.notify.show("Paused", "Print paused", delay=4)
         self.reactor.register_async_callback(self.sdcard.cmd_M25)
+        self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])

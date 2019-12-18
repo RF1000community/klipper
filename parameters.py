@@ -16,13 +16,12 @@ radius = 8
 icon_radius = 4
 popup_radius = 15
 status_bar_height = 26
-btn_height = 78
+btn_height = 74
 btn_width = 3*btn_height*disp_vertical_stretch
 progress_bar_height = 10
 tab_height = 100
 #generate even spacing based on all contents on homescreen
 small_padding = 15
-notification_padding = 22
 padding = (screen_height\
         - status_bar_height\
         - btn_height*4\
@@ -31,11 +30,14 @@ padding = (screen_height\
         - tab_height)\
         /float(7)#remaining space has to contain 9* padding and 1* hpadding
 int_pad = int(padding)
+notification_padding = padding -15
+notification_text_padding = 20
 btn_spacing = padding + btn_height
 padding_hint = padding/screen_width
 h_padding = padding*disp_vertical_stretch
 
 background = (0.065,0.065,0.065,1)
+notification_shadow = (0.065, 0.065, 0.065, 0.6)
 popup = (0.15,0.15,0.15,1)
 divider = (1,1,1,0.09)
 button = (1,1,1,0.08)
@@ -43,7 +45,6 @@ button_outline = (1,1,1,0.095)
 button_disabled = (1,1,1,0.2)
 nozzle = (0.15, 0.15, 0.15, 1)
 nozzle_selected = (0.3, 0.3, 0.3, 1)
-
 
 translucent_white = (1,1,1,0.1)
 accent = (0.15,0.4,0.45,1)
@@ -54,10 +55,10 @@ medium_gray = (0.2,0.2,0.2,1)
 medium_light_gray = (0.35,0.35,0.35,1)
 light_gray = (0.7,0.7,0.7,1)
 
-notify_info = (0.6,0.6,0.6,0.7)
-notify_warning = (0.75, 0.25, 0, 0.75)
-notify_error = (0.7, 0, 0, 1)
-notify_success = (0, 0.7, 0, 0.75)
+notify_info = (0.28,0.28,0.28,0.65)
+notify_warning = (0.44,0.31,0.11,0.7)
+notify_error = (0.6,0.1,0.1,0.8)
+notify_success = (0.1,0.4,0.2,0.8)
 
 #config values
 invert_z_controls = False

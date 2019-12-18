@@ -87,7 +87,7 @@ FloatLayout:
             value: app.progress
             size_hint: None, None
             size: p.screen_width-2*p.h_padding+2, p.progress_bar_height
-            pos: p.h_padding-1, p.tab_height + p.h_padding
+            pos: p.h_padding-1, p.tab_height + p.padding
         Label:
             text: app.print_time if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else ""
             size_hint: None, None
@@ -249,7 +249,6 @@ FloatLayout:
             small_value: "Acceleration"
             right: p.screen_width - p.h_padding + 25
             center_y: pressure_advance.center_y + p.btn_spacing
-
         Btn_Temp:
             id: speed
             on_release: Factory.SpeedPopup(val=app.speed).open()
@@ -417,7 +416,7 @@ FloatLayout:
 <Btn_Arrow@RoundButton>:
     #:set v 44
     #:set w 22
-    size: p.btn_height-26, p.btn_height
+    size: p.btn_height-22, p.btn_height
     dir_right: False
     canvas.before:
         Color:
@@ -478,7 +477,9 @@ FloatLayout:
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
         title: root.title2
-        enabled: app.printer_objects_available
+        enabled: True
+        on_release: app.notify.show("this is a ", "test hpwoo jkofdsoiajfdospajfiodpsjkj jk", level="info")
+
         canvas:
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
@@ -1019,7 +1020,7 @@ FloatLayout:
             width: 1
             points: self.px[0], self.y,   self.px[0], self.top
         Color:
-            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
+            rgba: (1,1,1,1) if self.enabled else p.button_disabled
         Ellipse:
             pos: self.px[0] - self.point_radius, self.px[1] - self.point_radius
             size: (self.point_radius*2, self.point_radius*2)
@@ -1033,6 +1034,7 @@ FloatLayout:
 
 
 # FILE  ########################################################################
+
 <FileTab@TabbedPanelItem>:
     background_down: ''
     background_normal: p.kgui_dir+'/Logos/Black.png'
@@ -1132,7 +1134,7 @@ FloatLayout:
         transition: screenmanager.NoTransition()
         SettingScreen:
         WifiScreen:
-        
+
 <SettingScreen@Screen>:
     name: 'SettingScreen'
     ScrollView:
@@ -1241,7 +1243,6 @@ FloatLayout:
         padding_x: p.padding
     Divider:
         y: root.y
-        
 
 <Divider@Widget>:
     size_hint: None, None
