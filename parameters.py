@@ -30,7 +30,7 @@ padding = (screen_height\
         - tab_height)\
         /float(7)#remaining space has to contain 9* padding and 1* hpadding
 int_pad = int(padding)
-notification_padding = padding -15
+notification_padding = padding -23
 notification_text_padding = 20
 btn_spacing = padding + btn_height
 padding_hint = padding/screen_width

@@ -328,7 +328,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.reactor.register_async_callback((lambda e: self.heaters[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
 
     def get_homing_state(self):
-        homed_axes_string = self.toolhead.get_status()['homed_axes']
+        homed_axes_string = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
         for axis in self.homed.keys():
             self.homed[axis] = axis in homed_axes_string
 
@@ -373,7 +373,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     def send_stop(self):
         self.state = "ready"
-        self.notify.show(message="Printing stopped", level="error")
+        self.notify.show("Printing stopped", level="error")
         self.reactor.register_async_callback(self.sdcard.cmd_M25)
     
     def send_play(self):
@@ -394,11 +394,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def restart_klipper(self):
         """Quit and restart klipper and GUI"""
         logging.info("attempting a firmware restart")
-        # this freezes the gui and makes it not restart
-        #self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
-
-        # Working fix, maybe not totally as intended, but it works
-        Popen(['sudo', 'systemctl', 'restart', 'klipper.service'])
+        self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
         Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])

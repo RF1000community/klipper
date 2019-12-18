@@ -1161,10 +1161,13 @@ FloatLayout:
             SI_Switch:
                 left_title: "Calibrate for every printjob"
             SetItem:
-                id: si_acc
                 left_title: "Max. printhead Acceleration"
                 right_title: str(app.acceleration)+"mm/s²"
                 on_release: Factory.AccPopup(write=True, val=app.acceleration).open()
+            SetItem:
+                left_title: "Pressure Advance"
+                right_title: "{:4.3f}s".format(app.pressure_advance)
+                on_release: Factory.PressureAdvancePopup(write=True, val=app.acceleration).open()
             SI_Wifi:
                 left_title: "Wifi"
             SetItem:
