@@ -25,8 +25,8 @@ class TimeLabel(Label):
 
     def start_clock(self):
         # How many seconds are left to the next full minute
-        offset = 60 - time.time() % 60
-        Clock.schedule_once(self.start_updates, offset)
+        offset = 60 - int(time.strftime("%S"))
+        Clock.schedule_once(self.start_updates, offset+2)
 
     def start_updates(self, dt):
         self.update_clock = Clock.schedule_interval(self.get_time_str, 60)

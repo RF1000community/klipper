@@ -1222,7 +1222,7 @@ FloatLayout:
         text: root.left_title
         font_size: p.normal_font
         text_size: self.size
-        size: root.size
+        size: root.width / 2, root.height
         valign: 'middle'
         pos: root.pos
         padding_x: p.padding
@@ -1232,7 +1232,7 @@ FloatLayout:
         font_size: p.normal_font
         text_size: self.size
         color: p.medium_light_gray
-        size: 250, root.height
+        size: root.width / 2, root.height
         size_hint: None, None
         valign: 'middle'
         halign: 'right'
