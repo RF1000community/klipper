@@ -1,4 +1,4 @@
-from os import remove
+from os import remove, symlink
 from os.path import getmtime, basename, dirname, exists, abspath, join
 import shutil
 
