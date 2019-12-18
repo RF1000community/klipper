@@ -762,7 +762,7 @@ FloatLayout:
 <BasePopup>:
     title_size: p.large_font
     title_align: 'center'
-    background_color: (0,0,0,0.5) #reduces background darkening from 0.7
+    background_color: (0.03,0.03,0.03,0.56) #reduces background darkening from 0.7
     size_hint: 0.67, 0.3
     pos_hint: {'center_y': 0.55, 'center_x':0.5}
 
@@ -1224,7 +1224,7 @@ FloatLayout:
         text: root.left_title
         font_size: p.normal_font
         text_size: self.size
-        size: root.width / 2, root.height
+        size: root.size
         valign: 'middle'
         pos: root.pos
         padding_x: p.padding
@@ -1234,7 +1234,7 @@ FloatLayout:
         font_size: p.normal_font
         text_size: self.size
         color: p.medium_light_gray
-        size: root.width / 2, root.height
+        size: 250, root.height
         size_hint: None, None
         valign: 'middle'
         halign: 'right'

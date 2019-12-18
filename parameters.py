@@ -36,7 +36,7 @@ btn_spacing = padding + btn_height
 padding_hint = padding/screen_width
 h_padding = padding*disp_vertical_stretch
 
-background = (0.065,0.065,0.065,1)
+background = [0.065,0.065,0.065,1]
 notification_shadow = (0.065, 0.065, 0.065, 0.6)
 popup = (0.15,0.15,0.15,1)
 divider = (1,1,1,0.09)
