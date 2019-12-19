@@ -213,7 +213,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     def update_printing(self, *args):
         self.get_config('extruder', 'pressure_advance', 'pressure_advance')
-        self.get_config('printer', 'max_accel', 'acceleration')
+        self.get_config('printer', 'max_accel', 'acceleration', 'int')
         self.get_z_adjust()
         self.get_speed()
         self.get_flow()
@@ -222,6 +222,8 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     def update_setting(self, *args):
         self.get_config('printer', 'max_accel', 'acceleration', 'int')
+        self.get_config('extruder', 'pressure_advance', 'pressure_advance')
+
 
     def on_state(self, instance, state):
         if state == 'printing' or state == 'busy':
@@ -342,12 +344,12 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.reactor.register_async_callback(read_pos)
 
     def send_pos(self, x=None, y=None, z=None, e=None, speed=15):  
-        new_pos = [x,y,z,e]
         def set_pos(e):
             pos = self.toolhead.get_position()
-            homed_axes = self.toolhead.get_state()['homed_axes']
-            new_pos = [new_pos[i] if p in homed_axes else None for i,p in enumerate('xyz')] #check whether axes are still homed
-            pos = [p if p is not None else pos[i] for p in enumerate(new_pos)] #replace coordinates not given with current pos
+            new_pos = [x,y,z,e]
+            homed_axes = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
+            new_pos = [new_pos[i] if p in homed_axes else None for i, p in enumerate('xyze')] #check whether axes are still homed
+            pos = [p if p is not None else pos[i] for i, p in enumerate(new_pos)] #replace coordinates not given with current pos
             self.toolhead.drip_move(pos, speed)
         self.reactor.register_async_callback(set_pos)
 
@@ -367,8 +369,11 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.state = "printing"
         params = {'#original': "M23 " + filename}
         def start(e):
-            self.sdcard.cmd_M23(params)
-            self.sdcard.cmd_M24(None)
+            try:
+                self.sdcard.cmd_M23(params)
+                self.sdcard.cmd_M24(None)
+            except:
+                self.notify.show("Couldn't start Print, sdcard busy")
         self.reactor.register_async_callback(start)
 
     def send_stop(self):

@@ -171,16 +171,15 @@ FloatLayout:
             canvas.before:
                 Color:
                     rgba: p.nozzle
-                #:set bw 80
-                #:set bx1 -20
-                #:set bx2 +20
-                #:set bh 42
+                #:set bw 78
+                #:set bx1 -19
+                #:set bx2 +19
+                #:set bh 40
                 #:set bo 16
-                #:set icon_center 27
+                #:set icon_center 26
                 Line:
                     width: p.icon_radius
                     points: self.x + icon_center - bw/2, self.center_y - p.btn_height/2 + p.icon_radius,   self.x + icon_center + bw/2, self.center_y - p.btn_height/2 + p.icon_radius
-
                 Line:
                     width: p.icon_radius - 0.5
                     bezier: self.x + icon_center + bx1, self.center_y + p.btn_height/2 - p.icon_radius,   self.x + icon_center + bx1 - bo, self.center_y + p.btn_height/2 - bh*0.35 - p.icon_radius,   self.x + icon_center + bx1 + bo, self.center_y + p.btn_height/2 - bh*0.65 - p.icon_radius,   self.x + icon_center + bx1, self.center_y + p.btn_height/2 - bh - p.icon_radius
@@ -1161,7 +1160,7 @@ FloatLayout:
             SetItem:
                 left_title: "Pressure Advance"
                 right_title: "{:4.3f}s".format(app.pressure_advance)
-                on_release: Factory.PressureAdvancePopup(write=True, val=app.acceleration).open()
+                on_release: Factory.PressureAdvancePopup(write=True, val=app.pressure_advance).open()
             SI_Wifi:
                 left_title: "Wifi"
             SetItem:

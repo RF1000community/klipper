@@ -4,9 +4,13 @@ KGUI:
 
     Z stop
 
+    finished Print state handling
+
+    fix print time calc
+
     extrude retract
 
-    fix gui crash on FIRMWARE_RESTART (or restart_klipper())
+    Klipper: remove necessity to rehome after motors were switched off
 
     https://wiki.archlinux.org/index.php/Display_Power_Management_Signaling    
 

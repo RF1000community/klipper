@@ -48,18 +48,20 @@ class BaseButton(Widget):
         return self in touch.ud
 
     def on_touch_up(self, touch):
+        res = False
         if touch.grab_current is not self:
             return super(BaseButton, self).on_touch_up(touch)
         assert(self in touch.ud)
         touch.ungrab(self)
-        if not self.collide_point(*touch.pos) or not self.enabled:
-            return
-        self.dispatch('on_release')
+        if self.collide_point(*touch.pos) or not self.enabled:
+            self.dispatch('on_release')
+            res = True
         t = time()
         if t < self.pressed_at_least_till:
             Clock.schedule_once(self.do_release, self.pressed_at_least_till - t)
         else: self.pressed = False
-        return True
+        return res
+
     def do_release(self, arg):
         self.pressed = False
     def on_press(self):

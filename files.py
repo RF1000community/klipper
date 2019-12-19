@@ -36,9 +36,8 @@ class FC(FileChooserIconView):
             Clock.unschedule(self.scheduled_updating)
 
     def modification_date_sort(self, files, filesystem):#sortierfunktion fuer Filechooser
-        return (sorted(f for f in files if filesystem.is_dir(f))
-            + sorted((f for f in files if not filesystem.is_dir(f)),
-                key=getmtime))
+        return (sorted((f for f in files if filesystem.is_dir(f)), reverse=True) #folders
+              + sorted((f for f in files if not filesystem.is_dir(f)), key=getmtime, reverse=True)) #files
 
     def on_selection(self, instance, filenames):
         if not filenames:
