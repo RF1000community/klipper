@@ -1145,12 +1145,6 @@ FloatLayout:
                 pos: self.pos
                 size: self.size
         BoxLayout:
-            canvas:
-                Color:
-                    rgba: p.background #set Background colour for settings
-                Rectangle:
-                    size: self.size
-                    pos: self.pos
             orientation:'vertical'
             height: self.minimum_height
             pos: 0, root.height - self.height

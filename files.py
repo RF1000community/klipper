@@ -1,4 +1,4 @@
-from os import remove, symlink
+from os import remove
 from os.path import getmtime, basename, dirname, exists, abspath, join
 import shutil
 
@@ -50,6 +50,7 @@ class FC(FileChooserIconView):
 class PrintPopup(BasePopup):
 
     def __init__(self, path, **kwargs):
+        from os import symlink
         self.path = path
         # Extract only the filename from the path
         self.prompt = basename(self.path)
