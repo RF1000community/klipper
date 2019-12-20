@@ -24,13 +24,11 @@ class XyField(Widget):
         self.app.bind(pos=self.update_with_mm)
         Clock.schedule_once(self.init_drawing, 0)
         
-
     def init_drawing(self, dt):
         #Calculate bounds of actual field
         self.origin = [self.x+self.point_radius, self.y+self.point_radius]
         self.limits = [self.right-self.point_radius, self.top-self.point_radius]
         self.px = self.origin
-    
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos) and self.enabled:
@@ -88,7 +86,6 @@ class XyField(Widget):
     def set_px_with_mm(self, mm):
         self.px = [(self.limits[0] - self.origin[0]) * float(mm[0]) / self.printer_dimensions[0] + self.origin[0],
                    (self.limits[1] - self.origin[1]) * float(mm[1]) / self.printer_dimensions[1] + self.origin[1]]
-
 
 
 class TempSlider(UltraSlider):
@@ -205,9 +202,10 @@ class ExtTempOffsetSlider(UltraOffsetSlider):
         return x
 """
 
+
 class BtnTriple(Widget):
 
-    filament_color = ListProperty([0.1, 0.1, 0])
+    filament_color = ListProperty([0.33, 0, 0])
     bg_color = ListProperty([0, 0, 0])
     label_color = ListProperty([1, 1, 1, 1])
     filament_amount = NumericProperty(0.4)
@@ -242,3 +240,6 @@ class BtnTriple(Widget):
         maximum value.
         """
         return 0.5*(max(r, g, b) + min(r, g, b))
+
+    def on_filament_color(self, *args):
+        self.calculate_colors()

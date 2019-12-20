@@ -455,16 +455,16 @@ FloatLayout:
             pos: root.x + root.filament_amount * root.width, root.y
             radius: (0, p.radius, p.radius, 0)
         Color:
-            rgba: root.label_color
+            rgba: p.button_outline
         Line:
             width: 1
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
-        Rectangle:
-            pos: self.x+self.w1, self.y+6
-            size: 1, self.height-12
-        Rectangle:
-            pos: self.x+self.w1+1+self.w2, self.y+6
-            size: 1, self.height-12
+        Color:
+            rgba: root.label_color
+        Line:
+            points: self.x+self.w1, self.y+6, self.x+self.w1, self.top-6
+        Line:
+            points: self.x+self.w1+1+self.w2, self.y+6, self.x+self.w1+1+self.w2, self.top-6
     BaseButton:
         size: root.w1, root.height
         pos: root.pos
