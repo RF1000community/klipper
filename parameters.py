@@ -12,38 +12,36 @@ extra_small_font = 14
 screen_width = 600
 screen_height = 1024
 mars = 1.1 * screen_height
-radius = 9
+radius = 10
 icon_radius = 4
 popup_radius = 15
 status_bar_height = 26
-btn_height = 78
-btn_temp_width = 150
-btn_width = 3*btn_height*disp_vertical_stretch
+btn_height = 80
 progress_bar_height = 10
 tab_height = 100
 #generate even spacing based on all contents on homescreen
 small_padding = 15
 padding = (screen_height\
         - status_bar_height\
-        - btn_height*4\
-        - btn_width\
+        - btn_height*7\
         - progress_bar_height\
         - tab_height)\
         /float(7)#remaining space has to contain 9* padding and 1* hpadding
-int_pad = int(padding)
 notification_padding = padding -23
 notification_text_padding = 20
 btn_spacing = padding + btn_height
 padding_hint = padding/screen_width
 h_padding = padding*disp_vertical_stretch
+btn_temp_width = 150
+btn_width = screen_width - 3*h_padding - btn_temp_width
 
 background = [0.065,0.065,0.065,1]
 notification_shadow = (0.065, 0.065, 0.065, 0.6)
 popup = (0.15,0.15,0.15,1)
 divider = (1,1,1,0.09)
-button = (1,1,1,0.08)
-button_outline = (1,1,1,0.095)
-button_disabled = (1,1,1,0.35)
+btn = (1,1,1,0.08)
+btn_outline = (1,1,1,0.095)
+btn_disabled = (1,1,1,0.35)
 nozzle = (0.15, 0.15, 0.15, 1)
 nozzle_selected = (0.3, 0.3, 0.3, 1)
 

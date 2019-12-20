@@ -41,7 +41,7 @@ Builder.unload_file(join(kivy_data_dir, "style.kv"))
 Builder.load_file(join(p.kgui_dir, "style.kv"))
 
 #add threading.thread => inherits start() method to run() in new thread
-class mainApp(App, threading.Thread): # runs in Klipper Thread
+class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     #Property for controlling the state as shown in the statusbar.
     state = OptionProperty("initializing", options=[
@@ -257,7 +257,6 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def get_speed(self):
         self.speed = self.gcode.speed_factor*60*100 #speed factor also converts from mm/sec to mm/min
     def send_speed(self, val):
-        logging.info("send {} as speed override".format(val))
         self.speed = val
         val = val/(60.*100.)
         def set_speed(e):
@@ -298,7 +297,6 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.acceleration = val
         self.toolhead.max_accel = val
         self.reactor.register_async_callback(lambda e: self.toolhead._calc_junction_deviation())
-
 
 ### TUNING
 #####################################################################
@@ -352,6 +350,9 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
 
     def send_home(self, axis):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
+
+    def send_motors_off(self):
+        reactor.register_async_callback(lambda e: self.gcode.run_script_from_command("M18"))
 
     def get_pos(self):
         def read_pos(e):

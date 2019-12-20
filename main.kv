@@ -81,7 +81,7 @@ FloatLayout:
             pos_hint: {'x':0,'y':0}
             size_hint: 1,1
         ProgressBar:
-            enabled: True if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' or app.state == 'print_finished' else False
+            enabled: app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' or app.state == 'print finished'
             id: progress_bar
             max: 1
             value: app.progress
@@ -272,14 +272,14 @@ FloatLayout:
     FloatLayout:
         Btn_Triple:
             w1: p.btn_height
-            w2: 120
+            w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
             id: btn_tr_T1
             y: p.padding if app.extruder_count > 1 else p.mars
             right: p.screen_width - p.h_padding
         Btn_Triple:
             w1: p.btn_height
-            w2: 120
+            w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
             id: btn_tr_T0
             y: p.padding*2 + p.btn_height
@@ -318,7 +318,22 @@ FloatLayout:
             size: p.btn_height, p.btn_height
             x: xy_field.right
             y: xy_field.y + p.btn_height
-
+        RoundButton:
+            id: btn_off
+            on_release: app.send_motors_off()
+            enabled: app.printer_objects_available
+            size: p.btn_height, p.btn_height
+            x: xy_field.right
+            top: xy_field.top
+            Label:
+                text: "Off"
+                color: (1,1,1,1) if btn_off.enabled else p.btn_disabled
+                size: btn_off.size
+                text_size: self.size
+                font_size: p.large_font
+                pos: btn_off.pos
+                halign: 'center'
+                valign: 'middle'
 
 # BUTTONS  ########################################################################
 
@@ -328,7 +343,7 @@ FloatLayout:
     Label:
         text: root.title
         size: root.size
-        color: (1,1,1,1) if root.enabled else p.button_disabled
+        color: (1,1,1,1) if root.enabled else p.btn_disabled
         text_size: self.size
         pos: root.pos        
         font_size: p.normal_font
@@ -368,13 +383,18 @@ FloatLayout:
         Color:
             rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
         Line:
-            width: p.icon_radius
-            circle: (self.center_x, self.center_y, p.btn_height/2, 0, 270)
-        Triangle:
-            points: (self.center_x - 14, self.center_y + p.btn_height/2,    self.center_x, self.center_y + p.btn_height/2 + 14,    self.center_x, self.center_y + p.btn_height/2 - 14)
+            #:set rw 5.5
+            #:set r_arr 13.5
+            width: rw
+            circle: (self.center_x, self.center_y, p.btn_height/2 - rw, -5, 270)
+        Line:
+            width: p.icon_radius - 0.7
+            points: (self.center_x - r_arr, self.center_y + p.btn_height/2 - rw,    self.center_x, self.center_y + p.btn_height/2 - rw + r_arr,    self.center_x, self.center_y + p.btn_height/2 - rw - r_arr)
+            close: True
 
 <Btn_Play@RoundButton>:
-    #:set h p.btn_height*1.155
+    #:set pw (p.btn_height-2*p.icon_radius)/2
+    #:set ph pw*1.155
     paused: False if app.state == 'printing' else True
     enabled: True if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else False
     canvas.before:
@@ -392,17 +412,17 @@ FloatLayout:
         Color:
             rgba: 1,1,1,1 if self.enabled and self.paused else 0
         Triangle:
-            points: self.center_x-p.btn_height/2, self.center_y- h/2,   self.center_x-p.btn_height/2, self.center_y+ h/2,   self.center_x+p.btn_height/2, self.center_y
+            points: self.center_x-pw, self.center_y- ph,   self.center_x-pw, self.center_y+ ph,   self.center_x+pw, self.center_y
         Line:
             width: p.icon_radius
-            points: self.center_x-p.btn_height/2, self.center_y- h/2,   self.center_x-p.btn_height/2, self.center_y+ h/2,   self.center_x+p.btn_height/2, self.center_y
+            points: self.center_x-pw, self.center_y- ph,   self.center_x-pw, self.center_y+ ph,   self.center_x+pw, self.center_y
             close: True
 
 <Btn@RoundButton>:
     title: ''
     canvas:
         Color:
-            rgba: p.button
+            rgba: p.btn
         RoundedRectangle:
             radius: (p.radius,)
             pos: self.pos
@@ -412,7 +432,7 @@ FloatLayout:
     title: ''
     canvas.before:
         Color:
-            rgba: p.button_outline
+            rgba: p.btn_outline
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
             width: 1
@@ -424,7 +444,7 @@ FloatLayout:
 #     dir_right: False
 #     canvas.before:
 #         Color:
-#             rgba: p.button_outline
+#             rgba: p.btn_outline
 #         Line:
 #             points: (self.x+self.width/2-w/2, self.center_y- v/2, self.x+self.width/2-w/2, self.center_y+ v/2, self.x+self.width/2+w/2, self.center_y) if self.dir_right else (self.x+self.width/2+w/2, self.center_y- v/2, self.x+self.width/2+w/2, self.center_y+ v/2, self.x+self.width/2-w/2, self.center_y)
 #             close: True
@@ -454,7 +474,7 @@ FloatLayout:
             size: root.width * (1-root.filament_amount), root.height
             pos: root.x + root.filament_amount * root.width, root.y
         Color:
-            rgba: p.button_outline
+            rgba: p.btn_outline
         Line:
             width: 1
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
@@ -470,7 +490,7 @@ FloatLayout:
         enabled: False
         canvas:
             Color:
-                rgba: (1,1,1,1) if self.enabled else p.button_disabled
+                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points: (self.x+self.width/2+w/2, self.center_y- w, self.x+self.width/2+w/2, self.center_y+ w, self.x+self.width/2-w/2, self.center_y)
             Color:
@@ -502,7 +522,7 @@ FloatLayout:
             valign: 'top'
             padding_y: 10
         Label:
-            color: p.button_disabled
+            color: p.btn_disabled
             text: root.title_lower
             size: btn_load.size
             text_size: self.size
@@ -520,7 +540,7 @@ FloatLayout:
         enabled: False
         canvas:
             Color:
-                rgba: (1,1,1,1) if self.enabled else p.button_disabled
+                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points: (self.x+self.width/2-w/2, self.center_y- w, self.x+self.width/2-w/2, self.center_y+ w, self.x+self.width/2+w/2, self.center_y)
             Color:
@@ -537,7 +557,7 @@ FloatLayout:
     size_hint: None, None
     canvas:
         Color:
-            rgba: p.button_outline
+            rgba: p.btn_outline
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
         Rectangle:
@@ -562,7 +582,7 @@ FloatLayout:
                 size: self.size
                 pos: self.pos
             Color:
-                rgba: (1,1,1,1) if self.enabled else p.button_disabled
+                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points: self.center_x-u,self.center_y+t,   self.center_x+u,self.center_y+t,   self.center_x,self.center_y-t
     HomeButton:
@@ -590,7 +610,7 @@ FloatLayout:
                 size: self.size
                 pos: self.pos
             Color:
-                rgba: (1,1,1,1) if self.enabled else p.button_disabled
+                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points: self.center_x-u,self.center_y-t,   self.center_x+u,self.center_y-t,   self.center_x,self.center_y+t
 
@@ -600,7 +620,7 @@ FloatLayout:
     enabled: app.printer_objects_available
     canvas:
         Color:
-            rgba: (1,1,1,1) if self.enabled else p.button_disabled
+            rgba: (1,1,1,1) if self.enabled else p.btn_disabled
         Rectangle:
             source: p.kgui_dir+'/Logos/HomeAxisIcon.png'
             size: 66, 66
@@ -647,7 +667,7 @@ FloatLayout:
         valign: 'top'
         halign: 'right'
     Label:
-        color: p.button_disabled
+        color: p.btn_disabled
         text: root.small_value
         size_hint: None, None
         size: root.width+50, root.height
@@ -723,7 +743,7 @@ FloatLayout:
     px: self.x + p.padding
     canvas:
         Color:
-            rgba: (1,1,1,1) if root.pressed else p.button
+            rgba: (1,1,1,1) if root.pressed else p.btn
         RoundedRectangle:
             radius: (4,)
             size: root.width-2*p.padding, 8
@@ -1045,7 +1065,7 @@ FloatLayout:
     px: [0, 0]
     canvas.after:
         Color:
-            rgba: p.button_outline
+            rgba: p.btn_outline
         Line:
             width: 1
             rounded_rectangle: (self.x, self.y, self.width + p.btn_height, self.height, p.radius)
@@ -1056,7 +1076,7 @@ FloatLayout:
         Line:
             points: self.right + 10, self.y + p.btn_height,   self.right + p.btn_height -10, self.y + p.btn_height
         Color:
-            rgba: p.button_outline if self.pressed else (0,0,0,0)
+            rgba: p.btn_outline if self.pressed else (0,0,0,0)
         Line:
             width: 1
             points: self.x, self.px[1],   self.right, self.px[1]
@@ -1462,7 +1482,7 @@ FloatLayout:
     width: wdt - rad + Rad + 2*p.small_padding
     canvas:
         Color:
-            rgba: p.button
+            rgba: p.btn
         #: set wdt 60
         #: set rad 11
         #: set Rad 16
