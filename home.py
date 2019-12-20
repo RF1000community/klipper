@@ -1,5 +1,5 @@
 # coding: utf-8
-from kivy.properties import ListProperty, StringProperty
+from kivy.properties import ListProperty, StringProperty, NumericProperty
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
 from kivy.app import App
@@ -204,3 +204,41 @@ class ExtTempOffsetSlider(UltraOffsetSlider):
         if x < self.px_min: x = self.px_min
         return x
 """
+
+class BtnTriple(Widget):
+
+    filament_color = ListProperty([0.1, 0.1, 0])
+    bg_color = ListProperty([0, 0, 0])
+    label_color = ListProperty([1, 1, 1, 1])
+    filament_amount = NumericProperty(0.4)
+
+    def __init__(self, **kwargs):
+        super(BtnTriple, self).__init__(**kwargs)
+        Clock.schedule_once(self.calculate_colors, 0)
+
+    def calculate_colors(self, *args):
+        """
+        From self.filament_color calculate bg and label colors such
+        that everything is clearly visible.
+        """
+        l = self.lightness(*self.filament_color)
+        # Change backgroung and label color if the defaults
+        # are too close to the lightness of the color.
+        threshold = 0.1
+        bg = p.background
+        if abs(l - self.lightness(*bg[:3])) < threshold:
+            bg = p.light_gray
+        lb = p.medium_light_gray
+        if abs(l - self.lightness(*lb[:3])) < threshold:
+            lb = [1, 1, 1, 1]
+
+        self.bg_color = bg
+        self.label_color = lb
+
+    def lightness(self, r, g, b):
+        """
+        Returns the lightness of an rgb color.
+        This is equal to the average between the minimum and
+        maximum value.
+        """
+        return 0.5*(max(r, g, b) + min(r, g, b))
