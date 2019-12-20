@@ -8,15 +8,15 @@ KGUI:
 
     fix print time calc
 
+    fix ethernet icon not showing up
+
     extrude retract
 
     Klipper: remove necessity to rehome after motors were switched off
 
     https://wiki.archlinux.org/index.php/Display_Power_Management_Signaling    
 
-    fix acc tuning
-
-    fix pressure_advance tuning
+    make play button smaller, material button wider
 
     OTA Updates of klipperui + dependencies
 

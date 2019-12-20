@@ -51,6 +51,7 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         "printing",
         "pausing",
         "paused",
+        "print finished",
         "error",
         "error disconnected",
         "initializing",
@@ -68,9 +69,11 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     flow = NumericProperty(100)
     fan_speed = NumericProperty(0)
     z_adjust = NumericProperty(0)
-    #config/tuning
-    pressure_advance = NumericProperty(0)
     acceleration = NumericProperty(2000)
+    pressure_advance = NumericProperty(0)
+    #config
+    default_pressure_advance = NumericProperty(0)
+    default_acceleration = NumericProperty(2000)
 
     def __init__(self, config = None, **kwargs): #runs in klippy thread
         logging.info("Kivy app initializing...")
@@ -207,13 +210,13 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.state = s
 
     def update_home(self, *args):
-        self.get_temp()
         self.get_pos()
+        self.get_temp()
         self.get_homing_state()
 
     def update_printing(self, *args):
-        self.get_config('extruder', 'pressure_advance', 'pressure_advance')
-        self.get_config('printer', 'max_accel', 'acceleration', 'int')
+        self.get_pressure_advance()
+        self.get_acceleration()
         self.get_z_adjust()
         self.get_speed()
         self.get_flow()
@@ -221,8 +224,8 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
         self.get_temp()
 
     def update_setting(self, *args):
-        self.get_config('printer', 'max_accel', 'acceleration', 'int')
-        self.get_config('extruder', 'pressure_advance', 'pressure_advance')
+        self.get_config('printer', 'max_accel', 'default_acceleration', 'int')
+        self.get_config('extruder', 'pressure_advance', 'default_pressure_advance')
 
 
     def on_state(self, instance, state):
@@ -279,10 +282,26 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def send_fan(self, speed):
         self.fan_speed = speed
         self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed/100.))
-
+    
+    def get_pressure_advance(self):#gives pressure_advance value of 1. extruder for now
+        self.pressure_advance = self.extruders[0].get_status(self.reactor.monotonic())['pressure_advance']
     def send_pressure_advance(self, val):
-        for i in range(self.extruder_count):
-            self.set_config('extruder{}'.format(i if i != '0' else ''), 'pressure_advance', val)
+        self.pressure_advance = val
+        def set_pressure_advance(e):
+            for extruder in self.extruders:
+                extruder._set_pressure_advance(val, extruder.pressure_advance_smooth_time)
+        self.reactor.register_async_callback(set_pressure_advance)
+
+    def get_acceleration(self):
+        self.acceleration = self.toolhead.max_accel
+    def send_acceleration(self, val):
+        self.acceleration = val
+        self.toolhead.max_accel = val
+        self.reactor.register_async_callback(lambda e: self.toolhead._calc_junction_deviation())
+
+
+### TUNING
+#####################################################################
 
     def get_config(self, section, option, property_name, ty=None):
         logging.info("wrote {} from section {} to {}".format(option, section, property_name))
@@ -301,9 +320,6 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def set_config(self, section, option, value):
         logging.info("trying to set config section {} option {} to value {}".format(section, option, value))
         self.reactor.register_async_callback(lambda e: self.klipper_config_manager.set(section, option, value))
-
-### TUNING
-#####################################################################
 
     def write_config(self, section, option, value):
         logging.info( 'trying to write section: {} option: {}, value: {} to config'.format(section, option, value))
@@ -363,21 +379,22 @@ class mainApp(App, threading.Thread): # runs in Klipper Thread
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
 
-    def send_start(self, file):
-        filename = basename(file) # remove path
-        self.print_title = splitext(filename)[0] #remove file extension
-        self.state = "printing"
-        params = {'#original': "M23 " + filename}
+    def send_start(self, file=None):
+        if file:
+            filename = basename(file) # remove path
+            self.print_title = splitext(filename)[0] #remove file extension
+            self.state = "printing"
+            params = {'#original': "M23 " + filename}
         def start(e):
             try:
-                self.sdcard.cmd_M23(params)
+                if file: self.sdcard.cmd_M23(params)
                 self.sdcard.cmd_M24(None)
             except:
                 self.notify.show("Couldn't start Print, sdcard busy")
         self.reactor.register_async_callback(start)
 
     def send_stop(self):
-        self.state = "ready"
+        self.state = "print finished"
         self.notify.show("Printing stopped", level="error")
         self.reactor.register_async_callback(self.sdcard.cmd_M25)
     
