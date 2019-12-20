@@ -223,9 +223,14 @@ class BtnTriple(Widget):
         # Change backgroung and label color if the defaults
         # are too close to the lightness of the color.
         threshold = 0.1
+
+        # l(bg) = 0.065 ==> change for l < 0.165
         bg = p.background
         if abs(l - self.lightness(*bg[:3])) < threshold:
             bg = p.light_gray
+
+        # l(lb) = 0.35 ==> change for 0.25 < l < 0.45
+        # 0.165 < 0.25 ==> bg and lb will never be changed simultaneously
         lb = p.medium_light_gray
         if abs(l - self.lightness(*lb[:3])) < threshold:
             lb = [1, 1, 1, 1]
