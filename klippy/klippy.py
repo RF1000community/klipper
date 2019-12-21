@@ -172,7 +172,8 @@ class Printer:
         # Enter main reactor loop
         try:
             self.reactor.run()
-        except:
+        except Exception as e:
+            self.send_event("klippy:exception", str(e))
             logging.exception("Unhandled exception during run")
             return "error_exit"
         # Check restart flags
