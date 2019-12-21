@@ -25,7 +25,7 @@ CURA COONNECTION
         h264 streaming:
             raspivid
             mjpegstreamer
-            
+
     Cura Plugin
 
 HIGH SPEED ODRIVE COONNECTION
