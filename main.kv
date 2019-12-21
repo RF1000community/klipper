@@ -1369,8 +1369,8 @@ FloatLayout:
             pos_hint: {'x': 0.1, 'center_y': 0.63}
         RectangleButton:
             on_press: 
-                if self.state == 'down': pwd_input.password = False
-                elif self.state == 'normal': pwd_input.password = True
+                pwd_input.password = not pwd_input.password
+                lb_show.text = "show" if pwd_input.password else "hide"
             on_release:
                 pwd_input.focus = True
             id: btn_s
@@ -1378,6 +1378,7 @@ FloatLayout:
             size_hint: 0.1, None
             pos_hint: {'x': 0.81, 'center_y': 0.63}
             Label:
+                id: lb_show
                 size: btn_s.size
                 pos: btn_s.pos
                 text_size: self.size
