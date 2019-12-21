@@ -478,13 +478,14 @@
 
 # ModalView widget
 <ModalView>:
+    error: False
     canvas:
         Color:
             rgba: root.background_color[:3] + [root.background_color[-1] * self._anim_alpha]
         Rectangle:
             size: (self._window.size[0], self._window.size[1]) if self._window else (0, 0)
         Color:
-            rgba: p.popup
+            rgba: p.red if self.error else p.popup
         RoundedRectangle:
             radius: [p.popup_radius]
             pos: self.pos

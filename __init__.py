@@ -161,6 +161,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     
     def handle_klippy_exception(self, exc):
         self.state = "error"
+        ErrorPopup(message=exc)
         
 ### KLIPPER THREAD ^
 ########################################################################################
