@@ -482,7 +482,7 @@
         Color:
             rgba: root.background_color[:3] + [root.background_color[-1] * self._anim_alpha]
         Rectangle:
-            size: (self._window.size[0], self._window.size[1] - p.status_bar_height) if self._window else (0, 0)
+            size: (self._window.size[0], self._window.size[1]) if self._window else (0, 0)
         Color:
             rgba: p.popup
         RoundedRectangle:
