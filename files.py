@@ -99,3 +99,6 @@ class DelPopup(BasePopup):
         # Update the files in the filechooser instance
         self.creator.creator._update_files()
         self.dismiss()
+
+        app = App.get_running_app()
+        app.notify.show("File deleted", "Deleted " + basename(self.creator.path), delay=4)
