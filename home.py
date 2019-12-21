@@ -1,5 +1,5 @@
 # coding: utf-8
-from kivy.properties import ListProperty, StringProperty
+from kivy.properties import ListProperty, StringProperty, NumericProperty
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
 from kivy.app import App
@@ -24,13 +24,11 @@ class XyField(Widget):
         self.app.bind(pos=self.update_with_mm)
         Clock.schedule_once(self.init_drawing, 0)
         
-
     def init_drawing(self, dt):
         #Calculate bounds of actual field
         self.origin = [self.x+self.point_radius, self.y+self.point_radius]
         self.limits = [self.right-self.point_radius, self.top-self.point_radius]
         self.px = self.origin
-    
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos) and self.enabled:
@@ -88,7 +86,6 @@ class XyField(Widget):
     def set_px_with_mm(self, mm):
         self.px = [(self.limits[0] - self.origin[0]) * float(mm[0]) / self.printer_dimensions[0] + self.origin[0],
                    (self.limits[1] - self.origin[1]) * float(mm[1]) / self.printer_dimensions[1] + self.origin[1]]
-
 
 
 class TempSlider(UltraSlider):
@@ -204,3 +201,50 @@ class ExtTempOffsetSlider(UltraOffsetSlider):
         if x < self.px_min: x = self.px_min
         return x
 """
+
+
+class BtnTriple(Widget):
+
+    filament_color = ListProperty([0.33, 0, 0])
+    bg_color = ListProperty([0, 0, 0])
+    label_color = ListProperty([1, 1, 1, 1])
+    filament_amount = NumericProperty(0.4)
+
+    def __init__(self, **kwargs):
+        super(BtnTriple, self).__init__(**kwargs)
+        Clock.schedule_once(self.calculate_colors, 0)
+
+    def calculate_colors(self, *args):
+        """
+        From self.filament_color calculate bg and label colors such
+        that everything is clearly visible.
+        """
+        l = self.lightness(*self.filament_color)
+        # Change backgroung and label color if the defaults
+        # are too close to the lightness of the color.
+        threshold = 0.1
+
+        # l(bg) = 0.065 ==> change for l < 0.165
+        bg = p.background
+        if abs(l - self.lightness(*bg[:3])) < threshold:
+            bg = p.light_gray
+
+        # l(lb) = 0.35 ==> change for 0.25 < l < 0.45
+        # 0.165 < 0.25 ==> bg and lb will never be changed simultaneously
+        lb = p.medium_light_gray
+        if abs(l - self.lightness(*lb[:3])) < threshold:
+            lb = [1, 1, 1, 1]
+
+        self.bg_color = bg
+        self.label_color = lb
+
+    def lightness(self, r, g, b):
+        """
+        Returns the lightness of an rgb color.
+        This is equal to the average between the minimum and
+        maximum value.
+        """
+        return 0.5*(max(r, g, b) + min(r, g, b))
+
+    def on_filament_color(self, *args):
+        self.calculate_colors()

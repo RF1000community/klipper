@@ -270,14 +270,14 @@ FloatLayout:
 <HomeScreen@Screen>:
     name: "homescreen"
     FloatLayout:
-        Btn_Triple:
+        BtnTriple:
             w1: p.btn_height
             w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
             id: btn_tr_T1
             y: p.padding if app.extruder_count > 1 else p.mars
             right: p.screen_width - p.h_padding
-        Btn_Triple:
+        BtnTriple:
             w1: p.btn_height
             w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
@@ -291,7 +291,7 @@ FloatLayout:
             title: "Mesh Bed Leveling"
             size: btn_tr_T1.size
             pos: btn_tr_T0.x, 3*p.padding+2*p.btn_height
-        Btn_TripleZ:
+        BtnTripleZ:
             id: btn_tr_Z
             height: xy_field.height
             h1: self.height/3
@@ -450,9 +450,9 @@ FloatLayout:
 #             close: True
 #             width: 1
 
-<Btn_Triple@Widget>:
-    filament_color: (1,0,0)
-    filament_amount: 0.4
+<BtnTriple>:
+    #filament_color: (1, 0, 0)
+    #filament_amount: 0.4
     title_upper: 'Unload'
     title_lower: '320g PETG'
     w1: 0
@@ -469,28 +469,29 @@ FloatLayout:
             pos: root.pos
             radius: (p.radius,)
         Color:
-            rgba: p.background
-        Rectangle:
+            rgb: root.bg_color
+        RoundedRectangle:
             size: root.width * (1-root.filament_amount), root.height
             pos: root.x + root.filament_amount * root.width, root.y
+            radius: (0, p.radius, p.radius, 0)
         Color:
             rgba: p.btn_outline
         Line:
             width: 1
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
-        Rectangle:
-            pos: self.x+self.w1, self.y+6
-            size: 1, self.height-12
-        Rectangle:
-            pos: self.x+self.w1+1+self.w2, self.y+6
-            size: 1, self.height-12
+        Color:
+            rgba: root.label_color
+        Line:
+            points: self.x+self.w1, self.y+6, self.x+self.w1, self.top-6
+        Line:
+            points: self.x+self.w1+1+self.w2, self.y+6, self.x+self.w1+1+self.w2, self.top-6
     BaseButton:
         size: root.w1, root.height
         pos: root.pos
         enabled: False
         canvas:
             Color:
-                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
+                rgba: root.label_color #if self.enabled else p.button_disabled
             Triangle:
                 points: (self.x+self.width/2+w/2, self.center_y- w, self.x+self.width/2+w/2, self.center_y+ w, self.x+self.width/2-w/2, self.center_y)
             Color:
@@ -512,6 +513,7 @@ FloatLayout:
                 size: self.size
                 pos: self.pos
         Label:
+            color: root.label_color
             text: root.title_upper
             size: btn_load.size
             text_size: self.size
@@ -522,7 +524,8 @@ FloatLayout:
             valign: 'top'
             padding_y: 10
         Label:
-            color: p.btn_disabled
+            color: root.label_color
+            #color: p.button_disabled
             text: root.title_lower
             size: btn_load.size
             text_size: self.size
@@ -540,7 +543,7 @@ FloatLayout:
         enabled: False
         canvas:
             Color:
-                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
+                rgba: root.label_color #if self.enabled else p.button_disabled
             Triangle:
                 points: (self.x+self.width/2-w/2, self.center_y- w, self.x+self.width/2-w/2, self.center_y+ w, self.x+self.width/2+w/2, self.center_y)
             Color:
@@ -550,7 +553,7 @@ FloatLayout:
                 size: self.size
                 pos: self.pos
 
-<Btn_TripleZ@Widget>:
+<BtnTripleZ@Widget>:
     h1: 0
     h2: 0
     h3: 0
