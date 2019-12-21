@@ -158,7 +158,8 @@ class Notifications(FloatLayout):
         message string      Message body of the notification
         level   string      What log level preset to use.
         log     bool        Whether or not to write the notification in the logs.
-        delay   int         Time until notification is automatically hidden in seconds
+        delay   int         Time until notification is automatically hidden in seconds.
+                            Never automatically hide for any negative value.
         color   rgba list   Background color of the notification. Overwrites the
                 or string   value set by the level preset. Can also be the name of
                             different preset that the specified log level.
@@ -204,7 +205,9 @@ class Notifications(FloatLayout):
         window.add_widget(self)
         self.active = True
         # Schedule automatic hiding
-        self.update_clock = Clock.schedule_once(self.hide, delay)
+        # Never automatically hide for negative delay values
+        if delay > -1:
+            self.update_clock = Clock.schedule_once(self.hide, delay)
 
     def hide(self, *args):
         self.update_clock.cancel()
