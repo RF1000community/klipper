@@ -4,7 +4,7 @@ import time
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.graphics.context_instructions import Color
-from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Rectangle
+from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Rectangle, BorderImage
 from kivy.properties import StringProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
@@ -112,6 +112,8 @@ class Notifications(FloatLayout):
 
     def __init__(self):
         super(Notifications, self).__init__()
+        # Initialize update_clock as a ClockEvent in case it gets canceled first
+        self.update_clock = Clock.schedule_once(lambda x: 0, -1)
         self.root_widget = App.get_running_app().root
         self.size_hint = (None, None)
         self.size = self.root_widget.width - 2*p.notification_padding, 110
@@ -122,8 +124,12 @@ class Notifications(FloatLayout):
 
     def init_drawing(self, dt):
         with self.canvas:
-            self.shadow_color = Color(rgba=p.notification_shadow)
-            Rectangle(pos=(0, p.screen_height-220) ,size=(p.screen_width, 220))
+            Color(rgb=p.background[:3], a=0.8)
+            BorderImage(
+                source=p.kgui_dir+'/Logos/shadow.png',
+                pos=(self.x-64, self.y-64),
+                size=(self.width + 128, self.height + 127),
+                border=(64, 64, 64, 64))
             self.bg_color = Color(rgba=p.red)
             RoundedRectangle(pos=self.pos, size=self.size, radius=(p.radius, p.radius))
 
@@ -148,7 +154,7 @@ class Notifications(FloatLayout):
         self.add_widget(message)
         self.message_label = message
 
-    def show(self, title="", message="", level="info", log=True, delay=10, color=None):
+    def show(self, title="", message="", level="info", log=True, delay=-1, color=None):
         """
         Show a notification popup with the given parameters. If log is set,
         also write to the log file.
