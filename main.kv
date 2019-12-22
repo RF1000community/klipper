@@ -492,7 +492,7 @@ FloatLayout:
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
         enabled: True
-        on_release: app.notify.show("this is a ", "test hpwoo jkofdsoiajfdospajfiodpsjkj jk", level="info")
+        on_release: Factory.ErrorPopup(message="hjklhjlh").open()
         canvas:
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
@@ -1095,6 +1095,24 @@ FloatLayout:
             width: root.width/2
             pos: root.center_x, root.y
             on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
+
+<ErrorPopup@BasePopup>:
+    size_hint: 0.8, 0.5
+    error: True
+    title: "Error"
+    FloatLayout:
+        Label:
+            size_hint: 1, 1
+            text: root.message
+            pos_hint: {'x':0, 'y':0}
+            font_size: p.large_font
+            color: p.light_gray
+        Btn_P_Cancel:
+            id: btn_cancel
+            title: "Restart Klipper"
+            width: root.width
+            pos: root.pos
+            on_release: app.send_klipper_restart()
 
 <XyField>:
     mm: [0, 0, 0]
