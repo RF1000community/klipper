@@ -97,14 +97,11 @@ class BasePopup(Popup):
     def dismiss(self, animation=False, **kwargs):
         super(BasePopup, self).dismiss(animation=animation, **kwargs)
 
-class ErrorPopup(Popup):
+class ErrorPopup(BasePopup):
     message = StringProperty()
     def __init(self, message, **kwargs):
         self.message = message
         super(ErrorPopup, self).__init__(**kwargs)
-
-    def dismiss(self, **kwargs):
-        pass
 
 
 class UltraSlider(Widget):
