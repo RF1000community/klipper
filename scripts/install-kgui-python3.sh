@@ -112,38 +112,14 @@ install_usb_automounting()
 
 
 
-configure_dpms()
-{
-    ######################################################################
-    ## Won't work yet because /boot/config.txt gets simply overwritten
-    ## by LCD install script.
-    ######################################################################
-
-    # Check if hdmi_blanking is already set (appearance count > 0)
-    if [ $(grep hdmi_blanking /boot/config.txt) -gt 0 ]
-    then
-        # Change value to 1
-        sudo sed -i s/hdmi_blanking=0/hdmi_blanking=1/ /boot/config.txt
-    else
-        # Otherwise add option to the config.txt
-        sudo echo hdmi_blanking=1 >> /boot/config.txt
-    fi
-    # Then copy the xorg.conf file
-    sudo cp ${SRCDIR}/klippy/extras/kgui/10-dpms.conf /etc/X11/xorg.conf.d/
-}
-
-
-
 # Display Driver installation for kgui, 7 inch 1024*600 touchscreen
+# Use custom install script in kgui directory
 install_lcd_driver()
 {
     report_status "Installing LCD Driver..."
-    cd ~
-    sudo rm -rf LCD-show #to allow rerunning the script without errors
-    sudo git clone https://github.com/goodtft/LCD-show.git
-    sudo chmod -R 755 LCD-show
-    cd LCD-show/
-    sudo ./LCD7C-show 90
+    sudo ${SRCDIR}/klippy/extras/kgui/LCDC7-better.sh -r 90
+    # Copy the dpms configuration
+    sudo cp ${SRCDIR}/klippy/extras/kgui/10-dpms.conf /etc/X11/xorg.conf.d/
 }
 
 
@@ -171,5 +147,4 @@ install_packages
 create_virtualenv
 install_klipper_service
 install_usb_automounting
-#configure_dpms
 install_lcd_driver
