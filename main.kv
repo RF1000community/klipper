@@ -383,14 +383,12 @@ FloatLayout:
         Color:
             rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
         Line:
-            #:set rw 5.5
-            #:set r_arr 13.5
+            #:set rw p.progress_bar_height/2
+            #:set r_arr 15
             width: rw
-            circle: (self.center_x, self.center_y, p.btn_height/2 - rw, -5, 270)
-        Line:
-            width: p.icon_radius - 0.7
-            points: (self.center_x - r_arr, self.center_y + p.btn_height/2 - rw,    self.center_x, self.center_y + p.btn_height/2 - rw + r_arr,    self.center_x, self.center_y + p.btn_height/2 - rw - r_arr)
-            close: True
+            circle: (self.center_x, self.center_y + 1, p.btn_height/2 - rw - 0.5,  0, 270)
+        Triangle:
+            points: (self.center_x - r_arr, self.center_y + p.btn_height/2 - rw ,    self.center_x, self.center_y + p.btn_height/2 - rw + r_arr,    self.center_x, self.center_y + p.btn_height/2 - rw - r_arr)
 
 <Btn_Play@RoundButton>:
     #:set pw (p.btn_height-2*p.icon_radius)/2

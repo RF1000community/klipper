@@ -107,7 +107,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.printer.register_event_handler("klippy:ready", self.handle_ready) #connect handlers have run
             self.printer.register_event_handler("klippy:disconnect", self.handle_disconnect)
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
-            self.printer.register_event_handler("klippy:exception", self.handle_klippy_exception)
+            self.printer.register_event_handler("klippy:exception", self.handle_exception)
             self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
             self.printer.register_event_handler("toolhead:sync_print_time", self.handle_calc_print_time)
         else:
@@ -115,6 +115,12 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.pos_min = {'x':0, 'y':0}
             self.extruder_count = 3
         super(mainApp, self).__init__(**kwargs)
+
+    def run(self):#needs testing
+        try:
+            super(mainApp, self).run()
+        except Exception as e:
+            self.handle_exception(e)
 
     def handle_connect(self): #runs in klippy thread
         self.fan = self.printer.lookup_object('fan', None)
@@ -159,7 +165,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.print_time = "{}:{:02} remaining".format(hours, minutes)
         self.progress = print_time/float(est_print_time)
     
-    def handle_klippy_exception(self, exc):
+    def handle_exception(self, exc):
         self.state = "error"
         ErrorPopup(message=exc).open()
         
