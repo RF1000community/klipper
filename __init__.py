@@ -3,11 +3,11 @@
 import os
 from sys import argv
 if '-t' in argv:
-    testing = True
+    TESTING = True
     argv.remove('-t')
 else:
-    testing = False
-if not testing:
+    TESTING = False
+if not TESTING:
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'gl'
 from kivy import kivy_data_dir
@@ -29,16 +29,37 @@ from settings import *
 import parameters as p
 
 
-#add parent directory to sys.path so main.kv (parser.py) can import from it
+# Add parent directory to sys.path so main.kv (parser.py) can import from it
 site.addsitedir(p.kgui_dir)
 
-#this needs an absolute path otherwise config will only be loaded when working directory is the parent directory
-if testing: Config.read(join(p.kgui_dir, "config-test.ini"))
-else:       Config.read(join(p.kgui_dir, "config.ini"))
+def set_kivy_config():
+    # This needs an absolute path otherwise config will only be loaded when
+    # working directory is the parent directory
+    if TESTING:
+        Config.read(join(p.kgui_dir, "config-test.ini"))
+    else:
+        Config.read(join(p.kgui_dir, "config.ini"))
+        # Read the display rotation value
+        try:
+            with open("/boot/config.txt", "r") as file_:
+                lines = file_.read().splitlines()
+        except IOError:
+            # Assume 90 degree rotation (config default) in case
+            # /boot/config.txt isn't found
+            rotation = 1
+        else:
+            rotation_string = [i for i in lines if i.startswith("display_hdmi_rotate")][0]
+            # The number should always be at index 20
+            rotation = int(rotation_string[20])
+        # rotation should only be 1 for 90deg or 3 for 270deg
+        # Set the input config option to rotate the touchinput explicitly for kivy
+        if rotation == 3:
+            Config.set("input", "device_%(name)s",
+                "probesysfs,provider=mtdev,param=rotation=270,param=invert_y=1")
 
-#load a custom style.kv with changes to filechooser and more
-Builder.unload_file(join(kivy_data_dir, "style.kv"))
-Builder.load_file(join(p.kgui_dir, "style.kv"))
+    #load a custom style.kv with changes to filechooser and more
+    Builder.unload_file(join(kivy_data_dir, "style.kv"))
+    Builder.load_file(join(p.kgui_dir, "style.kv"))
 
 #add threading.thread => inherits start() method to run() in new thread
 class mainApp(App, threading.Thread): #Handles Communication with Klipper
@@ -80,7 +101,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
-        if not testing:
+        if not TESTING:
             self.kgui_config = config
             self.printer = config.get_printer()
             self.reactor = self.printer.get_reactor()
@@ -314,7 +335,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def get_config(self, section, option, property_name, ty=None):
         logging.info("wrote {} from section {} to {}".format(option, section, property_name))
-        if testing:
+        if TESTING:
             setattr(self, property_name, 77)
             return
         def read_config(e):
@@ -438,6 +459,8 @@ def load_config(config):
     kgui_object = mainApp(config)
     kgui_object.start()
     return kgui_object
+
+set_kivy_config()
 
 if __name__ == "__main__":
     mainApp().run()
