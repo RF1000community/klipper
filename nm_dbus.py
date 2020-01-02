@@ -3,9 +3,18 @@
 """
 Needs python-gobject or python-gi
 and python-pydbus
+
+TODO:
+    test and improve connect, up, down
+    connection type change (wifi/eth)
+    scan clock mgmt
+    only strength of active connection
+    .
+    .
+    .
 """
 
-from gi.repository.GLib import MainLoop
+from gi.repository import GLib
 from kivy.event import EventDispatcher
 from pydbus import SystemBus
 
@@ -19,11 +28,12 @@ class NetworkManager(EventDispatcher, Thread):
     def __init__(self, **kwargs):
         super(NetworkManager, self).__init__(**kwargs)
 
-        self.loop = MainLoop()
+        self.loop = Glib.MainLoop()
         self.bus = SystemBus()
 
         # Get proxy objects
         self.nm = self.bus.get(_NM, "/org/freedesktop/NetworkManager")
+        self.settings = self.bus.get(_NM, "/org/freedesktop/NetworkManager/Settings")
         devices = self.nm.Devices # type: ao
         for dev in devices:
             dev_obj = self.bus.get(_NM, dev)
@@ -43,60 +53,42 @@ class NetworkManager(EventDispatcher, Thread):
         """Executed by Thread.start(). This thread stops when this method finishes."""
         self.loop.run()
 
+
     def connect_signals(self):
         """Connect DBus signals to their callbacks.  Called in __init__"""
-        self.wifi_dev.AccessPointAdded.connect(self.handle_access_point_added)
-        self.wifi_dev.AccessPointRemoved.connect(self.handle_access_point_removed)
         wifi_prop = self.wifi_dev['org.freedesktop.DBus.Properties']
         wifi_prop.PropertiesChanged.connect(self.handle_scan_complete)
-
-
-    def handle_access_point_added(self, ap):
-        """
-        Add an access point to the buffer as soon as it gets into the
-        view of the wifi device.
-        """
-        if ap not in self.access_point_buffer:
-            self.access_point_buffer.append(ap)
-
-    def handle_access_point_removed(self, ap):
-        """
-        Removes an access point from the buffer as soon as it falls out
-        of view of the wifi device.
-        """
-        try:
-            self.access_point_buffer.remove(ap)
-        except ValueError:
-            # In case ap is not in buffer
-            pass
 
     def handle_scan_complete(self, iface, props, inval):
         """
         Only listens to changes on LastScan, which is changed whenever
         a scan completed.  Parses the access_point_buffer into dictionaries
         containing the relevant properties ssid (name of wifi), signal (in
-        percent) and in-use (whether we are currently connected with the wifi)
-
+        percent), in-use (whether we are currently connected with the wifi),
+        saved (whether the connection is already known and saved) and path,
+        the dbus object path of the access point.
         """
-        # TODO: Reevaluate selection of properties
         if not "LastScan" in props:
             return
 
         access_points = []
         in_use_ap = None
-        for ap in self.access_point_buffer:
-            ap_obj = self.bus.get(_NM, ap)
-            ssidl = ap_obj.Ssid # type: ay
+        saved_ssids = self.get_saved_ssids()
+        for path in self.wifi_dev.AccessPoints:
+            ap_obj = self.bus.get(_NM, path)
+            ssid_b = ap_obj.Ssid # type: ay
             # convert to string
             #PYTHON3: ssid = str(bytes(ssid).decode('utf-8'))
             #PYTHON2:
             ssid = ""
-            for c in ssidl:
+            for c in ssid_b:
                 ssid += chr(c)
             signal = ap_obj.Strength # type: y
-            in_use = (ap == self.wifi_dev.ActiveAccessPoint)
-            entry = {'signal': signal, 'in-use': in_use, 'ssid': ssid}
-            if in_use:
+            saved = (ssid_b in saved_ssids)
+            entry = {'signal': signal, 'ssid': ssid, 'in-use': False,
+                     'saved': saved, 'path': path}
+            if path == self.wifi_dev.ActiveAccessPoint:
+                entry['in-use'] = True
                 in_use_ap = entry
             else:
                 # Get the correct point to insert, so that the list stays sorted
@@ -109,7 +101,103 @@ class NetworkManager(EventDispatcher, Thread):
         self.access_points = access_points
         self.dispatch('on_access_points', self.access_points)
 
+    def handle_new_connection(self, state, reason):
+        """
+        Receives state changes from newly added connections.
+        Required to ensure everything went OK and to dispatch events
+        in case it didn't.  The most important case would be a wrong
+        password which will be detected by the reason argument.
 
+        The signal subscription will be canceled when the connection
+        was successfully activated.
+        """
+        #TODO: improve maybe
+        if state > 2: # DEACTIVATING or DEACTIVATED
+            if reason == 9: # NO_SECRETS
+                self.dispatch('on_wrong_password')
+            elif reason > 1: # not UNKNOWN or NONE
+                self.dispatch('on_connect_failed')
+        if state in (2, 4): # ACTIVATED or DEACTIVATED
+            # done, no need to listen further
+            self.new_connection_subscription.disconnect()
+
+
+    def wifi_connect(self, ssid, password):
+        """
+        From ssid and password (both as plaintext strings) get all the
+        information needed to either create and connect or just connect
+        the connection.  Relies on the data in self.access_points.
+
+        This method is likely to raise a ValueError or Error in
+        AddAndActivateConnection.  Exception catching is advised.
+
+        Returns path to the new connection (in settings)
+        """
+        data = None
+        for ap in self.access_points:
+            if ssid == ap['ssid']:
+                data = ap
+                break
+        if data is None or data['path'] not in self.wifi_dev.AccessPoints:
+            # Network got out of view since previous scan
+            raise ValueError("Network " + ssid + " is not in view.")
+        if data['saved']:
+            # You called the wrong method
+            self.up(ssid)
+            return
+        password = GLib.Variant('s', password)
+        connection_info = {'802-11-wireless-security': {'psk': password}} # type: a{sa{sv}}
+        con, active = self.nm.AddAndActivateConnection(
+            connection_info, self.wifi_dev.__dict__['_path'], data['path'])
+        active = self.bus.get(_NM, active)
+        self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
+        return con
+
+    def wifi_up(self, ssid):
+        """Activate a connection that is already stored"""
+        data = None
+        for ap in self.access_points:
+            if ssid == ap['ssid']:
+                data = ap
+                break
+        if data is None or not(data['path'] in self.wifi_dev.AccessPoints and data['saved']):
+            raise Exception("Can't activate connection " + ssid)
+        active = self.nm.ActivateConnection("/", self.wifi_dev.__dict__['_path'], data['path'])
+        active = self.bus.get(_NM, active)
+        self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
+
+    def wifi_down(self):
+        """Deactivate the currently active wifi connection, if any"""
+        active = self.wifi_dev.ActiveConnection
+        if active == "/":
+            return False
+        self.nm.DeactivateConnection(active)
+        return True
+
+    def wifi_delete(self, ssid):
+        """Delete a saved connection with the given ssid (string)"""
+        ssid_b = [ord(c) for c in a]
+        connection_paths = self.settings.Connections # type: ao
+        for path in connection_paths:
+            con = self.bus.get(_NM, path)
+            settings = con.GetSettings() # type: a{sa{sv}}
+            if '802-11-wireless' in settings: # Only check wifi connections
+                if ssid_b == settings['802-11-wireless']['ssid']:
+                    con.Delete()
+                    return True
+        return False
+
+    def get_saved_ssids(self):
+        """Return list of ssid bytearrays of all stored Wi-Fi connections"""
+        connection_paths = self.settings.Connections # type: ao
+        ssids = []
+        for path in connection_paths:
+            con = self.bus.get(_NM, path)
+            settings = con.GetSettings() # type: a{sa{sv}}
+            if '802-11-wireless' in settings: # Wired connections don't have ssids
+                ssid_b = settings['802-11-wireless']['ssid']
+                ssids.append(ssid_b)
+        return ssids
 
     def get_active_connection(self):
         """Return a proxy object to the primary connection, None if not connected"""
