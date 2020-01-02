@@ -205,20 +205,10 @@ class GCodeParser:
             line = origline = line.strip()
             cpos = line.find(';')
             if cpos == 0: 
-                # the whole line is a comment -> run all registered gcode comment handlers 
-                # comment handlers need unique cmd names like 'gui_comment_handler'
+                # the whole line is a comment send event for modules to read it
                 params = { '#original': origline, '#command': line[1:] }
-                for cmd, handler in self.gcode_handlers.items():
-                    if 'comment_handler' in cmd:
-                        try:
-                            handler(params)
-                        except:
-                            msg = 'Internal error on command:"%s"' % (cmd,)
-                            logging.exception(msg)
-                            self.printer.invoke_shutdown(msg)
-                            self.respond_error(msg)
-                            if not need_ack:
-                                raise
+                print_time = self.toolhead.get_last_move_time()
+                self.printer.send_event("gcode:read_metadata", print_time, params)
             elif cpos >= 0:
                 line = line[:cpos]
             # Break command into parts
@@ -392,7 +382,7 @@ class GCodeParser:
             eparams = { k.upper(): v for k, v in eparams }
             eparams.update({k: params[k] for k in params if k.startswith('#')})
             return eparams
-        except ValueError as e:
+        except ValueError:
             raise self.error("Malformed command '%s'" % (params['#original'],))
     # Temperature wrappers
     def _get_temp(self, eventtime):
@@ -410,7 +400,6 @@ class GCodeParser:
             return
         eventtime = self.reactor.monotonic()
         while self.is_printer_ready and heater.check_busy(eventtime):
-            print_time = self.toolhead.get_last_move_time()
             self.respond(self._get_temp(eventtime))
             eventtime = self.reactor.pause(eventtime + 1.)
     def _set_temp(self, params, is_bed=False, wait=False):
@@ -505,7 +494,7 @@ class GCodeParser:
                     raise self.error("Invalid speed in '%s'" % (
                         params['#original'],))
                 self.speed = gcode_speed * self.speed_factor
-        except ValueError as e:
+        except ValueError:
             raise self.error("Unable to parse move '%s'" % (
                 params['#original'],))
         self.move_with_transform(self.last_position, self.speed)

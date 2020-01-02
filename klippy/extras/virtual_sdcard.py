@@ -3,20 +3,27 @@
 # Copyright (C) 2018  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import os, logging
+import os, logging, re
 
 class VirtualSD:
     def __init__(self, config):
         printer = config.get_printer()
         printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
+        printer.reactor.register_event_handler("gcode:read_metadata", self.handle_gcode_metadata)
         # sdcard state
         sd = config.get('path')
         self.sdcard_dirname = os.path.normpath(os.path.expanduser(sd))
         self.current_file = None
-        self.file_position = self.file_size = 0
+        self.file_position = 0
+        self.file_size = 0
+        # print time estimation
+        self.start_times = [] # [[start1, pause1], [resume, pause2]....]
+        self.slicer_estimated_time = 0
+        self.slicer_elapsed_times = [] # [[time actually printed, ELAPSED_TIME shown by slicer], ...]
         # Work timer
         self.reactor = printer.get_reactor()
-        self.must_pause_work = self.cmd_from_sd = False
+        self.must_pause_work = False
+        self.cmd_from_sd = False
         self.work_timer = None
         # Register commands
         self.gcode = printer.lookup_object('gcode')
@@ -54,11 +61,71 @@ class VirtualSD:
         except:
             logging.exception("virtual_sdcard get_file_list")
             raise self.gcode.error("Unable to get file list")
+    def handle_gcode_metadata(self, eventtime, line):
+        # recieves all gcode-comment-lines as they are printed, and searches for print-time estimations
+        print_time_estimate = [
+            r'\s\s\d*\.\d*\sminutes' , 						#	Kisslicer
+            r'; estimated printing time' ,					#	Slic3r
+            r';\s+Build time:.*' ,							#	S3d
+            r'\d+h?\s?\d+m\s\d+s' ,							#	Slic3r PE
+            r';TIME:\d+' ,									#	Cura
+            r';Print Time:\s\d+\.?\d+',						#	ideamaker
+            r'\d+h?\s?\d+m\s\d+s'							#	PrusaSlicer
+            ]
+        print_time_elapsed = [
+            #r'\s\s\d*\.\d*\sminutes' , 					#	Kisslicer
+            #                               				#	Slic3r
+            #r';\s+Build time:.*' ,							#	S3d
+            #r'\d+h?\s?\d+m\s\d+s' ,						#	Slic3r PE
+            r';TIME_ELAPSED:\d+' ,							#	Cura
+            #r';Print Time:\s\d+\.?\d+',					#	ideamaker
+            #                                    			#	PrusaSlicer
+            ]
+        def get_seconds(in_):
+            if in_ == -1: return in_
+            h_str = re.search(re.compile('(\d+(\s)?hours|\d+(\s)?h)'),in_)
+            m_str = re.search(re.compile('(([0-9]*\.[0-9]+)\sminutes|\d+(\s)?m)'),in_)
+            s_str = re.search(re.compile('(\d+(\s)?seconds|\d+(\s)?s)'),in_)
+            dursecs = 0
+            if h_str:
+                dursecs += float( max( re.findall('([0-9]*\.?[0-9]+)' , ''.join(h_str.group()) ) ) ) *3600 
+            if m_str:
+                dursecs += float( max( re.findall('([0-9]*\.?[0-9]+)' , ''.join(m_str.group()) ) ) ) *60 
+            if s_str:
+                dursecs += float( max( re.findall('([0-9]*\.?[0-9]+)' , ''.join(s_str.group()) ) ) )
+            if dursecs == 0:
+                dursecs = float( max( re.findall('([0-9]*\.?[0-9]+)' , in_) ) )
+            return dursecs
+        for regex in print_time_estimate:
+            match = re.search(regex, line)
+            if match:
+                self.slicer_estimated_time = get_seconds(match.group())
+                return
+        for regex in print_time_elapsed:
+            match = re.search(regex, line)
+            if match:
+                self.slicer_elapsed_times.append((self.get_printed_time(eventtime), get_seconds(match.group()))
+                return
+    def get_printed_time(self, eventtime)
+        printed_time = 0
+        for time in self.start_times:
+            printed_time += - time[0] + (time[1] if time[1] else eventtime)
+        return printed_time
     def get_status(self, eventtime):
-        progress = 0.
-        if self.work_timer is not None and self.file_size:
-            progress = float(self.file_position) / self.file_size
-        return {'progress': progress}
+        printed_time = self.get_printed_time(eventtime)
+        if len(self.slicer_elapsed_times):
+            time_since_slicer_est = - self.slicer_elapsed_times[-1][0] + printed_time
+            est_remaining  = - self.slicer_elapsed_times[-1][1] + self.slicer_estimated_time - time_since_slicer_est
+        else:
+            est_remaining = self.slicer_estimated_time - printed_time
+        # now apply factor based on how wrong previous estimations were
+        # we ignore the first estimation block since it contains heatup where high variance is expected
+        if len(self.slicer_elapsed_times) > 1:
+            factor = (self.slicer_elapsed_times[-1][1] - self.slicer_elapsed_times[0][1])\
+                    /(self.slicer_elapsed_times[-1][0] - self.slicer_elapsed_times[0][0])
+            est_remaining *= factor
+        progress = est_remaining /float(printed_time + est_remaining) 
+        return {'progress': progress  'estimated_remaining_time': est_remaining}
     def is_active(self):
         return self.work_timer is not None
     def do_pause(self):
@@ -66,7 +133,7 @@ class VirtualSD:
             self.must_pause_work = True
             while self.work_timer is not None and not self.cmd_from_sd:
                 self.reactor.pause(self.reactor.monotonic() + .001)
-    # G-Code commands
+        # G-Code commands
     def cmd_error(self, params):
         raise self.gcode.error("SD write not supported")
     def cmd_M20(self, params):
