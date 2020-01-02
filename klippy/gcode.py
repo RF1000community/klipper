@@ -204,7 +204,22 @@ class GCodeParser:
             # Ignore comments and leading/trailing spaces
             line = origline = line.strip()
             cpos = line.find(';')
-            if cpos >= 0:
+            if cpos == 0: 
+                # the whole line is a comment -> run all registered gcode comment handlers 
+                # comment handlers need unique cmd names like 'gui_comment_handler'
+                params = { '#original': origline, '#command': line[1:] }
+                for cmd, handler in self.gcode_handlers.items():
+                    if 'comment_handler' in cmd:
+                        try:
+                            handler(params)
+                        except:
+                            msg = 'Internal error on command:"%s"' % (cmd,)
+                            logging.exception(msg)
+                            self.printer.invoke_shutdown(msg)
+                            self.respond_error(msg)
+                            if not need_ack:
+                                raise
+            elif cpos >= 0:
                 line = line[:cpos]
             # Break command into parts
             parts = self.args_r.split(line.upper())[1:]
