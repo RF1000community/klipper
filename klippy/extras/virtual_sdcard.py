@@ -180,6 +180,9 @@ class VirtualSD:
         self.current_file = f
         self.file_position = 0
         self.file_size = fsize
+        self.start_times = []
+        self.slicer_elapsed_times = []
+        self.slicer_estimated_time = 0
     def cmd_M24(self, params):
         # Start/resume SD print
         if self.work_timer is not None:
