@@ -115,6 +115,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                               'z': self.klipper_config.getsection('stepper_z')}
             self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
             self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}#maybe use position_min, position_max = rail.get_range()
+            self.filament_diameter = self.klipper_config.getsection("extruder").get("filament_diameter", 1.75)
             #count how many extruders exist before drawing homescreen
             for i in range(1, 10):
                 try: klipper_config.getsection('extruder' + str(i))
@@ -134,6 +135,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         else:
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
+            self.filament_diameter = 1.75
             self.extruder_count = 3
         super(mainApp, self).__init__(**kwargs)
 
@@ -180,12 +182,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
-    def handle_calc_print_time(self, curtime, est_print_time, print_time):
-        hours = int(est_print_time//3600)
-        minutes = int(est_print_time%3600)/60
-        self.print_time = "{}:{:02} remaining".format(hours, minutes)
-        self.progress = print_time/float(est_print_time)
-    
     def handle_exception(self, exc):
         self.state = "error"
         ErrorPopup(message=exc).open()
@@ -248,6 +244,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def update_printing(self, *args):
         self.get_pressure_advance()
+        self.get_printjob_state()
         self.get_acceleration()
         self.get_z_adjust()
         self.get_speed()
@@ -379,6 +376,13 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         homed_axes_string = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
         for axis in self.homed.keys():
             self.homed[axis] = axis in homed_axes_string
+
+    def get_printjob_state(self):
+        st = self.virtual_sdcard.geet_status(self.reactor.monotonic())
+        self.progresss = st['progress']
+        hours = int(st['estimated_remaining_time']//3600)
+        minutes = int(st['estimated_remaining_time']%3600)/60
+        self.print_time = "{}:{:02} remaining".format(hours, minutes)
 
     def send_home(self, axis):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))

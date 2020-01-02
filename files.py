@@ -1,6 +1,6 @@
 from os import remove
 from os.path import getmtime, basename, dirname, exists, abspath, join
-import shutil
+import shutil, re
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -18,6 +18,7 @@ class FC(FileChooserIconView):
         self.filters = ['*.gco', '*.gcode']
         self.multiselect = False
         self.app = App.get_running_app()
+        self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2 
         if exists(p.sdcard_path):
             self.rootpath = p.sdcard_path
             self.path = p.sdcard_path
@@ -45,6 +46,39 @@ class FC(FileChooserIconView):
         self.popup = PrintPopup(filenames[0], creator=self)
         self.popup.open()
 
+""" Works but is way to slow, maybe do this after showing folder contents, and keep values to avoid recomputing when filechooser reloads
+    def get_nice_size(self, path):
+        '''Pass the filepath. Returns the filament use of a gcode file, instead of filesize.
+           Or '' if it is a directory.
+           Return value is shown below Name of each file
+        '''
+        if self.file_system.is_dir(path):
+            return ''
+        filament = [
+            r'Ext.*=.*mm' ,									#	Kisslicer
+            r';.*filament used =' ,							#	Slic3r
+            r';.*Filament length: \d+.*\(' ,				#	S3d
+            r'.*filament\sused\s=\s.*mm' ,					#	Slic3r PE
+            r';Filament used: \d*.\d+m'	,					#	Cura
+            r';Material#1 Used:\s\d+\.?\d+',				#	ideamaker
+            r'.*filament\sused\s.mm.\s=\s[0-9\.]+'			#	PrusaSlicer
+            ]
+        with open(path, 'rb') as gcode_file :
+            lines = gcode_file.readlines()
+        for line in (lines[:100] + lines[-100:]):
+            for i, regex in enumerate(filament):
+                match = re.search(regex, line)
+                if match:
+                    match2 = re.search(r'\d*\.\d*', match.group())
+                    if match2:
+                        filament = float(match2.group())
+                        import logging
+                        logging.info("filament =  ====== {}".format(filament))
+                        if i == 4: filament *= 1000 # Cura gives meters -> convert to mm
+                        weight = self.filament_crossection*filament*0.0011 #density in g/mm^3
+                        return "{:4.1f}g".format(weight)
+        return ""
+"""
 
 class PrintPopup(BasePopup):
 
