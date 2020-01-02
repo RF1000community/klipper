@@ -21,12 +21,14 @@ from subprocess import Popen
 import threading
 import logging
 import site
+
 from elements import UltraKeyboard
-from home import *
 from files import *
-from status import *
-from settings import *
+from home import *
+from nm_dbus import *
 import parameters as p
+from settings import *
+from status import *
 
 
 #add parent directory to sys.path so main.kv (parser.py) can import from it
@@ -169,15 +171,21 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         
     def run(self):
         logging.info("Kivy app.run")
-        Clock.schedule_once(self.setup_after_run, 1)
+        #Clock.schedule_once(self.setup_after_run, 1)
         super(mainApp, self).run()
 
-    def setup_after_run(self, dt):
+    def on_start(self, *args):
         self.notify = Notifications()
+        self.network_manager = NetworkManager()
+        self.network_manager.start()
         try:
             self.root_window.set_vkeyboard_class(UltraKeyboard)
         except:
             logging.warning("root_window wasnt available")
+
+    def on_stop(self, *args):
+        # Stop networking dbus event loop
+        self.network_manager.loop.quit()
 
     def bind_updating(self, *args):
         self.root.ids.tabs.bind(current_tab=self.control_updating)
