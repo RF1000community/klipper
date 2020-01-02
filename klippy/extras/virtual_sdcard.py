@@ -187,9 +187,11 @@ class VirtualSD:
         self.must_pause_work = False
         self.work_timer = self.reactor.register_timer(
             self.work_handler, self.reactor.NOW)
+        self.start_times.append([self.reactor.monotonic(), None])
     def cmd_M25(self, params):
         # Pause SD print
         self.do_pause()
+        self.start_times[-1][1] = self.reactor.monotonic()
     def cmd_M26(self, params):
         # Set SD position
         if self.work_timer is not None:
