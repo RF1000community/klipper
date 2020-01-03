@@ -3,11 +3,11 @@
 import os
 from sys import argv
 if '-t' in argv:
-    testing = True
+    TESTING = True
     argv.remove('-t')
 else:
-    testing = False
-if not testing:
+    TESTING = False
+if not TESTING:
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'gl'
 from kivy import kivy_data_dir
@@ -29,16 +29,37 @@ from settings import *
 import parameters as p
 
 
-#add parent directory to sys.path so main.kv (parser.py) can import from it
+# Add parent directory to sys.path so main.kv (parser.py) can import from it
 site.addsitedir(p.kgui_dir)
 
-#this needs an absolute path otherwise config will only be loaded when working directory is the parent directory
-if testing: Config.read(join(p.kgui_dir, "config-test.ini"))
-else:       Config.read(join(p.kgui_dir, "config.ini"))
+def set_kivy_config():
+    # This needs an absolute path otherwise config will only be loaded when
+    # working directory is the parent directory
+    if TESTING:
+        Config.read(join(p.kgui_dir, "config-test.ini"))
+    else:
+        Config.read(join(p.kgui_dir, "config.ini"))
+        # Read the display rotation value
+        try:
+            with open("/boot/config.txt", "r") as file_:
+                lines = file_.read().splitlines()
+        except IOError:
+            # Assume 90 degree rotation (config default) in case
+            # /boot/config.txt isn't found
+            rotation = 1
+        else:
+            rotation_string = [i for i in lines if i.startswith("display_hdmi_rotate")][0]
+            # The number should always be at index 20
+            rotation = int(rotation_string[20])
+        # rotation should only be 1 for 90deg or 3 for 270deg
+        # Set the input config option to rotate the touchinput explicitly for kivy
+        if rotation == 3:
+            Config.set("input", "device_%(name)s",
+                "probesysfs,provider=mtdev,param=rotation=270,param=invert_y=1")
 
-#load a custom style.kv with changes to filechooser and more
-Builder.unload_file(join(kivy_data_dir, "style.kv"))
-Builder.load_file(join(p.kgui_dir, "style.kv"))
+    #load a custom style.kv with changes to filechooser and more
+    Builder.unload_file(join(kivy_data_dir, "style.kv"))
+    Builder.load_file(join(p.kgui_dir, "style.kv"))
 
 #add threading.thread => inherits start() method to run() in new thread
 class mainApp(App, threading.Thread): #Handles Communication with Klipper
@@ -80,7 +101,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
-        if not testing:
+        if not TESTING:
             self.kgui_config = config
             self.printer = config.get_printer()
             self.reactor = self.printer.get_reactor()
@@ -94,6 +115,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                               'z': self.klipper_config.getsection('stepper_z')}
             self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
             self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}#maybe use position_min, position_max = rail.get_range()
+            self.filament_diameter = self.klipper_config.getsection("extruder").get("filament_diameter", 1.75)
             #count how many extruders exist before drawing homescreen
             for i in range(1, 10):
                 try: klipper_config.getsection('extruder' + str(i))
@@ -113,6 +135,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         else:
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
+            self.filament_diameter = 1.75
             self.extruder_count = 3
         super(mainApp, self).__init__(**kwargs)
 
@@ -159,12 +182,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
-    def handle_calc_print_time(self, curtime, est_print_time, print_time):
-        hours = int(est_print_time//3600)
-        minutes = int(est_print_time%3600)/60
-        self.print_time = "{}:{:02} remaining".format(hours, minutes)
-        self.progress = print_time/float(est_print_time)
-    
     def handle_exception(self, exc):
         self.state = "error"
         ErrorPopup(message=exc).open()
@@ -227,6 +244,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def update_printing(self, *args):
         self.get_pressure_advance()
+        self.get_printjob_state()
         self.get_acceleration()
         self.get_z_adjust()
         self.get_speed()
@@ -314,7 +332,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def get_config(self, section, option, property_name, ty=None):
         logging.info("wrote {} from section {} to {}".format(option, section, property_name))
-        if testing:
+        if TESTING:
             setattr(self, property_name, 77)
             return
         def read_config(e):
@@ -358,6 +376,13 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         homed_axes_string = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
         for axis in self.homed.keys():
             self.homed[axis] = axis in homed_axes_string
+
+    def get_printjob_state(self):
+        st = self.virtual_sdcard.geet_status(self.reactor.monotonic())
+        self.progresss = st['progress']
+        hours = int(st['estimated_remaining_time']//3600)
+        minutes = int(st['estimated_remaining_time']%3600)/60
+        self.print_time = "{}:{:02} remaining".format(hours, minutes)
 
     def send_home(self, axis):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
@@ -438,6 +463,8 @@ def load_config(config):
     kgui_object = mainApp(config)
     kgui_object.start()
     return kgui_object
+
+set_kivy_config()
 
 if __name__ == "__main__":
     mainApp().run()

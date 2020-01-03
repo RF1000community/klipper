@@ -37,10 +37,10 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 usage() {
-    echo "usage: $0 [-ufh]"
+    echo "usage: $0 [-ufh] [-r <DEG>]"
     echo "  -u | --uninstall              uninstall driver"
     echo "  -f | --force                  force"
-    echo "  -h                            display help"
+    echo "  -h | --help                   display help"
     echo "  -r | --rotate <0|90|180|270>  rotate DEG degrees. Assumes 0"
     exit 1
 }
@@ -97,8 +97,9 @@ restore_boot_config() {
 	# Restore old config
 	sed -i "s/$old//" $bootconfig
 
+        echo "Restoring 40-libinput.conf..."
         # Restore old libinput.conf
-        cp -f /etc/X11/xorg.conf.d/40-libinput.conf.OLD_CONFIG /etc/X11/xorg.conf.d/40-libinput.conf
+        mv -f /etc/X11/xorg.conf.d/40-libinput.conf.OLD_CONFIG /etc/X11/xorg.conf.d/40-libinput.conf
 }
 
 if (( $UNINSTALL == 1 )); then
@@ -131,7 +132,6 @@ case $ROTATE in
                 ;;
         90)
                 boot_config[display_hdmi_rotate]="1"
-                boot_config[hdmi_cvt]="600 1024 60 6 0 0 0"
                 MATRIX="0 1 0 -1 0 1 0 0 1"
                 ;;
         180)
@@ -140,7 +140,6 @@ case $ROTATE in
                 ;;
         270)
                 boot_config[display_hdmi_rotate]="3"
-                boot_config[hdmi_cvt]="600 1024 60 6 0 0 0"
                 MATRIX="0 -1 1 1 0 0 0 0 1"
                 ;;
         *)
@@ -149,7 +148,7 @@ case $ROTATE in
                 exit 1
 esac
 
-
+# Create xorg.conf.d folder if not already existing
 if [ ! -d /etc/X11/xorg.conf.d ]
 then
         mkdir -p /etc/X11/xorg.conf.d
@@ -162,6 +161,7 @@ then
         cp /etc/X11/xorg.conf.d/40-libinput.conf /etc/X11/xorg.conf.d/40-libinput.conf.OLD_CONFIG
 fi
 
+# Write new config, dependent on touchpad transformation Matrix
 cat > /etc/X11/xorg.conf.d/40-libinput.conf <<EOF
 Section "InputClass"
         Identifier "libinput pointer catchall"
@@ -200,46 +200,24 @@ Section "InputClass"
 EndSection
 EOF
 
-do_not_change_boot_config=0
 
-test_boot_config() {
-	if grep -q $new $bootconfig; then
-		read -p "LCD configuration found in $bootconfig. Do you want to rewrite config ? [y/N] : " -n 1 -r choice
-		case "$choice" in 
-			y|Y) 
-				echo ""
-                                # Remove our new config, so it won't get saved as old
-	                        sed -i "/$new$/d" $bootconfig
-				;;
-			n|N)
-				echo -e "\nBoot config unchanged."
-				do_not_change_boot_config=1
-				;;
-			*)
-                                echo -e "\nBoot config unchanged."
-                                do_not_change_boot_config=1
-				;;
-		esac
-	fi
-}
-
-test_boot_config
+if grep -q $new $bootconfig; then
+        echo "LCD configuration found in $bootconfig. Rewriting config..."
+        # Remove our new config, so it won't get saved as old
+        sed -i "/$new$/d" $bootconfig
+fi
 
 write_boot_config() {
-	if (( $do_not_change_boot_config == 1 )); then
-		echo "Boot config already set. Nothing to do"
-	else
-		echo "Saving $bootconfig current values and writing new config ..."
-		
-		# Backup old config and write new one
-		for i in "${!boot_config[@]}"
-		do
-			key=$i
-			value=${boot_config[$i]}
-			sed -i -r "s/^($key)/$old\1/" $bootconfig
-			echo "$key=$value $new" >> "$bootconfig"
-		done
-	fi
+	echo "Saving $bootconfig current values and writing new config ..."
+
+	# Backup old config and write new one
+	for i in "${!boot_config[@]}"
+	do
+		key=$i
+		value=${boot_config[$i]}
+		sed -i -r "s/^($key)/$old\1/" $bootconfig
+		echo "$key=$value $new" >> "$bootconfig"
+	done
 }
 
 write_boot_config

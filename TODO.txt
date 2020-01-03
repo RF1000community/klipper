@@ -1,7 +1,5 @@
 KGUI:
 
-    display exceptions in klipper thread as notifications, octoprint does this by recieving the errors via serial connection
-
     fix print time calc
 
     fix ethernet icon not showing up
@@ -29,3 +27,14 @@ CURA COONNECTION
     Cura Plugin
 
 HIGH SPEED ODRIVE COONNECTION
+
+ODrive:
+    clock sync command
+
+    add to pos_queue command with optional time
+    get_interval
+
+Replacement for Stepper:
+    handle no homing
+    send positions based 
+    maybe kinematics class

@@ -91,7 +91,7 @@ class XyField(Widget):
 class TempSlider(UltraSlider):
 
     def __init__(self, **kwargs):
-        super(ExtTempSlider, self).__init__(**kwargs)
+        super(TempSlider, self).__init__(**kwargs)
         App.get_running_app().get_temp()
         self.buttons = []
     def get_val_from_px(self, x):
