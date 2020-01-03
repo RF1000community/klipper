@@ -1379,9 +1379,9 @@ FloatLayout:
         pos_hint: {'center_y': 0.5}
         right: p.screen_width-p.padding +p.small_padding #to increase touch area
 
-<SI_WifiNetwork>:
+<SI_WifiAccessPoint>:
     Label:
-        text: root.network['ssid']
+        text: root.ap['ssid']
         font_size: p.normal_font
         text_size: self.size
         color: p.light_gray
@@ -1393,7 +1393,7 @@ FloatLayout:
         right: p.screen_width
         padding_x: p.padding
     Label:
-        text: str(root.network['signal'])
+        text: str(root.ap['signal'])
         font_size: p.normal_font
         padding_x: p.padding
         width: self.texture_size[0]
@@ -1448,7 +1448,7 @@ FloatLayout:
             on_release: root.confirm()
 
 <ConnectionPopup>:
-    title: self.network['ssid']
+    title: self.ap['ssid']
     size_hint: 0.65, 0.4
     FloatLayout:
         RectangleButton:

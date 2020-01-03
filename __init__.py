@@ -79,6 +79,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def __init__(self, config = None, **kwargs): #runs in klippy thread
         logging.info("Kivy app initializing...")
+        self.network_manager = NetworkManager()
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
@@ -171,13 +172,12 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         
     def run(self):
         logging.info("Kivy app.run")
-        #Clock.schedule_once(self.setup_after_run, 1)
         super(mainApp, self).run()
 
     def on_start(self, *args):
         self.notify = Notifications()
-        self.network_manager = NetworkManager()
-        self.network_manager.start()
+        if self.network_manager.available:
+            self.network_manager.start()
         try:
             self.root_window.set_vkeyboard_class(UltraKeyboard)
         except:

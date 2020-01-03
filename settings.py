@@ -257,51 +257,28 @@ class SI_Wifi(SetItem):
 
     def __init__(self, **kwargs):
         super(SI_Wifi, self).__init__(**kwargs)
-        self.freq = 10
-        # Assuming very much that the Setting Screen will NEVER be the default on load
-        self.do_update = False
-        wifi.bind(on_networks=self.update)
-        # Set default messages and maybe bind to main tab switches
-        # after everything is set up and running
+        self.network_manager = App.get_running_app().network_manager
+        self.network_manager.bind(on_connected_ssid=self.update)
+        # Set default messages after everything is set up and running
         Clock.schedule_once(self.late_setup, 0)
+
+    def late_setup(self, dt):
+        if self.network_manager.available:
+            self.display = ['...', False]
+        else:
+            self.display = ['not available', False]
 
     def on_release(self, *args):
         # don't open wifiscreen when wifi doesn't work
-        if  not wifi.state:
+        if self.network_manager.available:
             mgr = self.parent.parent.parent.manager
             mgr.current = 'WifiScreen'
 
-    def on_pre_enter(self):
-        return # is this right?
-        # Yes, update control logic is currently bypassed to update
-        # every 10 seconds for the icon in the status bar.
-        wifi.update_freq = self.freq
-
-    def late_setup(self, dt):
-        if wifi.state:
-            self.display = ['not available', False]
-        else:
-            self.display = ['...', False]
-        #root = App.get_running_app().root
-        #tab = root.ids.tabs
-        #tab.bind(current_tab=self.control_update)
-
-    def control_update(self, instance, value):
-        return # is this right?
-        if value == instance.ids.set_tab:
-            self.do_update = True
-            wifi.get_wifi_list(no_rescan=True)
-            wifi.update_freq = self.freq
-        elif self.do_update:
-            self.do_update = False
-            #Disable scanning updates
-            wifi.update_freq = 30
-
     def update(self, instance, value):
-        """Process the wifi list and check if the first entry is in use"""
-        if value[0]['in-use']:
-            self.display = [value[0]['ssid'], True]
-        else:
+        """Called whenever the active wifi connection changes"""
+        if value:
+            self.display = [value, True]
+        else: # value = "" <==> currently no wifi connection
             self.display = ['not connected', False]
 
     def on_display(self, instance, value):
@@ -319,22 +296,22 @@ class SI_Wifi(SetItem):
             label.italic = True
 
 
-class SI_WifiNetwork(SetItem):
+class SI_WifiAccessPoint(SetItem):
 
-    def __init__(self, network, **kwargs):
-        self.network = network
-        super(SI_WifiNetwork, self).__init__(**kwargs)
+    def __init__(self, ap, **kwargs):
+        self.ap = ap
+        super(SI_WifiAccessPoint, self).__init__(**kwargs)
 
     def on_release(self):
-        #Present different options when wifi is stored by NM
-        if self.network['stored']:
-            self.popup = ConnectionPopup(self.network)
+        # Present different options when wifi is stored by NM
+        if self.ap['saved']:
+            self.popup = ConnectionPopup(self.ap)
         else:
-            self.popup = PasswordPopup(self.network)
+            self.popup = PasswordPopup(self.ap)
         self.popup.open()
 
     def get_color(self):
-        if self.network['stored']:
+        if self.network['saved']:
             if self.network['in-use']:
                 return [0, 0.7, 0, 1]
             return [0.7, 0, 0, 1]
@@ -345,20 +322,18 @@ class WifiScreen(Screen):
 
     def __init__(self, **kwargs):
         super(WifiScreen, self).__init__(**kwargs)
-        if wifi.state:
-            self.message = "Wifi doesn't work. How did you even get here? You should never have come this far."
-        else:
-            self.message = 'scanning...'
+        self.network_manager = App.get_running_app().network_manager
+        self.message = '...'
         Clock.schedule_once(self.set_message, 0)
         # Amount of seconds between wifi rescans in seconds
         self.freq = 10
-        wifi.bind(on_networks=self.update)
+        self.network_manager.bind(on_access_points=self.update)
 
     def on_pre_enter(self):
         # pre_enter: This function is executed when the animation starts
-        wifi.get_wifi_list(no_rescan=True)
-        return
-        wifi.update_freq = self.freq
+        assert(self.network_manager.available)
+        self.network_manager.wifi_scan()
+        self.network_manager.set_scan_freq(self.freq)
 
     def set_message(self, dt, msg=None):
         message = msg or self.message
@@ -381,8 +356,8 @@ class WifiScreen(Screen):
         box = self.ids.wifi_box
         box.clear_widgets()
         if value:
-            for network in value:
-                entry = SI_WifiNetwork(network)
+            for ap in value:
+                entry = SI_WifiAccessPoint(ap)
                 box.add_widget(entry)
         # In case no networks were found
         else:
@@ -393,26 +368,29 @@ class PasswordPopup(BasePopup):
 
     txt_input = ObjectProperty(None)
 
-    def __init__(self, network, **kwargs):
-        self.network = network
-        self.ssid = self.network['ssid']
+    def __init__(self, ap, **kwargs):
+        self.ap = ap
+        self.ssid = self.ap['ssid']
         self.title = self.ssid
         super(PasswordPopup, self).__init__(**kwargs)
+        self.network_manager = App.get_running_app().network_manager
         self.txt_input.bind(on_text_validate=self.confirm)
-        wifi.bind(on_wrong_pw=self.wrong_pw)
+        self.network_manager.bind(on_wrong_password=self.wrong_pw)
         # If focus is set immediately, keyboard will be covered by popup
-        Clock.schedule_once(self.set_focus_on, 0.2)
+        Clock.schedule_once(self.set_focus_on, 0.4)
 
     def set_focus_on(self, *args):
         self.txt_input.focus = True
 
     def confirm(self, *args):
         self.password = self.txt_input.text
-        wifi.connect(self.ssid, self.password)
+        self.network_manager.connect(self.ssid, self.password)
         self.dismiss()
 
     def wrong_pw(self, instance):
         # Avoid a network being stored with the wrong password
+        # TODO
+        raise NotImplementedError()
         wifi.delete(self.ssid)
         self.open()
         self.set_focus_on()
@@ -424,10 +402,11 @@ class PasswordPopup(BasePopup):
 
 class ConnectionPopup(BasePopup):
 
-    def __init__(self, network, **kwargs):
-        self.network = network
-        self.ssid = self.network['ssid']
-        self.connected = self.network['in-use']
+    def __init__(self, ap, **kwargs):
+        self.network_manager = App.get_running_app().network_manager
+        self.ap = ap
+        self.ssid = self.ap['ssid']
+        self.connected = self.ap['in-use']
         super(ConnectionPopup, self).__init__(**kwargs)
 
     def toggle_connected(self):
@@ -437,14 +416,14 @@ class ConnectionPopup(BasePopup):
             self.up()
 
     def up(self):
-        wifi.up(self.ssid)
+        self.network_manager.up(self.ssid)
         self.dismiss()
 
     def down(self):
-        wifi.down(self.ssid)
+        self.network_manager.down(self.ssid)
         self.dismiss()
 
     def delete(self):
-        wifi.delete(self.ssid)
+        self.network_manager.delete(self.ssid)
         self.dismiss()
 
