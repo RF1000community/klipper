@@ -9,7 +9,7 @@ class VirtualSD:
     def __init__(self, config):
         printer = config.get_printer()
         printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
-        printer.reactor.register_event_handler("gcode:read_metadata", self.handle_gcode_metadata)
+        printer.register_event_handler("gcode:read_metadata", self.handle_gcode_metadata)
         # sdcard state
         sd = config.get('path')
         self.sdcard_dirname = os.path.normpath(os.path.expanduser(sd))
@@ -104,9 +104,9 @@ class VirtualSD:
         for regex in print_time_elapsed:
             match = re.search(regex, line)
             if match:
-                self.slicer_elapsed_times.append((self.get_printed_time(eventtime), get_seconds(match.group()))
+                self.slicer_elapsed_times.append((self.get_printed_time(eventtime), get_seconds(match.group())))
                 return
-    def get_printed_time(self, eventtime)
+    def get_printed_time(self, eventtime):
         printed_time = 0
         for time in self.start_times:
             printed_time += - time[0] + (time[1] if time[1] else eventtime)
@@ -125,7 +125,7 @@ class VirtualSD:
                     /(self.slicer_elapsed_times[-1][0] - self.slicer_elapsed_times[0][0])
             est_remaining *= factor
         progress = est_remaining /float(printed_time + est_remaining) 
-        return {'progress': progress  'estimated_remaining_time': est_remaining}
+        return {'progress': progress, 'estimated_remaining_time': est_remaining}
     def is_active(self):
         return self.work_timer is not None
     def do_pause(self):
