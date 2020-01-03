@@ -363,7 +363,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
 
     def send_motors_off(self):
-        reactor.register_async_callback(lambda e: self.gcode.run_script_from_command("M18"))
+        self.reactor.register_async_callback(lambda e: self.gcode.run_script_from_command("M18"))
 
     def get_pos(self):
         def read_pos(e):
