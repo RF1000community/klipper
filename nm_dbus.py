@@ -25,7 +25,7 @@ class NetworkManager(EventDispatcher, Thread):
     def __init__(self, **kwargs):
         super(NetworkManager, self).__init__(**kwargs)
 
-        self.loop = Glib.MainLoop()
+        self.loop = GLib.MainLoop()
         self.bus = SystemBus()
 
         # Get proxy objects
@@ -53,10 +53,13 @@ class NetworkManager(EventDispatcher, Thread):
         if not(self.eth_dev and self.wifi_dev):
             self.available = False
             return
+        # Does the wifi device support 5gGHz (flag 0x400)
+        self.freq_5ghz = bool(self.wifi_dev.WirelessCapabilities & 0x400)
 
         # ID used to cancel the scan timer and to find out whether it is running
         # Will be None whenever the timer isn't running
         self.scan_timer_id = None
+        self.access_points = []
 
         self.connect_signals()
 
@@ -65,10 +68,11 @@ class NetworkManager(EventDispatcher, Thread):
         self.register_event_type('on_wrong_password')
         self.register_event_type('on_connect_failed')
 
-        self.access_points = []
-        # Initiate the values handled by signal handlers
-        self.handle_scan_complete(None, {'LastScan': 0}, None)
-        self.handle_nm_props(None, self.nm.GetAll(), None)
+        # Initiate the values handled by signal handlers by simply
+        # sending all the properties that are being listened to.
+        self.handle_wifi_dev_props(None, self.wifi_dev.GetAll(_NM + ".Device"), None)
+        self.handle_wifi_dev_props(None, self.wifi_dev.GetAll(_NM + ".Device.Wireless"), None)
+        self.handle_nm_props(None, self.nm.GetAll('org.freedesktop.NetworkManager'), None)
 
     def connect_signals(self):
         """Connect DBus signals to their callbacks.  Called in __init__"""
@@ -130,14 +134,17 @@ class NetworkManager(EventDispatcher, Thread):
         """
         Called on changes in wifi_dev.LastScan, which is changed whenever
         a scan completed.  Parses the access points into dictionaries
-        containing the relevant properties ssid (name of wifi), signal (in
-        percent), in-use (whether we are currently connected with the wifi),
-        saved (whether the connection is already known and saved) and path,
-        the dbus object path of the access point.
+        containing the relevant properties:
+        ssid    name of wifi
+        signal  signal strength in percent
+        freq    radio channel frequency in MHz
+        in-use  whether we are currently connected with the wifi
+        saved   whether the connection is already known and saved
+        path    the dbus object path of the access point.
         """
         access_points = []
-        in_use_ap = None
         saved_ssids = self.get_saved_ssids()
+        # Generate the entries
         for path in self.wifi_dev.AccessPoints:
             ap_obj = self.bus.get(_NM, path)
             ssid_b = ap_obj.Ssid # type: ay
@@ -146,22 +153,41 @@ class NetworkManager(EventDispatcher, Thread):
             #PYTHON2:
             ssid = ""
             for c in ssid_b:
+                # Will generate stupid things (e.g '\xc8') on unicode chars
                 ssid += chr(c)
             signal = ap_obj.Strength # type: y
+            freq = ap_obj.Frequency # type: u
             saved = (ssid_b in saved_ssids)
-            entry = {'signal': signal, 'ssid': ssid, 'in-use': False,
-                     'saved': saved, 'path': path}
-            if path == self.wifi_dev.ActiveAccessPoint:
-                entry['in-use'] = True
-                in_use_ap = entry
+            in_use = (path == self.wifi_dev.ActiveAccessPoint)
+            entry = {'signal': signal, 'ssid': ssid, 'in-use': in_use,
+                'saved': saved, 'path': path, 'freq': freq}
+            access_points.append(entry)
+        # Sort by signal strength and then by 'in-use'
+        access_points.sort(key=lambda x: x['signal'], reverse=True)
+        access_points.sort(key=lambda x: x['in-use'], reverse=True)
+
+        # Filter out access points with duplicate ssids
+        unique_ssids = []
+        to_remove = [] # Avoid removing while iterating
+        for i, ap in enumerate(access_points):
+            if ap['ssid'] in unique_ssids:
+                # Find previous occurence again
+                for i in access_points:
+                    if ap['ssid'] == i['ssid']:
+                        prev = i
+                        break
+                # Decide which to keep weighing in-use*4, freq*2, signal*1
+                decision = (4*cmp(ap['in-use'], prev['in-use']) +
+                    2*cmp(ap['freq'] % 2000, prev['freq'] % 2000) +
+                    cmp(ap['signal'], prev['signal']))
+                if decision > 0: # Decide for ap
+                    to_remove.append(prev)
+                else:
+                    to_remove.append(ap)
             else:
-                # Get the correct point to insert, so that the list stays sorted
-                index = len(access_points)
-                while index > 0 and signal > access_points[index-1]['signal']:
-                    index -= 1
-                access_points.insert(index, entry)
-        if in_use_ap:
-            access_points.insert(0, in_use_ap)
+                unique_ssids.append(ap['ssid'])
+        for rm in to_remove:
+            access_points.remove(rm)
         self.access_points = access_points
         self.dispatch('on_access_points', self.access_points)
 
@@ -179,7 +205,7 @@ class NetworkManager(EventDispatcher, Thread):
         self.connected_ssid = active.Id
 
 
-    def set_scan_frequecy(self, freq):
+    def set_scan_frequency(self, freq):
         """
         Set the frequency at which to scan for wifi networks.
         freq is the frequency in seconds and should be an int.
@@ -313,7 +339,7 @@ class NetworkManager(EventDispatcher, Thread):
         ap = self.bus.get(_NM, active.SpecificObject)
         return ap.Strength
 
-    def on_access_points(self, instance, aps):
+    def on_access_points(self, aps):
         pass
     def on_wrong_password(self, instance):
         pass

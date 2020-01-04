@@ -264,7 +264,8 @@ class SI_Wifi(SetItem):
 
     def late_setup(self, dt):
         if self.network_manager.available:
-            self.display = ['...', False]
+            self.display = [self.network_manager.connected_ssid or "...",
+                bool(self.network_manager.connected_ssid)]
         else:
             self.display = ['not available', False]
 
@@ -311,8 +312,8 @@ class SI_WifiAccessPoint(SetItem):
         self.popup.open()
 
     def get_color(self):
-        if self.network['saved']:
-            if self.network['in-use']:
+        if self.ap['saved']:
+            if self.ap['in-use']:
                 return [0, 0.7, 0, 1]
             return [0.7, 0, 0, 1]
         return p.light_gray
@@ -333,7 +334,8 @@ class WifiScreen(Screen):
         # pre_enter: This function is executed when the animation starts
         assert(self.network_manager.available)
         self.network_manager.wifi_scan()
-        self.network_manager.set_scan_freq(self.freq)
+        self.network_manager.set_scan_frequency(self.freq)
+        self.update(None, self.network_manager.access_points)
 
     def set_message(self, dt, msg=None):
         message = msg or self.message
