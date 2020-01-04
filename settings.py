@@ -337,7 +337,7 @@ class WifiScreen(Screen):
         self.network_manager.set_scan_frequency(self.freq)
         self.update(None, self.network_manager.access_points)
 
-    def set_message(self, dt, msg=None):
+    def set_message(self, dt=None, msg=None):
         message = msg or self.message
         box = self.ids.wifi_box
         box.clear_widgets()
@@ -386,7 +386,7 @@ class PasswordPopup(BasePopup):
 
     def confirm(self, *args):
         self.password = self.txt_input.text
-        self.network_manager.connect(self.ssid, self.password)
+        self.network_manager.wifi_connect(self.ssid, self.password)
         self.dismiss()
 
     def wrong_pw(self, instance):
@@ -418,14 +418,14 @@ class ConnectionPopup(BasePopup):
             self.up()
 
     def up(self):
-        self.network_manager.up(self.ssid)
+        self.network_manager.wifi_up(self.ssid)
         self.dismiss()
 
     def down(self):
-        self.network_manager.down(self.ssid)
+        self.network_manager.wifi_down()
         self.dismiss()
 
     def delete(self):
-        self.network_manager.delete(self.ssid)
+        self.network_manager.wifi_delete(self.ssid)
         self.dismiss()
 

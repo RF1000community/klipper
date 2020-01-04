@@ -4,6 +4,8 @@
 Needs python-gobject or python-gi
 and python-pydbus
 
+TODO:
+    account for wifi access points with no security
 """
 
 from gi.repository import GLib
@@ -120,6 +122,7 @@ class NetworkManager(EventDispatcher, Thread):
         The signal subscription will be canceled when the connection
         was successfully activated.
         """
+        print(state, reason)
         #TODO: improve maybe
         if state > 2: # DEACTIVATING or DEACTIVATED
             if reason == 9: # NO_SECRETS
@@ -169,16 +172,15 @@ class NetworkManager(EventDispatcher, Thread):
         # Filter out access points with duplicate ssids
         unique_ssids = []
         to_remove = [] # Avoid removing while iterating
-        for i, ap in enumerate(access_points):
+        for ap in access_points:
             if ap['ssid'] in unique_ssids:
                 # Find previous occurence again
-                for i in access_points:
-                    if ap['ssid'] == i['ssid']:
-                        prev = i
+                for prev in access_points:
+                    if ap['ssid'] == prev['ssid']:
                         break
                 # Decide which to keep weighing in-use*4, freq*2, signal*1
                 decision = (4*cmp(ap['in-use'], prev['in-use']) +
-                    2*cmp(ap['freq'] % 2000, prev['freq'] % 2000) +
+                    2*cmp(ap['freq'] // 2000, prev['freq'] // 2000) +
                     cmp(ap['signal'], prev['signal']))
                 if decision > 0: # Decide for ap
                     to_remove.append(prev)
@@ -195,14 +197,15 @@ class NetworkManager(EventDispatcher, Thread):
         """
         Called whenever the active wifi connection changes.
         Sets the ssid of the currently connected wifi connection.
-        If no wifi connection currently exists, set None.
+        If no wifi connection currently exists, set "".
         """
-        if active_path == "/":
+        if active_path == "/" or active_path not in self.nm.ActiveConnections:
             # There is no wifi connection right now
             self.connected_ssid = ""
-        active = self.bus.get(_NM, active_path)
-        # The id which isn't guaranteed to be, but by default is the ssid
-        self.connected_ssid = active.Id
+        else:
+            active = self.bus.get(_NM, active_path)
+            # The id which isn't guaranteed to be, but by default is the ssid
+            self.connected_ssid = active.Id
 
 
     def set_scan_frequency(self, freq):
@@ -242,7 +245,7 @@ class NetworkManager(EventDispatcher, Thread):
         information needed to either create and connect or just connect
         the connection.  Relies on the data in self.access_points.
 
-        This method is likely to raise a ValueError or Error in
+        This method is likely to raise a ValueError or GLib.GError in
         AddAndActivateConnection.  Exception catching is advised.
 
         Returns path to the new connection (in settings)
@@ -255,16 +258,12 @@ class NetworkManager(EventDispatcher, Thread):
         if data is None or data['path'] not in self.wifi_dev.AccessPoints:
             # Network got out of view since previous scan
             raise ValueError("Network " + ssid + " is not in view.")
-        if data['saved']:
-            # You called the wrong method
-            self.up(ssid)
-            return
         password = GLib.Variant('s', password)
         #TODO this probably doesn't cover all cases
         connection_info = {'802-11-wireless-security': {'psk': password}} # type: a{sa{sv}}
-        con, active = self.nm.AddAndActivateConnection(
+        con, act_path = self.nm.AddAndActivateConnection(
             connection_info, self.wifi_dev._path, data['path'])
-        active = self.bus.get(_NM, active)
+        active = self.bus.get(_NM, act_path)
         self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
         return con
 
@@ -280,6 +279,7 @@ class NetworkManager(EventDispatcher, Thread):
         active = self.nm.ActivateConnection("/", self.wifi_dev._path, data['path'])
         active = self.bus.get(_NM, active)
         self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
+        self.handle_scan_complete()
 
     def wifi_down(self):
         """Deactivate the currently active wifi connection, if any"""
@@ -287,11 +287,12 @@ class NetworkManager(EventDispatcher, Thread):
         if active == "/":
             return False
         self.nm.DeactivateConnection(active)
+        self.handle_scan_complete()
         return True
 
     def wifi_delete(self, ssid):
         """Delete a saved connection with the given ssid (string)"""
-        ssid_b = [ord(c) for c in a]
+        ssid_b = [ord(c) for c in ssid]
         connection_paths = self.settings.Connections # type: ao
         for path in connection_paths:
             con = self.bus.get(_NM, path)
@@ -341,7 +342,7 @@ class NetworkManager(EventDispatcher, Thread):
 
     def on_access_points(self, aps):
         pass
-    def on_wrong_password(self, instance):
+    def on_wrong_password(self):
         pass
-    def on_connect_failed(self, instance):
+    def on_connect_failed(self):
         pass
