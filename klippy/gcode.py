@@ -209,6 +209,7 @@ class GCodeParser:
                 params = { '#original': origline, '#command': line[1:] }
                 print_time = self.toolhead.get_last_move_time()
                 self.printer.send_event("gcode:read_metadata", print_time, params)
+                continue
             elif cpos >= 0:
                 line = line[:cpos]
             # Break command into parts

@@ -18,8 +18,8 @@ class VirtualSD:
         self.file_size = 0
         # print time estimation
         self.start_times = [] # [[start1, pause1], [resume, pause2]....]
-        self.slicer_estimated_time = 0
         self.slicer_elapsed_times = [] # [[time actually printed, ELAPSED_TIME shown by slicer], ...]
+        self.slicer_estimated_time = None
         # Work timer
         self.reactor = printer.get_reactor()
         self.must_pause_work = False
@@ -61,7 +61,8 @@ class VirtualSD:
         except:
             logging.exception("virtual_sdcard get_file_list")
             raise self.gcode.error("Unable to get file list")
-    def handle_gcode_metadata(self, eventtime, line):
+    def handle_gcode_metadata(self, eventtime, params):
+        line = params['#original']
         # recieves all gcode-comment-lines as they are printed, and searches for print-time estimations
         print_time_estimate = [
             r'\s\s\d*\.\d*\sminutes' , 						#	Kisslicer
@@ -109,23 +110,36 @@ class VirtualSD:
     def get_printed_time(self, eventtime):
         printed_time = 0
         for time in self.start_times:
-            printed_time += - time[0] + (time[1] if time[1] else eventtime)
+            printed_time += - time[0] + (time[1] if time[1] else self.reactor.monotonic())
         return printed_time
     def get_status(self, eventtime):
         printed_time = self.get_printed_time(eventtime)
-        if len(self.slicer_elapsed_times):
-            time_since_slicer_est = - self.slicer_elapsed_times[-1][0] + printed_time
-            est_remaining  = - self.slicer_elapsed_times[-1][1] + self.slicer_estimated_time - time_since_slicer_est
+        # we have at least one silcer estimate
+        if self.slicer_estimated_time:
+            if len(self.slicer_elapsed_times):
+                time_since_slicer_est = printed_time - self.slicer_elapsed_times[-1][0]
+                est_remaining  = max(self.slicer_estimated_time - self.slicer_elapsed_times[-1][1] - time_since_slicer_est, 0)
+                # now apply factor based on how wrong previous estimations were
+                # we ignore the first estimation block since it contains heatup where high variance is expected
+                if len(self.slicer_elapsed_times) > 1:
+                    est_remaining  *= (self.slicer_elapsed_times[-1][1] - self.slicer_elapsed_times[0][1])\
+                                    /(self.slicer_elapsed_times[-1][0] - self.slicer_elapsed_times[0][0])
+            else: #we dont have elapsed times
+                est_remaining = max(self.slicer_estimated_time - printed_time, 0)
+
+            # time estimation done, get progress
+            if printed_time + est_remaining <= 0:#avoid zero division
+                progress = 1
+            else:
+                progress = printed_time/float(printed_time + est_remaining)
         else:
-            est_remaining = self.slicer_estimated_time - printed_time
-        # now apply factor based on how wrong previous estimations were
-        # we ignore the first estimation block since it contains heatup where high variance is expected
-        if len(self.slicer_elapsed_times) > 1:
-            factor = (self.slicer_elapsed_times[-1][1] - self.slicer_elapsed_times[0][1])\
-                    /(self.slicer_elapsed_times[-1][0] - self.slicer_elapsed_times[0][0])
-            est_remaining *= factor
-        progress = est_remaining /float(printed_time + est_remaining) 
-        return {'progress': progress, 'estimated_remaining_time': est_remaining}
+            est_remaining = 0
+            progress = 0
+        # if the print is done we throw out any estimation
+        if not self.current_file:
+            progress = 1
+            est_remaining = 0
+        return {'progress': progress, 'estimated_remaining_time': est_remaining }
     def is_active(self):
         return self.work_timer is not None
     def do_pause(self):
@@ -182,7 +196,7 @@ class VirtualSD:
         self.file_size = fsize
         self.start_times = []
         self.slicer_elapsed_times = []
-        self.slicer_estimated_time = 0
+        self.slicer_estimated_time = None
     def cmd_M24(self, params):
         # Start/resume SD print
         if self.work_timer is not None:
@@ -266,3 +280,4 @@ class VirtualSD:
 
 def load_config(config):
     return VirtualSD(config)
+
