@@ -98,6 +98,17 @@ FloatLayout:
             top: progress_bar.y - 8
             halign: 'left'
             valign: 'bottom'
+        Label:
+            text: app.print_done_time if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else ""
+            size_hint: None, None
+            size: p.screen_width-2*p.padding, p.normal_font
+            text_size: self.size
+            font_size: p.normal_font
+            x: p.h_padding - 2
+            top: progress_bar.y - 8
+            color: p.btn_disabled
+            halign: 'right'
+            valign: 'bottom'
         Btn_Stop:
             on_release: app.send_stop()
             id: btn_stop
@@ -117,7 +128,7 @@ FloatLayout:
             right: btn_stop.x
         Label:
             id: l_filename
-            text: app.print_title if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else ""
+            text: app.print_title if not app.state == 'ready' else ""
             size_hint: None, None
             size: 280,134
             text_size: self.size
@@ -180,7 +191,7 @@ FloatLayout:
                 #:set bx2 +19
                 #:set bh 40
                 #:set bo 16
-                #:set icon_center 27
+                #:set icon_center 26
                 Line:
                     width: p.icon_radius
                     points: self.x + icon_center - bw/2, self.center_y - p.btn_height/2 + p.icon_radius,   self.x + icon_center + bw/2, self.center_y - p.btn_height/2 + p.icon_radius
@@ -381,14 +392,15 @@ FloatLayout:
     enabled: app.state == 'print finished'
     canvas.before:
         Color:
-            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
+            rgba: p.nozzle if self.enabled else (0,0,0,0)
         Line:
-            #:set rw p.progress_bar_height/2
-            #:set r_arr 15
+            #:set rw p.progress_bar_height/2 -0.3
+            #:set r_arr 17
+            #:set r_rad 23
             width: rw
-            circle: (self.center_x, self.center_y + 1, p.btn_height/2 - rw - 0.5,  0, 270)
+            ellipse: (self.center_x - r_rad*p.disp_vertical_stretch, self.center_y - r_rad + 1, r_rad*2*p.disp_vertical_stretch, r_rad*2, 0, 270)
         Triangle:
-            points: (self.center_x - r_arr, self.center_y + p.btn_height/2 - rw ,    self.center_x, self.center_y + p.btn_height/2 - rw + r_arr,    self.center_x, self.center_y + p.btn_height/2 - rw - r_arr)
+            points: (self.center_x - r_arr, self.center_y + r_rad,    self.center_x, self.center_y + r_rad + r_arr,    self.center_x, self.center_y + r_rad - r_arr)
 
 <Btn_Play@RoundButton>:
     #:set pw (p.btn_height-2*p.icon_radius)/2

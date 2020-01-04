@@ -1,7 +1,5 @@
 KGUI:
 
-    fix print time calc
-
     fix ethernet icon not showing up
 
     extrude retract, Z stop
@@ -11,6 +9,8 @@ KGUI:
     https://wiki.archlinux.org/index.php/Display_Power_Management_Signaling
 
     OTA Updates of klipperui + dependencies
+
+    see if timer to close error persists
 
     microcontroller flashing
 

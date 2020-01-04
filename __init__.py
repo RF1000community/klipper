@@ -17,6 +17,7 @@ from kivy.config import Config
 from kivy.clock import Clock
 from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
 from os.path import join, abspath, expanduser, basename, splitext
+from datetime import datetime, timedelta
 from subprocess import Popen
 import threading
 import logging
@@ -82,7 +83,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
     print_title = StringProperty() #updated by on_state watching state chages to 'printing'
     print_time = StringProperty() #updated by handle_print_time_calc
-    progress = NumericProperty() #updated by scheduled update_home
+    print_done_time = StringProperty()
+    progress = NumericProperty(0) #updated by scheduled update_home
     #self.progress = self.sdcard.get_status(e)['progress']
     pos = ListProperty([0,0,0]) #updated by scheduled update_home
     #tuning  #updated by upate_printing
@@ -115,7 +117,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                               'z': self.klipper_config.getsection('stepper_z')}
             self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
             self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}#maybe use position_min, position_max = rail.get_range()
-            self.filament_diameter = self.klipper_config.getsection("extruder").get("filament_diameter", 1.75)
+            self.filament_diameter = self.klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
             #count how many extruders exist before drawing homescreen
             for i in range(1, 10):
                 try: klipper_config.getsection('extruder' + str(i))
@@ -131,7 +133,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
             self.printer.register_event_handler("klippy:exception", self.handle_exception)
             self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
-            self.printer.register_event_handler("toolhead:sync_print_time", self.handle_calc_print_time)
         else:
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
@@ -232,6 +233,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             s = 'busy'
         if self.sdcard.current_file:
             if self.sdcard.must_pause_work:
+                if self.state == 'print finished': return #sdcard doesnt know if we paused or stopped
                 s = 'pausing' if self.sdcard.work_timer else 'paused'
             elif self.sdcard.current_file and self.sdcard.work_timer:
                 s = 'printing'
@@ -378,11 +380,21 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.homed[axis] = axis in homed_axes_string
 
     def get_printjob_state(self):
-        st = self.virtual_sdcard.geet_status(self.reactor.monotonic())
-        self.progresss = st['progress']
-        hours = int(st['estimated_remaining_time']//3600)
-        minutes = int(st['estimated_remaining_time']%3600)/60
-        self.print_time = "{}:{:02} remaining".format(hours, minutes)
+        s = self.sdcard.get_status(self.reactor.monotonic())
+        self.progress = s['progress']
+        remaining =  timedelta(seconds = s['estimated_remaining_time'])
+        done = remaining + datetime.now()
+        remaining_hours = remaining.seconds // 3600
+        remaining_minutes = (remaining.seconds%3600) // 60
+        if not remaining.days:
+            self.print_time = "{remaining_hours}:{remaining_minutes} remaining".format(**locals())
+            self.print_done_time = done.strftime("%H:%M")
+        elif remaining.days == 1:
+            self.print_time = "{remaining_hours}:{remaining_minutes} + 1 day remaining".format(**locals())
+            self.print_done_time = done.strftime("tomorrow %H:%M")
+        else:
+            self.print_time = "{remaining_hours}:{remaining_minutes} + {remaining.days} days remaining".format(**locals())
+            self.print_done_time = done.strftime("%a %H:%M")
 
     def send_home(self, axis):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
