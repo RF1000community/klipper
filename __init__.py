@@ -382,19 +382,21 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def get_printjob_state(self):
         s = self.sdcard.get_status(self.reactor.monotonic())
         self.progress = s['progress']
-        remaining =  timedelta(seconds = s['estimated_remaining_time'])
-        done = remaining + datetime.now()
-        remaining_hours = remaining.seconds // 3600
-        remaining_minutes = (remaining.seconds%3600) // 60
-        if not remaining.days:
-            self.print_time = "{remaining_hours}:{remaining_minutes} remaining".format(**locals())
-            self.print_done_time = done.strftime("%H:%M")
-        elif remaining.days == 1:
-            self.print_time = "{remaining_hours}:{remaining_minutes} + 1 day remaining".format(**locals())
-            self.print_done_time = done.strftime("tomorrow %H:%M")
+        remaining_minutes = int((s['estimated_remaining_time'] % 3600) // 60)
+        remaining_hours =  int(s['estimated_remaining_time'] // 3600)
+        remaining = timedelta(seconds = s['estimated_remaining_time'])
+        done = datetime.now() + remaining
+        tomorrow = datetime.now() + timedelta(days=1)
+        if remaining_hours:
+            self.print_time = "{remaining_hours} hours, {remaining_minutes} minutes remaining".format(**locals())
         else:
-            self.print_time = "{remaining_hours}:{remaining_minutes} + {remaining.days} days remaining".format(**locals())
-            self.print_done_time = done.strftime("%a %H:%M")
+            self.print_time = "{remaining_minutes} minutes remaining".format(**locals())
+        if done.day == datetime.now().day:
+            self.print_done_time = done.strftime("%-H:%M")
+        elif done.day == tomorrow.day:
+            self.print_done_time = done.strftime("tomorrow %-H:%M")
+        else:
+            self.print_done_time = done.strftime("%a %-H:%M")
 
     def send_home(self, axis):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
@@ -445,6 +447,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def send_stop(self):
         self.state = "print finished"
         self.notify.show("Printing stopped", level="error")
+        # switch off all heaters
+        self.send_temp(0, 'B')
+        for i in range(self.extruder_count): 
+            self.send_temp(0, 'T{}'.format(i))
         self.reactor.register_async_callback(self.sdcard.cmd_M25)
     
     def send_play(self):
