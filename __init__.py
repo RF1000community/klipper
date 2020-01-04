@@ -111,7 +111,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.klipper_config = self.klipper_config_manager.read_main_config()
 
             #read config
-            p.invert_z_controls = self.kgui_config.get('invert_z_controls', False)
+            self.invert_z_controls = self.kgui_config.getboolean('invert_z_controls', False)
+            self.xy_homing_controls = self.kgui_config.getboolean('xy_homing_controls', True)
             stepper_config = {'x': self.klipper_config.getsection('stepper_x'),
                               'y': self.klipper_config.getsection('stepper_y'),
                               'z': self.klipper_config.getsection('stepper_z')}

@@ -106,7 +106,7 @@ FloatLayout:
             font_size: p.normal_font
             x: p.h_padding - 2
             top: progress_bar.y - 8
-            color: p.btn_disabled
+            color: p.nozzle
             halign: 'right'
             valign: 'bottom'
         Btn_Stop:
@@ -322,19 +322,19 @@ FloatLayout:
         Btn_Home:
             axis_id: 'X'
             size: p.btn_height, p.btn_height
-            x: xy_field.right
+            x: xy_field.right if app.xy_homing_controls else p.mars
             y: xy_field.y
         Btn_Home:
             axis_id: 'Y'
             size: p.btn_height, p.btn_height
-            x: xy_field.right
+            x: xy_field.right if app.xy_homing_controls else p.mars
             y: xy_field.y + p.btn_height
         RoundButton:
             id: btn_off
             on_release: app.send_motors_off()
             enabled: app.printer_objects_available
             size: p.btn_height, p.btn_height
-            x: xy_field.right
+            x: xy_field.right if app.xy_homing_controls else p.mars
             top: xy_field.top
             Label:
                 text: "Off"
@@ -568,7 +568,7 @@ FloatLayout:
     #:set t 9.5
     #:set u 19 #Triangle has this size x2
     BaseButton:
-        on_press: app.send_z_up() if p.invert_z_controls else app.send_z_down()
+        on_press: app.send_z_up() if app.invert_z_controls else app.send_z_down()
         on_release: app.send_z_stop()
         enabled: app.homed['z']
         size: root.width, root.h1
@@ -596,7 +596,7 @@ FloatLayout:
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: app.send_z_down() if p.invert_z_controls else app.send_z_up()
+        on_press: app.send_z_down() if app.invert_z_controls else app.send_z_up()
         on_release: app.send_z_stop()
         enabled: app.homed['z']
         size: root.width, root.h3
@@ -1129,8 +1129,9 @@ FloatLayout:
     mm: [0, 0, 0]
     px: [0, 0]
     canvas.after:
+        # Outline with xy homing buttons
         Color:
-            rgba: p.btn_outline
+            rgba: p.btn_outline if app.xy_homing_controls else (0,0,0,0)
         Line:
             width: 1
             rounded_rectangle: (self.x, self.y, self.width + p.btn_height, self.height, p.radius)
@@ -1140,6 +1141,13 @@ FloatLayout:
             points: self.right + 10, self.y + 2*p.btn_height,   self.right + p.btn_height -10, self.y + 2*p.btn_height
         Line:
             points: self.right + 10, self.y + p.btn_height,   self.right + p.btn_height -10, self.y + p.btn_height
+        # Outline without xy homing buttons
+        Color:
+            rgba: (0,0,0,0) if app.xy_homing_controls else p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+
         Color:
             rgba: p.btn_outline if self.pressed else (0,0,0,0)
         Line:
