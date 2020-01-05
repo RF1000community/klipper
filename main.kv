@@ -18,7 +18,7 @@ FloatLayout:
 <StatusBar@BoxLayout>:
     canvas:
         Color:
-            rgba: p.red if 'error' in app.state else p.accent
+            rgba: p.red if 'error' in app.state else p.accent if app.state == 'ready' else p.nozzle
         Rectangle:
             size: self.size
             pos: self.pos
@@ -81,7 +81,7 @@ FloatLayout:
             pos_hint: {'x':0,'y':0}
             size_hint: 1,1
         ProgressBar:
-            enabled: app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' or app.state == 'print finished'
+            enabled: app.print_state != 'no printjob'
             id: progress_bar
             max: 1
             value: app.progress
@@ -89,7 +89,7 @@ FloatLayout:
             size: p.screen_width-2*p.h_padding+2, p.progress_bar_height
             pos: p.h_padding-1, p.tab_height + p.padding
         Label:
-            text: app.print_time if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else ""
+            text: app.print_time
             size_hint: None, None
             size: p.screen_width-2*p.padding, p.normal_font
             text_size: self.size
@@ -99,14 +99,14 @@ FloatLayout:
             halign: 'left'
             valign: 'bottom'
         Label:
-            text: app.print_done_time if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else ""
+            text: app.print_done_time
             size_hint: None, None
             size: p.screen_width-2*p.padding, p.normal_font
             text_size: self.size
             font_size: p.normal_font
             x: p.h_padding - 2
             top: progress_bar.y - 8
-            color: p.nozzle
+            color: p.btn_disabled
             halign: 'right'
             valign: 'bottom'
         Btn_Stop:
@@ -128,7 +128,7 @@ FloatLayout:
             right: btn_stop.x
         Label:
             id: l_filename
-            text: app.print_title if not app.state == 'ready' else ""
+            text: app.print_title
             size_hint: None, None
             size: 280,134
             text_size: self.size
@@ -139,7 +139,7 @@ FloatLayout:
             halign: 'left'
             valign: 'middle'
         ScreenManager:
-            current: 'printingscreen' if app.state == 'printing' else 'homescreen'
+            current: 'printingscreen' if app.print_state == 'printing' else 'homescreen'
             transition: screenmanager.NoTransition()
             id: hs_manager
             size_hint: None, None
@@ -258,7 +258,7 @@ FloatLayout:
             center_y: z_adjust.center_y + p.btn_spacing
         Btn_Temp:
             id: acceleration
-            on_release: Factory.AccPopup(write=False, val=app.acceleration).open()
+            on_release: Factory.AccPopup(val=app.acceleration).open()
             large_value: "{:5.0f}mm/s²".format(app.acceleration)
             small_value: "Acceleration"
             right: p.screen_width - p.h_padding
@@ -379,7 +379,7 @@ FloatLayout:
             pos: self.pos
 
 <Btn_Stop@RoundButton>:
-    enabled: True if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else False
+    enabled: app.print_state == 'printing' or app.print_state == 'paused'
     canvas.before:
         Color:
             rgba: p.red if self.enabled else (0,0,0,0)
@@ -389,7 +389,7 @@ FloatLayout:
             radius: (p.icon_radius,)
 
 <Btn_Reprint@RoundButton>:
-    enabled: app.state == 'print finished'
+    enabled: app.print_state == 'done'
     canvas.before:
         Color:
             rgba: p.nozzle if self.enabled else (0,0,0,0)
@@ -405,8 +405,8 @@ FloatLayout:
 <Btn_Play@RoundButton>:
     #:set pw (p.btn_height-2*p.icon_radius)/2
     #:set ph pw*1.155
-    paused: False if app.state == 'printing' else True
-    enabled: True if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else False
+    paused: app.print_state == 'paused' or app.print_state == 'initialized'
+    enabled: app.print_state == 'printing' or app.print_state == 'paused' or app.print_state == 'initialized'
     canvas.before:
         Color:
             rgba: 1,1,1,1 if self.enabled and not self.paused else 0

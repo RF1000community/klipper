@@ -68,15 +68,17 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     #Property for controlling the state as shown in the statusbar.
     state = OptionProperty("initializing", options=[
         # Every string set has to be in this list
-        "busy",
-        "ready",
-        "printing",
-        "pausing",
-        "paused",
-        "print finished",
-        "error",
-        "error disconnected",
         "initializing",
+        "ready",
+        "error",
+        "error disconnected"
+        ])
+    print_state = OptionProperty("no printjob", options=[
+        "no printjob",
+        "printing",
+        "paused",
+        "done",
+        "initialized"
         ])
     homed = DictProperty({}) #updated by handle_homed event handler
     temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ....} updated by scheduled update_home -> get_temp
@@ -85,7 +87,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     print_time = StringProperty() #updated by handle_print_time_calc
     print_done_time = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
-    #self.progress = self.sdcard.get_status(e)['progress']
     pos = ListProperty([0,0,0]) #updated by scheduled update_home
     #tuning  #updated by upate_printing
     speed = NumericProperty(100)
@@ -109,7 +110,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.reactor = self.printer.get_reactor()
             self.klipper_config_manager = self.printer.objects['configfile']
             self.klipper_config = self.klipper_config_manager.read_main_config()
-
             #read config
             self.invert_z_controls = self.kgui_config.getboolean('invert_z_controls', False)
             self.xy_homing_controls = self.kgui_config.getboolean('xy_homing_controls', True)
@@ -224,26 +224,13 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.scheduled_updating = Clock.schedule_interval(self.update_setting, 2)
             
     def update_always(self, *args):
-        if not self.sdcard:
-            logging.warning("sdcard not found")
-            return
-        s = 'ready'
-        if 'Printer is ready' != self.printer.get_state_message():
-		    s = 'initializing'
-        if self.gcode.is_processing_data:
-            s = 'busy'
-        if self.sdcard.current_file:
-            if self.sdcard.must_pause_work:
-                if self.state == 'print finished': return #sdcard doesnt know if we paused or stopped
-                s = 'pausing' if self.sdcard.work_timer else 'paused'
-            elif self.sdcard.current_file and self.sdcard.work_timer:
-                s = 'printing'
-        self.state = s
+        self.print_state = self.sdcard.get_status(self.reactor.monotonic())['state']
 
     def update_home(self, *args):
         self.get_pos()
         self.get_temp()
         self.get_homing_state()
+        self.get_printjob_state()
 
     def update_printing(self, *args):
         self.get_pressure_advance()
@@ -259,13 +246,12 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_config('printer', 'max_accel', 'default_acceleration', 'int')
         self.get_config('extruder', 'pressure_advance', 'default_pressure_advance')
 
-
     def on_state(self, instance, state):
         if state == 'printing' or state == 'busy':
             file = self.sdcard.current_file
             if file: 
                 self.print_title = splitext(basename(file.name))[0] #remove file extension
-                self.notify.show("Started printing", "Started printing {}".format(basename(file.name)))
+                self.notify.show("Started printing", "Started printing {}".format(basename(file.name)), delay=4)
             
 ##################################################################
 ### TUNING
@@ -382,6 +368,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def get_printjob_state(self):
         s = self.sdcard.get_status(self.reactor.monotonic())
+        if s['progress'] is None: #no prediction could be made yet
+            self.progress = 0
+            self.print_time = ""
+            self.print_done_time = ""
+            return
         self.progress = s['progress']
         remaining_minutes = int((s['estimated_remaining_time'] % 3600) // 60)
         remaining_hours =  int(s['estimated_remaining_time'] // 3600)
@@ -435,19 +426,19 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         if file:
             filename = basename(file) # remove path
             self.print_title = splitext(filename)[0] #remove file extension
-            self.state = "printing"
+            self.print_state = "printing"
             params = {'#original': "M23 " + filename}
         def start(e):
             try:
                 if file: self.sdcard.cmd_M23(params)
                 self.sdcard.cmd_M24(None)
             except:
-                self.notify.show("Couldn't start Print, sdcard busy")
+                self.notify.show("Couldn't start Print, sdcard error", level='error')
         self.reactor.register_async_callback(start)
 
     def send_stop(self):
-        self.state = "print finished"
-        self.notify.show("Printing stopped", level="error")
+        self. print_state = "print finished"
+        self.notify.show("Printing stopped", level="error", delay=4)
         # switch off all heaters
         self.send_temp(0, 'B')
         for i in range(self.extruder_count): 
@@ -455,15 +446,13 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(self.sdcard.cmd_M25)
     
     def send_play(self):
-        self.state = "printing"
-        self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1")
+        self.print_state = "printing"
         self.reactor.register_async_callback(self.sdcard.cmd_M24)#works because cmd_M24 takes one argument but doesnt read it 
 
     def send_pause(self):
-        self.state = "paused"
+        self.print_state = "paused"
         self.notify.show("Paused", "Print paused", delay=4)
         self.reactor.register_async_callback(self.sdcard.cmd_M25)
-        self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
