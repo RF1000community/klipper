@@ -16,6 +16,7 @@ from kivy.app import App
 from kivy.config import Config
 from kivy.clock import Clock
 from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
+from kivy.base import ExceptionHandler, ExceptionManager
 from os.path import join, abspath, expanduser, basename, splitext
 from datetime import datetime, timedelta
 from subprocess import Popen
@@ -30,42 +31,10 @@ from settings import *
 import parameters as p
 
 
-# Add parent directory to sys.path so main.kv (parser.py) can import from it
-site.addsitedir(p.kgui_dir)
-
-def set_kivy_config():
-    # This needs an absolute path otherwise config will only be loaded when
-    # working directory is the parent directory
-    if TESTING:
-        Config.read(join(p.kgui_dir, "config-test.ini"))
-    else:
-        Config.read(join(p.kgui_dir, "config.ini"))
-        # Read the display rotation value
-        try:
-            with open("/boot/config.txt", "r") as file_:
-                lines = file_.read().splitlines()
-        except IOError:
-            # Assume 90 degree rotation (config default) in case
-            # /boot/config.txt isn't found
-            rotation = 1
-        else:
-            rotation_string = [i for i in lines if i.startswith("display_hdmi_rotate")][0]
-            # The number should always be at index 20
-            rotation = int(rotation_string[20])
-        # rotation should only be 1 for 90deg or 3 for 270deg
-        # Set the input config option to rotate the touchinput explicitly for kivy
-        if rotation == 3:
-            Config.set("input", "device_%(name)s",
-                "probesysfs,provider=mtdev,param=rotation=270,param=invert_y=1")
-
-    #load a custom style.kv with changes to filechooser and more
-    Builder.unload_file(join(kivy_data_dir, "style.kv"))
-    Builder.load_file(join(p.kgui_dir, "style.kv"))
-
-#add threading.thread => inherits start() method to run() in new thread
+# inherit from threading.thread => inherits start() method to run() in new thread
 class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
-    #Property for controlling the state as shown in the statusbar.
+    # Property for controlling the state as shown in the statusbar.
     state = OptionProperty("initializing", options=[
         # Every string set has to be in this list
         "initializing",
@@ -81,7 +50,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         "initialized"
         ])
     homed = DictProperty({}) #updated by handle_homed event handler
-    temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ....} updated by scheduled update_home -> get_temp
+    temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
     print_title = StringProperty() #updated by on_state watching state chages to 'printing'
     print_time = StringProperty() #updated by handle_print_time_calc
@@ -99,7 +68,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     default_pressure_advance = NumericProperty(0)
     default_acceleration = NumericProperty(2000)
 
-    def __init__(self, config = None, **kwargs): #runs in klippy thread
+    def __init__(self, config = None, **kwargs):
         logging.info("Kivy app initializing...")
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
@@ -119,14 +88,15 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
             self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}#maybe use position_min, position_max = rail.get_range()
             self.filament_diameter = self.klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
-            #count how many extruders exist before drawing homescreen
-            for i in range(1, 10):
-                try: klipper_config.getsection('extruder' + str(i))
-                except: self.extruder_count = i; break
             #check whether the right sdcard path is configured
             configured_sdpath = expanduser(self.klipper_config.getsection("virtual_sdcard").get("path", None))
             if abspath(configured_sdpath) != abspath(p.sdcard_path):
                 logging.warning("virtual_sdcard path misconfigured: is {} and not {}".format(configured_sdpath, p.sdcard_path))
+            #get extruder objects before drawing homescreen
+            self.extruders = []
+            for i in range(0,10):
+                ext = self.printer.lookup_object('extruder{}'.format('' if i==0 else i), None)
+                if ext: self.extruders.append(ext)
             #register event handlers
             self.printer.register_event_handler("klippy:connect", self.handle_connect) #printer_objects are available
             self.printer.register_event_handler("klippy:ready", self.handle_ready) #connect handlers have run
@@ -138,14 +108,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
             self.filament_diameter = 1.75
-            self.extruder_count = 3
+            self.extruders = [None, None, None]
         super(mainApp, self).__init__(**kwargs)
-
-    def run(self):#needs testing
-        try:
-            super(mainApp, self).run()
-        except Exception as e:
-            self.handle_exception(e)
 
     def handle_connect(self): #runs in klippy thread
         self.fan = self.printer.lookup_object('fan', None)
@@ -153,14 +117,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.sdcard = self.printer.lookup_object('virtual_sdcard', None)
         self.toolhead = self.printer.lookup_object('toolhead')
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
-        self.extruders = []
-        for i in range(0,10):
-		    ext = self.printer.lookup_object('extruder{}'.format('' if i==0 else i), None)
-		    if ext: self.extruders.append(ext)
+        
         self.heater_manager = self.printer.lookup_object('heater', None)
         self.heaters = {}
         if 'heater_bed' in self.heater_manager.heaters: self.heaters['B'] = self.heater_manager.heaters['heater_bed']
-        for i in range(self.extruder_count):
+        for i in range(len(self.extruders)):
             self.heaters['T'+str(i)] = self.heater_manager.heaters['extruder' + '' if i==0 else i]
 
         self.printer_objects_available = True
@@ -171,23 +132,23 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def handle_ready(self):
         self.state = "ready"
 
+    def handle_shutdown(self): # is called when system shuts down
+        logging.info("handled shutdown ")
+        self.stop()
+
+    def handle_exception(self, message):
+        self.state = "error"
+        ErrorPopup(message = message).open()
+
     def handle_disconnect(self):
         self.state = "error disconnected"
         logging.info("run handle_disconnect -> shutdown gui")
-        self.handle_shutdown()
-
-    def handle_shutdown(self): # is called when system shuts down
-        logging.info("handled shutdown ")
         self.stop()
 
     def handle_homed(self, homing, rails):
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
-    def handle_exception(self, exc):
-        self.state = "error"
-        ErrorPopup(message=exc).open()
-        
 ### KLIPPER THREAD ^
 ########################################################################################
 ### KGUI    THREAD v
@@ -345,7 +306,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(write_conf)
 
     def write_pressure_advance(self, val):
-        for i in range(self.extruder_count):
+        for i in range(len(self.extruders)):
             self.write_config('extruder{}'.format(i if i != '0' else ''), 'pressure_advance', val)
 
     def get_temp(self, dt=None):
@@ -367,28 +328,36 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.homed[axis] = axis in homed_axes_string
 
     def get_printjob_state(self):
+        # helper function
+        def format_time(seconds):
+            minutes = int((seconds % 3600) // 60)
+            hours  =  int(seconds // 3600)
+            if hours:
+                return "{hours} hours, {minutes} minutes".format(**locals())
+            else:
+                return "{minutes} minutes".format(**locals())
+
         s = self.sdcard.get_status(self.reactor.monotonic())
-        if s['progress'] is None: #no prediction could be made yet
+        if s['state'] == 'done': # print is done show how long it took
+            self.progress = 1
+            self.print_time = "done" # we have a printjob else state is 'no-printjob'
+            self.print_done_time = "took " + format_time(self.sdcard.printjob.get_printed_time(self.reactor.monotonic()))
+        elif s['progress'] is None: # no prediction could be made yet
             self.progress = 0
             self.print_time = ""
             self.print_done_time = ""
-            return
-        self.progress = s['progress']
-        remaining_minutes = int((s['estimated_remaining_time'] % 3600) // 60)
-        remaining_hours =  int(s['estimated_remaining_time'] // 3600)
-        remaining = timedelta(seconds = s['estimated_remaining_time'])
-        done = datetime.now() + remaining
-        tomorrow = datetime.now() + timedelta(days=1)
-        if remaining_hours:
-            self.print_time = "{remaining_hours} hours, {remaining_minutes} minutes remaining".format(**locals())
         else:
-            self.print_time = "{remaining_minutes} minutes remaining".format(**locals())
-        if done.day == datetime.now().day:
-            self.print_done_time = done.strftime("%-H:%M")
-        elif done.day == tomorrow.day:
-            self.print_done_time = done.strftime("tomorrow %-H:%M")
-        else:
-            self.print_done_time = done.strftime("%a %-H:%M")
+            remaining = timedelta(seconds = s['estimated_remaining_time'])
+            done = datetime.now() + remaining
+            tomorrow = datetime.now() + timedelta(days=1)
+            self.progress = s['progress']
+            self.print_time = format_time(remaining.total_seconds) + "remaining"
+            if done.day == datetime.now().day:
+                self.print_done_time = done.strftime("ca. %-H:%M")
+            elif done.day == tomorrow.day:
+                self.print_done_time = done.strftime("ca. tomorrow %-H:%M")
+            else:
+                self.print_done_time = done.strftime("ca. %a %-H:%M")
 
     def send_home(self, axis):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
@@ -441,7 +410,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.notify.show("Printing stopped", level="error", delay=4)
         # switch off all heaters
         self.send_temp(0, 'B')
-        for i in range(self.extruder_count): 
+        for i in range(len(self.extruders)): 
             self.send_temp(0, 'T{}'.format(i))
         self.reactor.register_async_callback(self.sdcard.cmd_M25)
     
@@ -462,17 +431,61 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         """Quit and restart klipper and GUI"""
         logging.info("attempting a firmware restart")
         self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
+        self.stop()
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
         Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
+
+########################################################################################
+### KLIPPER THREAD v
+
+class ExceptionHandlerWithPopup(ExceptionHandler):
+    def handle_exception(self, exception):
+        App.get_running_app().handle_exception(repr(exception))
+        logging.exception(exception)
+        return ExceptionManager.PASS
+
+def set_kivy_config():
+    # This needs an absolute path otherwise config will only be loaded when
+    # working directory is the parent directory
+    if TESTING:
+        Config.read(join(p.kgui_dir, "config-test.ini"))
+    else:
+        Config.read(join(p.kgui_dir, "config.ini"))
+        # Read the display rotation value
+        try:
+            with open("/boot/config.txt", "r") as file_:
+                lines = file_.read().splitlines()
+        except IOError:
+            # Assume 90 degree rotation (config default) in case
+            # /boot/config.txt isn't found
+            rotation = 1
+        else:
+            rotation_string = [i for i in lines if i.startswith("display_hdmi_rotate")][0]
+            # The number should always be at index 20
+            rotation = int(rotation_string[20])
+        # rotation should only be 1 for 90deg or 3 for 270deg
+        # Set the input config option to rotate the touchinput explicitly for kivy
+        if rotation == 3:
+            Config.set("input", "device_%(name)s",
+                "probesysfs,provider=mtdev,param=rotation=270,param=invert_y=1")
+
+    #load a custom style.kv with changes to filechooser and more
+    Builder.unload_file(join(kivy_data_dir, "style.kv"))
+    Builder.load_file(join(p.kgui_dir, "style.kv"))
+
+# Catch KGUI exceptions and display popup
+ExceptionManager.add_handler(ExceptionHandlerWithPopup())
+# Add parent directory to sys.path so main.kv (parser.py) can import from it
+site.addsitedir(p.kgui_dir)
+# Read custom Kivy config file, set rotation and load custom style.kv
+set_kivy_config()
 
 #Entry point, order of execution: __init__()  run()  main.kv  setup_after_run()  handle_connect()  handle_ready()
 def load_config(config):
     kgui_object = mainApp(config)
     kgui_object.start()
     return kgui_object
-
-set_kivy_config()
 
 if __name__ == "__main__":
     mainApp().run()

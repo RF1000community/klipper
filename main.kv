@@ -18,7 +18,7 @@ FloatLayout:
 <StatusBar@BoxLayout>:
     canvas:
         Color:
-            rgba: p.red if 'error' in app.state else p.accent if app.state == 'ready' else p.nozzle
+            rgba: p.red if 'error' in app.state else p.accent if app.state == 'ready' else p.background
         Rectangle:
             size: self.size
             pos: self.pos
@@ -155,11 +155,11 @@ FloatLayout:
             small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             red: app.temp[self.heater_id][1] > 50
             width: 80
-            right: temp_bed.right if app.extruder_count > 1 else p.mars
+            right: temp_bed.right if len(app.extruders) > 1 else p.mars
             y: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_spacing
         Btn_Extruder:
             heater_id: 'T1'
-            x: p.h_padding if app.extruder_count > 1 else p.mars
+            x: p.h_padding if len(app.extruders) > 1 else p.mars
             y: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_spacing
         Btn_Temp:
             id: temp_T0
@@ -286,7 +286,7 @@ FloatLayout:
             w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
             id: btn_tr_T1
-            y: p.padding if app.extruder_count > 1 else p.mars
+            y: p.padding if len(app.extruders) > 1 else p.mars
             right: p.screen_width - p.h_padding
         BtnTriple:
             w1: p.btn_height
@@ -502,7 +502,7 @@ FloatLayout:
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
         enabled: True
-        on_release: Factory.ErrorPopup(message="hjklhjlh").open()
+        on_release: app.state = 'exception'
         canvas:
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
@@ -1109,13 +1109,18 @@ FloatLayout:
 <ErrorPopup>:
     size_hint: 0.8, 0.5
     error: True
-    title: "Error - Firmware crashed"
+    message: "--"
+    title: "Error - Firmware stopped"
     auto_dismiss: False
     FloatLayout:
         Label:
-            size_hint: 1, 1
             text: root.message
-            pos_hint: {'x':0, 'y':0}
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 5
+            size_hint: 0.9, 0.5
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.1}
+            text_size: self.size
             font_size: p.large_font
             color: p.light_gray
         Btn_P_Cancel:
@@ -1123,7 +1128,7 @@ FloatLayout:
             title: "Restart Klipper"
             width: root.width
             pos: root.pos
-            on_release: app.send_klipper_restart()
+            on_release: app.restart_klipper()
 
 <XyField>:
     mm: [0, 0, 0]
