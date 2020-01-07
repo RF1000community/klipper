@@ -139,18 +139,22 @@ class Printer:
                 cb()
         except (self.config_error, pins.error) as e:
             logging.exception("Config error")
+            self.send_event("klippy:exception", "Config error")
             self._set_state("%s%s" % (str(e), message_restart))
             return
         except msgproto.error as e:
             logging.exception("Protocol error")
+            self.send_event("klippy:exception", "Protocol error")
             self._set_state("%s%s" % (str(e), message_protocol_error))
             return
         except mcu.error as e:
             logging.exception("MCU error during connect")
+            self.send_event("klippy:exception", "MCU error during connect")
             self._set_state("%s%s" % (str(e), message_mcu_connect_error))
             return
         except Exception as e:
             logging.exception("Unhandled exception during connect")
+            self.send_event("klippy:exception", "Unhandled exception during connect")
             self._set_state("Internal error during connect: %s\n%s" % (
                 str(e), message_restart,))
             return
@@ -162,6 +166,7 @@ class Printer:
                 cb()
         except Exception as e:
             logging.exception("Unhandled exception during ready callback")
+            self.send_event("klippy:exception", "Unhandled exception during ready callback")
             self.invoke_shutdown("Internal error during ready callback: %s" % (
                 str(e),))
     def run(self):
@@ -173,8 +178,8 @@ class Printer:
         try:
             self.reactor.run()
         except Exception as e:
-            self.send_event("klippy:exception", str(e))
             logging.exception("Unhandled exception during run")
+            self.send_event("klippy:exception", repr(e))
             return "error_exit"
         # Check restart flags
         run_result = self.run_result
