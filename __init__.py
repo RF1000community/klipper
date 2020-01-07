@@ -42,17 +42,17 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         "error",
         "error disconnected"
         ])
-    print_state = OptionProperty("no printjob", options=[
-        "no printjob",
+    print_state = OptionProperty("no_printjob", options=[
+        "no_printjob",
         "printing",
         "paused",
+        "stopped",
         "done",
-        "initialized"
         ])
     homed = DictProperty({}) #updated by handle_homed event handler
     temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
-    print_title = StringProperty() #updated by on_state watching state chages to 'printing'
+    print_title = StringProperty() #updated by get_printjob_state watching for state chages to 'printing'
     print_time = StringProperty() #updated by handle_print_time_calc
     print_done_time = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
@@ -92,11 +92,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             configured_sdpath = expanduser(self.klipper_config.getsection("virtual_sdcard").get("path", None))
             if abspath(configured_sdpath) != abspath(p.sdcard_path):
                 logging.warning("virtual_sdcard path misconfigured: is {} and not {}".format(configured_sdpath, p.sdcard_path))
-            #get extruder objects before drawing homescreen
-            self.extruders = []
-            for i in range(0,10):
-                ext = self.printer.lookup_object('extruder{}'.format('' if i==0 else i), None)
-                if ext: self.extruders.append(ext)
+            #count how many extruders exist before drawing homescreen
+            for i in range(1, 10):
+                try: klipper_config.getsection('extruder{i}'.format(**locals()))
+                except: self.extruder_count = i; break
             #register event handlers
             self.printer.register_event_handler("klippy:connect", self.handle_connect) #printer_objects are available
             self.printer.register_event_handler("klippy:ready", self.handle_ready) #connect handlers have run
@@ -117,12 +116,15 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.sdcard = self.printer.lookup_object('virtual_sdcard', None)
         self.toolhead = self.printer.lookup_object('toolhead')
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
-        
         self.heater_manager = self.printer.lookup_object('heater', None)
         self.heaters = {}
-        if 'heater_bed' in self.heater_manager.heaters: self.heaters['B'] = self.heater_manager.heaters['heater_bed']
-        for i in range(len(self.extruders)):
-            self.heaters['T'+str(i)] = self.heater_manager.heaters['extruder' + '' if i==0 else i]
+        if 'heater_bed' in self.heater_manager.heaters: 
+            self.heaters['B'] = self.heater_manager.heaters['heater_bed']
+        for i in range(self.extruder_count):
+            self.heaters['T{}'.format(i)] = self.heater_manager.heaters['extruder{}'.format('' if i==0 else i)]
+        self.extruders = []
+        for i in range(self.extruder_count):
+            self.extruders.append(self.printer.lookup_object('extruder{}'.format('' if i==0 else i)))
 
         self.printer_objects_available = True
         Clock.schedule_once(self.bind_updating, 0)
@@ -188,10 +190,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.print_state = self.sdcard.get_status(self.reactor.monotonic())['state']
 
     def update_home(self, *args):
-        self.get_pos()
-        self.get_temp()
-        self.get_homing_state()
         self.get_printjob_state()
+        self.get_homing_state()
+        self.get_temp()
+        self.get_pos()
 
     def update_printing(self, *args):
         self.get_pressure_advance()
@@ -200,19 +202,55 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_z_adjust()
         self.get_speed()
         self.get_flow()
-        self.get_fan()
         self.get_temp()
+        self.get_fan()
 
     def update_setting(self, *args):
-        self.get_config('printer', 'max_accel', 'default_acceleration', 'int')
         self.get_config('extruder', 'pressure_advance', 'default_pressure_advance')
+        self.get_config('printer', 'max_accel', 'default_acceleration', 'int')
 
-    def on_state(self, instance, state):
-        if state == 'printing' or state == 'busy':
-            file = self.sdcard.current_file
-            if file: 
-                self.print_title = splitext(basename(file.name))[0] #remove file extension
+    def get_printjob_state(self):
+
+        def format_time(seconds):
+            minutes = int((seconds % 3600) // 60)
+            hours  =  int(seconds // 3600)
+            if hours:
+                return "{hours} hours, {minutes} minutes".format(**locals())
+            else:
+                return "{minutes} minutes".format(**locals())
+
+        s = self.sdcard.get_status(self.reactor.monotonic())
+        if s['state'] != self.print_state: # state change
+            self.print_state = s['state']
+            if s['state'] == 'printing': #setting title only works after pressing stop 
+                self.print_title = splitext(basename(self.sdcard.file.name))[0] #remove file extension only
                 self.notify.show("Started printing", "Started printing {}".format(basename(file.name)), delay=4)
+            elif s['state'] == 'done':
+                self.progress = 1
+                self.print_time = "done" 
+                self.print_done_time = "took " + format_time(self.sdcard.get_printed_time(self.reactor.monotonic()))
+            elif s['state'] == 'stopped':
+                self.prin_time = "stopped"
+                self.print_done_time = ""
+
+        if s['state'] == 'printing'\
+        or s['state'] == 'paused': # we need a print time prediction
+            if s['progress'] is None: # no prediction could be made yet
+                self.progress = 0
+                self.print_time = ""
+                self.print_done_time = ""
+            else:
+                remaining = timedelta(seconds = s['estimated_remaining_time'])
+                done = datetime.now() + remaining
+                tomorrow = datetime.now() + timedelta(days=1)
+                self.progress = s['progress']
+                self.print_time = format_time(remaining.total_seconds()) + " remaining"
+                if done.day == datetime.now().day:
+                    self.print_done_time = done.strftime("ca. %-H:%M")
+                elif done.day == tomorrow.day:
+                    self.print_done_time = done.strftime("ca. tomorrow %-H:%M")
+                else:
+                    self.print_done_time = done.strftime("ca. %a %-H:%M")
             
 ##################################################################
 ### TUNING
@@ -306,7 +344,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(write_conf)
 
     def write_pressure_advance(self, val):
-        for i in range(len(self.extruders)):
+        for i in range(self.extruder_count):
             self.write_config('extruder{}'.format(i if i != '0' else ''), 'pressure_advance', val)
 
     def get_temp(self, dt=None):
@@ -326,38 +364,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         homed_axes_string = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
         for axis in self.homed.keys():
             self.homed[axis] = axis in homed_axes_string
-
-    def get_printjob_state(self):
-        # helper function
-        def format_time(seconds):
-            minutes = int((seconds % 3600) // 60)
-            hours  =  int(seconds // 3600)
-            if hours:
-                return "{hours} hours, {minutes} minutes".format(**locals())
-            else:
-                return "{minutes} minutes".format(**locals())
-
-        s = self.sdcard.get_status(self.reactor.monotonic())
-        if s['state'] == 'done': # print is done show how long it took
-            self.progress = 1
-            self.print_time = "done" # we have a printjob else state is 'no-printjob'
-            self.print_done_time = "took " + format_time(self.sdcard.printjob.get_printed_time(self.reactor.monotonic()))
-        elif s['progress'] is None: # no prediction could be made yet
-            self.progress = 0
-            self.print_time = ""
-            self.print_done_time = ""
-        else:
-            remaining = timedelta(seconds = s['estimated_remaining_time'])
-            done = datetime.now() + remaining
-            tomorrow = datetime.now() + timedelta(days=1)
-            self.progress = s['progress']
-            self.print_time = format_time(remaining.total_seconds) + "remaining"
-            if done.day == datetime.now().day:
-                self.print_done_time = done.strftime("ca. %-H:%M")
-            elif done.day == tomorrow.day:
-                self.print_done_time = done.strftime("ca. tomorrow %-H:%M")
-            else:
-                self.print_done_time = done.strftime("ca. %a %-H:%M")
 
     def send_home(self, axis):
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
@@ -391,32 +397,22 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
 
-    def send_start(self, file=None):
-        if file:
-            filename = basename(file) # remove path
-            self.print_title = splitext(filename)[0] #remove file extension
-            self.print_state = "printing"
-            params = {'#original': "M23 " + filename}
+    def send_start(self, filename=None):
+        self.print_state = "printing"
+        if filename: filename = basename(filename) # remove path
         def start(e):
             try:
-                if file: self.sdcard.cmd_M23(params)
+                if filename:
+                    self.sdcard.cmd_M23({'#original': "M23 " + filename})
                 self.sdcard.cmd_M24(None)
             except:
                 self.notify.show("Couldn't start Print, sdcard error", level='error')
         self.reactor.register_async_callback(start)
 
     def send_stop(self):
-        self. print_state = "print finished"
+        self.print_state = "stopped"
         self.notify.show("Printing stopped", level="error", delay=4)
-        # switch off all heaters
-        self.send_temp(0, 'B')
-        for i in range(len(self.extruders)): 
-            self.send_temp(0, 'T{}'.format(i))
-        self.reactor.register_async_callback(self.sdcard.cmd_M25)
-    
-    def send_play(self):
-        self.print_state = "printing"
-        self.reactor.register_async_callback(self.sdcard.cmd_M24)#works because cmd_M24 takes one argument but doesnt read it 
+        self.reactor.register_async_callback(self.sdcard.cmd_STOP_PRINT)
 
     def send_pause(self):
         self.print_state = "paused"

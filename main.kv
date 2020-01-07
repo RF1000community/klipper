@@ -81,7 +81,7 @@ FloatLayout:
             pos_hint: {'x':0,'y':0}
             size_hint: 1,1
         ProgressBar:
-            enabled: app.print_state != 'no printjob'
+            enabled: app.print_state != 'no_printjob'
             id: progress_bar
             max: 1
             value: app.progress
@@ -121,7 +121,7 @@ FloatLayout:
             pos: btn_stop.pos
         Btn_Play:
             on_release:
-                if self.paused: app.send_play(); self.paused=False;
+                if self.paused: app.send_start(); self.paused=False;
                 else:           app.send_pause(); self.paused=True;
             size: btn_stop.size
             y: btn_stop.y
@@ -155,11 +155,11 @@ FloatLayout:
             small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             red: app.temp[self.heater_id][1] > 50
             width: 80
-            right: temp_bed.right if len(app.extruders) > 1 else p.mars
+            right: temp_bed.right if app.extruder_count > 1 else p.mars
             y: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_spacing
         Btn_Extruder:
             heater_id: 'T1'
-            x: p.h_padding if len(app.extruders) > 1 else p.mars
+            x: p.h_padding if app.extruder_count > 1 else p.mars
             y: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_spacing
         Btn_Temp:
             id: temp_T0
@@ -286,7 +286,7 @@ FloatLayout:
             w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
             id: btn_tr_T1
-            y: p.padding if len(app.extruders) > 1 else p.mars
+            y: p.padding if app.extruder_count > 1 else p.mars
             right: p.screen_width - p.h_padding
         BtnTriple:
             w1: p.btn_height
@@ -389,7 +389,7 @@ FloatLayout:
             radius: (p.icon_radius,)
 
 <Btn_Reprint@RoundButton>:
-    enabled: app.print_state == 'done'
+    enabled: app.print_state == 'done' or app.print_state == 'stopped'
     canvas.before:
         Color:
             rgba: p.nozzle if self.enabled else (0,0,0,0)
@@ -405,8 +405,8 @@ FloatLayout:
 <Btn_Play@RoundButton>:
     #:set pw (p.btn_height-2*p.icon_radius)/2
     #:set ph pw*1.155
-    paused: app.print_state == 'paused' or app.print_state == 'initialized'
-    enabled: app.print_state == 'printing' or app.print_state == 'paused' or app.print_state == 'initialized'
+    paused: app.print_state == 'paused'
+    enabled: app.print_state == 'printing' or app.print_state == 'paused'
     canvas.before:
         Color:
             rgba: 1,1,1,1 if self.enabled and not self.paused else 0
@@ -451,7 +451,7 @@ FloatLayout:
     #filament_color: (1, 0, 0)
     #filament_amount: 0.4
     title_upper: 'Unload'
-    title_lower: '320g PETG'
+    title_lower: ""
     w1: 0
     w2: 0
     w3: 0
