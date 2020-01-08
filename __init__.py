@@ -20,9 +20,9 @@ from kivy.properties import OptionProperty, BooleanProperty, DictProperty, Numer
 from os.path import join, abspath, expanduser, basename, splitext
 from datetime import datetime, timedelta
 from subprocess import Popen
-import threading
-import logging
 import site
+import logging
+import threading
 from elements import UltraKeyboard
 from home import *
 from files import *
@@ -209,7 +209,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_config('extruder', 'pressure_advance', 'default_pressure_advance')
         self.get_config('printer', 'max_accel', 'default_acceleration', 'int')
 
-    def get_printjob_state(self):
+    def get_printjob_state(self, *args):
 
         def format_time(seconds):
             minutes = int((seconds % 3600) // 60)
@@ -223,8 +223,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         if s['state'] != self.print_state: # state change
             self.print_state = s['state']
             if s['state'] == 'printing': #setting title only works after pressing stop 
-                self.print_title = splitext(basename(self.sdcard.file.name))[0] #remove file extension only
-                self.notify.show("Started printing", "Started printing {}".format(basename(file.name)), delay=4)
+                self.print_title = splitext(basename(self.sdcard.file.name))[0]
+                self.notify.show("Started printing", "Started printing {}".format(basename(self.sdcard.file.name)), delay=4)
             elif s['state'] == 'done':
                 self.progress = 1
                 self.print_time = "done" 
@@ -398,26 +398,28 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
 
     def send_start(self, filename=None):
-        self.print_state = "printing"
         if filename: filename = basename(filename) # remove path
-        def start(e):
+        def something(e):
             try:
                 if filename:
                     self.sdcard.cmd_M23({'#original': "M23 " + filename})
                 self.sdcard.cmd_M24(None)
+                Clock.schedule_once(self.get_printjob_state, 0)
             except:
                 self.notify.show("Couldn't start Print, sdcard error", level='error')
-        self.reactor.register_async_callback(start)
+        self.reactor.register_async_callback(something)
 
     def send_stop(self):
-        self.print_state = "stopped"
-        self.notify.show("Printing stopped", level="error", delay=4)
-        self.reactor.register_async_callback(self.sdcard.cmd_STOP_PRINT)
+        def something(e):
+            self.sdcard.cmd_STOP_PRINT(None)
+            Clock.schedule_once(self.get_printjob_state, 0)
+        self.reactor.register_async_callback(something)
 
     def send_pause(self):
-        self.print_state = "paused"
-        self.notify.show("Paused", "Print paused", delay=4)
-        self.reactor.register_async_callback(self.sdcard.cmd_M25)
+        def something(e):
+            self.sdcard.cmd_M25(None)
+            Clock.schedule_once(self.get_printjob_state, 0)
+        self.reactor.register_async_callback(something)
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
