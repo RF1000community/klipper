@@ -201,7 +201,24 @@ class ExtTempOffsetSlider(UltraOffsetSlider):
         if x < self.px_min: x = self.px_min
         return x
 """
+class Option(RoundButton):
+    pass
 
+class OptionBox(Widget):
+    def __init__(self, **kwargs):
+        self.selected = None
+        self.options = [[]]
+        super(UltraSlider, self).__init__(**kwargs)
+        Clock.schedule_once(self.init_drawing, 0)
+
+    def init_drawing(self, dt):
+        for o in self.options:
+            o[3] = Option(y=self.y, px=self.get_px_from_val(b[0]), val=b[0], offset=b[1],  s_title=b[2])
+            o[3].bind(on_press=self.on_selected)
+            self.add_widget(o[3])
+
+    def on_selected(self, option):
+        pass
 
 class BtnTriple(Widget):
 

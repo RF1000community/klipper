@@ -13,6 +13,7 @@ from kivy.uix.widget import Widget
 import parameters as p
 from settings import wifi
 
+
 class TimeLabel(Label):
 
     time = StringProperty("00:00")

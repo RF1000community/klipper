@@ -11,12 +11,12 @@ if not TESTING:
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'gl'
 from kivy import kivy_data_dir
-from kivy.lang import Builder
 from kivy.app import App
-from kivy.config import Config
 from kivy.clock import Clock
-from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
+from kivy.lang import Builder
+from kivy.config import Config
 from kivy.base import ExceptionHandler, ExceptionManager
+from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
 from os.path import join, abspath, expanduser, basename, splitext
 from datetime import datetime, timedelta
 from subprocess import Popen
@@ -185,7 +185,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         if tab == self.root.ids.tabs.ids.set_tab:
             self.update_setting()
             self.scheduled_updating = Clock.schedule_interval(self.update_setting, 2)
-            
+
     def update_always(self, *args):
         self.print_state = self.sdcard.get_status(self.reactor.monotonic())['state']
 

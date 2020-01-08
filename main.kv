@@ -5,6 +5,7 @@
 # note that this requires the kgui folder to be in PYTHONPATH or sys.path, unless the 
 # interpreter is started in this folder because the import is happening in kivy/lang/parser.py 
 
+
 FloatLayout:
     StatusBar:
         height: p.status_bar_height
@@ -1111,7 +1112,6 @@ FloatLayout:
     error: True
     message: "--"
     title: "Error - Firmware stopped"
-    auto_dismiss: False
     FloatLayout:
         Label:
             text: root.message
