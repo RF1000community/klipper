@@ -5,6 +5,7 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import os, logging, re
 
+
 class VirtualSD:
     def __init__(self, config):
         self.printer = config.get_printer()
@@ -25,8 +26,8 @@ class VirtualSD:
             self.gcode.register_command(cmd, getattr(self, 'cmd_' + cmd))
         for cmd in ['M28', 'M29', 'M30']:
             self.gcode.register_command(cmd, self.cmd_error)
-        self.state = 'no_printjob' # no-printjob -> printing -> paused -> printing -> done
-        self.initialize_printjob() #                                              |-> stopped
+        self.state = 'no_printjob' # no-printjob ─> printing ─> paused ─> printing ─> done ─> printing ...
+        self.initialize_printjob() #                                          └──> stopped
     def initialize_printjob(self):
         self.file_position = 0
         # print time estimation
@@ -246,11 +247,11 @@ class VirtualSD:
             s_str = re.search(re.compile('(\d+(\s)?seconds|\d+(\s)?s)'),in_)
             dursecs = 0
             if h_str:
-                dursecs += float( max( re.findall('([0-9]*\.?[0-9]+)' , ''.join(h_str.group()) ) ) ) *3600 
+                dursecs += float( max( re.findall('([0-9]*\.?[0-9]+)' , ''.join(h_str.group())))) *3600 
             if m_str:
-                dursecs += float( max( re.findall('([0-9]*\.?[0-9]+)' , ''.join(m_str.group()) ) ) ) *60 
+                dursecs += float( max( re.findall('([0-9]*\.?[0-9]+)' , ''.join(m_str.group())))) *60 
             if s_str:
-                dursecs += float( max( re.findall('([0-9]*\.?[0-9]+)' , ''.join(s_str.group()) ) ) )
+                dursecs += float( max( re.findall('([0-9]*\.?[0-9]+)' , ''.join(s_str.group()))))
             if dursecs == 0:
                 dursecs = float( max( re.findall('([0-9]*\.?[0-9]+)' , in_) ) )
             return dursecs
