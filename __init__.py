@@ -3,11 +3,11 @@
 import os
 from sys import argv
 if '-t' in argv:
-    testing = True
+    TESTING = True
     argv.remove('-t')
 else:
-    testing = False
-if not testing:
+    TESTING = False
+if not TESTING:
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'gl'
 from kivy import kivy_data_dir
@@ -16,7 +16,9 @@ from kivy.app import App
 from kivy.config import Config
 from kivy.clock import Clock
 from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
+from kivy.base import ExceptionHandler, ExceptionManager
 from os.path import join, abspath, expanduser, basename, splitext
+from datetime import datetime, timedelta
 from subprocess import Popen
 import threading
 import logging
@@ -31,40 +33,31 @@ from settings import *
 from status import *
 
 
-#add parent directory to sys.path so main.kv (parser.py) can import from it
-site.addsitedir(p.kgui_dir)
-
-#this needs an absolute path otherwise config will only be loaded when working directory is the parent directory
-if testing: Config.read(join(p.kgui_dir, "config-test.ini"))
-else:       Config.read(join(p.kgui_dir, "config.ini"))
-
-#load a custom style.kv with changes to filechooser and more
-Builder.unload_file(join(kivy_data_dir, "style.kv"))
-Builder.load_file(join(p.kgui_dir, "style.kv"))
-
-#add threading.thread => inherits start() method to run() in new thread
+# inherit from threading.thread => inherits start() method to run() in new thread
 class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
-    #Property for controlling the state as shown in the statusbar.
+    # Property for controlling the state as shown in the statusbar.
     state = OptionProperty("initializing", options=[
         # Every string set has to be in this list
-        "busy",
-        "ready",
-        "printing",
-        "pausing",
-        "paused",
-        "print finished",
-        "error",
-        "error disconnected",
         "initializing",
+        "ready",
+        "error",
+        "error disconnected"
+        ])
+    print_state = OptionProperty("no_printjob", options=[
+        "no_printjob",
+        "printing",
+        "paused",
+        "stopped",
+        "done",
         ])
     homed = DictProperty({}) #updated by handle_homed event handler
-    temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ....} updated by scheduled update_home -> get_temp
+    temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
-    print_title = StringProperty() #updated by on_state watching state chages to 'printing'
+    print_title = StringProperty() #updated by get_printjob_state watching for state chages to 'printing'
     print_time = StringProperty() #updated by handle_print_time_calc
-    progress = NumericProperty() #updated by scheduled update_home
-    #self.progress = self.sdcard.get_status(e)['progress']
+    print_done_time = StringProperty()
+    progress = NumericProperty(0) #updated by scheduled update_home
     pos = ListProperty([0,0,0]) #updated by scheduled update_home
     #tuning  #updated by upate_printing
     speed = NumericProperty(100)
@@ -77,46 +70,47 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     default_pressure_advance = NumericProperty(0)
     default_acceleration = NumericProperty(2000)
 
-    def __init__(self, config = None, **kwargs): #runs in klippy thread
+    def __init__(self, config = None, **kwargs):
         logging.info("Kivy app initializing...")
         self.network_manager = NetworkManager()
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
-        if not testing:
+        if not TESTING:
             self.kgui_config = config
             self.printer = config.get_printer()
             self.reactor = self.printer.get_reactor()
             self.klipper_config_manager = self.printer.objects['configfile']
             self.klipper_config = self.klipper_config_manager.read_main_config()
-
             #read config
-            p.invert_z_controls = self.kgui_config.get('invert_z_controls', False)
+            self.invert_z_controls = self.kgui_config.getboolean('invert_z_controls', False)
+            self.xy_homing_controls = self.kgui_config.getboolean('xy_homing_controls', True)
             stepper_config = {'x': self.klipper_config.getsection('stepper_x'),
                               'y': self.klipper_config.getsection('stepper_y'),
                               'z': self.klipper_config.getsection('stepper_z')}
             self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
             self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}#maybe use position_min, position_max = rail.get_range()
-            #count how many extruders exist before drawing homescreen
-            for i in range(1, 10):
-                try: klipper_config.getsection('extruder' + str(i))
-                except: self.extruder_count = i; break
+            self.filament_diameter = self.klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
             #check whether the right sdcard path is configured
             configured_sdpath = expanduser(self.klipper_config.getsection("virtual_sdcard").get("path", None))
             if abspath(configured_sdpath) != abspath(p.sdcard_path):
                 logging.warning("virtual_sdcard path misconfigured: is {} and not {}".format(configured_sdpath, p.sdcard_path))
+            #count how many extruders exist before drawing homescreen
+            for i in range(1, 10):
+                try: klipper_config.getsection('extruder{i}'.format(**locals()))
+                except: self.extruder_count = i; break
             #register event handlers
             self.printer.register_event_handler("klippy:connect", self.handle_connect) #printer_objects are available
             self.printer.register_event_handler("klippy:ready", self.handle_ready) #connect handlers have run
             self.printer.register_event_handler("klippy:disconnect", self.handle_disconnect)
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
-            self.printer.register_event_handler("klippy:exception", self.handle_klippy_exception)
+            self.printer.register_event_handler("klippy:exception", self.handle_exception)
             self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
-            self.printer.register_event_handler("toolhead:sync_print_time", self.handle_calc_print_time)
         else:
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
-            self.extruder_count = 3
+            self.filament_diameter = 1.75
+            self.extruders = [None, None, None]
         super(mainApp, self).__init__(**kwargs)
 
     def handle_connect(self): #runs in klippy thread
@@ -125,15 +119,15 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.sdcard = self.printer.lookup_object('virtual_sdcard', None)
         self.toolhead = self.printer.lookup_object('toolhead')
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
-        self.extruders = []
-        for i in range(0,10):
-		    ext = self.printer.lookup_object('extruder{}'.format('' if i==0 else i), None)
-		    if ext: self.extruders.append(ext)
         self.heater_manager = self.printer.lookup_object('heater', None)
         self.heaters = {}
-        if 'heater_bed' in self.heater_manager.heaters: self.heaters['B'] = self.heater_manager.heaters['heater_bed']
+        if 'heater_bed' in self.heater_manager.heaters: 
+            self.heaters['B'] = self.heater_manager.heaters['heater_bed']
         for i in range(self.extruder_count):
-            self.heaters['T'+str(i)] = self.heater_manager.heaters['extruder' + '' if i==0 else i]
+            self.heaters['T{}'.format(i)] = self.heater_manager.heaters['extruder{}'.format('' if i==0 else i)]
+        self.extruders = []
+        for i in range(self.extruder_count):
+            self.extruders.append(self.printer.lookup_object('extruder{}'.format('' if i==0 else i)))
 
         self.printer_objects_available = True
         Clock.schedule_once(self.bind_updating, 0)
@@ -143,29 +137,23 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def handle_ready(self):
         self.state = "ready"
 
+    def handle_shutdown(self): # is called when system shuts down
+        logging.info("handled shutdown ")
+        self.stop()
+
+    def handle_exception(self, message):
+        self.state = "error"
+        ErrorPopup(message = message).open()
+
     def handle_disconnect(self):
         self.state = "error disconnected"
         logging.info("run handle_disconnect -> shutdown gui")
-        self.handle_shutdown()
-
-    def handle_shutdown(self): # is called when system shuts down
-        logging.info("handled shutdown ")
         self.stop()
 
     def handle_homed(self, homing, rails):
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
-    def handle_calc_print_time(self, curtime, est_print_time, print_time):
-        hours = int(est_print_time//3600)
-        minutes = int(est_print_time%3600)/60
-        self.print_time = "{}:{:02} remaining".format(hours, minutes)
-        self.progress = print_time/float(est_print_time)
-    
-    def handle_klippy_exception(self, exc):
-        self.state = "error"
-        ErrorPopup(message=exc).open()
-        
 ### KLIPPER THREAD ^
 ########################################################################################
 ### KGUI    THREAD v
@@ -207,46 +195,70 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.scheduled_updating = Clock.schedule_interval(self.update_setting, 2)
             
     def update_always(self, *args):
-        if not self.sdcard:
-            logging.warning("sdcard not found")
-            return
-        s = 'ready'
-        if 'Printer is ready' != self.printer.get_state_message():
-		    s = 'initializing'
-        if self.gcode.is_processing_data:
-            s = 'busy'
-        if self.sdcard.current_file:
-            if self.sdcard.must_pause_work:
-                s = 'pausing' if self.sdcard.work_timer else 'paused'
-            elif self.sdcard.current_file and self.sdcard.work_timer:
-                s = 'printing'
-        self.state = s
+        self.print_state = self.sdcard.get_status(self.reactor.monotonic())['state']
 
     def update_home(self, *args):
-        self.get_pos()
-        self.get_temp()
+        self.get_printjob_state()
         self.get_homing_state()
+        self.get_temp()
+        self.get_pos()
 
     def update_printing(self, *args):
         self.get_pressure_advance()
+        self.get_printjob_state()
         self.get_acceleration()
         self.get_z_adjust()
         self.get_speed()
         self.get_flow()
-        self.get_fan()
         self.get_temp()
+        self.get_fan()
 
     def update_setting(self, *args):
-        self.get_config('printer', 'max_accel', 'default_acceleration', 'int')
         self.get_config('extruder', 'pressure_advance', 'default_pressure_advance')
+        self.get_config('printer', 'max_accel', 'default_acceleration', 'int')
 
+    def get_printjob_state(self):
 
-    def on_state(self, instance, state):
-        if state == 'printing' or state == 'busy':
-            file = self.sdcard.current_file
-            if file: 
-                self.print_title = splitext(basename(file.name))[0] #remove file extension
-                self.notify.show("Started printing", "Started printing {}".format(basename(file.name)))
+        def format_time(seconds):
+            minutes = int((seconds % 3600) // 60)
+            hours  =  int(seconds // 3600)
+            if hours:
+                return "{hours} hours, {minutes} minutes".format(**locals())
+            else:
+                return "{minutes} minutes".format(**locals())
+
+        s = self.sdcard.get_status(self.reactor.monotonic())
+        if s['state'] != self.print_state: # state change
+            self.print_state = s['state']
+            if s['state'] == 'printing': #setting title only works after pressing stop 
+                self.print_title = splitext(basename(self.sdcard.file.name))[0] #remove file extension only
+                self.notify.show("Started printing", "Started printing {}".format(basename(file.name)), delay=4)
+            elif s['state'] == 'done':
+                self.progress = 1
+                self.print_time = "done" 
+                self.print_done_time = "took " + format_time(self.sdcard.get_printed_time(self.reactor.monotonic()))
+            elif s['state'] == 'stopped':
+                self.prin_time = "stopped"
+                self.print_done_time = ""
+
+        if s['state'] == 'printing'\
+        or s['state'] == 'paused': # we need a print time prediction
+            if s['progress'] is None: # no prediction could be made yet
+                self.progress = 0
+                self.print_time = ""
+                self.print_done_time = ""
+            else:
+                remaining = timedelta(seconds = s['estimated_remaining_time'])
+                done = datetime.now() + remaining
+                tomorrow = datetime.now() + timedelta(days=1)
+                self.progress = s['progress']
+                self.print_time = format_time(remaining.total_seconds()) + " remaining"
+                if done.day == datetime.now().day:
+                    self.print_done_time = done.strftime("ca. %-H:%M")
+                elif done.day == tomorrow.day:
+                    self.print_done_time = done.strftime("ca. tomorrow %-H:%M")
+                else:
+                    self.print_done_time = done.strftime("ca. %a %-H:%M")
             
 ##################################################################
 ### TUNING
@@ -316,7 +328,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def get_config(self, section, option, property_name, ty=None):
         logging.info("wrote {} from section {} to {}".format(option, section, property_name))
-        if testing:
+        if TESTING:
             setattr(self, property_name, 77)
             return
         def read_config(e):
@@ -365,7 +377,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
 
     def send_motors_off(self):
-        reactor.register_async_callback(lambda e: self.gcode.run_script_from_command("M18"))
+        self.reactor.register_async_callback(lambda e: self.gcode.run_script_from_command("M18"))
 
     def get_pos(self):
         def read_pos(e):
@@ -393,35 +405,27 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
 
-    def send_start(self, file=None):
-        if file:
-            filename = basename(file) # remove path
-            self.print_title = splitext(filename)[0] #remove file extension
-            self.state = "printing"
-            params = {'#original': "M23 " + filename}
+    def send_start(self, filename=None):
+        self.print_state = "printing"
+        if filename: filename = basename(filename) # remove path
         def start(e):
             try:
-                if file: self.sdcard.cmd_M23(params)
+                if filename:
+                    self.sdcard.cmd_M23({'#original': "M23 " + filename})
                 self.sdcard.cmd_M24(None)
             except:
-                self.notify.show("Couldn't start Print, sdcard busy")
+                self.notify.show("Couldn't start Print, sdcard error", level='error')
         self.reactor.register_async_callback(start)
 
     def send_stop(self):
-        self.state = "print finished"
-        self.notify.show("Printing stopped", level="error")
-        self.reactor.register_async_callback(self.sdcard.cmd_M25)
-    
-    def send_play(self):
-        self.state = "printing"
-        self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1")
-        self.reactor.register_async_callback(self.sdcard.cmd_M24)#works because cmd_M24 takes one argument but doesnt read it 
+        self.print_state = "stopped"
+        self.notify.show("Printing stopped", level="error", delay=4)
+        self.reactor.register_async_callback(self.sdcard.cmd_STOP_PRINT)
 
     def send_pause(self):
-        self.state = "paused"
+        self.print_state = "paused"
         self.notify.show("Paused", "Print paused", delay=4)
         self.reactor.register_async_callback(self.sdcard.cmd_M25)
-        self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
@@ -431,9 +435,55 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         """Quit and restart klipper and GUI"""
         logging.info("attempting a firmware restart")
         self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
+        self.stop()
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
         Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
+
+########################################################################################
+### KLIPPER THREAD v
+
+class ExceptionHandlerWithPopup(ExceptionHandler):
+    def handle_exception(self, exception):
+        App.get_running_app().handle_exception(repr(exception))
+        logging.exception(exception)
+        return ExceptionManager.PASS
+
+def set_kivy_config():
+    # This needs an absolute path otherwise config will only be loaded when
+    # working directory is the parent directory
+    if TESTING:
+        Config.read(join(p.kgui_dir, "config-test.ini"))
+    else:
+        Config.read(join(p.kgui_dir, "config.ini"))
+        # Read the display rotation value
+        try:
+            with open("/boot/config.txt", "r") as file_:
+                lines = file_.read().splitlines()
+        except IOError:
+            # Assume 90 degree rotation (config default) in case
+            # /boot/config.txt isn't found
+            rotation = 1
+        else:
+            rotation_string = [i for i in lines if i.startswith("display_hdmi_rotate")][0]
+            # The number should always be at index 20
+            rotation = int(rotation_string[20])
+        # rotation should only be 1 for 90deg or 3 for 270deg
+        # Set the input config option to rotate the touchinput explicitly for kivy
+        if rotation == 3:
+            Config.set("input", "device_%(name)s",
+                "probesysfs,provider=mtdev,param=rotation=270,param=invert_y=1")
+
+    #load a custom style.kv with changes to filechooser and more
+    Builder.unload_file(join(kivy_data_dir, "style.kv"))
+    Builder.load_file(join(p.kgui_dir, "style.kv"))
+
+# Catch KGUI exceptions and display popup
+ExceptionManager.add_handler(ExceptionHandlerWithPopup())
+# Add parent directory to sys.path so main.kv (parser.py) can import from it
+site.addsitedir(p.kgui_dir)
+# Read custom Kivy config file, set rotation and load custom style.kv
+set_kivy_config()
 
 #Entry point, order of execution: __init__()  run()  main.kv  setup_after_run()  handle_connect()  handle_ready()
 def load_config(config):

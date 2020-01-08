@@ -32,7 +32,7 @@ notification_text_padding = 20
 btn_spacing = padding + btn_height
 padding_hint = padding/screen_width
 h_padding = padding*disp_vertical_stretch
-btn_temp_width = 150
+btn_temp_width = 154
 btn_width = screen_width - 3*h_padding - btn_temp_width
 
 background = [0.065,0.065,0.065,1]
@@ -59,8 +59,6 @@ notify_warning = (0.44,0.31,0.11,0.7)
 notify_error = (0.6,0.1,0.1,0.8)
 notify_success = (0.1,0.4,0.2,0.8)
 
-#config values
-invert_z_controls = False
 
 """
 Kivy Guide

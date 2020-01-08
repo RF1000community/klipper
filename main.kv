@@ -18,7 +18,7 @@ FloatLayout:
 <StatusBar@BoxLayout>:
     canvas:
         Color:
-            rgba: p.red if 'error' in app.state else p.accent
+            rgba: p.red if 'error' in app.state else p.accent if app.state == 'ready' else p.background
         Rectangle:
             size: self.size
             pos: self.pos
@@ -81,7 +81,7 @@ FloatLayout:
             pos_hint: {'x':0,'y':0}
             size_hint: 1,1
         ProgressBar:
-            enabled: app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' or app.state == 'print finished'
+            enabled: app.print_state != 'no_printjob'
             id: progress_bar
             max: 1
             value: app.progress
@@ -89,7 +89,7 @@ FloatLayout:
             size: p.screen_width-2*p.h_padding+2, p.progress_bar_height
             pos: p.h_padding-1, p.tab_height + p.padding
         Label:
-            text: app.print_time if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else ""
+            text: app.print_time
             size_hint: None, None
             size: p.screen_width-2*p.padding, p.normal_font
             text_size: self.size
@@ -97,6 +97,17 @@ FloatLayout:
             x: p.h_padding - 2
             top: progress_bar.y - 8
             halign: 'left'
+            valign: 'bottom'
+        Label:
+            text: app.print_done_time
+            size_hint: None, None
+            size: p.screen_width-2*p.padding, p.normal_font
+            text_size: self.size
+            font_size: p.normal_font
+            x: p.h_padding - 2
+            top: progress_bar.y - 8
+            color: p.btn_disabled
+            halign: 'right'
             valign: 'bottom'
         Btn_Stop:
             on_release: app.send_stop()
@@ -110,14 +121,14 @@ FloatLayout:
             pos: btn_stop.pos
         Btn_Play:
             on_release:
-                if self.paused: app.send_play(); self.paused=False;
+                if self.paused: app.send_start(); self.paused=False;
                 else:           app.send_pause(); self.paused=True;
             size: btn_stop.size
             y: btn_stop.y
             right: btn_stop.x
         Label:
             id: l_filename
-            text: app.print_title if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else ""
+            text: app.print_title
             size_hint: None, None
             size: 280,134
             text_size: self.size
@@ -128,7 +139,7 @@ FloatLayout:
             halign: 'left'
             valign: 'middle'
         ScreenManager:
-            current: 'printingscreen' if app.state == 'printing' else 'homescreen'
+            current: 'printingscreen' if app.print_state == 'printing' else 'homescreen'
             transition: screenmanager.NoTransition()
             id: hs_manager
             size_hint: None, None
@@ -180,7 +191,7 @@ FloatLayout:
                 #:set bx2 +19
                 #:set bh 40
                 #:set bo 16
-                #:set icon_center 27
+                #:set icon_center 26
                 Line:
                     width: p.icon_radius
                     points: self.x + icon_center - bw/2, self.center_y - p.btn_height/2 + p.icon_radius,   self.x + icon_center + bw/2, self.center_y - p.btn_height/2 + p.icon_radius
@@ -247,7 +258,7 @@ FloatLayout:
             center_y: z_adjust.center_y + p.btn_spacing
         Btn_Temp:
             id: acceleration
-            on_release: Factory.AccPopup(write=False, val=app.acceleration).open()
+            on_release: Factory.AccPopup(val=app.acceleration).open()
             large_value: "{:5.0f}mm/s²".format(app.acceleration)
             small_value: "Acceleration"
             right: p.screen_width - p.h_padding
@@ -311,19 +322,19 @@ FloatLayout:
         Btn_Home:
             axis_id: 'X'
             size: p.btn_height, p.btn_height
-            x: xy_field.right
+            x: xy_field.right if app.xy_homing_controls else p.mars
             y: xy_field.y
         Btn_Home:
             axis_id: 'Y'
             size: p.btn_height, p.btn_height
-            x: xy_field.right
+            x: xy_field.right if app.xy_homing_controls else p.mars
             y: xy_field.y + p.btn_height
         RoundButton:
             id: btn_off
             on_release: app.send_motors_off()
             enabled: app.printer_objects_available
             size: p.btn_height, p.btn_height
-            x: xy_field.right
+            x: xy_field.right if app.xy_homing_controls else p.mars
             top: xy_field.top
             Label:
                 text: "Off"
@@ -368,7 +379,7 @@ FloatLayout:
             pos: self.pos
 
 <Btn_Stop@RoundButton>:
-    enabled: True if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else False
+    enabled: app.print_state == 'printing' or app.print_state == 'paused'
     canvas.before:
         Color:
             rgba: p.red if self.enabled else (0,0,0,0)
@@ -378,25 +389,24 @@ FloatLayout:
             radius: (p.icon_radius,)
 
 <Btn_Reprint@RoundButton>:
-    enabled: app.state == 'print finished'
+    enabled: app.print_state == 'done' or app.print_state == 'stopped'
     canvas.before:
         Color:
-            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
+            rgba: p.nozzle if self.enabled else (0,0,0,0)
         Line:
-            #:set rw 5.5
-            #:set r_arr 13.5
+            #:set rw p.progress_bar_height/2 -0.3
+            #:set r_arr 17
+            #:set r_rad 23
             width: rw
-            circle: (self.center_x, self.center_y, p.btn_height/2 - rw, -5, 270)
-        Line:
-            width: p.icon_radius - 0.7
-            points: (self.center_x - r_arr, self.center_y + p.btn_height/2 - rw,    self.center_x, self.center_y + p.btn_height/2 - rw + r_arr,    self.center_x, self.center_y + p.btn_height/2 - rw - r_arr)
-            close: True
+            ellipse: (self.center_x - r_rad*p.disp_vertical_stretch, self.center_y - r_rad + 1, r_rad*2*p.disp_vertical_stretch, r_rad*2, 0, 270)
+        Triangle:
+            points: (self.center_x - r_arr, self.center_y + r_rad,    self.center_x, self.center_y + r_rad + r_arr,    self.center_x, self.center_y + r_rad - r_arr)
 
 <Btn_Play@RoundButton>:
     #:set pw (p.btn_height-2*p.icon_radius)/2
     #:set ph pw*1.155
-    paused: False if app.state == 'printing' else True
-    enabled: True if app.state == 'printing' or app.state == 'paused' or app.state == 'pausing' else False
+    paused: app.print_state == 'paused'
+    enabled: app.print_state == 'printing' or app.print_state == 'paused'
     canvas.before:
         Color:
             rgba: 1,1,1,1 if self.enabled and not self.paused else 0
@@ -441,7 +451,7 @@ FloatLayout:
     #filament_color: (1, 0, 0)
     #filament_amount: 0.4
     title_upper: 'Unload'
-    title_lower: '320g PETG'
+    title_lower: ""
     w1: 0
     w2: 0
     w3: 0
@@ -492,7 +502,7 @@ FloatLayout:
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
         enabled: True
-        on_release: Factory.ErrorPopup(message="hjklhjlh").open()
+        on_release: app.state = 'exception'
         canvas:
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
@@ -558,7 +568,7 @@ FloatLayout:
     #:set t 9.5
     #:set u 19 #Triangle has this size x2
     BaseButton:
-        on_press: app.send_z_up() if p.invert_z_controls else app.send_z_down()
+        on_press: app.send_z_up() if app.invert_z_controls else app.send_z_down()
         on_release: app.send_z_stop()
         enabled: app.homed['z']
         size: root.width, root.h1
@@ -586,7 +596,7 @@ FloatLayout:
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: app.send_z_down() if p.invert_z_controls else app.send_z_up()
+        on_press: app.send_z_down() if app.invert_z_controls else app.send_z_up()
         on_release: app.send_z_stop()
         enabled: app.homed['z']
         size: root.width, root.h3
@@ -1099,13 +1109,18 @@ FloatLayout:
 <ErrorPopup>:
     size_hint: 0.8, 0.5
     error: True
-    title: "Error - Firmware crashed"
+    message: "--"
+    title: "Error - Firmware stopped"
     auto_dismiss: False
     FloatLayout:
         Label:
-            size_hint: 1, 1
             text: root.message
-            pos_hint: {'x':0, 'y':0}
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 5
+            size_hint: 0.9, 0.5
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.1}
+            text_size: self.size
             font_size: p.large_font
             color: p.light_gray
         Btn_P_Cancel:
@@ -1113,14 +1128,15 @@ FloatLayout:
             title: "Restart Klipper"
             width: root.width
             pos: root.pos
-            on_release: app.send_klipper_restart()
+            on_release: app.restart_klipper()
 
 <XyField>:
     mm: [0, 0, 0]
     px: [0, 0]
     canvas.after:
+        # Outline with xy homing buttons
         Color:
-            rgba: p.btn_outline
+            rgba: p.btn_outline if app.xy_homing_controls else (0,0,0,0)
         Line:
             width: 1
             rounded_rectangle: (self.x, self.y, self.width + p.btn_height, self.height, p.radius)
@@ -1130,6 +1146,13 @@ FloatLayout:
             points: self.right + 10, self.y + 2*p.btn_height,   self.right + p.btn_height -10, self.y + 2*p.btn_height
         Line:
             points: self.right + 10, self.y + p.btn_height,   self.right + p.btn_height -10, self.y + p.btn_height
+        # Outline without xy homing buttons
+        Color:
+            rgba: (0,0,0,0) if app.xy_homing_controls else p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+
         Color:
             rgba: p.btn_outline if self.pressed else (0,0,0,0)
         Line:

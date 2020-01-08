@@ -137,7 +137,7 @@ class Notifications(FloatLayout):
                 size_hint = (None, None),
                 font_size = p.normal_font,
                 bold = True,)
-        title.size = (self.width, title.font_size)
+        title.size = (self.width - 2*p.notification_text_padding, title.font_size)
         title.text_size = title.size
         title.x = self.x + p.notification_text_padding
         title.top = self.top - p.notification_text_padding
