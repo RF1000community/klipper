@@ -61,6 +61,14 @@ class GCodeParser:
         self.toolhead = None
         self.heaters = None
         self.axis2pos = {'X': 0, 'Y': 1, 'Z': 2, 'E': 3}
+    def is_traditional_gcode(self, cmd):
+        # A "traditional" g-code command is a letter and followed by a number
+        try:
+            cmd = cmd.upper().split()[0]
+            val = float(cmd[1:])
+            return cmd[0].isupper() and cmd[1].isdigit()
+        except:
+            return False
     def register_command(self, cmd, func, when_not_ready=False, desc=None):
         if func is None:
             if cmd in self.ready_gcode_handlers:
@@ -71,7 +79,7 @@ class GCodeParser:
         if cmd in self.ready_gcode_handlers:
             raise self.printer.config_error(
                 "gcode command %s already registered" % (cmd,))
-        if not (len(cmd) >= 2 and not cmd[0].isupper() and cmd[1].isdigit()):
+        if not self.is_traditional_gcode(cmd):
             origfunc = func
             func = lambda params: origfunc(self._get_extended_params(params))
         self.ready_gcode_handlers[cmd] = func
@@ -369,14 +377,13 @@ class GCodeParser:
                             maxval=maxval, above=above, below=below)
     extended_r = re.compile(
         r'^\s*(?:N[0-9]+\s*)?'
-        r'(?P<cmd>[a-zA-Z_][a-zA-Z_]+)(?:\s+|$)'
+        r'(?P<cmd>[a-zA-Z_][a-zA-Z0-9_]+)(?:\s+|$)'
         r'(?P<args>[^#*;]*?)'
         r'\s*(?:[#*;].*)?$')
     def _get_extended_params(self, params):
         m = self.extended_r.match(params['#original'])
         if m is None:
-            # Not an "extended" command
-            return params
+            raise self.error("Malformed command '%s'" % (params['#original'],))
         eargs = m.group('args')
         try:
             eparams = [earg.split('=', 1) for earg in shlex.split(eargs)]
@@ -396,39 +403,14 @@ class GCodeParser:
         if not out:
             return "T:0"
         return " ".join(out)
-    def bg_temp(self, heater):
+    def wait_for_temperature(self, heater):
+        # Helper to wait on heater.check_busy() and report M105 temperatures
         if self.is_fileinput:
             return
         eventtime = self.reactor.monotonic()
         while self.is_printer_ready and heater.check_busy(eventtime):
             self.respond(self._get_temp(eventtime))
             eventtime = self.reactor.pause(eventtime + 1.)
-    def _set_temp(self, params, is_bed=False, wait=False):
-        temp = self.get_float('S', params, 0.)
-        heater = None
-        if is_bed:
-            heater = self.printer.lookup_object('heater_bed', None)
-        elif 'T' in params:
-            index = self.get_int('T', params, minval=0)
-            section = 'extruder'
-            if index:
-                section = 'extruder%d' % (index,)
-            extruder = self.printer.lookup_object(section, None)
-            if extruder is not None:
-                heater = extruder.get_heater()
-        else:
-            heater = self.toolhead.get_extruder().get_heater()
-        if heater is None:
-            if temp > 0.:
-                self.respond_error("Heater not configured")
-            return
-        print_time = self.toolhead.get_last_move_time()
-        try:
-            heater.set_temp(print_time, temp)
-        except heater.error as e:
-            raise self.error(str(e))
-        if wait and temp:
-            self.bg_temp(heater)
     # G-Code special command handlers
     def cmd_default(self, params):
         if not self.is_printer_ready:
@@ -444,6 +426,9 @@ class GCodeParser:
             if handler is not None:
                 handler(params)
                 return
+        elif cmd in ['M140', 'M104'] and not self.get_float('S', params, 0.):
+            # Don't warn about requests to turn off heaters when not present
+            return
         elif cmd == 'M107' or (cmd == 'M106' and (
                 not self.get_float('S', params, 1.) or self.is_fileinput)):
             # Don't warn about requests to turn off fan when fan not present
@@ -463,8 +448,7 @@ class GCodeParser:
         'G1', 'G4', 'G28', 'M400',
         'G20', 'M82', 'M83', 'G90', 'G91', 'G92', 'M114', 'M220', 'M221',
         'SET_GCODE_OFFSET', 'SAVE_GCODE_STATE', 'RESTORE_GCODE_STATE',
-        'M105', 'M104', 'M109', 'M140', 'M190',
-        'M112', 'M115', 'IGNORE', 'GET_POSITION',
+        'M105', 'M112', 'M115', 'IGNORE', 'GET_POSITION',
         'RESTART', 'FIRMWARE_RESTART', 'ECHO', 'STATUS', 'HELP']
     # G-Code movement commands
     cmd_G1_aliases = ['G0']
@@ -619,7 +603,7 @@ class GCodeParser:
             speed = self.get_float('MOVE_SPEED', params, self.speed, above=0.)
             self.last_position[:3] = state['last_position'][:3]
             self.move_with_transform(self.last_position, speed)
-    # G-Code temperature commands
+    # G-Code miscellaneous commands
     cmd_M105_when_not_ready = True
     def cmd_M105(self, params):
         # Get Extruder Temperature
@@ -628,19 +612,6 @@ class GCodeParser:
             self.ack(msg)
         else:
             self.respond(msg)
-    def cmd_M104(self, params):
-        # Set Extruder Temperature
-        self._set_temp(params)
-    def cmd_M109(self, params):
-        # Set Extruder Temperature and Wait
-        self._set_temp(params, wait=True)
-    def cmd_M140(self, params):
-        # Set Bed Temperature
-        self._set_temp(params, is_bed=True)
-    def cmd_M190(self, params):
-        # Set Bed Temperature and Wait
-        self._set_temp(params, is_bed=True, wait=True)
-    # G-Code miscellaneous commands
     cmd_M112_when_not_ready = True
     def cmd_M112(self, params):
         # Emergency Stop
