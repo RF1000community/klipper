@@ -52,7 +52,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     homed = DictProperty({}) #updated by handle_homed event handler
     temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
-    print_title = StringProperty() #updated by get_printjob_state watching for state chages to 'printing'
+    queued_files = ListProperty()
     print_time = StringProperty() #updated by handle_print_time_calc
     print_done_time = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
@@ -220,17 +220,21 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 return "{minutes} minutes".format(**locals())
 
         s = self.sdcard.get_status(self.reactor.monotonic())
+        if len(s['queued_files']) > max(len(self.queued_files), 1): # added file to q
+            self.notify.show("Added Printjob", "Added {basename(s['queued_files'][0])} to print Queue".format(**locals()))
+
+        self.queued_files = s['queued_files']
+
         if s['state'] != self.print_state: # state change
             self.print_state = s['state']
-            if s['state'] == 'printing': #setting title only works after pressing stop 
-                self.print_title = splitext(basename(self.sdcard.file.name))[0]
-                self.notify.show("Started printing", "Started printing {}".format(basename(self.sdcard.file.name)), delay=4)
+            if s['state'] == 'printing':
+                self.notify.show("Started printing", "Started printing {}".format(basename(s['queued_files'][0])), delay=4)
             elif s['state'] == 'done':
                 self.progress = 1
                 self.print_time = "done" 
                 self.print_done_time = "took " + format_time(self.sdcard.get_printed_time(self.reactor.monotonic()))
             elif s['state'] == 'stopped':
-                self.prin_time = "stopped"
+                self.print_time = "stopped"
                 self.print_done_time = ""
 
         if s['state'] == 'printing'\
@@ -397,29 +401,38 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
 
-    def send_start(self, filename=None):
-        if filename: filename = basename(filename) # remove path
-        def something(e):
-            try:
-                if filename:
-                    self.sdcard.cmd_M23({'#original': "M23 " + filename})
-                self.sdcard.cmd_M24(None)
+    def send_start(self, filepath=None):
+        if filepath is None:
+            def start_reprint(e):
+                if self.sdcard.current_file: # reprint the last file
+                    filepath = self.sdcard.current_file.name
+                else: return
+                self.sdcard.add_printjob(filepath)
                 Clock.schedule_once(self.get_printjob_state, 0)
-            except:
-                self.notify.show("Couldn't start Print, sdcard error", level='error')
-        self.reactor.register_async_callback(something)
+            self.reactor.register_async_callback(start_reprint)
+        else:
+            def start_print(e):
+                self.sdcard.add_printjob(filepath)
+                Clock.schedule_once(self.get_printjob_state, 0)
+            self.reactor.register_async_callback(start_print)
+
+    def send_resume(self):
+        def resume_print(e):
+            self.sdcard.resume_printjob()
+            Clock.schedule_once(self.get_printjob_state, 0)
+        self.reactor.register_async_callback(resume_print)
 
     def send_stop(self):
-        def something(e):
-            self.sdcard.cmd_STOP_PRINT(None)
+        def stop_print(e):
+            self.sdcard.stop_printjob()
             Clock.schedule_once(self.get_printjob_state, 0)
-        self.reactor.register_async_callback(something)
+        self.reactor.register_async_callback(stop_print)
 
     def send_pause(self):
-        def something(e):
-            self.sdcard.cmd_M25(None)
+        def pause_print(e):
+            self.sdcard.pause_printjob()
             Clock.schedule_once(self.get_printjob_state, 0)
-        self.reactor.register_async_callback(something)
+        self.reactor.register_async_callback(pause_print)
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
@@ -437,7 +450,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 ########################################################################################
 ### KLIPPER THREAD v
 
-class ExceptionHandlerWithPopup(ExceptionHandler):
+class PopupExceptionHandler(ExceptionHandler):
     def handle_exception(self, exception):
         App.get_running_app().handle_exception(repr(exception))
         logging.exception(exception)
@@ -473,7 +486,7 @@ def set_kivy_config():
     Builder.load_file(join(p.kgui_dir, "style.kv"))
 
 # Catch KGUI exceptions and display popup
-ExceptionManager.add_handler(ExceptionHandlerWithPopup())
+ExceptionManager.add_handler(PopupExceptionHandler())
 # Add parent directory to sys.path so main.kv (parser.py) can import from it
 site.addsitedir(p.kgui_dir)
 # Read custom Kivy config file, set rotation and load custom style.kv
