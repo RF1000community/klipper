@@ -6,9 +6,10 @@
 import os, logging, re
 
 
-class VirtualSD:
+class VirtualSD(object):
     def __init__(self, config):
         self.printer = config.get_printer()
+        self.printer.register_event_handler("klippy:ready", self.handle_ready)
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
         self.printer.register_event_handler("gcode:read_metadata", self.handle_gcode_metadata)
         # sdcard state
@@ -19,151 +20,95 @@ class VirtualSD:
         self.must_pause_work = False
         self.cmd_from_sd = False
         self.work_timer = None
-        # Register commands
         self.gcode = self.printer.lookup_object('gcode')
-        self.gcode.register_command('M21', None)
-        for cmd in ['M20', 'M21', 'M23', 'M24', 'M25', 'M26', 'M27', 'STOP_PRINT']:
-            self.gcode.register_command(cmd, getattr(self, 'cmd_' + cmd))
-        for cmd in ['M28', 'M29', 'M30']:
-            self.gcode.register_command(cmd, self.cmd_error)
-        self.state = 'no_printjob' # no-printjob -> printing -> paused -> printing -> done -> printing ...
-        self.initialize_printjob() #                                              |-> stopped
-    def initialize_printjob(self):
+        self.current_file = None # python file object
+        self.queued_files = [] # as str, first element is current filepath
+        self.state = 'no_printjob' # no_printjob -> printing -> paused -> printing -> done -> printing
+        self.toolhead = None #                                                  |-> stopped
         self.file_position = 0
-        # print time estimation
-        self.start_stop_times = [] # [[start1, pause1], [resume, pause2]....]
-        self.slicer_elapsed_times = [] # [[time actually printed, ELAPSED_TIME shown by slicer], ...]
+        self.slicer_elapsed_times = [] # [[time actually printed, elapsed time put by slicer], ...]
         self.slicer_estimated_time = None
-    def initialize_file(self, filename):
-        try:
-            f = open(filename, 'rb')
-            f.seek(0, os.SEEK_END)
-            self.file_size = f.tell()
-            f.seek(0)
-            self.file = f
-        except:
-            logging.exception("virtual_sdcard file open")
-            raise self.gcode.error("Unable to open file")
-    def handle_shutdown(self):
-        if self.work_timer:
-            self.must_pause_work = True
-            try:
-                readpos = max(self.file_position - 1024, 0)
-                readcount = self.file_position - readpos
-                self.file.seek(readpos)
-                data = self.file.read(readcount + 128)
-            except:
-                logging.exception("virtual_sdcard shutdown read")
-                return
-            logging.info("Virtual sdcard (%d): %s\nUpcoming (%d): %s",
-                         readpos, repr(data[:readcount]),
-                         self.file_position, repr(data[readcount:]))
-    def stats(self, eventtime):
-        if self.work_timer:
-            return True, "sd_pos=%d" % (self.file_position,)
-        return False, ""
-    def get_file_list(self):
-        dname = self.sdcard_dirname
-        try:
-            filenames = os.listdir(self.sdcard_dirname)
-            return [(fname, os.path.getsize(os.path.join(dname, fname)))
-                    for fname in sorted(filenames, key=str.lower)
-                    if not fname.startswith('.')
-                    and os.path.isfile((os.path.join(dname, fname)))]
-        except:
-            logging.exception("virtual_sdcard get_file_list")
-            raise self.gcode.error("Unable to get file list")
-    def is_active(self):
-        return self.work_timer is not None
-    def do_pause(self):
-        if self.work_timer is not None:
-            self.must_pause_work = True
-            while self.work_timer is not None and not self.cmd_from_sd:
-                self.reactor.pause(self.reactor.monotonic() + .001)
-        # G-Code commands
-    def cmd_error(self, params):
-        raise self.gcode.error("SD write not supported")
-    def cmd_M20(self, params):
-        # List SD card
-        files = self.get_file_list()
-        self.gcode.respond("Begin file list")
-        for fname, fsize in files:
-            self.gcode.respond("%s %d" % (fname, fsize))
-        self.gcode.respond("End file list")
-    def cmd_M21(self, params):
-        # Initialize SD card
-        self.gcode.respond("SD card ok")
-    def cmd_M23(self, params):
-        # Select SD file
-        if self.work_timer is not None:
-            raise self.gcode.error("SD busy")
-        # parse filename
-        try:
-            orig = params['#original']
-            filename = orig[orig.find("M23")+4 : max(orig.find(".gco")+4, orig.find(".gcode")+6)].strip()
-            if '*' in filename:
-                filename = filename[:filename.find('*')].strip()
-        except:
-            raise self.gcode.error("Unable to extract filename")
-        if filename.startswith('/'):
-            filename = filename[1:]
-        files = self.get_file_list()
-        files_by_lower = { fname.lower(): fname for fname, fsize in files }
-        filename = files_by_lower[filename.lower()]
-        filename = os.path.join(self.sdcard_dirname, filename)
-        # done parsing filename
-        self.initialize_file(filename)
-        self.initialize_printjob()
-        self.state = 'no_printjob'
-        self.gcode.respond("File opened:%s Size:%d" % (filename, self.file_size))
-        self.gcode.respond("File selected")
-    def cmd_M24(self, params):
-        # Start/resume SD print
-        if self.work_timer is not None:
-            raise self.gcode.error("SD busy")
-        if self.state == 'done': #restart the same print
-            self.initialize_printjob()
-
-        if self.state == 'paused':
-            self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1")
-        self.state = 'printing'
-        self.start_stop_times.append([self.reactor.monotonic(), None])
         self.must_pause_work = False
-        self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
-    def cmd_M25(self, params):
-        # Pause SD print
-        self.do_pause()
-        self.state = 'paused'
-        self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
-        self.start_stop_times[-1][1] = self.reactor.monotonic()
-    def cmd_STOP_PRINT(self, params):
-        # Stop SD print
-        self.do_pause()
+
+    def add_printjob(self, filepath, pause=True):
+        # if it can be printed right away don't pause it
+        if len(self.queued_files) < 1:
+            pause = False
+        self.queued_files.append((filepath, pause))
+        self.check_queue()
+    
+    def clear_queue(self):
+        # remove everything but the first element wich is currently being printed
+        if len(self.queued_files):
+            self.queued_files = self.queued_files[0]
+    
+    def check_queue(self):
+        if  len(self.queued_files) > 0 and self.state != 'printing' and self.state != 'paused':
+            # start a printjob
+            self.pause_work()
+            logging.warning("virtual_sdcard: has checked queue")
+            try:
+                f = open(self.queued_files[0][0], 'rb')
+                f.seek(0, os.SEEK_END)
+                self.file_size = f.tell()
+                f.seek(0)
+                self.current_file = f
+            except:
+                logging.warning("virtual_sdcard: couldnt open file{}".format(self.queued_files[0]))
+                return False
+            logging.warning("virtual_sdcard: has opened file")
+
+            self.state = 'printing'
+            self.file_position = 0
+            self.start_stop_times = [[self.toolhead.get_last_move_time(), None]] # [[start, pause], [resume, pause] ...]
+            self.slicer_elapsed_times = [] # [[time actually printed, elapsed time put by slicer], ...]
+            self.slicer_estimated_time = None
+            if self.queued_files[0][1]: # start in paused state
+                self.must_pause_work = True
+            else:
+                self.must_pause_work = False
+                self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
+            return True
+
+    def resume_printjob(self):
+        logging.info('resume_printjob:')
+        if self.state == 'paused':
+            self.state = 'printing'
+            self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1")
+            self.must_pause_work = False
+            if self.work_timer is None:
+                self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
+
+    def pause_printjob(self):
+        logging.info('pause_printjob')
+        if self.state == 'printing':
+            self.state = 'paused'
+            self.pause_work()
+            self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
+            self.start_stop_times[-1][1] = self.toolhead.get_last_move_time()
+ 
+    def stop_printjob(self):
+        logging.info('stop printjob')
         self.state = 'stopped'
-        self.start_stop_times[-1][1] = self.reactor.monotonic()
-        # switch off all heaters
-        heater_manager = self.printer.lookup_object('heater')
-        toolhead = self.printer.lookup_object('toolhead')
-        for heater in heater_manager.heaters.values():
-            heater.set_temp(toolhead.get_last_move_time(), 0)
-    def cmd_M26(self, params):
-        # Set SD position
+        self.pause_work
+        self.start_stop_times[-1][1] = self.toolhead.get_last_move_time()
+        self.queued_files.pop(0)
+        self.check_queue()
+
+    def pause_work(self):
         if self.work_timer is not None:
-            raise self.gcode.error("SD busy")
-        pos = self.gcode.get_int('S', params, minval=0)
-        self.file_position = pos
-    def cmd_M27(self, params):
-        # Report SD print status
-        if self.work_timer:
-            self.gcode.respond("SD printing byte %d/%d" % (self.file_position, self.file_size))
-        else:
-            self.gcode.respond("Not SD printing.")
-    # Background work timer
+            self.must_pause_work = True
+            while self.work_timer is not None:# and not self.cmd_from_sd:
+                self.reactor.pause(self.reactor.monotonic() + .001)
+            logging.warning("stopped pausing work &&&&&&&&&: cmd_from is {}, work timer is {}".format(self.cmd_from_sd, self.work_timer))
+
     def work_handler(self, eventtime):
-        logging.info("Starting SD card print (position %d)", self.file_position)
+        # Background work timer
+        logging.warning("Starting SD card print (position %d)", self.file_position)
+        logging.warning("work_timer is: {}".format(self.work_timer))
         self.reactor.unregister_timer(self.work_timer)
         try:
-            self.file.seek(self.file_position)
+            self.current_file.seek(self.file_position)
         except:
             logging.exception("virtual_sdcard seek")
             self.gcode.respond_error("Unable to seek file")
@@ -172,11 +117,12 @@ class VirtualSD:
         gcode_mutex = self.gcode.get_mutex()
         partial_input = ""
         lines = []
+        logging.warning("entering while loop now, work timer is {}".format(self.work_timer))
         while not self.must_pause_work:
             if not lines:
                 # Read more data
                 try:
-                    data = self.file.read(8192)
+                    data = self.current_file.read(8192)
                 except:
                     logging.exception("virtual_sdcard read")
                     self.gcode.respond_error("Error on virtual sdcard read")
@@ -184,9 +130,10 @@ class VirtualSD:
                 if not data:
                     # End of file
                     self.state = 'done'
-                    self.file.close()
-                    self.start_stop_times[-1][1] = self.reactor.monotonic()
-                    logging.info("Finished SD card print")
+                    self.current_file.close()
+                    self.queued_files.pop(0)
+                    self.start_stop_times[-1][1] = self.toolhead.get_last_move_time()
+                    logging.warning("Finished SD card print")
                     self.gcode.respond("Done printing file")
                     break
                 lines = data.split('\n')
@@ -197,6 +144,7 @@ class VirtualSD:
                 continue
             # Pause if any other request is pending in the gcode class
             if gcode_mutex.test():
+                logging.warning("didnt get mutex")
                 self.reactor.pause(self.reactor.monotonic() + 0.100)
                 continue
             # Dispatch command
@@ -210,19 +158,28 @@ class VirtualSD:
                 break
             self.cmd_from_sd = False
             self.file_position += len(lines.pop()) + 1
-        logging.info("Exiting SD card print (position %d)", self.file_position)
+        logging.warning("Exiting SD card print (position %d)", self.file_position)
         self.work_timer = None
         self.cmd_from_sd = False
+        if self.state != 'paused':
+            # switch off all heaters, especially necessary after print was stopped
+            heater_manager = self.printer.lookup_object('heater')
+            for heater in heater_manager.heaters.values():
+                heater.set_temp(0)
+        self.check_queue()
         return self.reactor.NEVER
-    def get_printed_time(self, currenttime):
+
+    def get_printed_time(self):
+        now = self.toolhead.get_last_move_time()
         printed_time = 0
         for time in self.start_stop_times:
-            printed_time += - time[0] + (time[1] if time[1] else currenttime)
+            printed_time += - time[0] + (time[1] if time[1] else now)
         return printed_time
+
     def handle_gcode_metadata(self, eventtime, params):
         line = params['#original']
         # recieves all gcode-comment-lines as they are printed, and searches for print-time estimations
-        print_time_estimate = [
+        slicer_estimated_time = [
             r'\s\s\d*\.\d*\sminutes' , 						#	Kisslicer
             r'; estimated printing time' ,					#	Slic3r
             r';\s+Build time:.*' ,							#	S3d
@@ -231,7 +188,7 @@ class VirtualSD:
             r';Print Time:\s\d+\.?\d+',						#	ideamaker
             r'\d+h?\s?\d+m\s\d+s'							#	PrusaSlicer
             ]
-        print_time_elapsed = [
+        slicer_elapsed_time = [
             #r'\s\s\d*\.\d*\sminutes' , 					#	Kisslicer
             #                               				#	Slic3r
             #r';\s+Build time:.*' ,							#	S3d
@@ -255,39 +212,151 @@ class VirtualSD:
             if dursecs == 0:
                 dursecs = float(max(re.findall('([0-9]*\.?[0-9]+)', in_)))
             return dursecs
-        for regex in print_time_estimate:
+        for regex in slicer_estimated_time:
             match = re.search(regex, line)
             if match:
                 self.slicer_estimated_time = get_seconds(match.group())
                 return
-        for regex in print_time_elapsed:
+        for regex in slicer_elapsed_time:
             match = re.search(regex, line)
             if match:
-                self.slicer_elapsed_times.append((self.get_printed_time(self.reactor.monotonic()), get_seconds(match.group())))
+                self.slicer_elapsed_times.append((self.get_printed_time(), get_seconds(match.group())))
                 return
+
     def get_status(self, eventtime):
+        # time estimations in gcode: |....|....|....|........................|
+        # actual print time      |......|.....|.....|.............................|
+        #                        ^ start of print   ^ current point in time       ^ prediction
+        est_remaining = None
+        progress = None
         if self.state == 'done':
-            return {'progress':1, 'estimated_remaining_time':0, 'state': self.state}
+            est_remaining = 0
+            progress = 1
         elif self.slicer_estimated_time:
-            printed_time = self.get_printed_time(self.reactor.monotonic())
+            printed_time = self.get_printed_time()
             if len(self.slicer_elapsed_times):
-                time_since_slicer_est = printed_time - self.slicer_elapsed_times[-1][0]
-                est_remaining  = max(self.slicer_estimated_time - self.slicer_elapsed_times[-1][1] - time_since_slicer_est, 0)
+                time_since_slicer_est = printed_time\
+                                      - self.slicer_elapsed_times[-1][0]
+                est_remaining  = max(0, self.slicer_estimated_time\
+                                      - self.slicer_elapsed_times[-1][1]\
+                                      - time_since_slicer_est)
                 # now apply factor based on how wrong previous estimations were
-                # we ignore the first estimation block since it contains heatup where high variance is expected
+                # we ignore the first estimation block since it contains heatup
+                # where high variance is expected
                 if len(self.slicer_elapsed_times) > 1:
-                    est_remaining  *= (self.slicer_elapsed_times[-1][1] - self.slicer_elapsed_times[0][1])\
-                                     /(self.slicer_elapsed_times[-1][0] - self.slicer_elapsed_times[0][0])
+                    est_remaining *= \
+                        (self.slicer_elapsed_times[-1][1] - self.slicer_elapsed_times[0][1])\
+                       /(self.slicer_elapsed_times[-1][0] - self.slicer_elapsed_times[0][0])
             else: #we dont have elapsed times
                 est_remaining = max(self.slicer_estimated_time - printed_time, 0)
-            # time estimation done, get progress
-            if printed_time <= 0:#avoid zero division
-                progress = 0
-            else:
-                progress = printed_time/float(printed_time + est_remaining)
-            return {'progress': progress, 'estimated_remaining_time': est_remaining, 'state': self.state }
-        return {'progress': None, 'estimated_remaining_time': None, 'state': self.state}
+            # time estimation done, calculate progress, avoid zero division
+            if printed_time <= 0: progress = 0
+            else: progress = printed_time/float(printed_time + est_remaining)
+        return {'progress': progress,
+                'estimated_remaining_time': est_remaining,
+                'state': self.state,
+                'queued_files': [f for f,p in self.queued_files]}
+
+    def handle_ready(self):
+        self.toolhead = self.printer.lookup_object('toolhead')
+
+    def handle_shutdown(self):
+        if self.work_timer:
+            self.must_pause_work = True
+            try:
+                readpos = max(self.file_position - 1024, 0)
+                readcount = self.file_position - readpos
+                self.current_file.seek(readpos)
+                data = self.current_file.read(readcount + 128)
+            except:
+                logging.exception("virtual_sdcard shutdown read")
+                return
+            logging.info("Virtual sdcard (%d): %s\nUpcoming (%d): %s",
+                         readpos, repr(data[:readcount]),
+                         self.file_position, repr(data[readcount:]))
+
+    def stats(self, eventtime):
+        if self.work_timer:
+            return True, "sd_pos=%d" % (self.file_position,)
+        return False, ""
+
+class GcodeVirtualSD(VirtualSD):
+    def __init__(self, config):
+        super(GcodeVirtualSD, self).__init__(config)
+        self.selected_file = None # str
+        self.gcode.register_command('M21', None)
+
+        for cmd in ['M20', 'M21', 'M23', 'M24', 'M25', 'M26', 'M27']:
+            self.gcode.register_command(cmd, getattr(self, 'cmd_' + cmd))
+        for cmd in ['M28', 'M29', 'M30']:
+            self.gcode.register_command(cmd, self.cmd_error)
+    def get_file_list(self):
+        dname = self.sdcard_dirname
+        try:
+            filenames = os.listdir(self.sdcard_dirname)
+            return [(fname, os.path.getsize(os.path.join(dname, fname)))
+                    for fname in sorted(filenames, key=str.lower)
+                    if not fname.startswith('.')
+                    and os.path.isfile((os.path.join(dname, fname)))]
+        except:
+            logging.exception("virtual_sdcard get_file_list")
+            raise self.gcode.error("Unable to get file list")
+    def is_active(self):
+        return self.work_timer is not None
+    def cmd_error(self, params):
+        raise self.gcode.error("SD write not supported")
+    def cmd_M20(self, params):
+        # List SD card
+        files = self.get_file_list()
+        self.gcode.respond("Begin file list")
+        for fname, fsize in files:
+            self.gcode.respond("%s %d" % (fname, fsize))
+        self.gcode.respond("End file list")
+    def cmd_M21(self, params):
+        # Initialize SD card
+        self.gcode.respond("SD card ok")
+    def cmd_M23(self, params):
+        # Select SD file
+        # parses filename
+        try:
+            orig = params['#original']
+            filename = orig[orig.find("M23")+4 : max(orig.find(".gco")+4, orig.find(".gcode")+6)].strip()
+            if '*' in filename:
+                filename = filename[:filename.find('*')].strip()
+        except:
+            raise self.gcode.error("Unable to extract filename")
+        if filename.startswith('/'):
+            filename = filename[1:]
+        files = self.get_file_list()
+        files_by_lower = { fname.lower(): fname for fname, fsize in files }
+        filename = files_by_lower[filename.lower()]
+        self.selected_file = os.path.join(self.sdcard_dirname, filename)
+        self.gcode.respond("File {} selected".format(filename))
+ 
+    def cmd_M24(self, params):
+        # Start/resume SD print
+        if self.state == 'paused':
+            self.resume_printjob()
+        elif self.state != 'printing':
+            self.clear_queue()
+            self.add_printjob(self.selected_file)
+    def cmd_M25(self, params):
+        # Pause SD print
+        self.pause_printjob()
+    def cmd_M26(self, params):
+        # Set SD position
+        if self.work_timer is not None:
+            raise self.gcode.error("SD busy")
+        pos = self.gcode.get_int('S', params, minval=0)
+        self.file_position = pos
+    def cmd_M27(self, params):
+        # Report SD print status
+        if self.current_file is None:
+            self.gcode.respond("Not SD printing.")
+            return
+        self.gcode.respond("SD printing byte %d/%d" % (
+            self.file_position, self.file_size))
 
 def load_config(config):
-    return VirtualSD(config)
+    return GcodeVirtualSD(config)
 
