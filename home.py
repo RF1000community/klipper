@@ -203,10 +203,11 @@ class ExtTempOffsetSlider(UltraOffsetSlider):
         return x
 """
 class Option(RoundButton):
-    def __init__(self, title, box_color, **kwargs):
-        self.title = title
+    option_color = ListProperty([0,0,0,0])
+    def __init__(self, box_color, **kwargs):
         if box_color is not None:
-            self.option_color = list(box_color).append(1)
+            box_color.append(1)
+            self.option_color = box_color
         super(Option, self).__init__(**kwargs)
 
     def on_release(self):
@@ -215,13 +216,13 @@ class Option(RoundButton):
 class OptionBox(FloatLayout, Widget):
     def __init__(self, **kwargs):
         self.selected = None
-        self.options = [["PLA", (1,0,0), None], ["PETG", (0,0,1), None],["ABS", (0,1,0), None],["PP", None, None],["PC", None, None]]
+        self.options = [["PLA", [1,0,0], None], ["PETG", [0,0,1], None],["ABS", [0,1,0], None],["PP", None, None],["PC", None, None]]
         super(OptionBox, self).__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
         for o in self.options:
-            o[2] = Option(y=self.y + 200, title=o[0], color=o[1])
+            o[2] = Option(y=self.y + 200, title=o[0], box_color=o[1])
             o[2].bind(on_release=self.on_selected)
             self.ids.stack.add_widget(o[2])
 

@@ -107,7 +107,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
             self.filament_diameter = 1.75
+            self.xy_homing_controls = False
             self.extruders = [None, None, None]
+            self.extruder_count = 2
         super(mainApp, self).__init__(**kwargs)
 
     def handle_connect(self): #runs in klippy thread
@@ -154,7 +156,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 ### KLIPPER THREAD ^
 ########################################################################################
 ### KGUI    THREAD v
-        
+
     def run(self):
         logging.info("Kivy app.run")
         Clock.schedule_once(self.setup_after_run, 1)
