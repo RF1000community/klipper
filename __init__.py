@@ -56,7 +56,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     print_time = StringProperty() #updated by handle_print_time_calc
     print_done_time = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
-    pos = ListProperty([0,0,0]) #updated by scheduled update_home
+    pos = ListProperty([0,0,0,0]) #updated by scheduled update_home
     #tuning  #updated by upate_printing
     speed = NumericProperty(100)
     flow = NumericProperty(100)
@@ -73,6 +73,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
+        self.z_timer = None
+        self.extrude_timer = None
         if not TESTING:
             self.kgui_config = config
             self.printer = config.get_printer()
@@ -88,6 +90,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
             self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}#maybe use position_min, position_max = rail.get_range()
             self.filament_diameter = self.klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
+            self.min_extrude_temp = self.klipper_config.getsection("extruder").getint("min_extrude_temp", 170) # mantain this by keeping default the same as klipper
             #check whether the right sdcard path is configured
             configured_sdpath = expanduser(self.klipper_config.getsection("virtual_sdcard").get("path", None))
             if abspath(configured_sdpath) != abspath(p.sdcard_path):
@@ -364,7 +367,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(read_temp)
 
     def send_temp(self, temp, heater_id):
-        self.reactor.register_async_callback((lambda e: self.heaters[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
+        self.reactor.register_async_callback((lambda e: self.heaters[heater_id].set_temp(temp)))
 
     def get_homing_state(self):
         homed_axes_string = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
@@ -379,8 +382,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def get_pos(self):
         def read_pos(e):
-            pos = self.toolhead.get_position()
-            self.pos = pos
+            self.pos = self.toolhead.get_position()
         self.reactor.register_async_callback(read_pos)
 
     def send_pos(self, x=None, y=None, z=None, e=None, speed=15):  
@@ -393,15 +395,49 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.toolhead.drip_move(pos, speed)
         self.reactor.register_async_callback(set_pos)
 
-    def send_z_up(self):
-        self.send_pos(z=self.pos_min['z'])
-    def send_z_down(self):
-        self.send_pos(z=self.pos_max['z'])
+    def send_rel_pos(self, x=0, y=0, z=0, e=0, speed=15): # only execute this in klipper thread  
+        cur_pos = self.toolhead.get_position()
+        new_pos = [x,y,z,e]
+        homed_axes = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
+        for i, (new, name) in enumerate(zip(new_pos, "xyze")):
+            if name == "e":
+                cur_pos[i] += new
+            elif name in homed_axes:
+                cur_pos[i] += new
+                if cur_pos[i] > self.pos_max[name]: # don't exceed physical limits
+                    cur_pos[i] = self.pos_max[name]
+                if cur_pos[i] < self.pos_min[name]:
+                    cur_pos[i] = self.pos_min[name]
+        self.toolhead.drip_move(cur_pos, speed)
+
+    def send_z_up(self, direction=1):
+        INTERVAL = 0.5
+        SPEED = 10
+        STEP = INTERVAL * SPEED
+        def z_step_up(eventtime):
+            self.send_rel_pos(z=direction*STEP, speed=SPEED)
+            return eventtime + INTERVAL
+        self.z_timer = self.reactor.register_timer(z_step_up, self.reactor.NOW)
+
     def send_z_stop(self):
-        self.reactor.register_async_callback((lambda e: self.toolhead.signal_drip_mode_end()))
+        if self.z_timer: #is this thread safe?
+            self.reactor.unregister_timer(self.z_timer)
+
+    def send_extrude(self, tool_id, direction=1):
+        INTERVAL = 0.4
+        SPEED = 2
+        STEP = INTERVAL * SPEED
+        def extrude_step(eventtime):
+            self.send_rel_pos(e=direction*STEP, speed=SPEED)
+            return eventtime + INTERVAL
+        self.extrude_timer = self.reactor.register_timer(extrude_step, self.reactor.NOW)
+
+    def send_extrude_stop(self):
+        if self.extrude_timer: #is this thread safe?
+            self.reactor.unregister_timer(self.extrude_timer)
 
     def send_calibrate(self):
-        self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
+        self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(None)))
 
     def send_start(self, filepath=None):
         if filepath is None:
@@ -443,7 +479,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def restart_klipper(self):
         """Quit and restart klipper and GUI"""
         logging.info("attempting a firmware restart")
-        self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
+        try:
+            self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
+        except:
+            Popen(['sudo', 'systemctl', 'restart', 'klipper.service'])
         self.stop()
     def quit(self):
         """Stop klipper and GUI, returns to tty"""

@@ -60,10 +60,9 @@ class XyField(Widget):
             self.px = self.apply_bounds(px_input[0], px_input[1])
             self.set_mm_with_px(self.px)
 
-    def update_with_mm(self, instance=None, mm=(0,0)):
+    def update_with_mm(self, instance=None, mm=[0,0,0]):
         self.set_px_with_mm(mm)
-        self.mm[0] = mm[0]
-        self.mm[1] = mm[1]
+        self.mm = mm[:3]
 
     def apply_bounds(self, x, y):
         if x < self.origin[0]:
@@ -206,8 +205,7 @@ class Option(RoundButton):
     option_color = ListProperty([0,0,0,0])
     def __init__(self, box_color, **kwargs):
         if box_color is not None:
-            box_color.append(1)
-            self.option_color = box_color
+            self.option_color = box_color + [1]
         super(Option, self).__init__(**kwargs)
 
     def on_release(self):
