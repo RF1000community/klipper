@@ -367,7 +367,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(read_temp)
 
     def send_temp(self, temp, heater_id):
-        self.reactor.register_async_callback((lambda e: self.heaters[heater_id].set_temp(temp)))
+        def change_temp(e):
+            self.heaters[heater_id].set_temp(temp)
+            current = self.temp[heater_id]
+            self.temp[heater_id] = (temp, current[1])
+        self.reactor.register_async_callback(change_temp)
 
     def get_homing_state(self):
         homed_axes_string = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']

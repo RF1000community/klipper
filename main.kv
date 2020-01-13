@@ -2,11 +2,10 @@
 #:import Factory kivy.factory.Factory
 #:import screenmanager kivy.uix.screenmanager
 #:import p parameters
-#:import basename os.path.basename
-#:import splitext os.path.splitext
 # note that this requires the kgui folder to be in PYTHONPATH or sys.path, unless the 
 # interpreter is started in this folder because the import is happening in kivy/lang/parser.py 
-
+#:import basename os.path.basename
+#:import splitext os.path.splitext
 
 FloatLayout:
     StatusBar:
@@ -21,7 +20,7 @@ FloatLayout:
 <StatusBar@BoxLayout>:
     canvas:
         Color:
-            rgba: p.red if 'error' in app.state else p.accent if app.state == 'ready' else p.nozzle
+            rgba: p.red if 'error' in app.state else p.accent
         Rectangle:
             size: self.size
             pos: self.pos
@@ -98,7 +97,7 @@ FloatLayout:
             text_size: self.size
             font_size: p.normal_font
             x: p.h_padding - 2
-            top: progress_bar.y - 8
+            top: progress_bar.y - 5
             halign: 'left'
             valign: 'bottom'
         Label:
@@ -108,7 +107,7 @@ FloatLayout:
             text_size: self.size
             font_size: p.normal_font
             x: p.h_padding - 2
-            top: progress_bar.y - 8
+            top: progress_bar.y - 5
             color: p.btn_disabled
             halign: 'right'
             valign: 'bottom'
@@ -116,8 +115,8 @@ FloatLayout:
             on_release: app.send_stop()
             id: btn_stop
             size: 118,118
-            center_y: progress_bar.top + p.padding + p.btn_height/2
-            center_x: p.screen_width - p.btn_height/2 - p.h_padding
+            center_y: progress_bar.top + p.padding + p.btn_stop/2
+            center_x: p.screen_width - p.btn_stop/2 - p.h_padding
         Btn_Reprint:
             on_release: app.send_start()
             size: 118, 118
@@ -146,8 +145,8 @@ FloatLayout:
             transition: screenmanager.NoTransition()
             id: hs_manager
             size_hint: None, None
-            size: p.screen_width, p.screen_height-btn_stop.center_y-p.btn_height/2
-            pos: root.x, btn_stop.center_y+p.btn_height/2
+            size: p.screen_width, p.screen_height-btn_stop.center_y-p.btn_stop/2
+            pos: root.x, btn_stop.center_y+p.btn_stop/2
             HomeScreen:
             PrintingScreen:
         Btn_Temp:
@@ -159,11 +158,11 @@ FloatLayout:
             red: app.temp[self.heater_id][1] > 50
             width: 80
             right: temp_bed.right if app.extruder_count > 1 else p.mars
-            y: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_spacing
+            y: p.tab_height + p.padding*3 + p.progress_bar_height + p.btn_stop
         Btn_Extruder:
             heater_id: 'T1'
             x: p.h_padding if app.extruder_count > 1 else p.mars
-            y: p.tab_height + p.padding*2 + p.progress_bar_height + p.btn_spacing
+            y: p.tab_height + p.padding*3 + p.progress_bar_height + p.btn_stop
         Btn_Temp:
             id: temp_T0
             heater_id: "T0"
@@ -173,11 +172,11 @@ FloatLayout:
             red: app.temp[self.heater_id][1] > 50
             width: 80
             right: temp_bed.right
-            y: p.tab_height + p.progress_bar_height + 4*p.padding + 2*p.btn_height
+            y: p.tab_height + p.progress_bar_height + 4*p.padding + p.btn_height + p.btn_stop
         Btn_Extruder:
             heater_id: 'T0'
             x: p.h_padding
-            y: p.tab_height + p.padding*2 + p.progress_bar_height + 2*p.btn_spacing
+            y: p.tab_height + p.padding*4 + p.progress_bar_height + p.btn_height + p.btn_stop
         Btn_Temp:
             on_release: Factory.BedTempPopup(creator=self, val=app.temp).open()
             id: temp_bed
@@ -185,7 +184,7 @@ FloatLayout:
             small_value: "{:3.0f}".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "Off"
             red: app.temp['B'][1] > 50
             x: p.h_padding
-            y: p.tab_height + p.progress_bar_height + 5*p.padding + 3*p.btn_height
+            y: p.tab_height + p.progress_bar_height + 5*p.padding + 2*p.btn_height + p.btn_stop
             canvas.before:
                 Color:
                     rgba: p.nozzle
@@ -194,7 +193,7 @@ FloatLayout:
                 #:set bx2 +19
                 #:set bh 40
                 #:set bo 16
-                #:set icon_center 26
+                #:set icon_center 25
                 Line:
                     width: p.icon_radius
                     points: self.x + icon_center - bw/2, self.center_y - p.btn_height/2 + p.icon_radius,   self.x + icon_center + bw/2, self.center_y - p.btn_height/2 + p.icon_radius
@@ -221,10 +220,10 @@ FloatLayout:
             size: self.width - 2*p.icon_radius, self.height - esh - p.icon_radius
             pos: self.x + p.icon_radius, self.y + esh
         Triangle:
-            points: self.x + p.icon_radius, self.y + esh,   self.center_x, self.y,   self.right - p.icon_radius, self.y + esh
+            points: self.x + p.icon_radius, self.y + esh,   self.center_x, self.y + p.icon_radius - 2,   self.right - p.icon_radius, self.y + esh
         Line:
             width: p.icon_radius
-            points: self.x + p.icon_radius, self.y + esh,   self.center_x, self.y,   self.right - p.icon_radius, self.y + esh,   self.right - p.icon_radius, self.top - p.icon_radius,   self.x + p.icon_radius, self.top - p.icon_radius
+            points: self.x + p.icon_radius, self.y + esh,   self.center_x, self.y + p.icon_radius - 2,   self.right - p.icon_radius, self.y + esh,   self.right - p.icon_radius, self.top - p.icon_radius,   self.x + p.icon_radius, self.top - p.icon_radius
             close: True
     Label:
         text: root.heater_id
@@ -387,8 +386,8 @@ FloatLayout:
         Color:
             rgba: p.red if self.enabled else (0,0,0,0)
         RoundedRectangle:
-            pos: self.center_x-p.btn_height/2,self.center_y-p.btn_height/2
-            size: p.btn_height,p.btn_height
+            pos: self.center_x-p.btn_stop/2, self.center_y-p.btn_stop/2
+            size: p.btn_stop, p.btn_stop
             radius: (p.icon_radius,)
 
 <Btn_Reprint@RoundButton>:
@@ -406,7 +405,7 @@ FloatLayout:
             points: (self.center_x - r_arr, self.center_y + r_rad,    self.center_x, self.center_y + r_rad + r_arr,    self.center_x, self.center_y + r_rad - r_arr)
 
 <Btn_Play@RoundButton>:
-    #:set pw (p.btn_height-2*p.icon_radius)/2
+    #:set pw (p.btn_stop-2*p.icon_radius)/2
     #:set ph pw*1.155
     paused: app.print_state == 'paused'
     enabled: app.print_state == 'printing' or app.print_state == 'paused'
@@ -414,12 +413,12 @@ FloatLayout:
         Color:
             rgba: 1,1,1,1 if self.enabled and not self.paused else 0
         RoundedRectangle:
-            pos: self.center_x-p.btn_height/2, self.center_y-p.btn_height/2
-            size: 0.39*p.btn_height,p.btn_height
+            pos: self.center_x-p.btn_stop/2, self.center_y-p.btn_stop/2
+            size: 0.39*p.btn_stop,p.btn_stop
             radius: (p.icon_radius,)
         RoundedRectangle:
-            pos: self.center_x+p.btn_height/2-0.4*p.btn_height, self.center_y-p.btn_height/2
-            size: 0.39*p.btn_height,p.btn_height
+            pos: self.center_x+p.btn_stop/2-0.4*p.btn_stop, self.center_y-p.btn_stop/2
+            size: 0.39*p.btn_stop, p.btn_stop
             radius: (p.icon_radius,)
     canvas:
         Color:
@@ -638,6 +637,7 @@ FloatLayout:
 
 <Btn_Temp@BaseButton>:
     red: False
+    enabled: app.printer_objects_available
     large_value: "-"
     small_value: "-"
     size: p.btn_temp_width, p.btn_height
@@ -649,7 +649,7 @@ FloatLayout:
             size: self.width + 40, self.height + 40
             pos: self.x - 20, self.y - 20
     Label:
-        color: p.red if root.red else (1,1,1,1)
+        color: p.red if root.red else (1,1,1,1) if root.enabled else p.btn_disabled
         text: root.large_value
         size_hint: None, None
         size: root.width+50, root.height
