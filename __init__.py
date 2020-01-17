@@ -412,16 +412,18 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                     cur_pos[i] = self.pos_max[name]
                 if cur_pos[i] < self.pos_min[name]:
                     cur_pos[i] = self.pos_min[name]
-        self.toolhead.drip_move(cur_pos, speed)
+        self.toolhead.move(cur_pos, speed)
 
     def send_z_up(self, direction=1):
-        INTERVAL = 0.5
-        SPEED = 10
-        STEP = INTERVAL * SPEED
-        def z_step_up(eventtime):
-            self.send_rel_pos(z=direction*STEP, speed=SPEED)
-            return eventtime + INTERVAL
-        self.z_timer = self.reactor.register_timer(z_step_up, self.reactor.NOW)
+        INTERVAL = 0.2
+        SPEED = 10.
+        STEP = INTERVAL * SPEED * direction
+        self.step_time = self.reactor.monotonic()
+        def z_step(eventtime):
+            self.send_rel_pos(z=STEP, speed=SPEED)
+            self.step_time += INTERVAL
+            return self.step_time
+        self.z_timer = self.reactor.register_timer(z_step, self.reactor.NOW)
 
     def send_z_stop(self):
         if self.z_timer: #is this thread safe?
