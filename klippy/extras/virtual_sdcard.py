@@ -36,12 +36,12 @@ class VirtualSD(object):
             pause = False
         self.queued_files.append((filepath, pause))
         self.check_queue()
-    
+
     def clear_queue(self):
         # remove everything but the first element wich is currently being printed
         if len(self.queued_files):
             self.queued_files = self.queued_files[0]
-    
+
     def check_queue(self):
         if  len(self.queued_files) > 0 and self.state != 'printing' and self.state != 'paused':
             # start a printjob
