@@ -1,4 +1,5 @@
-from os import remove
+import logging
+import os
 from os.path import getmtime, basename, dirname, exists, abspath, join
 import shutil, re
 
@@ -46,7 +47,6 @@ class FC(FileChooserIconView):
         self.popup = PrintPopup(filenames[0], creator=self)
         self.popup.open()
 
-""" Works but is way to slow, maybe do this after showing folder contents, and keep values to avoid recomputing when filechooser reloads
     def get_nice_size(self, path):
         '''Pass the filepath. Returns the filament use of a gcode file, instead of filesize.
            Or '' if it is a directory.
@@ -55,30 +55,45 @@ class FC(FileChooserIconView):
         if self.file_system.is_dir(path):
             return ''
         filament = [
-            r'Ext.*=.*mm' ,									#	Kisslicer
-            r';.*filament used =' ,							#	Slic3r
-            r';.*Filament length: \d+.*\(' ,				#	S3d
-            r'.*filament\sused\s=\s.*mm' ,					#	Slic3r PE
-            r';Filament used: \d*.\d+m'	,					#	Cura
-            r';Material#1 Used:\s\d+\.?\d+',				#	ideamaker
-            r'.*filament\sused\s.mm.\s=\s[0-9\.]+'			#	PrusaSlicer
+            r'Ext.*=.*mm',                          # Kisslicer
+            r';.*filament used =',                  # Slic3r
+            r';.*Filament length: \d+.*\(',         # S3d
+            r'.*filament\sused\s=\s.*mm',           # Slic3r PE
+            r';Filament used: \d*.\d+m',            # Cura
+            r';Material#1 Used:\s\d+\.?\d+',        # ideamaker
+            r'.*filament\sused\s.mm.\s=\s[0-9\.]+'  # PrusaSlicer
             ]
+        nlines = 100
+        head = tail = []
         with open(path, 'rb') as gcode_file :
-            lines = gcode_file.readlines()
-        for line in (lines[:100] + lines[-100:]):
+            # Read first 100 lines from beginning
+            head = [gcode_file.readline() for i in range(nlines)]
+            tail = []
+            # Read further back until there are enough lines
+            block_count = -1
+            while len(tail) < nlines:
+                offset = block_count * 1024
+                try:
+                    gcode_file.seek(offset, os.SEEK_END)
+                    tail = gcode_file.readlines()
+                except: # For the unlikely case that the file is too small
+                    break
+                block_count -= 1
+        tail = tail[-100:]
+
+        for line in (head + tail):
             for i, regex in enumerate(filament):
                 match = re.search(regex, line)
                 if match:
                     match2 = re.search(r'\d*\.\d*', match.group())
                     if match2:
                         filament = float(match2.group())
-                        import logging
                         logging.info("filament =  ====== {}".format(filament))
-                        if i == 4: filament *= 1000 # Cura gives meters -> convert to mm
+                        if i == 4:
+                            filament *= 1000 # Cura gives meters -> convert to mm
                         weight = self.filament_crossection*filament*0.0011 #density in g/mm^3
                         return "{:4.1f}g".format(weight)
         return ""
-"""
 
 class PrintPopup(BasePopup):
 
@@ -129,7 +144,7 @@ class DelPopup(BasePopup):
 
     def confirm(self):
         """Deletes the file and closes the popup"""
-        remove(self.creator.path)
+        os.remove(self.creator.path)
         # Update the files in the filechooser instance
         self.creator.creator._update_files()
         self.dismiss()
