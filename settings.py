@@ -305,15 +305,18 @@ class SI_WifiAccessPoint(SetItem):
 
     def on_release(self):
         # Present different options when wifi is stored by NM
-        if self.ap['saved']:
+        if self.ap.saved:
             self.popup = ConnectionPopup(self.ap)
+            self.popup.open()
+        elif not self.ap.encrypted:
+            self.ap.connect()
         else:
             self.popup = PasswordPopup(self.ap)
-        self.popup.open()
+            self.popup.open()
 
     def get_color(self):
-        if self.ap['saved']:
-            if self.ap['in-use']:
+        if self.ap.saved:
+            if self.ap.in_use:
                 return [0, 0.7, 0, 1]
             return [0.7, 0, 0, 1]
         return p.light_gray
@@ -371,9 +374,9 @@ class PasswordPopup(BasePopup):
     txt_input = ObjectProperty(None)
 
     def __init__(self, ap, **kwargs):
+        self.app = App.get_running_app()
         self.ap = ap
-        self.ssid = self.ap['ssid']
-        self.title = self.ssid
+        self.title = self.ap.ssid
         super(PasswordPopup, self).__init__(**kwargs)
         self.network_manager = App.get_running_app().network_manager
         self.txt_input.bind(on_text_validate=self.confirm)
@@ -386,7 +389,10 @@ class PasswordPopup(BasePopup):
 
     def confirm(self, *args):
         self.password = self.txt_input.text
-        self.network_manager.wifi_connect(self.ssid, self.password)
+        try:
+            self.ap.connect(self.password)
+        except:
+            self.app.notify.show("Connection Failed", "Find out why", delay=4)
         self.dismiss()
 
     def wrong_pw(self, instance):
@@ -407,25 +413,23 @@ class ConnectionPopup(BasePopup):
     def __init__(self, ap, **kwargs):
         self.network_manager = App.get_running_app().network_manager
         self.ap = ap
-        self.ssid = self.ap['ssid']
-        self.connected = self.ap['in-use']
         super(ConnectionPopup, self).__init__(**kwargs)
 
     def toggle_connected(self):
-        if self.connected:
+        if self.ap.in_use:
             self.down()
         else:
             self.up()
 
     def up(self):
-        self.network_manager.wifi_up(self.ssid)
+        self.ap.up()
         self.dismiss()
 
     def down(self):
-        self.network_manager.wifi_down()
+        self.ap.down()
         self.dismiss()
 
     def delete(self):
-        self.network_manager.wifi_delete(self.ssid)
+        self.ap.delete()
         self.dismiss()
 

@@ -6,6 +6,12 @@ and python-pydbus
 
 TODO:
     account for wifi access points with no security
+
+In case no password is required, ap.Flags and ap.RsnFlags are both 0x0.
+In case PSK is supported, at least ap.Flags has 0x1
+and ap.RsnFlags must have 0x100.
+
+eduroam with wpa-enterprise? has 0x200, but not 0x100 in RsnFlags.
 """
 
 from gi.repository import GLib
@@ -62,6 +68,7 @@ class NetworkManager(EventDispatcher, Thread):
         # Will be None whenever the timer isn't running
         self.scan_timer_id = None
         self.access_points = []
+        self.saved_ssids = []
 
         self.connect_signals()
 
@@ -145,52 +152,35 @@ class NetworkManager(EventDispatcher, Thread):
         saved   whether the connection is already known and saved
         path    the dbus object path of the access point.
         """
-        access_points = []
-        saved_ssids = self.get_saved_ssids()
-        # Generate the entries
-        for path in self.wifi_dev.AccessPoints:
-            ap_obj = self.bus.get(_NM, path)
-            ssid_b = ap_obj.Ssid # type: ay
-            # convert to string
-            #PYTHON3: ssid = str(bytes(ssid).decode('utf-8'))
-            #PYTHON2:
-            ssid = ""
-            for c in ssid_b:
-                # Will generate stupid things (e.g '\xc8') on unicode chars
-                ssid += chr(c)
-            signal = ap_obj.Strength # type: y
-            freq = ap_obj.Frequency # type: u
-            saved = (ssid_b in saved_ssids)
-            in_use = (path == self.wifi_dev.ActiveAccessPoint)
-            entry = {'signal': signal, 'ssid': ssid, 'in-use': in_use,
-                'saved': saved, 'path': path, 'freq': freq}
-            access_points.append(entry)
+        self.saved_ssids = self.get_saved_ssids()
+        access_points = [AccessPoint(self, path) for path in self.wifi_dev.AccessPoints]
         # Sort by signal strength and then by 'in-use'
-        access_points.sort(key=lambda x: x['signal'], reverse=True)
-        access_points.sort(key=lambda x: x['in-use'], reverse=True)
+        access_points.sort(key=lambda x: x.signal, reverse=True)
+        access_points.sort(key=lambda x: x.in_use, reverse=True)
 
         # Filter out access points with duplicate ssids
         unique_ssids = []
         to_remove = [] # Avoid removing while iterating
         for ap in access_points:
-            if ap['ssid'] in unique_ssids:
+            if ap.ssid in unique_ssids:
                 # Find previous occurence again
                 for prev in access_points:
-                    if ap['ssid'] == prev['ssid']:
+                    if ap.ssid == prev.ssid:
                         break
                 # Decide which to keep weighing in-use*4, freq*2, signal*1
-                decision = (4*cmp(ap['in-use'], prev['in-use']) +
-                    2*cmp(ap['freq'] // 2000, prev['freq'] // 2000) +
-                    cmp(ap['signal'], prev['signal']))
-                if decision > 0: # Decide for ap
+                decision = (4*cmp(ap.in_use, prev.in_use) +
+                    2*cmp(ap.freq // 2000, prev.freq // 2000) +
+                    cmp(ap.signal, prev.signal))
+                # Decid for ap, but prev may already be in to_remove
+                if decision > 0 and prev not in to_remove:
                     to_remove.append(prev)
                 else:
                     to_remove.append(ap)
             else:
-                unique_ssids.append(ap['ssid'])
+                unique_ssids.append(ap.ssid)
         for rm in to_remove:
             access_points.remove(rm)
-        self.access_points = access_points
+        self.access_points = access_points # update the property
         self.dispatch('on_access_points', self.access_points)
 
     def handle_connected_ssid(self, active_path):
@@ -239,44 +229,41 @@ class NetworkManager(EventDispatcher, Thread):
             else:
                 raise
 
-    def wifi_connect(self, ssid, password):
+    def wifi_connect(self, ap, password=None):
         """
-        From ssid and password (both as plaintext strings) get all the
+        From AccessPoint and password as plaintext string get all the
         information needed to either create and connect or just connect
-        the connection.  Relies on the data in self.access_points.
+        the connection.
 
         This method is likely to raise a ValueError or GLib.GError in
         AddAndActivateConnection.  Exception catching is advised.
 
         Returns path to the new connection (in settings)
         """
-        data = None
-        for ap in self.access_points:
-            if ssid == ap['ssid']:
-                data = ap
-                break
-        if data is None or data['path'] not in self.wifi_dev.AccessPoints:
+        if ap._path not in self.wifi_dev.AccessPoints:
             # Network got out of view since previous scan
             raise ValueError("Network " + ssid + " is not in view.")
-        password = GLib.Variant('s', password)
-        #TODO this probably doesn't cover all cases
-        connection_info = {'802-11-wireless-security': {'psk': password}} # type: a{sa{sv}}
-        con, act_path = self.nm.AddAndActivateConnection(
-            connection_info, self.wifi_dev._path, data['path'])
+        if ap.encrypted:
+            if not ap.supports_psk:
+                raise Exception("Access Point " + ap.ssid + " doesn't support PSK verification")
+            if password is None:
+                raise ValueError("No password provided")
+            password = GLib.Variant('s', password)
+            connection_info = {'802-11-wireless-security': {'psk': password}} # type: a{sa{sv}}
+            con, act_path = self.nm.AddAndActivateConnection(
+                connection_info, self.wifi_dev._path, ap._path)
+        else:
+            con, act_path = self.nm.AddAndActivateConnection(
+                {}, self.wifi_dev._path, ap._path)
         active = self.bus.get(_NM, act_path)
         self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
         return con
 
-    def wifi_up(self, ssid):
+    def wifi_up(self, ap):
         """Activate a connection that is already stored"""
-        data = None
-        for ap in self.access_points:
-            if ssid == ap['ssid']:
-                data = ap
-                break
-        if data is None or not(data['path'] in self.wifi_dev.AccessPoints and data['saved']):
+        if not (ap._path in self.wifi_dev.AccessPoints and ap.saved):
             raise Exception("Can't activate connection " + ssid)
-        active = self.nm.ActivateConnection("/", self.wifi_dev._path, data['path'])
+        active = self.nm.ActivateConnection("/", self.wifi_dev._path, ap._path)
         active = self.bus.get(_NM, active)
         self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
         self.handle_scan_complete()
@@ -290,15 +277,14 @@ class NetworkManager(EventDispatcher, Thread):
         self.handle_scan_complete()
         return True
 
-    def wifi_delete(self, ssid):
-        """Delete a saved connection with the given ssid (string)"""
-        ssid_b = [ord(c) for c in ssid]
+    def wifi_delete(self, ap):
+        """Delete a saved connection"""
         connection_paths = self.settings.Connections # type: ao
         for path in connection_paths:
             con = self.bus.get(_NM, path)
             settings = con.GetSettings() # type: a{sa{sv}}
             if '802-11-wireless' in settings: # Only check wifi connections
-                if ssid_b == settings['802-11-wireless']['ssid']:
+                if ap.b_ssid == settings['802-11-wireless']['ssid']:
                     con.Delete()
                     return True
         return False
@@ -346,3 +332,38 @@ class NetworkManager(EventDispatcher, Thread):
         pass
     def on_connect_failed(self):
         pass
+
+
+class AccessPoint(object):
+    """Simpler wrapper class for dbus' AccessPoint proxy objects"""
+
+    def __init__(self, network_manager, path):
+        self._network_manager = network_manager # the running NetworkManager instance
+        self._proxy = self._network_manager.bus.get(_NM, path)
+        self._path = path
+
+        self.b_ssid = self._proxy.Ssid # type: ay
+        #PYTHON3: self.ssid = str(bytes(self.b_ssid).decode('utf-8'))
+        self.ssid = "" # SSID string
+        for c in self.b_ssid:
+            # Will generate stupid things (e.g. '\xc8') for unicode chars
+            self.ssid += chr(c)
+        self.signal = self._proxy.Strength # type: y, Sinal strength
+        self.freq = self._proxy.Frequency # type: u, Radio channel frequency in MHz
+        self.saved = self.b_ssid in self._network_manager.saved_ssids # whether the connection is known
+        self.in_use = self._path == self._network_manager.wifi_dev.ActiveAccessPoint # whether we are connected with this connection
+        security_flags = self._proxy.RsnFlags or self._proxy.WpaFlags # whichever is not 0x0
+        self.encrypted = bool(self._proxy.Flags) # False when no password is required, True otherwise
+        self.supports_psk = security_flags & 0x100 # Pre-shared Key encryption is supported
+
+    def connect(self, password=None):
+        self._network_manager.wifi_connect(self, password)
+
+    def up(self):
+        self._network_manager.wifi_up(self)
+
+    def down(self):
+        self._network_manager.wifi_down()
+
+    def delete(self):
+        self._network_manager.wifi_delete(self)
