@@ -2,6 +2,7 @@
 from kivy.properties import ListProperty, StringProperty, NumericProperty
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
+from kivy.uix.floatlayout import FloatLayout
 from kivy.app import App
 from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Line
 from kivy.graphics.context_instructions import Color
@@ -59,10 +60,9 @@ class XyField(Widget):
             self.px = self.apply_bounds(px_input[0], px_input[1])
             self.set_mm_with_px(self.px)
 
-    def update_with_mm(self, instance=None, mm=(0,0)):
+    def update_with_mm(self, instance=None, mm=[0,0,0]):
         self.set_px_with_mm(mm)
-        self.mm[0] = mm[0]
-        self.mm[1] = mm[1]
+        self.mm = mm[:3]
 
     def apply_bounds(self, x, y):
         if x < self.origin[0]:
@@ -201,7 +201,33 @@ class ExtTempOffsetSlider(UltraOffsetSlider):
         if x < self.px_min: x = self.px_min
         return x
 """
+class Option(RoundButton):
+    option_color = ListProperty([0,0,0,0])
+    def __init__(self, box_color, **kwargs):
+        if box_color is not None:
+            self.option_color = box_color + [1]
+        super(Option, self).__init__(**kwargs)
 
+    def on_release(self):
+        self.selected = True
+
+class OptionBox(FloatLayout, Widget):
+    def __init__(self, **kwargs):
+        self.selected = None
+        self.options = [["PLA", [1,0,0], None], ["PETG", [0,0,1], None],["ABS", [0,1,0], None],["PP", None, None],["PC", None, None]]
+        super(OptionBox, self).__init__(**kwargs)
+        Clock.schedule_once(self.init_drawing, 0)
+
+    def init_drawing(self, dt):
+        for o in self.options:
+            o[2] = Option(y=self.y + 200, title=o[0], box_color=o[1])
+            o[2].bind(on_release=self.on_selected)
+            self.ids.stack.add_widget(o[2])
+
+    def on_selected(self, option):
+        if self.selected:
+            self.selected.selected = False
+        self.selected = option
 
 class BtnTriple(Widget):
 

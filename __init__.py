@@ -11,19 +11,19 @@ if not TESTING:
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'gl'
 from kivy import kivy_data_dir
-from kivy.lang import Builder
 from kivy.app import App
-from kivy.config import Config
 from kivy.clock import Clock
-from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
+from kivy.lang import Builder
+from kivy.config import Config
 from kivy.base import ExceptionHandler, ExceptionManager
+from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
 from os.path import join, abspath, expanduser, basename, splitext
 from datetime import datetime, timedelta
 from subprocess import Popen
-import threading
-import logging
 import site
 
+import logging
+import threading
 from elements import UltraKeyboard
 from files import *
 from home import *
@@ -54,11 +54,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     homed = DictProperty({}) #updated by handle_homed event handler
     temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
-    print_title = StringProperty() #updated by get_printjob_state watching for state chages to 'printing'
+    queued_files = ListProperty()
     print_time = StringProperty() #updated by handle_print_time_calc
     print_done_time = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
-    pos = ListProperty([0,0,0]) #updated by scheduled update_home
+    pos = ListProperty([0,0,0,0]) #updated by scheduled update_home
     #tuning  #updated by upate_printing
     speed = NumericProperty(100)
     flow = NumericProperty(100)
@@ -76,6 +76,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
+        self.z_timer = None
+        self.extrude_timer = None
         if not TESTING:
             self.kgui_config = config
             self.printer = config.get_printer()
@@ -91,6 +93,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
             self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}#maybe use position_min, position_max = rail.get_range()
             self.filament_diameter = self.klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
+            self.min_extrude_temp = self.klipper_config.getsection("extruder").getint("min_extrude_temp", 170) # mantain this by keeping default the same as klipper
             #check whether the right sdcard path is configured
             configured_sdpath = expanduser(self.klipper_config.getsection("virtual_sdcard").get("path", None))
             if abspath(configured_sdpath) != abspath(p.sdcard_path):
@@ -110,7 +113,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
             self.filament_diameter = 1.75
+            self.xy_homing_controls = False
             self.extruders = [None, None, None]
+            self.extruder_count = 2
         super(mainApp, self).__init__(**kwargs)
 
     def handle_connect(self): #runs in klippy thread
@@ -157,7 +162,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 ### KLIPPER THREAD ^
 ########################################################################################
 ### KGUI    THREAD v
-        
+
     def run(self):
         logging.info("Kivy app.run")
         super(mainApp, self).run()
@@ -193,7 +198,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         if tab == self.root.ids.tabs.ids.set_tab:
             self.update_setting()
             self.scheduled_updating = Clock.schedule_interval(self.update_setting, 2)
-            
+
     def update_always(self, *args):
         self.print_state = self.sdcard.get_status(self.reactor.monotonic())['state']
 
@@ -217,7 +222,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_config('extruder', 'pressure_advance', 'default_pressure_advance')
         self.get_config('printer', 'max_accel', 'default_acceleration', 'int')
 
-    def get_printjob_state(self):
+    def get_printjob_state(self, *args):
 
         def format_time(seconds):
             minutes = int((seconds % 3600) // 60)
@@ -228,17 +233,21 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 return "{minutes} minutes".format(**locals())
 
         s = self.sdcard.get_status(self.reactor.monotonic())
+        if len(s['queued_files']) > max(len(self.queued_files), 1): # added file to q
+            self.notify.show("Added Printjob", "Added {basename(s['queued_files'][0])} to print Queue".format(**locals()))
+
+        self.queued_files = s['queued_files']
+
         if s['state'] != self.print_state: # state change
             self.print_state = s['state']
-            if s['state'] == 'printing': #setting title only works after pressing stop 
-                self.print_title = splitext(basename(self.sdcard.file.name))[0] #remove file extension only
-                self.notify.show("Started printing", "Started printing {}".format(basename(file.name)), delay=4)
+            if s['state'] == 'printing':
+                self.notify.show("Started printing", "Started printing {}".format(basename(s['queued_files'][0])), delay=4)
             elif s['state'] == 'done':
                 self.progress = 1
                 self.print_time = "done" 
                 self.print_done_time = "took " + format_time(self.sdcard.get_printed_time(self.reactor.monotonic()))
             elif s['state'] == 'stopped':
-                self.prin_time = "stopped"
+                self.print_time = "stopped"
                 self.print_done_time = ""
 
         if s['state'] == 'printing'\
@@ -366,7 +375,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(read_temp)
 
     def send_temp(self, temp, heater_id):
-        self.reactor.register_async_callback((lambda e: self.heaters[heater_id].set_temp(self.toolhead.get_last_move_time(), temp)))
+        def change_temp(e):
+            self.heaters[heater_id].set_temp(temp)
+            current = self.temp[heater_id]
+            self.temp[heater_id] = (temp, current[1])
+        self.reactor.register_async_callback(change_temp)
 
     def get_homing_state(self):
         homed_axes_string = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
@@ -381,8 +394,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def get_pos(self):
         def read_pos(e):
-            pos = self.toolhead.get_position()
-            self.pos = pos
+            self.pos = self.toolhead.get_position()
         self.reactor.register_async_callback(read_pos)
 
     def send_pos(self, x=None, y=None, z=None, e=None, speed=15):  
@@ -395,37 +407,84 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.toolhead.drip_move(pos, speed)
         self.reactor.register_async_callback(set_pos)
 
-    def send_z_up(self):
-        self.send_pos(z=self.pos_min['z'])
-    def send_z_down(self):
-        self.send_pos(z=self.pos_max['z'])
+    def send_rel_pos(self, x=0, y=0, z=0, e=0, speed=15): # only execute this in klipper thread  
+        cur_pos = self.toolhead.get_position()
+        new_pos = [x,y,z,e]
+        homed_axes = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
+        for i, (new, name) in enumerate(zip(new_pos, "xyze")):
+            if name == "e":
+                cur_pos[i] += new
+            elif name in homed_axes:
+                cur_pos[i] += new
+                if cur_pos[i] > self.pos_max[name]: # don't exceed physical limits
+                    cur_pos[i] = self.pos_max[name]
+                if cur_pos[i] < self.pos_min[name]:
+                    cur_pos[i] = self.pos_min[name]
+        self.toolhead.move(cur_pos, speed)
+
+    def send_z_up(self, direction=1):
+        INTERVAL = 0.2
+        SPEED = 10.
+        STEP = INTERVAL * SPEED * direction
+        self.step_time = self.reactor.monotonic()
+        def z_step(eventtime):
+            self.send_rel_pos(z=STEP, speed=SPEED)
+            self.step_time += INTERVAL
+            return self.step_time
+        self.z_timer = self.reactor.register_timer(z_step, self.reactor.NOW)
+
     def send_z_stop(self):
-        self.reactor.register_async_callback((lambda e: self.toolhead.signal_drip_mode_end()))
+        if self.z_timer: #is this thread safe?
+            self.reactor.unregister_timer(self.z_timer)
+
+    def send_extrude(self, tool_id, direction=1):
+        INTERVAL = 0.4
+        SPEED = 2
+        STEP = INTERVAL * SPEED
+        def extrude_step(eventtime):
+            self.send_rel_pos(e=direction*STEP, speed=SPEED)
+            return eventtime + INTERVAL
+        self.extrude_timer = self.reactor.register_timer(extrude_step, self.reactor.NOW)
+
+    def send_extrude_stop(self):
+        if self.extrude_timer: #is this thread safe?
+            self.reactor.unregister_timer(self.extrude_timer)
 
     def send_calibrate(self):
-        self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(0)))
+        self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(None)))
 
-    def send_start(self, filename=None):
-        self.print_state = "printing"
-        if filename: filename = basename(filename) # remove path
-        def start(e):
-            try:
-                if filename:
-                    self.sdcard.cmd_M23({'#original': "M23 " + filename})
-                self.sdcard.cmd_M24(None)
-            except:
-                self.notify.show("Couldn't start Print, sdcard error", level='error')
-        self.reactor.register_async_callback(start)
+    def send_start(self, filepath=None):
+        if filepath is None:
+            def start_reprint(e):
+                if self.sdcard.current_file: # reprint the last file
+                    filepath = self.sdcard.current_file.name
+                else: return
+                self.sdcard.add_printjob(filepath)
+                Clock.schedule_once(self.get_printjob_state, 0)
+            self.reactor.register_async_callback(start_reprint)
+        else:
+            def start_print(e):
+                self.sdcard.add_printjob(filepath)
+                Clock.schedule_once(self.get_printjob_state, 0)
+            self.reactor.register_async_callback(start_print)
+
+    def send_resume(self):
+        def resume_print(e):
+            self.sdcard.resume_printjob()
+            Clock.schedule_once(self.get_printjob_state, 0)
+        self.reactor.register_async_callback(resume_print)
 
     def send_stop(self):
-        self.print_state = "stopped"
-        self.notify.show("Printing stopped", level="error", delay=4)
-        self.reactor.register_async_callback(self.sdcard.cmd_STOP_PRINT)
+        def stop_print(e):
+            self.sdcard.stop_printjob()
+            Clock.schedule_once(self.get_printjob_state, 0)
+        self.reactor.register_async_callback(stop_print)
 
     def send_pause(self):
-        self.print_state = "paused"
-        self.notify.show("Paused", "Print paused", delay=4)
-        self.reactor.register_async_callback(self.sdcard.cmd_M25)
+        def pause_print(e):
+            self.sdcard.pause_printjob()
+            Clock.schedule_once(self.get_printjob_state, 0)
+        self.reactor.register_async_callback(pause_print)
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
@@ -434,7 +493,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def restart_klipper(self):
         """Quit and restart klipper and GUI"""
         logging.info("attempting a firmware restart")
-        self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
+        try:
+            self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
+        except:
+            Popen(['sudo', 'systemctl', 'restart', 'klipper.service'])
         self.stop()
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
@@ -443,7 +505,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 ########################################################################################
 ### KLIPPER THREAD v
 
-class ExceptionHandlerWithPopup(ExceptionHandler):
+class PopupExceptionHandler(ExceptionHandler):
     def handle_exception(self, exception):
         App.get_running_app().handle_exception(repr(exception))
         logging.exception(exception)
@@ -479,7 +541,7 @@ def set_kivy_config():
     Builder.load_file(join(p.kgui_dir, "style.kv"))
 
 # Catch KGUI exceptions and display popup
-ExceptionManager.add_handler(ExceptionHandlerWithPopup())
+ExceptionManager.add_handler(PopupExceptionHandler())
 # Add parent directory to sys.path so main.kv (parser.py) can import from it
 site.addsitedir(p.kgui_dir)
 # Read custom Kivy config file, set rotation and load custom style.kv

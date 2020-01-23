@@ -10,6 +10,7 @@ from time import time
 from collections import deque
 import parameters as p
 
+
 class BaseButton(Widget):
 
     pressed = BooleanProperty(False)
@@ -18,7 +19,6 @@ class BaseButton(Widget):
         self.register_event_type('on_press')
         self.register_event_type('on_release')
         super(BaseButton, self).__init__(**kwargs)
-
 
     def on_touch_down(self, touch):
         if super(BaseButton, self).on_touch_down(touch):

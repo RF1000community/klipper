@@ -17,13 +17,15 @@ icon_radius = 4
 popup_radius = 15
 status_bar_height = 26
 btn_height = 80
+btn_stop = 70
 progress_bar_height = 10
 tab_height = 100
 #generate even spacing based on all contents on homescreen
 small_padding = 15
 padding = (screen_height\
         - status_bar_height\
-        - btn_height*7\
+        - btn_height*6\
+        - btn_stop\
         - progress_bar_height\
         - tab_height)\
         /float(7)#remaining space has to contain 9* padding and 1* hpadding
@@ -32,7 +34,7 @@ notification_text_padding = 20
 btn_spacing = padding + btn_height
 padding_hint = padding/screen_width
 h_padding = padding*disp_vertical_stretch
-btn_temp_width = 154
+btn_temp_width = 158
 btn_width = screen_width - 3*h_padding - btn_temp_width
 
 background = [0.065,0.065,0.065,1]
