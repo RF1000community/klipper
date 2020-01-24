@@ -107,5 +107,15 @@ Xorg: /var/log/
 sudo echo "%sudo ALL=(ALL) NOPASSWD: /bin/systemctl" >> /etc/sudoers
 ```
 
+### Klipper microcontroller flashing
+
+For use of the gtk configuration GUI a basic gtk installation must be available:
+
+`sudo apt install libgtk2.0-dev libglade2-dev libglib2.0-dev`
+
+Then from the klipperui directory execute
+`make gconfig`
+with a running X session.
+
 /home/pi/klippy-env/bin/python      klippy executable  
 /usr/bin/startx                     xorg
