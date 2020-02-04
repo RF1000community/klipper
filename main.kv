@@ -1366,6 +1366,8 @@ FloatLayout:
             SetItem:
                 left_title: "Shutdown..."
                 on_release: Factory.PowerPopup().open()
+            SI_Timezone:
+
 
 <WifiScreen>:
     name: 'WifiScreen'
@@ -1413,8 +1415,6 @@ FloatLayout:
     size_hint_y: None
     height: 110
     width: p.screen_width
-    left_title: ""
-    right_title: ""
     Label:
         id: left_label
         text: root.left_title
@@ -1459,6 +1459,10 @@ FloatLayout:
         size_hint: None, None
         pos_hint: {'center_y': 0.5}
         right: p.screen_width-p.padding +p.small_padding #to increase touch area
+
+<SI_Timezone>:
+    left_title: "Timezone"
+    on_release: Factory.TimezonePopup().open()
 
 <SI_WifiNetwork>:
     Label:
@@ -1603,6 +1607,47 @@ FloatLayout:
             width: root.width
             pos: root.pos
             on_release: root.dismiss()
+
+<TimezonePopup>:
+    size_hint: 0.9, 0.7
+    title: "Choose Continent"
+    FloatLayout:
+        id: maincontainer
+        ScrollView:
+            # canvas.before:
+            #     Color:
+            #         rgba: p.background
+            #     Rectangle:
+            #         pos: self.pos
+            #         size: self.size
+            #     size_hint: None, None
+            size: root.width, maincontainer.height-btn_cancel.height
+            pos: root.x, btn_cancel.top
+        BoxLayout:
+            id: optionbox
+            orientation:'vertical'
+            height: self.minimum_height
+            pos_hint: {'x':0, 'y':0}
+            size_hint_y: None
+        Btn_P_Cancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        Btn_P_Confirm:
+            enabled: True
+            title: "Confirm"
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.confirm(); root.dismiss()
+<ListItem>:
+    Label:
+        text: root.text
+        size_hint: 1, 1
+        pos: root.pos
+        font_size: p.normal_font
+        color: (1,1,1,1)
+    Divider:
 
 <Background@Widget>:
     canvas.before:

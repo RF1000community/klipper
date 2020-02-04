@@ -3,7 +3,7 @@ from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
-from kivy.properties import ListProperty, ObjectProperty, NumericProperty, DictProperty
+from kivy.properties import ListProperty, ObjectProperty, NumericProperty, DictProperty, StringProperty
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
 from kivy.logger import Logger
@@ -245,7 +245,8 @@ class RectangleButton(BaseButton):
     pass
 
 class SetItem(FloatLayout, RectangleButton):
-    pass
+    left_title = StringProperty()
+    right_title = StringProperty()
 
 
 class SI_Wifi(SetItem):
@@ -447,4 +448,27 @@ class ConnectionPopup(BasePopup):
     def delete(self):
         wifi.delete(self.ssid)
         self.dismiss()
+
+class SI_Timezone(SetItem):
+    def __init__(self, **kwargs):
+        super(SI_Timezone, self).__init__(right_title = "sonstwas", **kwargs)
+
+class TimezonePopup(BasePopup):
+    def __init__(self, **kwargs):
+        super(TimezonePopup, self).__init__(**kwargs)
+        Clock.schedule_once(self.init_drawing, 0)
+
+    def init_drawing(self, dt):
+        for i in range(10):
+            timezone = ListItem("Freizeit"+str(i))
+            self.ids.maincontainer.ids.optionbox.add_widget(timezone)
+
+    def confirm():
+        pass
+
+class ListItem(BaseButton):
+    def __init__(self, text, **kwargs):
+        self.text = text
+        super(ListItem, self).__init__(**kwargs)
+
 
