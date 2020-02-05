@@ -12,6 +12,7 @@ from functools import partial
 from elements import *
 import parameters as p
 import logging
+import os
 
 
 class Wifi(EventDispatcher):
@@ -455,20 +456,49 @@ class SI_Timezone(SetItem):
 
 class TimezonePopup(BasePopup):
     def __init__(self, **kwargs):
+        self.selected = None
+        self.selected_continent_folder = None
         super(TimezonePopup, self).__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
 
+    TIMEZONES = "/usr/share/zoneinfo/"
     def init_drawing(self, dt):
-        for i in range(10):
-            timezone = ListItem("Freizeit"+str(i))
-            self.ids.maincontainer.ids.optionbox.add_widget(timezone)
+        continent_folders = next(os.walk(self.TIMEZONES))[1]
+        self.draw_options(continent_folders)
 
-    def confirm():
-        pass
+    def draw_options(self, options):
+        for i in options:
+            option = ListItem(i, width = self.width)
+            option.bind(on_press=self.on_selected)
+            self.ids.optionbox.add_widget(option)
+
+    def on_selected(self, option):
+        if self.selected:
+            self.selected.selected = False
+        self.selected = option
+        self.ids.btn_confirm.enabled = True
+
+    def confirm(self):
+        if not self.selected_continent: # 1. selection is done
+            self.selected_continent_folder = self.TIMEZONES + "/" + self.selected.text
+            self.ids.optionbox.clear_widgets()
+            timezone_pseudofiles = next(os.walk(self.selected_continent_folder))[2]
+            self.draw_options(timezone_pseudofiles)
+            self.title = "Choose Timezone"
+            self.ids.btn_confirm.enabled = False
+        else: # timezone is selected
+            logging.info("set timezone to {}, {}".format(self.selected_continent, self.selected_timezone))
+            os.remove("/etc/localtime")
+            os.symlink(self.selected_continent_folder + "/" + self.selected.text, "/etc/localtime")
+            os.remove("/etc/timezone") # Stackoverflow dude has forgotten why this is needed
+            self.dismiss()
 
 class ListItem(BaseButton):
+    selected = BooleanProperty(False)
     def __init__(self, text, **kwargs):
         self.text = text
         super(ListItem, self).__init__(**kwargs)
-
+    def on_press(self):
+        self.selected = True
+        
 

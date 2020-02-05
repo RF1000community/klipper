@@ -1134,6 +1134,7 @@ FloatLayout:
 <FilamentChooserPopup@BasePopup>:
     size_hint: 0.95, 0.55
     title: "Choose a Material"
+    #TODO check if container id was already used
     FloatLayout:
         id: container
         FloatLayout:
@@ -1563,18 +1564,17 @@ FloatLayout:
 <PowerPopup@BasePopup>:
     title: "Shutdown..."
     title_size: p.large_font
-    size_hint: 0.65, 0.5
+    size_hint: 0.67, 0.5
     FloatLayout:
         RectangleButton:
             id: btn_poweroff
             title: "Shutdown"
-            size_hint: 0.7, None
-            height: 90
-            pos_hint: {'center_x': 0.5, 'y': 0.18}
+            size_hint: 1, None
+            height: 70
+            pos: root.x, btn_cancel.top
             on_release: app.poweroff()
         Divider:
-            size_hint: None, None
-            size: btn_poweroff.width, 1
+            width: root.width
             pos: btn_reboot.pos
         RectangleButton:
             id: btn_reboot
@@ -1583,8 +1583,7 @@ FloatLayout:
             pos: btn_poweroff.x, btn_poweroff.top
             on_release: app.reboot()
         Divider:
-            size_hint: None, None
-            size: btn_poweroff.width, 1
+            width: root.width
             pos: btn_restart_klipper.pos
         RectangleButton:
             id: btn_restart_klipper
@@ -1593,8 +1592,7 @@ FloatLayout:
             pos: btn_poweroff.x, btn_reboot.top
             on_release: app.restart_klipper()
         Divider:
-            size_hint: None, None
-            size: btn_poweroff.width, 1
+            width: root.width
             pos: btn_quit.pos
         RectangleButton:
             id: btn_quit
@@ -1602,7 +1600,11 @@ FloatLayout:
             size: btn_poweroff.size
             pos: btn_poweroff.x, btn_restart_klipper.top
             on_release: app.quit()
+        Divider:
+            width: root.width
+            pos: btn_quit.x, btn_quit.top
         Btn_P_Cancel:
+            id: btn_cancel
             single: True
             width: root.width
             pos: root.pos
@@ -1614,40 +1616,46 @@ FloatLayout:
     FloatLayout:
         id: maincontainer
         ScrollView:
-            # canvas.before:
-            #     Color:
-            #         rgba: p.background
-            #     Rectangle:
-            #         pos: self.pos
-            #         size: self.size
-            #     size_hint: None, None
+            size_hint: None, None
             size: root.width, maincontainer.height-btn_cancel.height
             pos: root.x, btn_cancel.top
-        BoxLayout:
-            id: optionbox
-            orientation:'vertical'
-            height: self.minimum_height
-            pos_hint: {'x':0, 'y':0}
-            size_hint_y: None
+            BoxLayout:
+                id: optionbox
+                orientation:'vertical'
+                height: self.minimum_height
+                pos_hint: {'x':0, 'y':0}
+                size_hint_y: None
         Btn_P_Cancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
         Btn_P_Confirm:
-            enabled: True
+            id: btn_confirm
             title: "Confirm"
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: root.confirm(); root.dismiss()
+            on_release: root.confirm()
 <ListItem>:
+    height: p.btn_height
+    enabled: True
+    canvas:
+        Color:
+            rgba: p.translucent_white if self.selected else (0,0,0,0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
     Label:
         text: root.text
-        size_hint: 1, 1
+        size_hint: None, None
+        size: root.size
         pos: root.pos
+        padding_x: p.h_padding
         font_size: p.normal_font
+        text_size: self.size
         color: (1,1,1,1)
-    Divider:
+        valign: 'middle'
+        halign: 'left'
 
 <Background@Widget>:
     canvas.before:

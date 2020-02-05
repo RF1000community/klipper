@@ -2,6 +2,10 @@ KGUI:
 
     fix ethernet icon not showing up
 
+    fix virtualsd
+
+    rewrite filechooser with queueing 
+
     Klipper: remove necessity to rehome after motors were switched off
 
     https://wiki.archlinux.org/index.php/Display_Power_Management_Signaling

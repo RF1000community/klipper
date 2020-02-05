@@ -98,7 +98,6 @@ class FC(FileChooserIconView):
 class PrintPopup(BasePopup):
 
     def __init__(self, path, **kwargs):
-        from os import symlink
         self.path = path
         # Extract only the filename from the path
         self.prompt = basename(self.path)
@@ -120,7 +119,7 @@ class PrintPopup(BasePopup):
                 app.notify.show("Copying {} to Printer...".format(basename(self.path)))
                 shutil.copy(self.path, new_path)
             else:
-                symlink(self.path, new_path)
+                os.symlink(self.path, new_path)
 
         app.send_start(new_path)
         tabs = app.root.ids.tabs

@@ -6,9 +6,9 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.app import App
 from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Line
 from kivy.graphics.context_instructions import Color
-import logging
 from elements import *
 import parameters as p
+import logging
 
 
 class XyField(Widget):
