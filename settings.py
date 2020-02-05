@@ -479,7 +479,7 @@ class TimezonePopup(BasePopup):
         self.ids.btn_confirm.enabled = True
 
     def confirm(self):
-        if not self.selected_continent: # 1. selection is done
+        if not self.selected_continent_folder: # 1. selection is done
             self.selected_continent_folder = self.TIMEZONES + "/" + self.selected.text
             self.ids.optionbox.clear_widgets()
             timezone_pseudofiles = next(os.walk(self.selected_continent_folder))[2]
@@ -487,7 +487,7 @@ class TimezonePopup(BasePopup):
             self.title = "Choose Timezone"
             self.ids.btn_confirm.enabled = False
         else: # timezone is selected
-            logging.info("set timezone to {}, {}".format(self.selected_continent, self.selected_timezone))
+            logging.info("set timezone to {}, {}".format(self.selected_continent_folder, self.selected.text))
             os.remove("/etc/localtime")
             os.symlink(self.selected_continent_folder + "/" + self.selected.text, "/etc/localtime")
             os.remove("/etc/timezone") # Stackoverflow dude has forgotten why this is needed
