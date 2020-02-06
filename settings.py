@@ -1,5 +1,6 @@
 # coding: utf-8
 from kivy.app import App
+from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview import RecycleView
@@ -428,7 +429,6 @@ class PasswordPopup(BasePopup):
                 level="warning", delay=4)
         return True
 
-
 class ConnectionPopup(BasePopup):
 
     def __init__(self, network, **kwargs):
@@ -456,6 +456,7 @@ class ConnectionPopup(BasePopup):
         self.dismiss()
 
 class SI_Timezone(SetItem):
+
     def __init__(self, **kwargs):
         if os.path.isdir("/etc/localtime"):
             timezone = next(os.walk("/etc/localtime")[2])
@@ -465,22 +466,23 @@ class SI_Timezone(SetItem):
 
 TIMEZONES = "/usr/share/zoneinfo/"
 class TimezonePopup(BasePopup):
+
     def __init__(self, **kwargs):
         super(TimezonePopup, self).__init__(**kwargs)
         self.selected_continent_folder = None
 
     def confirm(self):
         if not self.selected_continent_folder: # 1. selection just done
-            self.selected_continent_folder = TIMEZONES + "/" + self.ids.rv_box.selected.text
+            self.selected_continent_folder = TIMEZONES + "/" + self.ids.rv_box.selected
             timezone_pseudofiles = next(os.walk(self.selected_continent_folder))[2]
             self.ids.rv.data = [{'text': city} for city in timezone_pseudofiles]
             self.ids.rv.refresh_from_data()
             self.title = "Choose Timezone"
             self.ids.btn_confirm.enabled = False
         else: # 2. selection (timezone) just done
-            logging.info("set timezone to {}, {}".format(self.selected_continent_folder, self.ids.rv_box.selected.text))
+            logging.info("set timezone to {}, {}".format(self.selected_continent_folder, self.ids.rv_box.selected))
             os.remove("/etc/localtime")
-            os.symlink(self.selected_continent_folder + "/" + self.ids.rv_box.selected.text, "/etc/localtime/" + self.ids.rv_box.selected.text)
+            os.symlink(self.selected_continent_folder + "/" + self.ids.rv_box.selected, "/etc/localtime/" + self.ids.rv_box.selected)
             os.remove("/etc/timezone") # Stackoverflow dude has forgotten why this is needed
             self.dismiss()
 
@@ -490,10 +492,10 @@ class TimezoneRV(RecycleView):
         region_folders = next(os.walk(TIMEZONES))[1]
         self.data = [{'text': region} for region in region_folders]
 
-class TimezoneRVBox(RecycleBoxLayout):
-    selected = ObjectProperty()
+class TimezoneRVBox(RecycleBoxLayout, LayoutSelectionBehavior):
+    selected = StringProperty()
 
-class TimezoneRVItem(BaseButton, RecycleDataViewBehavior):
+class TimezoneRVItem(Widget, RecycleDataViewBehavior):
     index = None
     text = StringProperty()
     selected = BooleanProperty(False)
@@ -501,11 +503,15 @@ class TimezoneRVItem(BaseButton, RecycleDataViewBehavior):
     def __init__(self, **kwargs):
         super(TimezoneRVItem, self).__init__(**kwargs)
 
-    def on_press(self):
-        if self.parent.selected:
-            self.parent.selected.selected = False
-        self.parent.selected = self
-        self.selected = True
+    def on_touch_down(self, touch):
+        ''' Add selection on touch down '''
+        if self.collide_point(*touch.pos):
+            return self.parent.select_with_touch(self.index, touch)
+    # def on_press(self):
+    #     #lf.parent.select_with_touch(self.index, None)
+
+            self.parent.selected = self.text
+            self.selected = True
 
     def refresh_view_attrs(self, rv, index, data):
         ''' Catch and handle the view changes '''
@@ -515,5 +521,12 @@ class TimezoneRVItem(BaseButton, RecycleDataViewBehavior):
     def apply_selection(self, rv, index, is_selected):
         ''' Respond to the selection of items in the view. '''
         self.selected = is_selected
+    
+    def on_text(self, *args, **kwargs):
+        if self.parent:
+            if self.text == self.parent.selected:
+                self.selected = True
+        else:
+            self.selected = False
  
 

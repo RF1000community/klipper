@@ -450,8 +450,6 @@ FloatLayout:
             width: 1
 
 <BtnTriple>:
-    #filament_color: (1, 0, 0)
-    #filament_amount: 0.4
     title: "Unload\n 700g PET-G"
     tool_id: "T0"
     w1: 0
@@ -462,17 +460,16 @@ FloatLayout:
     #:set w 19
     canvas:
         Color:
-            rgb: root.filament_color
+            rgb: root.filament_color_adjusted
         RoundedRectangle:
             size: root.size
             pos: root.pos
             radius: (p.radius,)
         Color:
             rgb: p.background
-        RoundedRectangle:
+        Rectangle:
             size: root.width * (1-root.filament_amount), root.height
             pos: root.x + root.filament_amount * root.width, root.y
-            radius: (0, p.radius, p.radius, 0)
         Color:
             rgba: p.btn_outline
         Line:
@@ -484,6 +481,11 @@ FloatLayout:
             points: self.x+self.w1, self.y+6, self.x+self.w1, self.top-6
         Line:
             points: self.x+self.w1+1+self.w2, self.y+6, self.x+self.w1+1+self.w2, self.top-6
+        Color:
+            rgba: root.divider_color
+        Rectangle:
+            size: 3, root.height
+            pos: root.x + root.filament_amount * root.width - 3, root.y
     BaseButton:
         size: root.w1, root.height
         pos: root.pos
@@ -495,6 +497,12 @@ FloatLayout:
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points: (self.x+self.width/2+w/2, self.center_y- w, self.x+self.width/2+w/2, self.center_y+ w, self.x+self.width/2-w/2, self.center_y)
+            # Color:
+            #     rgba: p.background[:3] + [0.3]
+            # Line:
+            #     points: (self.x+self.width/2+w/2, self.center_y- w, self.x+self.width/2+w/2, self.center_y+ w, self.x+self.width/2-w/2, self.center_y)
+            #     width: 1
+            #     close: True
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
@@ -515,8 +523,8 @@ FloatLayout:
                 pos: self.pos
         Label:
             color: (1,1,1,1) if btn_load.enabled else p.btn_disabled
-            outline_color: p.background[:3]
-            outline_width: 1
+            #outline_color: p.background[:3]
+            #outline_width: 1
             text: root.title
             size: btn_load.size
             text_size: self.size
@@ -537,6 +545,12 @@ FloatLayout:
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points: (self.x+self.width/2-w/2, self.center_y- w, self.x+self.width/2-w/2, self.center_y+ w, self.x+self.width/2+w/2, self.center_y)
+            # Color:
+            #     rgba: p.background[:3] + [0.3]
+            # Line:
+            #     points: (self.x+self.width/2-w/2, self.center_y- w, self.x+self.width/2-w/2, self.center_y+ w, self.x+self.width/2+w/2, self.center_y)
+            #     width: 1
+            #     close: True
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
@@ -1647,7 +1661,8 @@ FloatLayout:
 
 <TimezoneRVItem>:
     height: p.btn_height
-    enabled: True
+#selected: True #self.parent.selected is in  self.text
+    #enabled: True
     canvas:
         Color:
             rgba: p.translucent_white if self.selected else (0,0,0,0)

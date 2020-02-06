@@ -230,11 +230,11 @@ class OptionBox(FloatLayout, Widget):
         self.selected = option
 
 class BtnTriple(Widget):
-
-    filament_color = ListProperty([0.9, 0.9, 0.9])
-    bg_color = ListProperty([0, 0, 0])
-    label_color = ListProperty([1, 1, 1, 1])
-    filament_amount = NumericProperty(0.9)
+    import random
+    filament_color = ListProperty([random.randint(0,100)/100. for i in range(3)])
+    filament_color_adjusted = ListProperty([0,0,0])
+    filament_amount = NumericProperty(0.6)
+    divider_color = ListProperty([1,1,1,0])
 
     def __init__(self, **kwargs):
         super(BtnTriple, self).__init__(**kwargs)
@@ -246,23 +246,20 @@ class BtnTriple(Widget):
         that everything is clearly visible.
         """
         l = self.lightness(*self.filament_color)
-        # Change backgroung and label color if the defaults
-        # are too close to the lightness of the color.
-        threshold = 0.1
 
-        # l(bg) = 0.065 ==> change for l < 0.165
-        bg = p.background
-        if abs(l - self.lightness(*bg[:3])) < threshold:
-            bg = p.light_gray
-
-        # l(lb) = 0.35 ==> change for 0.25 < l < 0.45
-        # 0.165 < 0.25 ==> bg and lb will never be changed simultaneously
-        lb = p.medium_light_gray
-        if abs(l - self.lightness(*lb[:3])) < threshold:
-            lb = [1, 1, 1, 1]
-
-        self.bg_color = bg
-        self.label_color = lb
+        # add divider if lightness is too close to background
+        if abs(l - self.lightness(*p.background[:3])) < 0.07:
+            self.divider_color = [1,1,1,0.15]
+        else:
+            self.divider_color = [0,0,0,0]
+        
+        # darken if color is to bright
+    
+        if l > 0.48:
+            
+            self.filament_color_adjusted = [c*0.48/l for c in self.filament_color]
+        else:
+            self.filament_color_adjusted = self.filament_color
 
     def lightness(self, r, g, b):
         """
