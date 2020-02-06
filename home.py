@@ -231,10 +231,10 @@ class OptionBox(FloatLayout, Widget):
 
 class BtnTriple(Widget):
 
-    filament_color = ListProperty([0.33, 0, 0])
+    filament_color = ListProperty([0.9, 0.9, 0.9])
     bg_color = ListProperty([0, 0, 0])
     label_color = ListProperty([1, 1, 1, 1])
-    filament_amount = NumericProperty(0.4)
+    filament_amount = NumericProperty(0.9)
 
     def __init__(self, **kwargs):
         super(BtnTriple, self).__init__(**kwargs)

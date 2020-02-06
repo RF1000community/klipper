@@ -1,11 +1,14 @@
 # coding: utf-8
 from kivy.app import App
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from kivy.uix.recycleview import RecycleView
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
-from kivy.properties import ListProperty, ObjectProperty, NumericProperty, DictProperty, StringProperty
-from kivy.clock import Clock
+from kivy.properties import ListProperty, ObjectProperty, NumericProperty, DictProperty, StringProperty, BooleanProperty
 from kivy.event import EventDispatcher
+from kivy.clock import Clock
 from kivy.logger import Logger
 from subprocess import Popen, PIPE, STDOUT
 from functools import partial
@@ -13,6 +16,8 @@ from elements import *
 import parameters as p
 import logging
 import os
+
+from kivy.uix.behaviors import FocusBehavior
 
 
 class Wifi(EventDispatcher):
@@ -452,53 +457,63 @@ class ConnectionPopup(BasePopup):
 
 class SI_Timezone(SetItem):
     def __init__(self, **kwargs):
-        super(SI_Timezone, self).__init__(right_title = "sonstwas", **kwargs)
+        if os.path.isdir("/etc/localtime"):
+            timezone = next(os.walk("/etc/localtime")[2])
+        else:
+            timezone = "not available"
+        super(SI_Timezone, self).__init__(right_title = timezone, **kwargs)
 
+TIMEZONES = "/usr/share/zoneinfo/"
 class TimezonePopup(BasePopup):
     def __init__(self, **kwargs):
-        self.selected = None
-        self.selected_continent_folder = None
         super(TimezonePopup, self).__init__(**kwargs)
-        Clock.schedule_once(self.init_drawing, 0)
-
-    TIMEZONES = "/usr/share/zoneinfo/"
-    def init_drawing(self, dt):
-        continent_folders = next(os.walk(self.TIMEZONES))[1]
-        self.draw_options(continent_folders)
-
-    def draw_options(self, options):
-        for i in options:
-            option = ListItem(i, width = self.width)
-            option.bind(on_press=self.on_selected)
-            self.ids.optionbox.add_widget(option)
-
-    def on_selected(self, option):
-        if self.selected:
-            self.selected.selected = False
-        self.selected = option
-        self.ids.btn_confirm.enabled = True
+        self.selected_continent_folder = None
 
     def confirm(self):
-        if not self.selected_continent_folder: # 1. selection is done
-            self.selected_continent_folder = self.TIMEZONES + "/" + self.selected.text
-            self.ids.optionbox.clear_widgets()
+        if not self.selected_continent_folder: # 1. selection just done
+            self.selected_continent_folder = TIMEZONES + "/" + self.ids.rv_box.selected.text
             timezone_pseudofiles = next(os.walk(self.selected_continent_folder))[2]
-            self.draw_options(timezone_pseudofiles)
+            self.ids.rv.data = [{'text': city} for city in timezone_pseudofiles]
+            self.ids.rv.refresh_from_data()
             self.title = "Choose Timezone"
             self.ids.btn_confirm.enabled = False
-        else: # timezone is selected
-            logging.info("set timezone to {}, {}".format(self.selected_continent_folder, self.selected.text))
+        else: # 2. selection (timezone) just done
+            logging.info("set timezone to {}, {}".format(self.selected_continent_folder, self.ids.rv_box.selected.text))
             os.remove("/etc/localtime")
-            os.symlink(self.selected_continent_folder + "/" + self.selected.text, "/etc/localtime")
+            os.symlink(self.selected_continent_folder + "/" + self.ids.rv_box.selected.text, "/etc/localtime/" + self.ids.rv_box.selected.text)
             os.remove("/etc/timezone") # Stackoverflow dude has forgotten why this is needed
             self.dismiss()
 
-class ListItem(BaseButton):
+class TimezoneRV(RecycleView):
+    def __init__(self, **kwargs):
+        super(TimezoneRV, self).__init__(**kwargs)
+        region_folders = next(os.walk(TIMEZONES))[1]
+        self.data = [{'text': region} for region in region_folders]
+
+class TimezoneRVBox(RecycleBoxLayout):
+    selected = ObjectProperty()
+
+class TimezoneRVItem(BaseButton, RecycleDataViewBehavior):
+    index = None
+    text = StringProperty()
     selected = BooleanProperty(False)
-    def __init__(self, text, **kwargs):
-        self.text = text
-        super(ListItem, self).__init__(**kwargs)
+
+    def __init__(self, **kwargs):
+        super(TimezoneRVItem, self).__init__(**kwargs)
+
     def on_press(self):
+        if self.parent.selected:
+            self.parent.selected.selected = False
+        self.parent.selected = self
         self.selected = True
-        
+
+    def refresh_view_attrs(self, rv, index, data):
+        ''' Catch and handle the view changes '''
+        self.index = index
+        return super(TimezoneRVItem, self).refresh_view_attrs(rv, index, data)
+
+    def apply_selection(self, rv, index, is_selected):
+        ''' Respond to the selection of items in the view. '''
+        self.selected = is_selected
+ 
 
