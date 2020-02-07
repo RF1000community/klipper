@@ -18,7 +18,7 @@ sudo apt install git python-pip virtualenv
 ```bash
 cd
 git clone https://github.com/foosel/OctoPrint.git
-cd OctoPrint/
+cd Octoprint/
 virtualenv venv  
 ./venv/bin/python setup.py install
 
@@ -34,7 +34,7 @@ sudo systemctl enable octoprint
 cd ~
 
 git clone --recurse-submodules https://github.com/D4SK/klipperui
-./klipperui/scripts/install-kgui-systemd.sh
+./klipperui/scripts/install-kgui.sh
 ```
 
 put printer.cfg file in home folder  
