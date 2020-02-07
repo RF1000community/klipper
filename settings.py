@@ -472,8 +472,9 @@ class TimezonePopup(BasePopup):
         self.selected_continent_folder = None
 
     def confirm(self):
+        selection = self.ids.rv.data[self.ids.rv_box.selected_nodes[0]]
+        self.ids.rv_box.selected_nodes = []
         if not self.selected_continent_folder: # 1. selection just done
-            selection = self.ids.rv.data[self.ids.rv_box.selected_nodes[0]]
             self.selected_continent_folder = TIMEZONES + "/" + selection['text']
             timezone_pseudofiles = next(os.walk(self.selected_continent_folder))[2]
             for timezone in []:
@@ -486,9 +487,8 @@ class TimezonePopup(BasePopup):
             self.title = "Choose Timezone"
             #self.ids.btn_confirm.enabled = False
         else: # 2. selection (timezone) just done
-            logging.info("set timezone to {}, {}".format(self.selected_continent_folder, self.ids.rv_box.selected))
             os.remove("/etc/localtime")
-            os.symlink(self.selected_continent_folder + "/" + self.ids.rv_box.selected, "/etc/localtime/" + self.ids.rv_box.selected)
+            os.symlink(self.selected_continent_folder + "/" + selection['text'], "/etc/localtime/" + selection['text'])
             os.remove("/etc/timezone") # Stackoverflow dude has forgotten why this is needed
             self.dismiss()
 
