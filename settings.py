@@ -473,12 +473,18 @@ class TimezonePopup(BasePopup):
 
     def confirm(self):
         if not self.selected_continent_folder: # 1. selection just done
-            self.selected_continent_folder = TIMEZONES + "/" + self.ids.rv_box.selected
+            selection = self.ids.rv.data[self.ids.rv_box.selected_nodes[0]]
+            self.selected_continent_folder = TIMEZONES + "/" + selection['text']
             timezone_pseudofiles = next(os.walk(self.selected_continent_folder))[2]
-            self.ids.rv.data = [{'text': city} for city in timezone_pseudofiles]
+            for timezone in []:
+                if timezone in timezone_pseudofiles:
+                    timezone_pseudofiles.remove(timezone)
+                else:
+                    logging.warning("TIMEZONES: Pleas Update Timezones, {} could not be removed from list".format(folder))
+            self.ids.rv.data = [{'text': timezone} for timezone in timezone_pseudofiles]
             self.ids.rv.refresh_from_data()
             self.title = "Choose Timezone"
-            self.ids.btn_confirm.enabled = False
+            #self.ids.btn_confirm.enabled = False
         else: # 2. selection (timezone) just done
             logging.info("set timezone to {}, {}".format(self.selected_continent_folder, self.ids.rv_box.selected))
             os.remove("/etc/localtime")
@@ -489,14 +495,12 @@ class TimezonePopup(BasePopup):
 class TimezoneRV(RecycleView):
     def __init__(self, **kwargs):
         super(TimezoneRV, self).__init__(**kwargs)
-        #region_folders = next(os.walk(TIMEZONES))[1]
-        region_folders = ["test" for i in range(10)]
+        region_folders = next(os.walk(TIMEZONES))[1]
         for folder in ["SystemV", "Etc", "posix", "right"]:
             if folder in region_folders:
                 region_folders.remove(folder)
             else:
-                logging.warning("TIMEZONES: Pleas Update Timezones, {} \
-                could not be removed from list".format(folder))
+                logging.warning("TIMEZONES: Pleas Update Timezones, {} could not be removed from list".format(folder))
         self.data = [{'text': region} for region in region_folders]
 
 class TimezoneRVBox(LayoutSelectionBehavior, RecycleBoxLayout):

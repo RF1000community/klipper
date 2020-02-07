@@ -1638,6 +1638,7 @@ FloatLayout:
             size: root.width, maincontainer.height-btn_cancel.height
             pos: root.x, btn_cancel.top
             TimezoneRVBox:
+                id: rv_box
                 default_size: None, dp(70)
                 default_size_hint: 1, None
                 size_hint_y: None
@@ -1651,7 +1652,7 @@ FloatLayout:
             pos: root.pos
             on_release: root.dismiss()
         Btn_P_Confirm:
-            #enabled: False if rv_box.selected is None else True
+            enabled: True if rv_box.selected_nodes else False
             id: btn_confirm
             title: "Confirm"
             width: root.width/2
