@@ -1628,17 +1628,16 @@ FloatLayout:
 
 <TimezonePopup>:
     size_hint: 0.9, 0.7
-    title: "Choose Continent"
+    title: "Choose Region"
     FloatLayout:
         id: maincontainer
         TimezoneRV:
-            viewclass: 'TimezoneRVItem'
             id: rv
+            viewclass: 'TimezoneRVItem'
             size_hint: None, None
             size: root.width, maincontainer.height-btn_cancel.height
             pos: root.x, btn_cancel.top
             TimezoneRVBox:
-                id: rv_box
                 default_size: None, dp(70)
                 default_size_hint: 1, None
                 size_hint_y: None
@@ -1652,7 +1651,7 @@ FloatLayout:
             pos: root.pos
             on_release: root.dismiss()
         Btn_P_Confirm:
-            enabled: False if rv_box.selected is None else True
+            #enabled: False if rv_box.selected is None else True
             id: btn_confirm
             title: "Confirm"
             width: root.width/2
@@ -1660,26 +1659,22 @@ FloatLayout:
             on_release: root.confirm()
 
 <TimezoneRVItem>:
-    height: p.btn_height
-#selected: True #self.parent.selected is in  self.text
-    #enabled: True
+    # Draw a background to indicate selection
     canvas:
         Color:
             rgba: p.translucent_white if self.selected else (0,0,0,0)
         Rectangle:
             size: self.size
             pos: self.pos
-    Label:
-        text: root.text
-        size_hint: None, None
-        size: root.size
-        pos: root.pos
-        padding_x: p.h_padding
-        font_size: p.normal_font
-        text_size: self.size
-        color: (1,1,1,1)
-        valign: 'middle'
-        halign: 'left'
+    size_hint: None, None
+    size: root.size
+    pos: root.pos
+    padding_x: p.h_padding
+    font_size: p.normal_font
+    text_size: self.size
+    color: (1,1,1,1)
+    valign: 'middle'
+    halign: 'left'
 
 <Background@Widget>:
     canvas.before:
@@ -1721,4 +1716,3 @@ FloatLayout:
 
 <StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
     padding: (0,0,0,0)
-

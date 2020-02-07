@@ -489,44 +489,39 @@ class TimezonePopup(BasePopup):
 class TimezoneRV(RecycleView):
     def __init__(self, **kwargs):
         super(TimezoneRV, self).__init__(**kwargs)
-        region_folders = next(os.walk(TIMEZONES))[1]
+        #region_folders = next(os.walk(TIMEZONES))[1]
+        region_folders = ["test" for i in range(10)]
+        for folder in ["SystemV", "Etc", "posix", "right"]:
+            if folder in region_folders:
+                region_folders.remove(folder)
+            else:
+                logging.warning("TIMEZONES: Pleas Update Timezones, {} \
+                could not be removed from list".format(folder))
         self.data = [{'text': region} for region in region_folders]
 
-class TimezoneRVBox(RecycleBoxLayout, LayoutSelectionBehavior):
-    selected = StringProperty()
+class TimezoneRVBox(LayoutSelectionBehavior, RecycleBoxLayout):
+    ''' Adds selection behaviour to the view. '''
+    pass
 
-class TimezoneRVItem(Widget, RecycleDataViewBehavior):
+class TimezoneRVItem(RecycleDataViewBehavior, Label):
+    ''' Add selection support to the Label '''
     index = None
-    text = StringProperty()
     selected = BooleanProperty(False)
-
-    def __init__(self, **kwargs):
-        super(TimezoneRVItem, self).__init__(**kwargs)
-
-    def on_touch_down(self, touch):
-        ''' Add selection on touch down '''
-        if self.collide_point(*touch.pos):
-            return self.parent.select_with_touch(self.index, touch)
-    # def on_press(self):
-    #     #lf.parent.select_with_touch(self.index, None)
-
-            self.parent.selected = self.text
-            self.selected = True
+    selectable = BooleanProperty(True)
 
     def refresh_view_attrs(self, rv, index, data):
         ''' Catch and handle the view changes '''
         self.index = index
-        return super(TimezoneRVItem, self).refresh_view_attrs(rv, index, data)
+        return super(TimezoneRVItem, self).refresh_view_attrs(
+            rv, index, data)
+
+    def on_touch_down(self, touch):
+        ''' Add selection on touch down '''
+        if super(TimezoneRVItem, self).on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos) and self.selectable:
+            return self.parent.select_with_touch(self.index, touch)
 
     def apply_selection(self, rv, index, is_selected):
         ''' Respond to the selection of items in the view. '''
         self.selected = is_selected
-    
-    def on_text(self, *args, **kwargs):
-        if self.parent:
-            if self.text == self.parent.selected:
-                self.selected = True
-        else:
-            self.selected = False
- 
-
