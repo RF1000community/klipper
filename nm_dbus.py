@@ -62,7 +62,8 @@ class NetworkManager(EventDispatcher, Thread):
             self.available = False
             return
         # Does the wifi device support 5gGHz (flag 0x400)
-        self.freq_5ghz = bool(self.wifi_dev.WirelessCapabilities & 0x400)
+        #UNUSED
+        #self.freq_5ghz = bool(self.wifi_dev.WirelessCapabilities & 0x400)
 
         # ID used to cancel the scan timer and to find out whether it is running
         # Will be None whenever the timer isn't running
@@ -74,7 +75,6 @@ class NetworkManager(EventDispatcher, Thread):
 
         # Register kivy events
         self.register_event_type('on_access_points')
-        self.register_event_type('on_wrong_password')
         self.register_event_type('on_connect_failed')
 
         # Initiate the values handled by signal handlers by simply
@@ -124,18 +124,14 @@ class NetworkManager(EventDispatcher, Thread):
         Receives state changes from newly added connections.
         Required to ensure everything went OK and to dispatch events
         in case it didn't.  The most important case would be a wrong
-        password which will be detected by the reason argument.
+        password which isn't clearly identifiable from the reason.
 
         The signal subscription will be canceled when the connection
         was successfully activated.
         """
-        print(state, reason)
-        #TODO: improve maybe
         if state > 2: # DEACTIVATING or DEACTIVATED
-            if reason == 9: # NO_SECRETS
-                self.dispatch('on_wrong_password')
-            elif reason > 1: # not UNKNOWN or NONE
-                self.dispatch('on_connect_failed')
+            self.dispatch('on_connect_failed')
+            print(state, reason)
         if state in (2, 4): # ACTIVATED or DEACTIVATED
             # done, no need to listen further
             self.new_connection_subscription.disconnect()
@@ -152,6 +148,7 @@ class NetworkManager(EventDispatcher, Thread):
         saved   whether the connection is already known and saved
         path    the dbus object path of the access point.
         """
+        # Needed to accurately build AccessPoint objects
         self.saved_ssids = self.get_saved_ssids()
         access_points = [AccessPoint(self, path) for path in self.wifi_dev.AccessPoints]
         # Sort by signal strength and then by 'in-use'
@@ -171,7 +168,8 @@ class NetworkManager(EventDispatcher, Thread):
                 decision = (4*cmp(ap.in_use, prev.in_use) +
                     2*cmp(ap.freq // 2000, prev.freq // 2000) +
                     cmp(ap.signal, prev.signal))
-                # Decid for ap, but prev may already be in to_remove
+                # Decid for ap
+                # prev may already be in to_remove, in this case also remove ap
                 if decision > 0 and prev not in to_remove:
                     to_remove.append(prev)
                 else:
@@ -205,6 +203,7 @@ class NetworkManager(EventDispatcher, Thread):
         If freq is 0, the rescan clock is cancelled.
         """
         if freq == 0:
+
             if self.scan_timer_id:
                 GLib.source_remove(self.scan_timer_id)
                 self.scan_timer_id = None
@@ -253,6 +252,7 @@ class NetworkManager(EventDispatcher, Thread):
             con, act_path = self.nm.AddAndActivateConnection(
                 connection_info, self.wifi_dev._path, ap._path)
         else:
+            # Open network, no password needed
             con, act_path = self.nm.AddAndActivateConnection(
                 {}, self.wifi_dev._path, ap._path)
         active = self.bus.get(_NM, act_path)
@@ -327,8 +327,6 @@ class NetworkManager(EventDispatcher, Thread):
         return ap.Strength
 
     def on_access_points(self, aps):
-        pass
-    def on_wrong_password(self):
         pass
     def on_connect_failed(self):
         pass

@@ -380,7 +380,7 @@ class PasswordPopup(BasePopup):
         super(PasswordPopup, self).__init__(**kwargs)
         self.network_manager = App.get_running_app().network_manager
         self.txt_input.bind(on_text_validate=self.confirm)
-        self.network_manager.bind(on_wrong_password=self.wrong_pw)
+        self.network_manager.bind(on_connect_failed=self.connect_failed)
         # If focus is set immediately, keyboard will be covered by popup
         Clock.schedule_once(self.set_focus_on, 0.4)
 
@@ -395,15 +395,12 @@ class PasswordPopup(BasePopup):
             self.app.notify.show("Connection Failed", "Find out why", delay=4)
         self.dismiss()
 
-    def wrong_pw(self, instance):
+    def connect_failed(self, instance):
         # Avoid a network being stored with the wrong password
-        # TODO
-        raise NotImplementedError()
-        wifi.delete(self.ssid)
+        self.ap.delete()
         self.open()
         self.set_focus_on()
-        app = App.get_running_app()
-        app.notify.show("Wrong Password", "Secrets were required, but not provided",
+        self.app.notify.show("connection failed", "Verify the password or try again later",
                 level="warning", delay=4)
         return True
 
