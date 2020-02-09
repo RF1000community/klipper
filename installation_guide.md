@@ -2,18 +2,22 @@ Installation Guide
 ==================
 
 
-### Raspberry Pi 4
-
-[Raspian buster lite](https://www.raspberrypi.org/downloads/raspbian) without desktop env.  
-add new 'ssh' file with no extension to boot folder to enable ssh  
+### Prepare OS on Raspberry Pi 4
+(raspberry pi 3 is not fast enough to run the UI properly and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
+- flash [Raspian buster lite](https://www.raspberrypi.org/downloads/raspbian) image to SD-Card
+- add new file named "ssh" (with no file extension) to the boot folder to enable ssh
+- Boot your pi and run Commands via SSH
 
 ```bash
 sudo apt update
-sudo raspi-config #memory split = 256, GL Driver, autologin  
+sudo raspi-config 
+"""set memory split to 256,
+   GL Driver to OpenGL FKMS, 
+   autologin to Commandline """ 
 sudo apt install git python-pip virtualenv  
 ```
 
-### Octoprint from source
+### Install Octoprint from source
 
 ```bash
 cd
@@ -28,7 +32,7 @@ sudo systemctl enable octoprint
 #sudo journalctl -u octoprint
 ```
 
-### Klipperui with KGUI
+### Install Klipperui with KGUI
 
 ```bash
 cd ~
@@ -37,16 +41,17 @@ git clone --recurse-submodules https://github.com/D4SK/klipperui
 ./klipperui/scripts/install-kgui.sh
 ```
 
-put printer.cfg file in home folder  
-connect OctoPrint to /tmp/printer using web interface  
+- put your printer configuration printer.cfg file in /home/pi folder  
+- reboot
+- connect OctoPrint to /tmp/printer using web interface  
 
 
 ---
   
   
   
-  
-### KGUI deps
+## Manual Installation 
+#### KGUI deps
 
 Execute klipperui/scripts/install-kgui.sh or:
 

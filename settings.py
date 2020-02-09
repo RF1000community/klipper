@@ -488,7 +488,7 @@ class TimezonePopup(BasePopup):
             #self.ids.btn_confirm.enabled = False
         else: # 2. selection (timezone) just done
             os.remove("/etc/localtime")
-            os.symlink(self.selected_continent_folder + "/" + selection['text'], "/etc/localtime/" + selection['text'])
+            os.symlink(self.selected_continent_folder + "/" + selection['text'], "/etc/localtime")
             os.remove("/etc/timezone") # Stackoverflow dude has forgotten why this is needed
             self.dismiss()
 

@@ -415,13 +415,15 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.toolhead.move(cur_pos, speed)
 
     def send_z_up(self, direction=1):
-        INTERVAL = 0.2
+        INTERVAL = 0.1
         SPEED = 10.
         STEP = INTERVAL * SPEED * direction
+        self.first = True
         self.step_time = self.reactor.monotonic()
         def z_step(eventtime):
-            self.send_rel_pos(z=STEP, speed=SPEED)
+            self.send_rel_pos(z=(STEP + self.first*2), speed=SPEED)
             self.step_time += INTERVAL
+            self.first = False
             return self.step_time
         self.z_timer = self.reactor.register_timer(z_step, self.reactor.NOW)
 
