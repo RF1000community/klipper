@@ -6,14 +6,14 @@ Installation Guide
 (raspberry pi 3 is not fast enough to run the UI properly and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
 - flash [Raspian buster lite](https://www.raspberrypi.org/downloads/raspbian) image to SD-Card
 - add new file named "ssh" (with no file extension) to the boot folder to enable ssh
-- Boot your pi and run Commands via SSH
+- Boot your pi and run the following commands via SSH
 
 ```bash
 sudo apt update
 sudo raspi-config 
 """set memory split to 256,
    GL Driver to OpenGL FKMS, 
-   autologin to Commandline """ 
+   Desktop/CLI to Console Autologin """ 
 sudo apt install git python-pip virtualenv  
 ```
 
