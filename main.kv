@@ -1350,7 +1350,9 @@ FloatLayout:
         name: 'SettingScreenManager'
         transition: screenmanager.NoTransition()
         SettingScreen:
+            id: setting_screen
         WifiScreen:
+            id: wifi_screen
 
 <SettingScreen@Screen>:
     name: 'SettingScreen'
@@ -1384,7 +1386,7 @@ FloatLayout:
                 left_title: "Shutdown..."
                 on_release: Factory.PowerPopup().open()
             SI_Timezone:
-
+                id: si_timezone
 
 <WifiScreen>:
     name: 'WifiScreen'

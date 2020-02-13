@@ -16,7 +16,7 @@ from functools import partial
 from elements import *
 import parameters as p
 import logging
-import os
+import os, time
 
 from kivy.uix.behaviors import FocusBehavior
 
@@ -458,11 +458,16 @@ class ConnectionPopup(BasePopup):
 class SI_Timezone(SetItem):
 
     def __init__(self, **kwargs):
-        if os.path.isdir("/etc/localtime"):
-            timezone = next(os.walk("/etc/localtime")[2])
+        super(SI_Timezone, self).__init__(**kwargs)
+        self.set_timezone()
+    
+    def set_timezone(self, tz=None):
+        if tz:
+            self.right_title = tz
+        elif os.path.exists("/etc/localtime"):
+            self.right_title = os.path.basename(os.readlink("/etc/localtime"))
         else:
-            timezone = "not available"
-        super(SI_Timezone, self).__init__(right_title = timezone, **kwargs)
+            self.right_title = "not available"
 
 TIMEZONES = "/usr/share/zoneinfo/"
 class TimezonePopup(BasePopup):
@@ -475,8 +480,8 @@ class TimezonePopup(BasePopup):
         selection = self.ids.rv.data[self.ids.rv_box.selected_nodes[0]]
         self.ids.rv_box.selected_nodes = []
         if not self.selected_continent_folder: # 1. selection just done
-            self.selected_continent_folder = TIMEZONES + "/" + selection['text']
-            timezone_pseudofiles = next(os.walk(self.selected_continent_folder))[2]
+            self.selected_continent_folder = selection['text']
+            timezone_pseudofiles = next(os.walk(TIMEZONES + "/" + self.selected_continent_folder))[2]
             for timezone in []:
                 if timezone in timezone_pseudofiles:
                     timezone_pseudofiles.remove(timezone)
@@ -487,9 +492,9 @@ class TimezonePopup(BasePopup):
             self.title = "Choose Timezone"
             #self.ids.btn_confirm.enabled = False
         else: # 2. selection (timezone) just done
-            os.remove("/etc/localtime")
-            os.symlink(self.selected_continent_folder + "/" + selection['text'], "/etc/localtime")
-            os.remove("/etc/timezone") # Stackoverflow dude has forgotten why this is needed
+            os.environ['TZ'] = self.selected_continent_folder + "/" + selection['text']
+            time.tzset()
+            App.get_running_app().root.ids.tabs.ids.set_tab.ids.setting_screen.ids.si_timezone.set_timezone(selection['text'])
             self.dismiss()
 
 class TimezoneRV(RecycleView):

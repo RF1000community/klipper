@@ -257,7 +257,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 if done.day == datetime.now().day:
                     self.print_done_time = done.strftime("ca. %-H:%M")
                 elif done.day == tomorrow.day:
-                    self.print_done_time = done.strftime("ca. tomorrow %-H:%M")
+                    self.print_done_time = done.strftime("tomorrow %-H:%M") # "ca. doesnt fit on screen
                 else:
                     self.print_done_time = done.strftime("ca. %a %-H:%M")
             
