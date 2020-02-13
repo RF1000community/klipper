@@ -170,7 +170,7 @@ class VirtualSD(object):
         return self.reactor.NEVER
 
     def get_printed_time(self):
-        now = self.toolhead.get_last_move_time()
+        now = self.toolhead.print_time #dont run get_last_move_time since this can be ran in UI thread
         printed_time = 0
         for time in self.start_stop_times:
             printed_time += - time[0] + (time[1] if time[1] else now)
@@ -252,9 +252,9 @@ class VirtualSD(object):
             # time estimation done, calculate progress, avoid zero division
             if printed_time <= 0: progress = 0
             else: progress = printed_time/float(printed_time + est_remaining)
-        return {'progress': progress,
+        return {'state': self.state,
+                'progress': progress,
                 'estimated_remaining_time': est_remaining,
-                'state': self.state,
                 'queued_files': [f for f,p in self.queued_files]}
 
     def handle_ready(self):
