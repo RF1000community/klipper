@@ -106,7 +106,7 @@ install_usb_automounting()
     #https://www.oguska.com/blog.php?p=Using_usbmount_with_ntfs_and_exfat_filesystems
     
     #maybe needed TODO test this
-    #sudo sed -i 's/PrivateMounts=yes/PrivateMounts=no/' /lib/systemd/system/systemd-udevd.service
+    sudo sed -i 's/PrivateMounts=yes/PrivateMounts=no/' /lib/systemd/system/systemd-udevd.service
 }
 
 
