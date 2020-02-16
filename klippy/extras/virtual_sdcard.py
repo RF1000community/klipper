@@ -151,7 +151,7 @@ class VirtualSD(object):
             self.cmd_from_sd = True
             try:
                 self.gcode.run_script(lines[-1])
-            except self.gcode.error as e:
+            except self.gcode.error:
                 break
             except:
                 logging.exception("virtual_sdcard dispatch")

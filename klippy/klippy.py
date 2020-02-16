@@ -167,8 +167,7 @@ class Printer:
         except Exception as e:
             logging.exception("Unhandled exception during ready callback")
             self.send_event("klippy:exception", "Unhandled exception during ready callback")
-            self.invoke_shutdown("Internal error during ready callback: %s" % (
-                str(e),))
+            self.invoke_shutdown("Internal error during ready callback: %s" % (str(e),))
     def run(self):
         systime = time.time()
         monotime = self.reactor.monotonic()
