@@ -105,7 +105,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.printer.register_event_handler("klippy:disconnect", self.handle_disconnect)
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
             self.printer.register_event_handler("klippy:exception", self.handle_exception)
-            self.printer.register_event_handler("homing:homed_rails", self.handle_homed)
+            self.printer.register_event_handler("homing:home_rails_end", self.handle_homed)
         else:
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
