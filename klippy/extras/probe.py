@@ -23,6 +23,7 @@ class PrinterProbe:
         self.y_offset = config.getfloat('y_offset', 0.)
         self.z_offset = config.getfloat('z_offset')
         self.probe_calibrate_z = 0.
+        self.multi_probe_pending = False
         # Infer Z position to move to during a probe
         if config.has_section('stepper_z'):
             zconfig = config.getsection('stepper_z')
@@ -43,6 +44,17 @@ class PrinterProbe:
                                              minval=0)
         # Register z_virtual_endstop pin
         self.printer.lookup_object('pins').register_chip('probe', self)
+        # Register homing event handlers
+        self.printer.register_event_handler("homing:homing_move_begin",
+                                            self._handle_homing_move_begin)
+        self.printer.register_event_handler("homing:homing_move_end",
+                                            self._handle_homing_move_end)
+        self.printer.register_event_handler("homing:home_rails_begin",
+                                            self._handle_home_rails_begin)
+        self.printer.register_event_handler("homing:home_rails_end",
+                                            self._handle_home_rails_end)
+        self.printer.register_event_handler("gcode:command_error",
+                                            self.multi_probe_end)
         # Register PROBE/QUERY_PROBE commands
         self.gcode = self.printer.lookup_object('gcode')
         self.gcode.register_command('PROBE', self.cmd_PROBE,
@@ -53,6 +65,27 @@ class PrinterProbe:
                                     desc=self.cmd_PROBE_CALIBRATE_help)
         self.gcode.register_command('PROBE_ACCURACY', self.cmd_PROBE_ACCURACY,
                                     desc=self.cmd_PROBE_ACCURACY_help)
+    def _handle_homing_move_begin(self, endstops):
+        if self.mcu_probe in endstops:
+            self.mcu_probe.probe_prepare()
+    def _handle_homing_move_end(self, endstops):
+        if self.mcu_probe in endstops:
+            self.mcu_probe.probe_finalize()
+    def _handle_home_rails_begin(self, rails):
+        endstops = [es for rail in rails for es, name in rail.get_endstops()]
+        if self.mcu_probe in endstops:
+            self.multi_probe_begin()
+    def _handle_home_rails_end(self, rails):
+        endstops = [es for rail in rails for es, name in rail.get_endstops()]
+        if self.mcu_probe in endstops:
+            self.multi_probe_end()
+    def multi_probe_begin(self):
+        self.mcu_probe.multi_probe_begin()
+        self.multi_probe_pending = True
+    def multi_probe_end(self):
+        if self.multi_probe_pending:
+            self.multi_probe_pending = False
+            self.mcu_probe.multi_probe_end()
     def setup_pin(self, pin_type, pin_params):
         if pin_type != 'endstop' or pin_params['pin'] != 'z_virtual_endstop':
             raise pins.error("Probe virtual endstop only useful as endstop pin")
@@ -120,6 +153,9 @@ class PrinterProbe:
             "SAMPLES_TOLERANCE_RETRIES", params, self.samples_retries, minval=0)
         samples_result = self.gcode.get_str(
             "SAMPLES_RESULT", params, self.samples_result)
+        must_notify_multi_probe = not self.multi_probe_pending
+        if must_notify_multi_probe:
+            self.multi_probe_begin()
         retries = 0
         positions = []
         while len(positions) < sample_count:
@@ -140,6 +176,8 @@ class PrinterProbe:
             if len(positions) < sample_count:
                 liftpos = [None, None, pos[2] + sample_retract_dist]
                 self._move(liftpos, lift_speed)
+        if must_notify_multi_probe:
+            self.multi_probe_end()
         # Calculate and return result
         if samples_result == 'median':
             return self._calc_median(positions)
@@ -172,6 +210,7 @@ class PrinterProbe:
                                    sample_count, sample_retract_dist,
                                    speed, lift_speed))
         # Probe bed sample_count times
+        self.multi_probe_begin()
         positions = []
         while len(positions) < sample_count:
             # Probe position
@@ -180,6 +219,7 @@ class PrinterProbe:
             # Retract
             liftpos = [None, None, pos[2] + sample_retract_dist]
             self._move(liftpos, lift_speed)
+        self.multi_probe_end()
         # Calculate maximum, minimum and average values
         max_value = max([p[2] for p in positions])
         min_value = min([p[2] for p in positions])
@@ -255,22 +295,24 @@ class ProbeEndstopWrapper:
         for stepper in kin.get_steppers():
             if stepper.is_active_axis('z'):
                 self.add_stepper(stepper)
-    def home_prepare(self):
+    def multi_probe_begin(self):
+        pass
+    def multi_probe_end(self):
+        pass
+    def probe_prepare(self):
         toolhead = self.printer.lookup_object('toolhead')
         start_pos = toolhead.get_position()
         self.activate_gcode.run_gcode_from_command()
         if toolhead.get_position()[:3] != start_pos[:3]:
             raise homing.CommandError(
                 "Toolhead moved during probe activate_gcode script")
-        self.mcu_endstop.home_prepare()
-    def home_finalize(self):
+    def probe_finalize(self):
         toolhead = self.printer.lookup_object('toolhead')
         start_pos = toolhead.get_position()
         self.deactivate_gcode.run_gcode_from_command()
         if toolhead.get_position()[:3] != start_pos[:3]:
             raise homing.CommandError(
                 "Toolhead moved during probe deactivate_gcode script")
-        self.mcu_endstop.home_finalize()
     def get_position_endstop(self):
         return self.position_endstop
 
@@ -352,12 +394,14 @@ class ProbePointsHelper:
         if self.horizontal_move_z < self.probe_offsets[2]:
             raise self.gcode.error("horizontal_move_z can't be less than"
                                    " probe's z_offset")
+        probe.multi_probe_begin()
         while 1:
             done = self._move_next()
             if done:
                 break
             pos = probe.run_probe(params)
             self.results.append(pos)
+        probe.multi_probe_end()
     def _manual_probe_start(self):
         done = self._move_next()
         if not done:
