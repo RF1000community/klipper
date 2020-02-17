@@ -18,6 +18,7 @@ sudo apt install git python-pip virtualenv
 ```
 
 ### Install Octoprint from source
+- This is optional, Klipper can be used just with KGUI
 
 ```bash
 cd
@@ -32,7 +33,7 @@ sudo systemctl enable octoprint
 #sudo journalctl -u octoprint
 ```
 
-### Install Klipperui with KGUI
+### Install Klipper with KGUI
 
 ```bash
 cd ~
@@ -41,7 +42,7 @@ git clone --recurse-submodules https://github.com/D4SK/klipperui
 ./klipperui/scripts/install-kgui.sh
 ```
 
-- put your printer configuration printer.cfg file in /home/pi folder  
+- move your printer configuration (printer.cfg) to /home/pi  
 - reboot
 - connect OctoPrint to /tmp/printer using web interface  
 
