@@ -461,76 +461,75 @@ class SI_Timezone(SetItem):
         super(SI_Timezone, self).__init__(**kwargs)
         self.set_timezone()
     
-    def set_timezone(self, tz=None):
-        if tz:
-            self.right_title = tz
-        elif os.path.exists("/etc/localtime"):
+    def set_timezone(self):
+        if os.path.exists("/etc/localtime"):
             self.right_title = os.path.basename(os.readlink("/etc/localtime"))
         else:
             self.right_title = "not available"
 
-TIMEZONES = "/usr/share/zoneinfo/"
 class TimezonePopup(BasePopup):
 
     def __init__(self, **kwargs):
         super(TimezonePopup, self).__init__(**kwargs)
-        self.selected_continent_folder = None
+        self.region_selection = None
 
     def confirm(self):
         selection = self.ids.rv.data[self.ids.rv_box.selected_nodes[0]]
         self.ids.rv_box.selected_nodes = []
-        if not self.selected_continent_folder: # 1. selection just done
-            self.selected_continent_folder = selection['text']
-            timezone_pseudofiles = next(os.walk(TIMEZONES + "/" + self.selected_continent_folder))[2]
-            for timezone in []:
-                if timezone in timezone_pseudofiles:
-                    timezone_pseudofiles.remove(timezone)
-                else:
-                    logging.warning("TIMEZONES: Pleas Update Timezones, {} could not be removed from list".format(folder))
+        if not self.region_selection: # 1. selection (region/continent) just done, fill rv with actual timezones
+            self.region_selection = selection['text']
+            timezone_pseudofiles = next(os.walk("/usr/share/zoneinfo/" + self.region_selection))[2]
+            timezone_pseudofiles.sort()
             self.ids.rv.data = [{'text': timezone} for timezone in timezone_pseudofiles]
             self.ids.rv.refresh_from_data()
+            self.ids.rv.scroll_y = 1
             self.title = "Choose Timezone"
-            #self.ids.btn_confirm.enabled = False
         else: # 2. selection (timezone) just done
-            os.environ['TZ'] = self.selected_continent_folder + "/" + selection['text']
-            time.tzset()
-            App.get_running_app().root.ids.tabs.ids.set_tab.ids.setting_screen.ids.si_timezone.set_timezone(selection['text'])
+            os.system("sudo unlink /etc/localtime")
+            os.system("sudo ln -s /usr/share/zoneinfo/{}/{} /etc/localtime".format(self.region_selection, selection['text']))
+            # update Timezone shown in Settings and Time in Statusbar
+            root_ids = App.get_running_app().root.ids
+            root_ids.tabs.ids.set_tab.ids.setting_screen.ids.si_timezone.set_timezone()
+            root_ids.status_bar.ids.time.get_time_str()
             self.dismiss()
 
 class TimezoneRV(RecycleView):
     def __init__(self, **kwargs):
         super(TimezoneRV, self).__init__(**kwargs)
-        region_folders = next(os.walk(TIMEZONES))[1]
+        # initally filled with all regions/continents
+        region_folders = next(os.walk("/usr/share/zoneinfo/"))[1]
+        region_folders.sort()
+        # remove some folders we don't want to show
         for folder in ["SystemV", "Etc", "posix", "right"]:
             if folder in region_folders:
                 region_folders.remove(folder)
             else:
-                logging.warning("TIMEZONES: Pleas Update Timezones, {} could not be removed from list".format(folder))
+                logging.warning("Pleas Update Timezones: {} could not be removed from list".format(folder))
         self.data = [{'text': region} for region in region_folders]
 
 class TimezoneRVBox(LayoutSelectionBehavior, RecycleBoxLayout):
-    ''' Adds selection behaviour to the view. '''
+    # Adds selection behaviour to the view
     pass
 
 class TimezoneRVItem(RecycleDataViewBehavior, Label):
-    ''' Add selection support to the Label '''
+    # Add selection support to the Label
     index = None
     selected = BooleanProperty(False)
     selectable = BooleanProperty(True)
 
     def refresh_view_attrs(self, rv, index, data):
-        ''' Catch and handle the view changes '''
+        # Catch and handle the view changes
         self.index = index
         return super(TimezoneRVItem, self).refresh_view_attrs(
             rv, index, data)
 
     def on_touch_down(self, touch):
-        ''' Add selection on touch down '''
+        # Add selection on touch down
         if super(TimezoneRVItem, self).on_touch_down(touch):
             return True
         if self.collide_point(*touch.pos) and self.selectable:
             return self.parent.select_with_touch(self.index, touch)
 
     def apply_selection(self, rv, index, is_selected):
-        ''' Respond to the selection of items in the view. '''
+        # Respond to the selection of items in the view
         self.selected = is_selected
