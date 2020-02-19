@@ -5,55 +5,78 @@ import shutil, re
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.uix.filechooser import FileChooserIconView
+from kivy.uix.recycleview.layout import LayoutSelectionBehavior
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from kivy.uix.recycleview import RecycleView
+from kivy.uix.floatlayout import FloatLayout
+from kivy.properties import ListProperty, ObjectProperty, NumericProperty, DictProperty, StringProperty, BooleanProperty, OptionProperty
 
 from elements import *
 import parameters as p
 
 
-class FC(FileChooserIconView):
-
+class FC(RecycleView):
     def __init__(self, **kwargs):
-        super(FC, self).__init__(**kwargs)
-        self.sort_func = self.modification_date_sort
-        self.filters = ['*.gco', '*.gcode']
-        self.multiselect = False
         self.app = App.get_running_app()
-        self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2 
-        if exists(p.sdcard_path):
-            self.rootpath = p.sdcard_path
+        self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2
+        if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
-        self.scheduled_updating = False
+        else:
+            self.path = "/"
+        super(FC, self).__init__(**kwargs)
         Clock.schedule_once(self.bind_tab, 0)
-
+        self.update()
+    
     def bind_tab(self, e):
         tabs = self.app.root.ids.tabs
         tabs.bind(current_tab=self.control_updating)
 
     def control_updating(self, instance, tab):
         if tab == instance.ids.file_tab:
-            self._update_files()
-            self.scheduled_updating = Clock.schedule_interval(self._update_files, 5)
-        elif self.scheduled_updating:
-            Clock.unschedule(self.scheduled_updating)
+            pass
 
-    def modification_date_sort(self, files, filesystem):#sortierfunktion fuer Filechooser
-        return (sorted((f for f in files if filesystem.is_dir(f)), reverse=True) #folders
-              + sorted((f for f in files if not filesystem.is_dir(f)), key=getmtime, reverse=True)) #files
+    def update(self, in_background = False):
+        queue = [("Queue", "/home/queue")]
+        root, folders, _files = next(os.walk(self.path))
 
-    def on_selection(self, instance, filenames):
-        if not filenames:
-            return
-        self.popup = PrintPopup(filenames[0], creator=self)
-        self.popup.open()
+        # filter folders
+        if "USB Device" in folders:
+            folders.remove("USB Device")
+            usb = [{'name': "USB Device", 'item_type': 'usb', 'path': root + "/USB Device" }]
 
-    def get_nice_size(self, path):
-        '''Pass the filepath. Returns the filament use of a gcode file, instead of filesize.
-           Or '' if it is a directory.
-           Return value is shown below Name of each file
-        '''
-        if self.file_system.is_dir(path):
-            return ''
+        folders = [(f, root + "/" + f) for f in folders]
+
+        # filter files
+        files = []
+        for file in _files:
+            if ".gco" in os.path.splitext(file)[1]:
+                files.append((file, root + "/" + file))
+            else:
+                logging.info(os.path.splitext(file)[1])
+        files = self.modification_date_sort(files)
+
+
+
+        # generate dicts
+        folders = [{'name': e[0], 'details': "", 'item_type': "folder", 'path': e[1]} for e in folders]
+        queue = [{'name': e[0], 'details': "", 'item_type': "queue", 'path': e[1]} for e in queue]
+        files = [{'name': e[0], 'details': self.get_details(e[1]), 'item_type': "file", 'path': e[1]} for e in files]
+
+        if self.path == p.sdcard_path:
+            pass
+
+        self.data = queue + folders + files
+        self.refresh_from_data()
+        if not in_background:
+            self.scroll_y = 1
+    
+    def modification_date_sort(self, files):# only accepts files
+        return sorted((f for f in files), key=lambda f: os.path.getmtime(f[1]), reverse=True)
+    
+    def get_details(self, path):
+        # Pass the filepath. Returns the filament use of a gcode file 
+        # Return value is shown below Name of each file
         filament = [
             r'Ext.*=.*mm',                          # Kisslicer
             r';.*filament used =',                  # Slic3r
@@ -88,12 +111,47 @@ class FC(FileChooserIconView):
                     match2 = re.search(r'\d*\.\d*', match.group())
                     if match2:
                         filament = float(match2.group())
-                        logging.info("filament =  ====== {}".format(filament))
                         if i == 4:
                             filament *= 1000 # Cura gives meters -> convert to mm
                         weight = self.filament_crossection*filament*0.0011 #density in g/mm^3
                         return "{:4.1f}g".format(weight)
         return ""
+
+class FCBox(LayoutSelectionBehavior, RecycleBoxLayout):
+    # Adds selection behaviour to the view
+    pass
+
+class FCItem(RecycleDataViewBehavior, Widget):
+    item_type = OptionProperty('file', options = ['file', 'folder', 'usb', 'queue'])
+    name = StringProperty()
+    path = StringProperty()
+    details = StringProperty()
+    index = None
+    selected = BooleanProperty(False)
+    highlighted = BooleanProperty(False)
+    selectable = BooleanProperty(True) #TODO check if needed
+
+    def refresh_view_attrs(self, rv, index, data):
+        # Catch and handle the view changes
+        self.index = index
+        return super(FCItem, self).refresh_view_attrs(rv, index, data)
+
+    def on_touch_down(self, touch):
+        # Add selection on touch down
+        if super(FCItem, self).on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos) and self.selectable:
+            if self.item_type == 'file' or self.item_type == 'queue':
+                self.popup = PrintPopup(self.name, creator=self)
+                self.popup.open()
+            else:
+                self.parent.parent.path = self.path
+                self.parent.parent.update()
+            return self.parent.select_with_touch(self.index, touch)
+
+    def apply_selection(self, rv, index, is_selected):
+        # Respond to the selection of items in the view
+        self.selected = is_selected
 
 class PrintPopup(BasePopup):
 

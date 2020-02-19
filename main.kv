@@ -19,13 +19,13 @@ FloatLayout:
         size_hint_y: None
 
 <StatusBar@BoxLayout>:
+    orientation: 'horizontal'
     canvas:
         Color:
             rgba: p.red if 'error' in app.state else p.accent
         Rectangle:
             size: self.size
             pos: self.pos
-    orientation: 'horizontal'
     StackLayout:
         id: left
         orientation: 'lr-tb'
@@ -1264,11 +1264,71 @@ FloatLayout:
             pos: 250, 0
     FC:
         id: fc
-        canvas.before:         
-            Color:
-                rgba: p.background
-            Rectangle:
-                size: self.size
+        viewclass: 'FCItem'
+        size_hint: 1, 1
+        pos_hint: {'x':0, 'top':1}
+<FC>:
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            size: p.screen_width, p.screen_height - p.tab_height
+            pos: 0, p.tab_height
+    FCBox:
+        id: fc_box
+        default_size: dp(150), dp(110)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False
+
+<FCItem>:
+    # Draw a background to indicate selection
+    size: p.screen_width, 140
+    canvas:
+        Color:
+            rgba: (1,1,1,1)
+        Rectangle:
+            source: p.kgui_dir + ('/Logos/File.png' if self.item_type == 'file' else '/Logos/Folder.png')
+            size: 80, 80
+            pos: root.x + p.h_padding - 10, root.center_y - 40
+        Color:
+            rgba: p.translucent_white if self.selected else (0,0,0,0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+        Color:
+            rgba: p.divider
+        Rectangle:
+            size: p.screen_width - 2 * p.small_padding, 1
+            pos: p.small_padding, self.y
+    Label:
+        text: root.name
+        halign: 'right'
+        valign: 'top'
+        max_lines: 1
+        padding_x: p.h_padding
+        padding_y: 17
+        size: root.width - 100, root.height
+        right: root.right
+        y: root.y
+        text_size: self.size
+        font_size: p.normal_font
+    Label:
+        text: root.details
+        halign: 'right'
+        valign: 'bottom'
+        max_lines: 1
+        padding_x: p.h_padding
+        padding_y: 17
+        size: root.width - 100, root.height
+        right: root.right
+        y: root.y
+        text_size: self.size
+        font_size: p.normal_font
+        color: p.medium_light_gray
 
 <PrintPopup>:
     title: 'Print'
@@ -1671,8 +1731,6 @@ FloatLayout:
             size: self.size
             pos: self.pos
     size_hint: None, None
-    size: root.size
-    pos: root.pos
     padding_x: p.h_padding
     font_size: p.normal_font
     text_size: self.size

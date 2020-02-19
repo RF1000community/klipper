@@ -501,9 +501,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
 class PopupExceptionHandler(ExceptionHandler):
     def handle_exception(self, exception):
-        App.get_running_app().handle_exception(repr(exception))
-        logging.exception(exception)
-        return ExceptionManager.PASS
+        if not TESTING:
+            App.get_running_app().handle_exception(repr(exception))
+            logging.exception(exception)
+            return ExceptionManager.PASS
 
 def set_kivy_config():
     # This needs an absolute path otherwise config will only be loaded when

@@ -515,13 +515,12 @@ class TimezoneRVItem(RecycleDataViewBehavior, Label):
     # Add selection support to the Label
     index = None
     selected = BooleanProperty(False)
-    selectable = BooleanProperty(True)
+    selectable = BooleanProperty(True) #is this needed?
 
     def refresh_view_attrs(self, rv, index, data):
         # Catch and handle the view changes
         self.index = index
-        return super(TimezoneRVItem, self).refresh_view_attrs(
-            rv, index, data)
+        return super(TimezoneRVItem, self).refresh_view_attrs(rv, index, data)
 
     def on_touch_down(self, touch):
         # Add selection on touch down
