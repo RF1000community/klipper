@@ -17,10 +17,13 @@ import parameters as p
 
 
 class FC(RecycleView):
+    path = StringProperty()
+    btn_back_visible = BooleanProperty(False)
     def __init__(self, **kwargs):
         self.app = App.get_running_app()
         self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2
-        self.file_cache = [None, None, None]
+        self.cache = [None, None, None]
+        self.cache_ready = False
         if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
         else:
@@ -61,6 +64,9 @@ class FC(RecycleView):
         # generate dicts
         folders = [{'name': f[0], 'item_type': "folder", 'path': f[1], 'details': ""} for f in folders]
         files =   [{'name': f[0], 'item_type': "file",   'path': f[1], 'details': self.get_details(f[1])} for f in files]
+
+        self.btn_back_visible = self.path != p.sdcard_path
+
 
         new_data = usb + folders + files
         if self.data != new_data:
@@ -150,14 +156,15 @@ class FCItem(RecycleDataViewBehavior, Widget):
         # Add selection on touch down
         if super(FCItem, self).on_touch_down(touch):
             return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            if self.item_type == 'file' or self.item_type == 'queue':
+        if self.collide_point(*touch.pos):
+            if self.item_type == 'file':
                 self.popup = PrintPopup(self.name, creator=self)
                 self.popup.open()
+            elif self.item_type == 'queue':
+                return self.parent.select_with_touch(self.index, touch)
             else:
                 self.parent.parent.path = self.path
                 self.parent.parent.load_files()
-            return self.parent.select_with_touch(self.index, touch)
 
     def apply_selection(self, rv, index, is_selected):
         # Respond to the selection of items in the view

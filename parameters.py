@@ -65,6 +65,7 @@ notify_success = (0.1,0.4,0.2,0.8)
 
 """
 Kivy Guide
+setting properties of parent class in kv rules doesnt work if they are assigned to a value in parent rule
 Defining Properties in kv is often bad since it happens too late, and prohibits setting them in __init__
 LABELS: try setting hints to None if it does shit e.g. setting size doesnt work
     size: outer dimensions of the label widget, available space, can be set to texture_size to show everything

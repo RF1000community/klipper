@@ -6,6 +6,8 @@
 # interpreter is started in this folder because the import is happening in kivy/lang/parser.py 
 #:import basename os.path.basename
 #:import splitext os.path.splitext
+#:import relpath os.path.relpath
+#:import dirname os.path.dirname
 
 FloatLayout:
     StatusBar:
@@ -226,7 +228,7 @@ FloatLayout:
             width: p.icon_radius
             points: self.x + p.icon_radius, self.y + esh,   self.center_x, self.y + p.icon_radius - 2,   self.right - p.icon_radius, self.y + esh,   self.right - p.icon_radius, self.top - p.icon_radius,   self.x + p.icon_radius, self.top - p.icon_radius
             close: True
-    # this needs a new label instance since the properties set in BaseButton cannot be overwritten in rule level
+    # this needs a new label instance since the properties set in BaseButton cannot be overwritten in rule definition (only in instance)
     Label:
         text: root.heater_id
         bold: True
@@ -1194,11 +1196,11 @@ FloatLayout:
             width: 1
             rounded_rectangle: (self.x, self.y, self.width + p.btn_height, self.height, p.radius)
         Line:
-            points: self.right, self.top-10,   self.right, self.y+10
+            points: self.right, self.top-6,   self.right, self.y+6
         Line:
-            points: self.right + 10, self.y + 2*p.btn_height,   self.right + p.btn_height -10, self.y + 2*p.btn_height
+            points: self.right + 6, self.y + 2*p.btn_height,   self.right + p.btn_height -6, self.y + 2*p.btn_height
         Line:
-            points: self.right + 10, self.y + p.btn_height,   self.right + p.btn_height -10, self.y + p.btn_height
+            points: self.right + 6, self.y + p.btn_height,   self.right + p.btn_height -6, self.y + p.btn_height
         # Outline without xy homing buttons
         Color:
             rgba: (0,0,0,0) if app.xy_homing_controls else p.btn_outline
@@ -1256,7 +1258,10 @@ FloatLayout:
                 pos: 0, p.tab_height
         TitleBar:
             id: title_bar
+            enabled: fc.btn_back_visible
+            on_release: fc.back()
             pos_hint: {'x':0, 'top':1}
+            title: relpath(fc.path, dirname(p.sdcard_path))
         FC:
             id: fc
             viewclass: 'FCItem'
@@ -1275,15 +1280,16 @@ FloatLayout:
 <FCItem>:
     # Draw a background to indicate selection
     size: p.screen_width, 777
+    pressed: False
     canvas:
         Color:
             rgba: (1,1,1,1)
         Rectangle:
-            source: p.kgui_dir + ('/Logos/File.png' if self.item_type == 'file' else '/Logos/Usb.png' if self.item_type == 'usb' else '/Logos/Folder.png')
+            source: p.kgui_dir + ('/Logos/File.png' if self.item_type == 'file' else '/Logos/Usb.png' if self.item_type == 'usb' else '/Logos/Folder.png' if self.item_type == 'folder' else '/Logos/Transparent.png')
             size: 80, 80
             pos: root.x + p.h_padding - 10, root.center_y - 40
         Color:
-            rgba: p.translucent_white if self.selected else (0,0,0,0)
+            rgba: p.translucent_white if (self.selected or self.pressed) else (0,0,0,0)
         Rectangle:
             size: self.size
             pos: self.pos
@@ -1291,9 +1297,10 @@ FloatLayout:
             rgba: p.divider
         Rectangle:
             size: p.screen_width - 2 * p.small_padding, 1
-            pos: p.small_padding, self.y
+            pos: p.small_padding, self.top - 1
     Label:
         text: root.name
+        shorten: True
         halign: 'right'
         valign: 'top'
         max_lines: 1
@@ -1319,27 +1326,39 @@ FloatLayout:
         font_size: p.normal_font
         color: p.medium_light_gray
 
-<TitleBar@Label>:
-    back_btn: True
-    halign: 'center'
-    valign: 'middle'
-    max_lines: 1
-    size_hint: None, None
-    size: p.screen_width, 110
-    text_size: self.size
-    font_size: p.large_font
-    color: (1,1,1,1)
-    RectangleButton:
-        size: root.height + 50, root.height
-        pos: root.pos
-        id: btn
-        on_release: root.parent.ids.fc.back()
-        #: set q 26
-        canvas.before:
-            Color:
-                rgba: (1,1,1,1) if root.back_btn else (0,0,0,0)
-            Triangle:
-                points: btn.center_x-q, btn.center_y,   btn.center_x, btn.center_y-q,   btn.center_x, btn.center_y+q
+<TitleBar@BaseButton>:
+    size: 150, 110
+    enabled: False
+    title: ""
+    #: set q 26
+    canvas.before:
+        Color:
+            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
+        Triangle:
+            points: self.center_x-q/2, self.center_y,   self.center_x+q/2, self.center_y-q,   self.center_x+q/2, self.center_y+q
+        Color:
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    Label:
+        text: root.title
+        shorten: True
+        shorten_from: 'left'
+        halign: 'center'
+        valign: 'middle'
+        max_lines: 1
+        size_hint: None, None
+        size: p.screen_width - 200, root.height
+        center_x: p.screen_width/2
+        y: root.y
+        text_size: self.size
+        font_size: p.large_font
+        color: (1,1,1,1)
+
+<FloatingButton@BaseButton>:
+    
+        
 
 <PrintPopup>:
     title: 'Print'
