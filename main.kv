@@ -1288,7 +1288,6 @@ FloatLayout:
         touch_multiselect: False
 
 <FCItem>:
-    # Draw a background to indicate selection
     size: p.screen_width, 777
     pressed: False
     canvas:
@@ -1308,6 +1307,16 @@ FloatLayout:
         Rectangle:
             size: p.screen_width - 2 * p.small_padding, 1
             pos: p.small_padding, self.top - 1
+    #Label
+    text: root.details
+    halign: 'right'
+    valign: 'bottom'
+    max_lines: 1
+    padding_x: p.h_padding
+    padding_y: 17
+    text_size: self.size
+    font_size: p.normal_font
+    color: p.medium_light_gray
     Label:
         text: root.name
         shorten: True
@@ -1322,20 +1331,7 @@ FloatLayout:
         text_size: self.size
         font_size: p.normal_font
         color: (1,1,1,1)
-    Label:
-        text: root.details
-        halign: 'right'
-        valign: 'bottom'
-        max_lines: 1
-        padding_x: p.h_padding
-        padding_y: 17
-        size: p.screen_width - 100, root.height
-        right: root.right
-        y: root.y
-        text_size: self.size
-        font_size: p.normal_font
-        color: p.medium_light_gray
-
+ 
 <TitleBar@BaseButton>:
     size: 150, 110
     enabled: False

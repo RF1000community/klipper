@@ -37,7 +37,6 @@ class FC(RecycleView):
         tabs.bind(current_tab=self.control_updating)
         self.on_view(view = self.view)
 
-
     def control_updating(self, instance, tab):
         if tab == instance.ids.file_tab:
             self.load_files(in_background = True)
@@ -63,7 +62,6 @@ class FC(RecycleView):
         for f in _files:
             if ".gco" in os.path.splitext(f)[1]:
                 files.append((f, join(root, f)))
-
         # sort
         files = self.modification_date_sort(files)
         folders = sorted(folders)
@@ -84,14 +82,13 @@ class FC(RecycleView):
 
     def load_queue(self, in_background=False):
         queue = [{'name': "queued{}".format(i), 'details': "", 'item_type': "queue", 'path':""} for i in range(10)]
-
         self.data = queue 
         self.refresh_from_data()
         if not in_background:
             self.scroll_y = 1
         self.view = 'queue'
         logging.info("shoulda changed to queue")
-    
+
     def on_view(self, instance=None, view='files'): #todo trigger this on app.queue change
         self.btn_stack.clear_widgets()
         if view == 'files':# and len(self.app.queued_files) > 1:
@@ -103,7 +100,6 @@ class FC(RecycleView):
             self.btn_stack.add_widget(Btn_QDown(filechooser = self))
             self.btn_back_visible = True
 
-    
     def back(self):
         if self.view == 'files':
             self.path = dirname(self.path)
@@ -155,10 +151,6 @@ class FC(RecycleView):
                         return "{:4.0f}g".format(weight)
         return ""
 
-    
-
-    # Queue ##########################################################
-
     def send_queue(self):
         """
         Send the updated queue back to the virtual sdcard
@@ -168,18 +160,6 @@ class FC(RecycleView):
         sdcard.clear_queue() # Clears everything except for the first entry
         for path in self.queued_files[1:]:
             sdcard.add_printjob(path)
-
-    def move_top(self):
-        """
-        Move the selected file to the top of the queue.
-        Move after the current print if it is currently printing.
-        """
-        i = self.queued_list.selected.index
-        to_move = self.queued_files.pop(i)
-        self.queued_files.insert(self.first, to_move)
-        self.update_queue(None, self.queued_files)
-        self.queued_list.select(self.first)
-        self.send_queue()
 
     def move_up(self):
         """Move the selected file up one step in the queue"""
@@ -207,12 +187,11 @@ class FC(RecycleView):
         self.queued_list.select(min(len(self.queued_files)-1, i))
         self.send_queue()
 
-
 class FCBox(LayoutSelectionBehavior, RecycleBoxLayout):
     # Adds selection behaviour to the view
     pass
 
-class FCItem(RecycleDataViewBehavior, Widget):
+class FCItem(RecycleDataViewBehavior, Label):
     item_type = OptionProperty('file', options = ['file', 'folder', 'usb', 'queue'])
     name = StringProperty()
     path = StringProperty()
@@ -245,7 +224,6 @@ class FCItem(RecycleDataViewBehavior, Widget):
     def apply_selection(self, rv, index, is_selected):
         # Respond to the selection of items in the view
         self.selected = is_selected
-
 
 class PrintPopup(BasePopup):
 
