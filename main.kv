@@ -22,7 +22,7 @@ FloatLayout:
     orientation: 'horizontal'
     canvas:
         Color:
-            rgba: p.red if 'error' in app.state else p.accent
+            rgba: p.red if 'error' in app.state else p.green if 'done' == app.print_state else p.accent if app.print_state == 'printing' else p.flat_accent
         Rectangle:
             size: self.size
             pos: self.pos
@@ -1262,11 +1262,16 @@ FloatLayout:
             source: p.kgui_dir+'/Logos/FilesIcon.png'
             size: 100,100
             pos: 250, 0
+    TitleBar:
+        id: title_bar
+        size_hint: 1, 0.1
+        #pos_hint: {'x':0, 'top':1}
     FC:
         id: fc
         viewclass: 'FCItem'
-        size_hint: 1, 1
-        pos_hint: {'x':0, 'top':1}
+        size_hint: 1, 0.5
+        #pos_hint: {'x':0, 'y':1}
+
 <FC>:
     canvas.before:
         Color:
@@ -1286,12 +1291,12 @@ FloatLayout:
 
 <FCItem>:
     # Draw a background to indicate selection
-    size: p.screen_width, 140
+    size: p.screen_width, 777
     canvas:
         Color:
             rgba: (1,1,1,1)
         Rectangle:
-            source: p.kgui_dir + ('/Logos/File.png' if self.item_type == 'file' else '/Logos/Folder.png')
+            source: p.kgui_dir + ('/Logos/File.png' if self.item_type == 'file' else '/Logos/Usb.png' if self.item_type == 'usb' else '/Logos/Folder.png')
             size: 80, 80
             pos: root.x + p.h_padding - 10, root.center_y - 40
         Color:
@@ -1311,11 +1316,12 @@ FloatLayout:
         max_lines: 1
         padding_x: p.h_padding
         padding_y: 17
-        size: root.width - 100, root.height
+        size: p.screen_width - 100, root.height
         right: root.right
         y: root.y
         text_size: self.size
         font_size: p.normal_font
+        color: (1,1,1,1)
     Label:
         text: root.details
         halign: 'right'
@@ -1323,12 +1329,34 @@ FloatLayout:
         max_lines: 1
         padding_x: p.h_padding
         padding_y: 17
-        size: root.width - 100, root.height
+        size: p.screen_width - 100, root.height
         right: root.right
         y: root.y
         text_size: self.size
         font_size: p.normal_font
         color: p.medium_light_gray
+
+<TitleBar@Label>:
+    back_btn: False
+    halign: 'center'
+    valign: 'middle'
+    max_lines: 1
+    size_hint: None, None
+    size: p.screen_width, 110
+    text_size: self.size
+    font_size: p.large_font
+    color: (1,1,1,1)
+    RectangleButton:
+        size: root.height + 50, root.height
+        pos: root.pos
+        id: btn
+        on_release: self.parent.back()
+        #: set q 26
+        canvas.before:
+            Color:
+                rgba: (1,1,1,1) if root.back_btn else (0,0,0,0)
+            Triangle:
+                points: btn.center_x-q, btn.center_y,   btn.center_x, btn.center_y-q,   btn.center_x, btn.center_y+q
 
 <PrintPopup>:
     title: 'Print'

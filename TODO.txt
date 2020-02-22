@@ -4,9 +4,7 @@ KGUI:
 
     fix virtualsd
 
-    rewrite filechooser with queueing 
-
-    Klipper: remove necessity to rehome after motors were switched off
+    make mount point name USB Device
 
     https://wiki.archlinux.org/index.php/Display_Power_Management_Signaling
 

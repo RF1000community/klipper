@@ -20,13 +20,14 @@ class FC(RecycleView):
     def __init__(self, **kwargs):
         self.app = App.get_running_app()
         self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2
+        self.file_cache = [None, None, None]
         if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
         else:
             self.path = "/"
         super(FC, self).__init__(**kwargs)
         Clock.schedule_once(self.bind_tab, 0)
-        self.update()
+        self.load_files()
     
     def bind_tab(self, e):
         tabs = self.app.root.ids.tabs
@@ -36,42 +37,51 @@ class FC(RecycleView):
         if tab == instance.ids.file_tab:
             pass
 
-    def update(self, in_background = False):
-        queue = [("Queue", "/home/queue")]
-        root, folders, _files = next(os.walk(self.path))
+    def load_files(self, in_background = False):
 
-        # filter folders
-        if "USB Device" in folders:
-            folders.remove("USB Device")
-            usb = [{'name': "USB Device", 'item_type': 'usb', 'path': root + "/USB Device" }]
 
-        folders = [(f, root + "/" + f) for f in folders]
-
+        root, _folders, _files = next(os.walk(self.path))
+        # filter usb
+        usb = []
+        if "USB Device" in _folders:
+            _folders.remove("USB Device")
+            # Check if folder is not empty -> a usb stick is plugged in
+            r, d, f = next(os.walk(join(root, "USB Device")))
+            if len(d) + len(f) > 0:
+                usb = [{'name': "USB Device", 'item_type': 'usb', 'path': (join(root, "USB Device")), 'details':""}]
+        folders = [(f, join(root, f)) for f in _folders]
         # filter files
         files = []
-        for file in _files:
-            if ".gco" in os.path.splitext(file)[1]:
-                files.append((file, root + "/" + file))
-            else:
-                logging.info(os.path.splitext(file)[1])
+        for f in _files:
+            if ".gco" in os.path.splitext(f)[1]:
+                files.append((f, join(root, f)))
+        # sort
         files = self.modification_date_sort(files)
-
-
-
+        folders = sorted(folders)
         # generate dicts
-        folders = [{'name': e[0], 'details': "", 'item_type': "folder", 'path': e[1]} for e in folders]
+        folders = [{'name': f[0], 'item_type': "folder", 'path': f[1], 'details': ""} for f in folders]
+        files =   [{'name': f[0], 'item_type': "file",   'path': f[1], 'details': self.get_details(f[1])} for f in files]
+
+        new_data = usb + folders + files
+        if self.data != new_data:
+            self.data = new_data
+            self.refresh_from_data()
+            if not in_background:
+                self.scroll_y = 1
+    
+    def load_queue(self, in_background=False):
         queue = [{'name': e[0], 'details': "", 'item_type': "queue", 'path': e[1]} for e in queue]
-        files = [{'name': e[0], 'details': self.get_details(e[1]), 'item_type': "file", 'path': e[1]} for e in files]
 
-        if self.path == p.sdcard_path:
-            pass
-
-        self.data = queue + folders + files
+        self.data = queue 
         self.refresh_from_data()
         if not in_background:
             self.scroll_y = 1
+
+    def back(self):
+        self.path = dirname(self.path)
+        self.load_files()
     
-    def modification_date_sort(self, files):# only accepts files
+    def modification_date_sort(self, files):
         return sorted((f for f in files), key=lambda f: os.path.getmtime(f[1]), reverse=True)
     
     def get_details(self, path):
@@ -146,7 +156,7 @@ class FCItem(RecycleDataViewBehavior, Widget):
                 self.popup.open()
             else:
                 self.parent.parent.path = self.path
-                self.parent.parent.update()
+                self.parent.parent.load_files()
             return self.parent.select_with_touch(self.index, touch)
 
     def apply_selection(self, rv, index, is_selected):
@@ -171,13 +181,10 @@ class PrintPopup(BasePopup):
         app = App.get_running_app()
         self.dismiss()
         new_path = self.path
-        if dirname(self.path) != p.sdcard_path:
+        if 'USB Device' in self.path:
             new_path = join(p.sdcard_path, basename(self.path))
-            if 'USB-Device' in self.path:
-                app.notify.show("Copying {} to Printer...".format(basename(self.path)))
-                shutil.copy(self.path, new_path)
-            else:
-                os.symlink(self.path, new_path)
+            app.notify.show("Copying {} to Printer...".format(basename(self.path)))
+            shutil.copy(self.path, new_path)
 
         app.send_start(new_path)
         tabs = app.root.ids.tabs
