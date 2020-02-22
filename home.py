@@ -220,7 +220,7 @@ class OptionBox(FloatLayout, Widget):
 
     def init_drawing(self, dt):
         for o in self.options:
-            o[2] = Option(y=self.y + 200, title=o[0], box_color=o[1])
+            o[2] = Option(y=self.y + 200, text=o[0], box_color=o[1])
             o[2].bind(on_release=self.on_selected)
             self.ids.stack.add_widget(o[2])
 

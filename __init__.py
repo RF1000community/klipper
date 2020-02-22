@@ -110,7 +110,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
             self.filament_diameter = 1.75
-            self.xy_homing_controls = False
+            self.xy_homing_controls = True
             self.extruders = [None, None, None]
             self.extruder_count = 2
         super(mainApp, self).__init__(**kwargs)

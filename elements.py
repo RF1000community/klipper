@@ -1,5 +1,6 @@
 # coding: utf-8
 from kivy.uix.widget import Widget
+from kivy.uix.label import Label
 from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.popup import Popup
 from kivy.properties import NumericProperty, BooleanProperty, StringProperty, ListProperty
@@ -11,7 +12,7 @@ from collections import deque
 import parameters as p
 
 
-class BaseButton(Widget):
+class BaseButton(Label):
 
     pressed = BooleanProperty(False)
     enabled = BooleanProperty(True)
