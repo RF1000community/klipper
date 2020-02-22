@@ -18,12 +18,12 @@ import parameters as p
 
 class FC(RecycleView):
     path = StringProperty()
+    btn_stack = ObjectProperty()
     btn_back_visible = BooleanProperty(False)
+    view = OptionProperty('files', options = ['files', 'queue'])
     def __init__(self, **kwargs):
         self.app = App.get_running_app()
         self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2
-        self.cache = [None, None, None]
-        self.cache_ready = False
         if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
         else:
@@ -35,14 +35,19 @@ class FC(RecycleView):
     def bind_tab(self, e):
         tabs = self.app.root.ids.tabs
         tabs.bind(current_tab=self.control_updating)
+        self.on_view(view = self.view)
+
 
     def control_updating(self, instance, tab):
         if tab == instance.ids.file_tab:
-            pass
+            self.load_files(in_background = True)
+            Clock.schedule_interval(self.update, 10)
+
+    def update(self, dt):
+        if self.view == 'files':
+            self.load_files(in_background=True)
 
     def load_files(self, in_background = False):
-
-
         root, _folders, _files = next(os.walk(self.path))
         # filter usb
         usb = []
@@ -58,33 +63,50 @@ class FC(RecycleView):
         for f in _files:
             if ".gco" in os.path.splitext(f)[1]:
                 files.append((f, join(root, f)))
+
         # sort
         files = self.modification_date_sort(files)
         folders = sorted(folders)
+        
         # generate dicts
         folders = [{'name': f[0], 'item_type': "folder", 'path': f[1], 'details': ""} for f in folders]
         files =   [{'name': f[0], 'item_type': "file",   'path': f[1], 'details': self.get_details(f[1])} for f in files]
 
         self.btn_back_visible = self.path != p.sdcard_path
 
-
         new_data = usb + folders + files
         if self.data != new_data:
             self.data = new_data
             self.refresh_from_data()
+            self.view = 'files'
             if not in_background:
                 self.scroll_y = 1
-    
+
     def load_queue(self, in_background=False):
-        queue = [{'name': e[0], 'details': "", 'item_type': "queue", 'path': e[1]} for e in queue]
+        queue = [{'name': "queued{}".format(i), 'details': "", 'item_type': "queue", 'path':""} for i in range(10)]
 
         self.data = queue 
         self.refresh_from_data()
         if not in_background:
             self.scroll_y = 1
+        self.view = 'queue'
+        logging.info("shoulda changed to queue")
+    
+    def on_view(self, instance=None, view='files'): #todo trigger this on app.queue change
+        self.btn_stack.clear_widgets()
+        if view == 'files':# and len(self.app.queued_files) > 1:
+            self.btn_stack.add_widget(Btn_Queue(filechooser = self))
+            self.ids.fc_box.selected_nodes = []
+        elif view == 'queue':
+            self.btn_stack.add_widget(Btn_QX(filechooser = self))
+            self.btn_stack.add_widget(Btn_QUp(filechooser = self))
+            self.btn_stack.add_widget(Btn_QDown(filechooser = self))
+            self.btn_back_visible = True
 
+    
     def back(self):
-        self.path = dirname(self.path)
+        if self.view == 'files':
+            self.path = dirname(self.path)
         self.load_files()
     
     def modification_date_sort(self, files):
@@ -100,7 +122,7 @@ class FC(RecycleView):
             r'.*filament\sused\s=\s.*mm',           # Slic3r PE
             r';Filament used: \d*.\d+m',            # Cura
             r';Material#1 Used:\s\d+\.?\d+',        # ideamaker
-            r'.*filament\sused\s.mm.\s=\s[0-9\.]+'  # PrusaSlicer
+            r'.*filament\sused\s.mm.\s=\s[0-9\.]+'  # PrusaSlicer 
             ]
         nlines = 100
         head = tail = []
@@ -130,8 +152,61 @@ class FC(RecycleView):
                         if i == 4:
                             filament *= 1000 # Cura gives meters -> convert to mm
                         weight = self.filament_crossection*filament*0.0011 #density in g/mm^3
-                        return "{:4.1f}g".format(weight)
+                        return "{:4.0f}g".format(weight)
         return ""
+
+    
+
+    # Queue ##########################################################
+
+    def send_queue(self):
+        """
+        Send the updated queue back to the virtual sdcard
+        Will fail in testing
+        """
+        sdcard = self.app.sdcard
+        sdcard.clear_queue() # Clears everything except for the first entry
+        for path in self.queued_files[1:]:
+            sdcard.add_printjob(path)
+
+    def move_top(self):
+        """
+        Move the selected file to the top of the queue.
+        Move after the current print if it is currently printing.
+        """
+        i = self.queued_list.selected.index
+        to_move = self.queued_files.pop(i)
+        self.queued_files.insert(self.first, to_move)
+        self.update_queue(None, self.queued_files)
+        self.queued_list.select(self.first)
+        self.send_queue()
+
+    def move_up(self):
+        """Move the selected file up one step in the queue"""
+        i = self.queued_list.selected.index
+        to_move = self.queued_files.pop(i)
+        self.queued_files.insert(i - 1, to_move)
+        self.update_queue(None, self.queued_files)
+        self.queued_list.select(i-1)
+        self.send_queue()
+
+    def move_down(self):
+        """Move the selected file down one step in the queue"""
+        i = self.queued_list.selected.index
+        to_move = self.queued_files.pop(i)
+        self.queued_files.insert(i + 1, to_move)
+        self.update_queue(None, self.queued_files)
+        self.queued_list.select(i+1)
+        self.send_queue()
+
+    def remove(self):
+        """Remove the selcted file from the queue"""
+        i = self.queued_list.selected.index
+        self.queued_files.pop(i)
+        self.update_queue(None, self.queued_files)
+        self.queued_list.select(min(len(self.queued_files)-1, i))
+        self.send_queue()
+
 
 class FCBox(LayoutSelectionBehavior, RecycleBoxLayout):
     # Adds selection behaviour to the view
@@ -157,32 +232,27 @@ class FCItem(RecycleDataViewBehavior, Widget):
         if super(FCItem, self).on_touch_down(touch):
             return True
         if self.collide_point(*touch.pos):
+            fc = self.parent.parent
             if self.item_type == 'file':
-                self.popup = PrintPopup(self.name, creator=self)
+                self.popup = PrintPopup(self.path, filechooser=fc)
                 self.popup.open()
             elif self.item_type == 'queue':
                 return self.parent.select_with_touch(self.index, touch)
             else:
-                self.parent.parent.path = self.path
-                self.parent.parent.load_files()
+                fc.path = self.path
+                fc.load_files()
 
     def apply_selection(self, rv, index, is_selected):
         # Respond to the selection of items in the view
         self.selected = is_selected
 
+
 class PrintPopup(BasePopup):
 
-    def __init__(self, path, **kwargs):
+    def __init__(self, path, filechooser, **kwargs):
         self.path = path
-        # Extract only the filename from the path
-        self.prompt = basename(self.path)
+        self.filechooser = filechooser
         super(PrintPopup, self).__init__(**kwargs)
-
-    def dismiss(self):
-        super(PrintPopup, self).dismiss()
-        # Deselects the file in the filechooser when canceled
-        # Supposed to be read-only but still works that way
-        self.creator.selection = []
 
     def confirm(self):
         app = App.get_running_app()
@@ -201,24 +271,35 @@ class PrintPopup(BasePopup):
     def delete(self):
         """Open a confirmation dialog to delete the file"""
         super(PrintPopup, self).dismiss() # dismiss bypassing deselection
-        self.confirm_del = DelPopup(creator=self)
+        self.confirm_del = DelPopup(path = self.path, filechooser=self.filechooser)
         self.confirm_del.open()
 
+class FloatingButton(BaseButton):
+    def __init__(self, filechooser, **kwargs):
+        self.filechooser = filechooser
+        super(FloatingButton, self).__init__(**kwargs)
+class Btn_Queue(FloatingButton):
+    pass
+class Btn_QUp(FloatingButton):
+    pass
+class Btn_QDown(FloatingButton):
+    pass
+class Btn_QX(FloatingButton):
+    pass
 
 class DelPopup(BasePopup):
     """Popup to confirm file deletion"""
-
-    def dismiss(self):
-        super(DelPopup, self).dismiss()
-        # Deselect in the filechooser
-        self.creator.creator.selection = []
+    def __init__(self, path, filechooser, **kwargs):
+        self.path = path
+        self.filechooser = filechooser
+        super(DelPopup, self).__init__(**kwargs)
 
     def confirm(self):
         """Deletes the file and closes the popup"""
-        os.remove(self.creator.path)
+        os.remove(self.path)
         # Update the files in the filechooser instance
-        self.creator.creator._update_files()
+        self.filechooser.load_files(in_background=True)
         self.dismiss()
 
         app = App.get_running_app()
-        app.notify.show("File deleted", "Deleted " + basename(self.creator.path), delay=4)
+        app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)

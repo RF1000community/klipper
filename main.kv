@@ -1248,7 +1248,8 @@ FloatLayout:
             source: p.kgui_dir+'/Logos/FilesIcon.png'
             size: 100,100
             pos: 250, 0
-    BoxLayout:
+    FloatLayout:
+        id: main_box
         orientation: 'vertical'
         canvas.before:
             Color:
@@ -1261,11 +1262,20 @@ FloatLayout:
             enabled: fc.btn_back_visible
             on_release: fc.back()
             pos_hint: {'x':0, 'top':1}
-            title: relpath(fc.path, dirname(p.sdcard_path))
+            title: relpath(fc.path, dirname(p.sdcard_path)) if fc.view == 'files' else "Queued Prinjobs"
         FC:
             id: fc
+            btn_stack: btn_stack
             viewclass: 'FCItem'
+            size_hint: None, None
+            size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
             pos_hint: {'x':0, 'y':0}
+        StackLayout:
+            id: btn_stack
+            orientation: 'rl-bt'
+            padding: (p.h_padding, p.padding, p.h_padding, p.padding)
+            spacing: p.h_padding
+            pos: 0, p.tab_height
 <FC>:
     FCBox:
         id: fc_box
@@ -1356,17 +1366,84 @@ FloatLayout:
         font_size: p.large_font
         color: (1,1,1,1)
 
-<FloatingButton@BaseButton>:
-    
-        
+<FloatingButton>:
+    btn_color: (1,1,1,1)
+    size: 74 * p.disp_vertical_stretch, 74
+    canvas:
+        Color:
+            rgba: self.btn_color if self.enabled else (0,0,0,0)
+        Ellipse:
+            size: self.size
+            pos: self.pos
+        Color:
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+        Ellipse:
+            size: self.size
+            pos: self.pos
 
+<Btn_Queue>:
+    size: 86 * p.disp_vertical_stretch, 86
+    btn_color: p.accent
+    enabled: True
+    on_release: self.filechooser.load_queue()
+    Label:
+        size: root.size
+        pos: root.pos
+        text: "Queue"
+        bold: True
+        halign: 'center'
+        valign: 'middle'
+        text_size: self.size
+        font_size: p.normal_font
+        color: (1,1,1,1)
+
+#:set pad 24
+<Btn_QUp>:
+    id: q_up
+    btn_color: p.notify_info
+    enabled: len(self.filechooser.ids.fc_box.selected_nodes)
+    on_release: self.filechooser.move_up()
+    canvas:
+        Color:
+            rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
+        Triangle:
+            points: self.x+pad-4, self.y+pad+4,  self.right-pad+4, self.y+pad+4,  self.center_x, self.top-pad
+
+<Btn_QDown>:
+    id: q_down
+    btn_color: p.medium_gray
+    enabled: len(self.filechooser.ids.fc_box.selected_nodes)
+    on_release: self.filechooser.move_down()
+    canvas:
+        Color:
+            rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
+        Triangle:
+            points: self.x+pad-4, self.top-pad-4,  self.right-pad+4, self.top-pad-4,  self.center_x, self.y+pad
+
+<Btn_QX>:
+    id: q_rm
+    btn_color: p.medium_gray
+    enabled: len(self.filechooser.ids.fc_box.selected_nodes)
+    on_release: self.filechooser.remove()
+    canvas:
+        Color:
+            rgba: p.red if self.enabled else (0,0,0,0)
+        Line:
+            points: self.x+pad, self.top-pad,  self.right-pad, self.y+pad
+            width: 5
+            cap: 'none'
+        Line:
+            points: self.x+pad, self.y+pad,  self.right-pad, self.top-pad
+            width: 5
+            cap: 'none'
+                   
 <PrintPopup>:
     title: 'Print'
     title_size: p.large_font
     size_hint: 0.8, 0.3
     FloatLayout:
         Label:
-            text: root.prompt
+            text: basename(root.path)
             halign: 'center'
             valign: 'middle'
             max_lines: 2
@@ -1404,7 +1481,7 @@ FloatLayout:
     size_hint: 0.8, 0.3
     FloatLayout:
         Label:
-            text: root.creator.prompt
+            text: basename(root.path)
             halign: 'center'
             valign: 'middle'
             max_lines: 2
