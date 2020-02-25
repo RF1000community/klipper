@@ -87,7 +87,6 @@ class FC(RecycleView):
         if not in_background:
             self.scroll_y = 1
         self.view = 'queue'
-        logging.info("shoulda changed to queue")
 
     def on_view(self, instance=None, view='files'): #todo trigger this on app.queue change
         self.btn_stack.clear_widgets()
@@ -198,8 +197,7 @@ class FCItem(RecycleDataViewBehavior, Label):
     details = StringProperty()
     index = None
     selected = BooleanProperty(False)
-    highlighted = BooleanProperty(False)
-    selectable = BooleanProperty(True) #TODO check if needed
+    pressed = BooleanProperty(False)
 
     def refresh_view_attrs(self, rv, index, data):
         # Catch and handle the view changes
@@ -211,15 +209,26 @@ class FCItem(RecycleDataViewBehavior, Label):
         if super(FCItem, self).on_touch_down(touch):
             return True
         if self.collide_point(*touch.pos):
+            self.pressed = True
+            if self.item_type == 'queue':
+                self.parent.select_with_touch(self.index, touch)
+            return True
+
+    def on_touch_up(self, touch):
+        was_pressed = self.pressed
+        self.pressed = False
+        if super(FCItem, self).on_touch_up(touch):
+            return True
+        if self.collide_point(*touch.pos) and was_pressed:
             fc = self.parent.parent
             if self.item_type == 'file':
                 self.popup = PrintPopup(self.path, filechooser=fc)
                 self.popup.open()
-            elif self.item_type == 'queue':
-                return self.parent.select_with_touch(self.index, touch)
-            else:
+            elif self.item_type == 'folder' or self.item_type == 'usb':
                 fc.path = self.path
                 fc.load_files()
+            return True
+        return False
 
     def apply_selection(self, rv, index, is_selected):
         # Respond to the selection of items in the view

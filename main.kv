@@ -1289,14 +1289,13 @@ FloatLayout:
 
 <FCItem>:
     size: p.screen_width, 777
-    pressed: False
     canvas:
         Color:
-            rgba: (1,1,1,1)
+            rgba: p.nozzle
         Rectangle:
             source: p.kgui_dir + ('/Logos/File.png' if self.item_type == 'file' else '/Logos/Usb.png' if self.item_type == 'usb' else '/Logos/Folder.png' if self.item_type == 'folder' else '/Logos/Transparent.png')
-            size: 80, 80
-            pos: root.x + p.h_padding - 10, root.center_y - 40
+            size: 76, 76
+            pos: p.h_padding - 10, root.center_y - 38
         Color:
             rgba: p.translucent_white if (self.selected or self.pressed) else (0,0,0,0)
         Rectangle:
@@ -1313,7 +1312,7 @@ FloatLayout:
     valign: 'bottom'
     max_lines: 1
     padding_x: p.h_padding
-    padding_y: 17
+    padding_y: 20
     text_size: self.size
     font_size: p.normal_font
     color: p.medium_light_gray
@@ -1324,7 +1323,7 @@ FloatLayout:
         valign: 'top'
         max_lines: 1
         padding_x: p.h_padding
-        padding_y: 17
+        padding_y: 20
         size: p.screen_width - 100, root.height
         right: root.right
         y: root.y
@@ -1333,15 +1332,20 @@ FloatLayout:
         color: (1,1,1,1)
  
 <TitleBar@BaseButton>:
-    size: 150, 110
+    size: 140, 110
     enabled: False
     title: ""
     #: set q 26
     canvas.before:
         Color:
+            rgba: p.background
+        Rectangle:
+            size: p.screen_width, self.height
+            pos: self.pos
+        Color:
             rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
         Triangle:
-            points: self.center_x-q/2, self.center_y,   self.center_x+q/2, self.center_y-q,   self.center_x+q/2, self.center_y+q
+            points: p.h_padding, self.center_y,   p.h_padding + q, self.center_y-q,   p.h_padding + q, self.center_y+q
         Color:
             rgba: p.translucent_white if self.pressed else (0,0,0,0)
         Rectangle:
@@ -1363,7 +1367,7 @@ FloatLayout:
         color: (1,1,1,1)
 
 <FloatingButton>:
-    btn_color: (1,1,1,1)
+    btn_color: (0,0,0,0)
     size: 74 * p.disp_vertical_stretch, 74
     canvas:
         Color:
@@ -1396,9 +1400,9 @@ FloatLayout:
 #:set pad 24
 <Btn_QUp>:
     id: q_up
-    btn_color: p.notify_info
     enabled: len(self.filechooser.ids.fc_box.selected_nodes)
     on_release: self.filechooser.move_up()
+    btn_color: p.accent
     canvas:
         Color:
             rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
@@ -1407,9 +1411,9 @@ FloatLayout:
 
 <Btn_QDown>:
     id: q_down
-    btn_color: p.medium_gray
     enabled: len(self.filechooser.ids.fc_box.selected_nodes)
     on_release: self.filechooser.move_down()
+    btn_color: p.accent
     canvas:
         Color:
             rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
@@ -1418,12 +1422,12 @@ FloatLayout:
 
 <Btn_QX>:
     id: q_rm
-    btn_color: p.medium_gray
     enabled: len(self.filechooser.ids.fc_box.selected_nodes)
     on_release: self.filechooser.remove()
+    btn_color: p.accent
     canvas:
         Color:
-            rgba: p.red if self.enabled else (0,0,0,0)
+            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
         Line:
             points: self.x+pad, self.top-pad,  self.right-pad, self.y+pad
             width: 5
@@ -1507,16 +1511,25 @@ FloatLayout:
     canvas:
         Rectangle:
             source: p.kgui_dir+'/Logos/SettingsIcon.png'
-            size: 100, 100
-            pos: 450, 0
-
-    ScreenManager:
-        name: 'SettingScreenManager'
-        transition: screenmanager.NoTransition()
-        SettingScreen:
-            id: setting_screen
-        WifiScreen:
-            id: wifi_screen
+            size: 100 * p.disp_vertical_stretch, 100
+            pos: 500 - 50 * p.disp_vertical_stretch, 0
+    BoxLayout:
+        orientation: 'vertical'
+        TitleBar:
+            title: "Wifi" if screen_man.current=='WifiScreen'  else  "Update" if screen_man.current=='UpdateScreen'  else  "Settings"
+            enabled: screen_man.current != 'SettingScreen'
+            on_release: screen_man.current = 'SettingScreen'
+            pos_hint: {'x':0, 'top':1}
+        ScreenManager:
+            id: screen_man
+            name: 'SettingScreenManager'
+            transition: screenmanager.NoTransition()
+            SettingScreen:
+                id: setting_screen
+            WifiScreen:
+                id: wifi_screen
+            UpdateScreen:
+                id: update_screen
 
 <SettingScreen@Screen>:
     name: 'SettingScreen'
@@ -1532,6 +1545,8 @@ FloatLayout:
             height: self.minimum_height
             pos: 0, root.height - self.height
             size_hint_y: None
+            Divider:
+                pos_hint: {'center_x':0.5}
             SI_Switch:
                 left_title: "Light"
             SI_Switch:
@@ -1549,50 +1564,51 @@ FloatLayout:
             SetItem:
                 left_title: "Shutdown..."
                 on_release: Factory.PowerPopup().open()
+            SetItem:
+                left_title: "Update"
+                on_release: root.manager.current = "UpdateScreen"
             SI_Timezone:
                 id: si_timezone
 
 <WifiScreen>:
     name: 'WifiScreen'
-    FloatLayout:
-        id: float
+    ScrollView:
         canvas.before:
             Color:
                 rgba: p.background
             Rectangle:
                 pos: self.pos
                 size: self.size
-        RectangleButton:
-            id: btn
-            #size_hint: 1, 0.1
-            size: 150, 110
-            pos_hint: {'x':0, 'top':1}
-            #: set q 26
-            canvas.before:
-                Color:
-                    rgba: 1,1,1,1
-                Triangle:
-                    points: btn.center_x-q, btn.center_y,   btn.center_x, btn.center_y-q,   btn.center_x, btn.center_y+q
-            on_release:
-                #root.manager.transition.direction = 'right'
-                root.manager.current = 'SettingScreen'
-        Label:
-            text: "Wifi"
-            font_size: p.large_font
-            text_size: self.size
-            size_hint: 1, 0.12
-            pos_hint: {'x':0, 'top':1}
-            valign: 'middle'
-            halign: 'center' 
-        ScrollView:
-            size_hint: 1, 1-0.12
-            pos_hint: {'x':0, 'y':0}
-            do_scroll_x: False
-            BoxLayout:
-                id: wifi_box
-                orientation: 'vertical'
-                height: self.minimum_height
-                size_hint_y: None    
+        size_hint: 1, 1
+        pos_hint: {'x':0, 'y':0}
+        do_scroll_x: False
+        BoxLayout:
+            id: wifi_box
+            orientation: 'vertical'
+            height: self.minimum_height
+            size_hint_y: None
+
+<UpdateScreen@Screen>:
+    name: 'UpdateScreen'
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0,0
+            size: self.size
+    Divider:
+        pos_hint: {'top':1}
+    Label:
+        text: "Host Software"
+        font_size: p.normal_font
+        text_size: self.size
+        size: self.texture_size
+        valign: 'top'
+        halign: 'left'
+        padding_x: p.small_padding
+        padding_y: 5
+        pos_hint: {'x':0, 'top':1}
+        color: p.medium_light_gray
 
 <SetItem>:
     size_hint_y: None

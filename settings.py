@@ -275,9 +275,9 @@ class SI_Wifi(SetItem):
 
     def on_release(self, *args):
         # don't open wifiscreen when wifi doesn't work
-        if  not wifi.state:
-            mgr = self.parent.parent.parent.manager
-            mgr.current = 'WifiScreen'
+        #if not wifi.state:
+        mgr = self.parent.parent.parent.manager
+        mgr.current = 'WifiScreen'
 
     def on_pre_enter(self):
         return # is this right?

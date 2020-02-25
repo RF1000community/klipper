@@ -66,6 +66,7 @@ notify_success = (0.1,0.4,0.2,0.8)
 """
 Kivy Guide
 https://blog.kivy.org/2019/06/widget-interactions-between-python-and-kv/
+Screens (of screenmanager) are relative Layouts (new root for coordinate system)
 setting properties of parent class in kv rules doesnt work if they are assigned to a value in parent rule
 Defining Properties in kv is often bad since it happens too late, and prohibits setting them in __init__
 LABELS: try setting hints to None if it does shit e.g. setting size doesnt work
