@@ -196,7 +196,7 @@ FloatLayout:
                 #:set bx2 +19
                 #:set bh 40
                 #:set bo 16
-                #:set icon_center 25
+                #:set icon_center 26
                 Line:
                     width: p.icon_radius
                     points: self.x + icon_center - bw/2, self.center_y - p.btn_height/2 + p.icon_radius,   self.x + icon_center + bw/2, self.center_y - p.btn_height/2 + p.icon_radius
@@ -240,7 +240,6 @@ FloatLayout:
 <PrintingScreen@Screen>:
     name: "printingscreen"
     FloatLayout:
-
         Btn_Temp:
             id: fan
             on_release: Factory.FanPopup(val=app.fan_speed).open()
@@ -1249,8 +1248,7 @@ FloatLayout:
             size: 100,100
             pos: 250, 0
     FloatLayout:
-        id: main_box
-        orientation: 'vertical'
+        pos: 0, p.tab_height
         canvas.before:
             Color:
                 rgba: p.background
@@ -1259,23 +1257,56 @@ FloatLayout:
                 pos: 0, p.tab_height
         TitleBar:
             id: title_bar
-            enabled: fc.btn_back_visible
-            on_release: fc.back()
+            enabled: False if (screen_man.current == 'FileScreen' and gc.path == p.sdcard_path) else True
+            on_release:
+                if screen_man.current == 'FileScreen': gc.back()
+                else: screen_man.current = 'FileScreen'
             pos_hint: {'x':0, 'top':1}
-            title: relpath(fc.path, dirname(p.sdcard_path)) if fc.view == 'files' else "Queued Prinjobs"
-        FC:
-            id: fc
-            btn_stack: btn_stack
-            viewclass: 'FCItem'
-            size_hint: None, None
-            size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
-            pos_hint: {'x':0, 'y':0}
-        StackLayout:
-            id: btn_stack
-            orientation: 'rl-bt'
-            padding: (p.h_padding, p.padding, p.h_padding, p.padding)
-            spacing: p.h_padding
-            pos: 0, p.tab_height
+            title: relpath(gc.path, dirname(p.sdcard_path)) if screen_man.current == 'FileScreen' else "Queued Prinjobs"
+        ScreenManager:
+            id: screen_man
+            name: 'FileScreenManager'
+            transition: screenmanager.NoTransition()
+            Screen:
+                id: file_screen
+                name: 'FileScreen'
+                GC:
+                    id: gc
+                    viewclass: 'GCItem'
+                    size_hint: None, None
+                    size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
+                    pos: 0, p.tab_height
+                Btn_Queue:
+                    right: p.screen_width - p.h_padding
+                    y: p.tab_height + p.padding
+                    on_release: screen_man.current = 'QueueScreen'
+            Screen:
+                id: queue_screen
+                name: 'QueueScreen'
+                FC:
+                    id: fc
+                    viewclass: 'FCItem'
+                    size_hint: None, None
+                    size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
+                    pos: 0, p.tab_height
+                Btn_QX:
+                    id: q_x
+                    right: p.screen_width - p.h_padding +10
+                    y: p.tab_height + p.padding 
+                    on_release: fc.remove()
+                    enabled: len(fc.ids.fc_box.selected_nodes)    
+                Btn_QUp:
+                    id: q_up
+                    right: q_x.x - p.h_padding  +10
+                    y: p.tab_height + p.padding
+                    on_release: fc.move_up()
+                    enabled: len(fc.ids.fc_box.selected_nodes)    
+                Btn_QDown:
+                    right: q_up.x - p.h_padding  + 10
+                    y: p.tab_height + p.padding
+                    on_release: fc.move_down()
+                    enabled: len(fc.ids.fc_box.selected_nodes)    
+
 <FC>:
     FCBox:
         id: fc_box
@@ -1291,12 +1322,6 @@ FloatLayout:
     size: p.screen_width, 777
     canvas:
         Color:
-            rgba: p.nozzle
-        Rectangle:
-            source: p.kgui_dir + ('/Logos/File.png' if self.item_type == 'file' else '/Logos/Usb.png' if self.item_type == 'usb' else '/Logos/Folder.png' if self.item_type == 'folder' else '/Logos/Transparent.png')
-            size: 76, 76
-            pos: p.h_padding - 10, root.center_y - 38
-        Color:
             rgba: p.translucent_white if (self.selected or self.pressed) else (0,0,0,0)
         Rectangle:
             size: self.size
@@ -1309,7 +1334,7 @@ FloatLayout:
     #Label
     text: root.details
     halign: 'right'
-    valign: 'bottom'
+    valign: 'middle'
     max_lines: 1
     padding_x: p.h_padding
     padding_y: 20
@@ -1319,16 +1344,70 @@ FloatLayout:
     Label:
         text: root.name
         shorten: True
-        halign: 'right'
-        valign: 'top'
+        halign: 'left'
+        valign: 'middle'
         max_lines: 1
         padding_x: p.h_padding
         padding_y: 20
-        size: p.screen_width - 100, root.height
-        right: root.right
-        y: root.y
+        size: root.size
+        pos: root.pos
         text_size: self.size
         font_size: p.normal_font
+        color: (1,1,1,1)
+    
+<GC>:
+    GCGrid:
+        id: gc_grid
+        cols: 3
+        padding: (15,)
+        spacing:(15,)
+        default_size: dp(180), dp(180)
+        # default_size_hint: 1, None
+        size_hint_y: None
+        size_hint_x: None
+        width: p.screen_width
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False
+
+<GCItem>:
+    canvas:
+        Color:
+            rgba: p.medium_light_gray
+        Rectangle:
+            source: p.kgui_dir + ('/Logos/File.png' if self.item_type == 'file' else '/Logos/Usb.png' if self.item_type == 'usb' else '/Logos/Folder.png' )
+            size: 84, 84
+            pos: self.center_x - 42, self.center_y - 5
+        Color:
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+        RoundedRectangle:
+            radius: (p.radius,)
+            size: self.size
+            pos: self.pos
+    #Label
+    text: root.details
+    halign: 'center'
+    valign: 'bottom'
+    max_lines: 1
+    padding_x: 0
+    padding_y: 6
+    text_size: self.size
+    font_size: p.normal_font - 3
+    color: p.medium_light_gray
+    Label:
+        text: root.name
+        shorten: False
+        multiline: True
+        halign: 'center'
+        valign: 'top'
+        max_lines: 2
+        padding_x: 0
+        padding_y: 0
+        size: root.width, 80
+        pos: root.pos
+        text_size: self.size
+        font_size: p.normal_font - 3
         color: (1,1,1,1)
  
 <TitleBar@BaseButton>:
@@ -1366,7 +1445,7 @@ FloatLayout:
         font_size: p.large_font
         color: (1,1,1,1)
 
-<FloatingButton>:
+<FloatingButton@BaseButton>:
     btn_color: (0,0,0,0)
     size: 74 * p.disp_vertical_stretch, 74
     canvas:
@@ -1381,11 +1460,10 @@ FloatLayout:
             size: self.size
             pos: self.pos
 
-<Btn_Queue>:
+<Btn_Queue@FloatingButton>:
     size: 86 * p.disp_vertical_stretch, 86
     btn_color: p.accent
     enabled: True
-    on_release: self.filechooser.load_queue()
     Label:
         size: root.size
         pos: root.pos
@@ -1398,10 +1476,8 @@ FloatLayout:
         color: (1,1,1,1)
 
 #:set pad 24
-<Btn_QUp>:
+<Btn_QUp@FloatingButton>:
     id: q_up
-    enabled: len(self.filechooser.ids.fc_box.selected_nodes)
-    on_release: self.filechooser.move_up()
     btn_color: p.accent
     canvas:
         Color:
@@ -1409,10 +1485,7 @@ FloatLayout:
         Triangle:
             points: self.x+pad-4, self.y+pad+4,  self.right-pad+4, self.y+pad+4,  self.center_x, self.top-pad
 
-<Btn_QDown>:
-    id: q_down
-    enabled: len(self.filechooser.ids.fc_box.selected_nodes)
-    on_release: self.filechooser.move_down()
+<Btn_QDown@FloatingButton>:
     btn_color: p.accent
     canvas:
         Color:
@@ -1420,10 +1493,7 @@ FloatLayout:
         Triangle:
             points: self.x+pad-4, self.top-pad-4,  self.right-pad+4, self.top-pad-4,  self.center_x, self.y+pad
 
-<Btn_QX>:
-    id: q_rm
-    enabled: len(self.filechooser.ids.fc_box.selected_nodes)
-    on_release: self.filechooser.remove()
+<Btn_QX@FloatingButton>:
     btn_color: p.accent
     canvas:
         Color:
@@ -1596,17 +1666,15 @@ FloatLayout:
         Rectangle:
             pos: 0,0
             size: self.size
-    Divider:
-        pos_hint: {'top':1}
     Label:
         text: "Host Software"
-        font_size: p.normal_font
+        font_size: p.large_font
         text_size: self.size
         size: self.texture_size
         valign: 'top'
         halign: 'left'
-        padding_x: p.small_padding
-        padding_y: 5
+        padding_x: p.padding
+        padding_y: p.padding
         pos_hint: {'x':0, 'top':1}
         color: p.medium_light_gray
 
