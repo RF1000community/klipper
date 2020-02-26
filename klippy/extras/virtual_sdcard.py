@@ -28,7 +28,6 @@ class VirtualSD(object):
         self.file_position = 0
         self.slicer_elapsed_times = [] # [[time actually printed, elapsed time put by slicer], ...]
         self.slicer_estimated_time = None
-        self.must_pause_work = False
 
     def add_printjob(self, filepath, pause=True):
         # if it can be printed right away don't pause it
@@ -46,6 +45,7 @@ class VirtualSD(object):
         if  len(self.queued_files) > 0 and self.state != 'printing' and self.state != 'paused':
             # start a printjob
             self.pause_work()
+            self.deb()
             logging.warning("virtual_sdcard: has checked queue")
             try:
                 f = open(self.queued_files[0][0], 'rb')
@@ -58,44 +58,51 @@ class VirtualSD(object):
                 return False
             logging.warning("virtual_sdcard: has opened file")
 
-            self.state = 'printing'
             self.file_position = 0
             self.start_stop_times = [[self.toolhead.get_last_move_time(), None]] # [[start, pause], [resume, pause] ...]
             self.slicer_elapsed_times = [] # [[time actually printed, elapsed time put by slicer], ...]
             self.slicer_estimated_time = None
             if self.queued_files[0][1]: # start in paused state
+                self.state = 'paused'
                 self.must_pause_work = True
             else:
+                self.state = 'printing'
                 self.must_pause_work = False
                 self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
             return True
 
+    def deb(self, message=""):
+        logging.info("vvvvv  {}  vvvvvvv:\n work_timer: {} \n must_pause_work: {} \n state: {} \n queue: {}\n[^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^]".format(message, self.work_timer, self.must_pause_work, self.state, self.queued_files))
+
     def resume_printjob(self):
-        logging.info('resume_printjob:')
+        self.deb('resume_printjob')
         if self.state == 'paused':
             self.state = 'printing'
-            self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1")
+            #self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1") TODO make work
             self.must_pause_work = False
             if self.work_timer is None:
                 self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
 
     def pause_printjob(self):
-        logging.info('pause_printjob')
+        self.deb('pause')
         if self.state == 'printing':
             self.state = 'paused'
             self.pause_work()
-            self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
+            #self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
             self.start_stop_times[-1][1] = self.toolhead.get_last_move_time()
  
     def stop_printjob(self):
-        logging.info('stop printjob')
+        self.deb('stop')
+
         self.state = 'stopped'
-        self.pause_work
+        self.pause_work()
         self.start_stop_times[-1][1] = self.toolhead.get_last_move_time()
         self.queued_files.pop(0)
         self.check_queue()
 
     def pause_work(self):
+        self.deb('pause_work')
+
         if self.work_timer is not None:
             self.must_pause_work = True
             while self.work_timer is not None:# and not self.cmd_from_sd:
@@ -255,7 +262,7 @@ class VirtualSD(object):
         return {'state': self.state,
                 'progress': progress,
                 'estimated_remaining_time': est_remaining,
-                'queued_files': [f for f,p in self.queued_files]}
+                'queued_files': [f[0] for f in self.queued_files]}
 
     def handle_ready(self):
         self.toolhead = self.printer.lookup_object('toolhead')
@@ -351,11 +358,11 @@ class GcodeVirtualSD(VirtualSD):
         self.file_position = pos
     def cmd_M27(self, params):
         # Report SD print status
-        if self.current_file is None:
-            self.gcode.respond("Not SD printing.")
-            return
-        self.gcode.respond("SD printing byte %d/%d" % (
+        if self.state == 'printing':
+            self.gcode.respond("SD printing byte %d/%d" % (
             self.file_position, self.file_size))
+        else:
+            self.gcode.respond("SD print {}".format(self.state))
 
 def load_config(config):
     return GcodeVirtualSD(config)
