@@ -53,8 +53,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
     queued_files = ListProperty()
-    print_time = StringProperty() #updated by handle_print_time_calc
+    print_time = StringProperty() #updated by get_printjob_state
     print_done_time = StringProperty()
+    print_title = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
     pos = ListProperty([0,0,0,0]) #updated by scheduled update_home
     #tuning  #updated by upate_printing
@@ -90,11 +91,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
             self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}#maybe use position_min, position_max = rail.get_range()
             self.filament_diameter = self.klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
-            self.min_extrude_temp = self.klipper_config.getsection("extruder").getint("min_extrude_temp", 170) # mantain this by keeping default the same as klipper
-            #check whether the right sdcard path is configured
-            configured_sdpath = expanduser(self.klipper_config.getsection("virtual_sdcard").get("path", None))
-            if abspath(configured_sdpath) != abspath(p.sdcard_path):
-                logging.warning("virtual_sdcard path misconfigured: is {} and not {}".format(configured_sdpath, p.sdcard_path))
+            self.min_extrude_temp = self.klipper_config.getsection("extruder").getint("min_extrude_temp", 170) # mantain this by keeping default the same as klipper            
             #count how many extruders exist before drawing homescreen
             for i in range(1, 10):
                 try: klipper_config.getsection('extruder{i}'.format(**locals()))
@@ -156,7 +153,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
-### KLIPPER THREAD ^
+### KLIPPY THREAD ^
 ########################################################################################
 ### KGUI    THREAD v
 
@@ -215,7 +212,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_config('printer', 'max_accel', 'default_acceleration', 'int')
 
     def get_printjob_state(self, *args):
-
         def format_time(seconds):
             minutes = int((seconds % 3600) // 60)
             hours  =  int(seconds // 3600)
@@ -224,13 +220,20 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             else:
                 return "{minutes} minutes".format(**locals())
 
+        # get status from virtual_sdcard
         s = self.sdcard.get_status(self.reactor.monotonic())
-        if len(s['queued_files']) > max(len(self.queued_files), 1): # added file to q
-            self.notify.show("Added Printjob", "Added {basename(s['queued_files'][0])} to print Queue".format(**locals()))
 
+        # check if queue has changed
+        if len(s['queued_files']) > max(len(self.queued_files), 1):
+            self.notify.show("Added Printjob", "Added {} to print Queue".format(basename(s['queued_files'][0])))
         self.queued_files = s['queued_files']
 
-        if s['state'] != self.print_state: # state change
+        # this also returns the last printed file if not printing
+        if self.sdcard.current_file:
+            self.print_title = splitext(basename(self.sdcard.current_file.name))[0]
+
+        # react to state change
+        if s['state'] != self.print_state:
             self.print_state = s['state']
             if s['state'] == 'printing':
                 self.notify.show("Started printing", "Started printing {}".format(basename(s['queued_files'][0])), delay=4)
@@ -242,8 +245,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 self.print_time = "stopped"
                 self.print_done_time = ""
 
+        # set printtime prediction if necessary
         if s['state'] == 'printing'\
-        or s['state'] == 'paused': # we need a print time prediction
+        or s['state'] == 'paused':
             if s['progress'] is None: # no prediction could be made yet
                 self.progress = 0
                 self.print_time = ""
@@ -447,26 +451,22 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(None)))
 
-    def send_start(self, filepath=None):
-        if filepath is None:
-            def start_reprint(e):
-                if self.sdcard.current_file: # reprint the last file
-                    filepath = self.sdcard.current_file.name
-                else: return
-                self.sdcard.add_printjob(filepath)
-                Clock.schedule_once(self.get_printjob_state, 0)
-            self.reactor.register_async_callback(start_reprint)
-        else:
-            def start_print(e):
-                self.sdcard.add_printjob(filepath)
-                Clock.schedule_once(self.get_printjob_state, 0)
-            self.reactor.register_async_callback(start_print)
-
-    def send_resume(self):
-        def resume_print(e):
-            self.sdcard.resume_printjob()
+    def send_print(self, filepath):
+        def start_print(e):
+            self.sdcard.add_printjob(filepath)
             Clock.schedule_once(self.get_printjob_state, 0)
-        self.reactor.register_async_callback(resume_print)
+        self.reactor.register_async_callback(start_print)
+
+    def send_reprint_last(self):
+        def start_reprint(e):
+            if self.sdcard.current_file: # reprint the last file
+                filepath = self.sdcard.current_file.name
+                logging.info("trying to reprint {} with path {}".format(self.sdcard.current_file, self.sdcard.current_file.name))
+                self.sdcard.add_printjob(filepath)
+                Clock.schedule_once(self.get_printjob_state, 0)
+            else:
+                return
+        self.reactor.register_async_callback(start_reprint)
 
     def send_stop(self):
         def stop_print(e):
@@ -479,6 +479,12 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.sdcard.pause_printjob()
             Clock.schedule_once(self.get_printjob_state, 0)
         self.reactor.register_async_callback(pause_print)
+
+    def send_resume(self):
+        def resume_print(e):
+            self.sdcard.resume_printjob()
+            Clock.schedule_once(self.get_printjob_state, 0)
+        self.reactor.register_async_callback(resume_print)
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
@@ -497,7 +503,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
 
 ########################################################################################
-### KLIPPER THREAD v
+### KLIPPY THREAD v
 
 class PopupExceptionHandler(ExceptionHandler):
     def handle_exception(self, exception):

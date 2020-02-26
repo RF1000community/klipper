@@ -17,63 +17,69 @@ from elements import *
 import parameters as p
 
 
-class FC(RecycleView): #TODO event drive updating
+class FC(RecycleView):
     path = StringProperty()
     def __init__(self, **kwargs):
         super(FC, self).__init__(**kwargs)
         self.app = App.get_running_app()
-        self.load_queue()
+        self.load_queue(in_background=False)
+        self.app.bind(queued_files=self.load_queue)
 
-    def load_queue(self, in_background=False):
-        queue = [{'name': "queued{}".format(i), 'details': "", 'item_type': "queue", 'path':""} for i in range(10)]
+    def load_queue(self, instance=None, queue=None, in_background=True):
+        queue = [{'name': basename(qd), 'details': (self.app.print_state.capitalize() if i==0 else "{}.".format(i)), 'path': qd} for i,qd in enumerate(self.app.queued_files)]
         self.data = queue 
         self.refresh_from_data()
-        if not in_background:
+        if not in_background and 'fc_box' in self.ids:
+            self.ids.fc_box.selected_nodes = []
             self.scroll_y = 1
-        self.view = 'queue'
 
-    def send_queue(self):
+    def send_queue(self, queue):
         """
         Send the updated queue back to the virtual sdcard
         Will fail in testing
         """
         sdcard = self.app.sdcard
         sdcard.clear_queue() # Clears everything except for the first entry
+        self.app.queued_files = queue
         for path in self.queued_files[1:]:
             sdcard.add_printjob(path)
 
     def move_up(self):
         """Move the selected file up one step in the queue"""
-        i = self.queued_list.selected.index
-        to_move = self.queued_files.pop(i)
-        self.queued_files.insert(i - 1, to_move)
-        self.update_queue(None, self.queued_files)
-        self.queued_list.select(i-1)
-        self.send_queue()
+        i = self.ids.fc_box.selected_nodes[0]
+        queue = self.app.queued_files
+        if len(queue) > i:
+            to_move = queue.pop(i)
+            queue.insert(i - 1, to_move)
+            self.ids.fc_box.selected_nodes = [i - 1]
+            self.send_queue(queue)
 
     def move_down(self):
         """Move the selected file down one step in the queue"""
-        i = self.queued_list.selected.index
-        to_move = self.queued_files.pop(i)
-        self.queued_files.insert(i + 1, to_move)
-        self.update_queue(None, self.queued_files)
-        self.queued_list.select(i+1)
-        self.send_queue()
+        i = self.ids.fc_box.selected_nodes[0]
+        queue = self.app.queued_files
+        if len(queue) > i:
+            to_move = queue.pop(i)
+            queue.insert(i + 1, to_move)
+            self.ids.fc_box.selected_nodes = [i + 1]
+            self.send_queue(queue)
 
     def remove(self):
         """Remove the selcted file from the queue"""
-        i = self.queued_list.selected.index
-        self.queued_files.pop(i)
-        self.update_queue(None, self.queued_files)
-        self.queued_list.select(min(len(self.queued_files)-1, i))
-        self.send_queue()
+        i = self.ids.fc_box.selected_nodes[0]
+        queue = self.app.queued_files
+        if i == 0:
+            StopPopup(queue[i]).open()
+        elif len(queue) > i:
+            to_remove = queue.pop(i)
+            self.ids.fc_box.selected_nodes = []
+            self.send_queue(queue)
 
 class FCBox(LayoutSelectionBehavior, RecycleBoxLayout):
     # Adds selection behaviour to the view
     pass
 
 class FCItem(RecycleDataViewBehavior, Label):
-    item_type = OptionProperty('file', options = ['file', 'folder', 'usb', 'queue'])
     name = StringProperty()
     path = StringProperty()
     details = StringProperty()
@@ -92,25 +98,17 @@ class FCItem(RecycleDataViewBehavior, Label):
             return True
         if self.collide_point(*touch.pos):
             self.pressed = True
-            if self.item_type == 'queue':
-                self.parent.select_with_touch(self.index, touch)
+            self.parent.select_with_touch(self.index, touch)
             return True
 
     def on_touch_up(self, touch):
-        was_pressed = self.pressed
-        self.pressed = False
-        if super(FCItem, self).on_touch_up(touch):
-            return True
-        if self.collide_point(*touch.pos) and was_pressed:
-            fc = self.parent.parent
-            if self.item_type == 'file':
-                self.popup = PrintPopup(self.path, filechooser=fc)
-                self.popup.open()
-            elif self.item_type == 'folder' or self.item_type == 'usb':
-                fc.path = self.path
-                fc.load_files()
-            return True
-        return False
+            was_pressed = self.pressed
+            self.pressed = False
+            if super(FCItem, self).on_touch_up(touch):
+                return True
+            if self.collide_point(*touch.pos) and was_pressed:
+                return True
+            return False
 
     def apply_selection(self, rv, index, is_selected):
         # Respond to the selection of items in the view
@@ -179,7 +177,6 @@ class GC(RecycleView):
         if self.data != new_data:
             self.data = new_data
             self.refresh_from_data()
-            self.view = 'files'
             if not in_background:
                 self.scroll_y = 1
 
@@ -291,7 +288,7 @@ class PrintPopup(BasePopup):
             app.notify.show("Copying {} to Printer...".format(basename(self.path)))
             shutil.copy(self.path, new_path)
 
-        app.send_start(new_path)
+        app.send_print(new_path)
         tabs = app.root.ids.tabs
         tabs.switch_to(tabs.ids.home_tab)
 
@@ -318,3 +315,9 @@ class DelPopup(BasePopup):
 
         app = App.get_running_app()
         app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)
+
+class StopPopup(BasePopup):
+    def __init__(self, path, **kwargs):
+        self.path = path
+        super(StopPopup, self).__init__(**kwargs) 
+
