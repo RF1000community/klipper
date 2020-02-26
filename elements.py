@@ -1,14 +1,16 @@
 # coding: utf-8
-from kivy.uix.widget import Widget
-from kivy.uix.label import Label
-from kivy.uix.behaviors.button import ButtonBehavior
-from kivy.uix.popup import Popup
-from kivy.properties import NumericProperty, BooleanProperty, StringProperty, ListProperty
-from kivy.uix.vkeyboard import VKeyboard
-from kivy.clock import Clock
-from kivy.app import App
-from time import time
 from collections import deque
+from time import time
+
+from kivy.app import App
+from kivy.clock import Clock
+from kivy.properties import NumericProperty, BooleanProperty, StringProperty, ListProperty
+from kivy.uix.behaviors.button import ButtonBehavior
+from kivy.uix.label import Label
+from kivy.uix.popup import Popup
+from kivy.uix.vkeyboard import VKeyboard
+from kivy.uix.widget import Widget
+
 import parameters as p
 
 

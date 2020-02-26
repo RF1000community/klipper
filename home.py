@@ -1,14 +1,17 @@
 # coding: utf-8
-from kivy.properties import ListProperty, StringProperty, NumericProperty
-from kivy.clock import Clock
-from kivy.uix.widget import Widget
-from kivy.uix.floatlayout import FloatLayout
+import logging
+import random
+
 from kivy.app import App
-from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Line
+from kivy.clock import Clock
 from kivy.graphics.context_instructions import Color
+from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Line
+from kivy.properties import ListProperty, StringProperty, NumericProperty
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.widget import Widget
+
 from elements import *
 import parameters as p
-import logging
 
 
 class XyField(Widget):
@@ -230,7 +233,6 @@ class OptionBox(FloatLayout, Widget):
         self.selected = option
 
 class BtnTriple(Widget):
-    import random
     filament_color = ListProperty([random.randint(0,100)/100. for i in range(3)])
     filament_color_adjusted = ListProperty([0,0,0])
     filament_amount = NumericProperty(0.6)

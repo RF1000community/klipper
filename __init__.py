@@ -10,24 +10,26 @@ else:
 if not TESTING:
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'gl'
+from datetime import datetime, timedelta
+from os.path import join, abspath, expanduser, basename, splitext
+from subprocess import Popen
+import logging
+import site
+import threading
+
 from kivy import kivy_data_dir
 from kivy.app import App
-from kivy.clock import Clock
-from kivy.lang import Builder
-from kivy.config import Config
 from kivy.base import ExceptionHandler, ExceptionManager
+from kivy.clock import Clock
+from kivy.config import Config
+from kivy.lang import Builder
 from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
-from os.path import join, abspath, expanduser, basename, splitext
-from datetime import datetime, timedelta
-from subprocess import Popen
-import site
-import logging
-import threading
+
 from elements import UltraKeyboard
-from home import *
 from files import *
-from status import *
+from home import *
 from settings import *
+from status import *
 import parameters as p
 
 

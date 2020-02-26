@@ -102,13 +102,13 @@ class FCItem(RecycleDataViewBehavior, Label):
             return True
 
     def on_touch_up(self, touch):
-            was_pressed = self.pressed
-            self.pressed = False
-            if super(FCItem, self).on_touch_up(touch):
-                return True
-            if self.collide_point(*touch.pos) and was_pressed:
-                return True
-            return False
+        was_pressed = self.pressed
+        self.pressed = False
+        if super(FCItem, self).on_touch_up(touch):
+            return True
+        if self.collide_point(*touch.pos) and was_pressed:
+            return True
+        return False
 
     def apply_selection(self, rv, index, is_selected):
         # Respond to the selection of items in the view
