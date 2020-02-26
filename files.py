@@ -125,7 +125,7 @@ class GC(RecycleView):
         if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
         else:
-            self.path = "/"
+            self.path = os.getenv("HOME")
         super(GC, self).__init__(**kwargs)
         Clock.schedule_once(self.bind_tab, 0)
         self.load_files()
@@ -143,28 +143,35 @@ class GC(RecycleView):
         self.load_files(in_background=True)
 
     def load_files(self, in_background = False):
-        root, _folders, _files = next(os.walk(self.path))
+        content = os.listdir(self.path)
         # filter usb
         usb = []
-        if "USB Device" in _folders:
-            _folders.remove("USB Device")
+        if "USB_Device" in content:
+            content.remove("USB Device")
             # Check if folder is not empty -> a usb stick is plugged in
-            r, d, f = next(os.walk(join(root, "USB Device")))
-            if len(d) + len(f) > 0:
-                usb = [{'name': "USB Device", 'item_type': 'usb', 'path': (join(root, "USB Device")), 'details':""}]
-        folders = [(f, join(root, f)) for f in _folders]
-        # filter files
+            if len(os.listdir(join(root, "USB_Device"))) > 0:
+                usb = [{'name': "USB_Device", 'item_type': 'usb', 'path': (join(root, "USB_Device")), 'details':""}]
         files = []
-        for f in _files:
-            if ".gco" in os.path.splitext(f)[1]:
-                files.append((f, join(root, f)))
-        # sort
-        files = self.modification_date_sort(files)
-        folders = sorted(folders)
-
-        # generate dicts
-        folders = [{'name': f[0], 'item_type': "folder", 'path': f[1], 'details': ""} for f in folders]
-        files =   [{'name': f[0], 'item_type': "file",   'path': f[1], 'details': self.get_details(f[1])} for f in files]
+        folders = []
+        for base in content:
+            # Filter out hidden files/directories
+            if base.startswith("."):
+                continue
+            path = os.path.join(self.path, base)
+            dict_ = {"name": base, "path": path}
+            if os.path.isdir(path):
+                dict_["item_type"] = "folder"
+                dict_["details"] = ""
+                folders.append(dict_)
+            # Filter only gcode files
+            elif os.path.isfile(path) and os.path.splitext(base)[1].startswith(".gco"):
+                dict_["item_type"] = "file"
+                dict_["details"] = self.get_details(path) or "--"
+                files.append(dict_)
+        # Sort files by modification time (last modified first)
+        files.sort(key=lambda d: os.path.getmtime(d["path"]), reverse=True)
+        # Sort folders alphabetically
+        folders.sort(key=lambda d: d["name"].lower())
 
         self.btn_back_visible = self.path != p.sdcard_path
 
@@ -179,9 +186,6 @@ class GC(RecycleView):
     def back(self):
         self.path = dirname(self.path)
         self.load_files()
-    
-    def modification_date_sort(self, files):
-        return sorted((f for f in files), key=lambda f: os.path.getmtime(f[1]), reverse=True)
     
     def get_details(self, path):
         # Pass the filepath. Returns the filament use of a gcode file 
