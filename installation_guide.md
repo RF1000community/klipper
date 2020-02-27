@@ -74,12 +74,10 @@ sudo apt purge dhcpcd5 && \
 python -m pip install --upgrade --user pip  && \
 python -m pip install --upgrade --user Cython==0.29.10  && \
 python -m pip install --user kivy==1.11.0 && \
-cd /usr/local/src/ && \
-sudo git clone https://github.com/goodtft/LCD-show.git && \
-sudo chmod -R 755 LCD-show && \
-cd LCD-show/ && \
-sudo ./LCD7C-show 90  
-#reboots when finished  
+
+sudo ./LCDC7-better.sh -r 90 && \
+sudo cp 10-dpms.conf /etc/X11/xorg.conf.d/
+
 #git clone https://github.com/D4SK/Klipper-GUI
 ```
 
@@ -88,6 +86,12 @@ opengl driver only works with autologin enabled and a reinstall of the lcd drive
 ### Automount usb
 
 [Link](https://raspberrypi.stackexchange.com/questions/66169/auto-mount-usb-stick-on-plug-in-without-uuid)  
+
+```bash
+sudo apt install usbmount
+sudo cp usbmount.conf /etc/usbmount/
+sudo sed -i 's/PrivateMounts=yes/PrivateMounts=no/' /lib/systemd/system/systemd-udevd.service
+```
 
 ### NetworkManager
 
