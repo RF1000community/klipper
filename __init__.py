@@ -112,6 +112,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.xy_homing_controls = True
             self.extruders = [None, None, None]
             self.extruder_count = 2
+        self.kv_file = join(p.kgui_dir, "kv/main.kv")
         super(mainApp, self).__init__(**kwargs)
 
     def handle_connect(self): #runs in klippy thread
@@ -541,7 +542,12 @@ def set_kivy_config():
 
     #load a custom style.kv with changes to filechooser and more
     Builder.unload_file(join(kivy_data_dir, "style.kv"))
-    Builder.load_file(join(p.kgui_dir, "style.kv"))
+
+    # All files to read (order is important)
+    # main.kv is read automatically
+    kv_files = ("style.kv", "overwrites.kv", "elements.kv", "home.kv", "files.kv", "settings.kv")
+    for fname in kv_files:
+        Builder.load_file(join(p.kgui_dir, "kv", fname))
 
 # Catch KGUI exceptions and display popup
 ExceptionManager.add_handler(PopupExceptionHandler())

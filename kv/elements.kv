@@ -1,0 +1,289 @@
+#:kivy 1.8.0
+
+#:import Factory kivy.factory.Factory
+
+#:import p parameters
+
+# Read before the main kv files, used to define custom base widget rules
+
+# BUTTONS 
+
+<BaseButton>:
+    size_hint: None, None
+    text: ""
+    color: (1,1,1,1) if root.enabled else p.btn_disabled
+    text_size: self.size
+    pos: root.pos        
+    font_size: p.normal_font
+    valign: 'middle'
+    halign: 'center'
+
+<RoundButton@BaseButton>:
+    canvas.after:
+        Color:
+            rgba: p.translucent_white if self.pressed and self.enabled else (0,0,0,0)
+        RoundedRectangle:
+            radius: (p.radius,)
+            size: self.size
+            pos: self.pos
+
+<RectangleButton>:
+    canvas:
+        Color:
+            rgba: p.translucent_white if self.pressed and self.enabled else (0,0,0,0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+<FloatingButton@BaseButton>:
+    btn_color: (0,0,0,0)
+    size: 74 * p.disp_vertical_stretch, 74
+    canvas:
+        Color:
+            rgba: self.btn_color if self.enabled else (0,0,0,0)
+        Ellipse:
+            size: self.size
+            pos: self.pos
+        Color:
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+        Ellipse:
+            size: self.size
+            pos: self.pos
+
+# Is this needed
+#<Btn@RoundButton>:
+#    canvas:
+#        Color:
+#            rgba: p.btn
+#        RoundedRectangle:
+#            radius: (p.radius,)
+#            pos: self.pos
+#            size: self.size
+
+<Btn_Outline@RoundButton>:
+    canvas.before:
+        Color:
+            rgba: p.btn_outline
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+            width: 1
+
+<Btn_P_Cancel@BaseButton>:
+    text: "Cancel"
+    single: False
+    height: 70
+    canvas:
+        Color:
+            rgba: p.divider
+        Line:
+            points: self.x, self.top, self.right, self.top
+        Color:# Highlight pressed button
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)    
+        RoundedRectangle:
+            radius:(0,0,p.radius,p.popup_radius) if self.single else (0,0,0, p.popup_radius)
+            pos: self.pos
+            size: self.size
+
+<Btn_P_Confirm@BaseButton>:
+    text: "Confirm"
+    height: 70
+    enabled: False
+    canvas:
+        Color:
+            rgba: p.divider
+        Line:
+            points: self.x, self.y, self.x, self.top, self.right, self.top
+        Color:# Highlight pressed button
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)    
+        RoundedRectangle:
+            radius: (0,0,p.radius,0)
+            pos: self.pos
+            size: self.size
+
+
+<Btn_Slider>:
+    #:set t 9  #half of width
+    #:set j 15
+    x: self.px-self.width/2-self.offset
+    size: 68,60
+    size_hint: None,None 
+    active: False
+    canvas:
+        Color:
+            rgba: p.medium_light_gray if self.active else p.medium_gray
+        RoundedRectangle:
+            radius: (p.radius,)
+            size: self.size
+            pos: self.pos
+        Triangle:
+            points: [self.x+self.width/2+self.offset,self.top+j,   self.x+self.width/2+t+self.offset,self.top,    self.x+self.width/2-t+self.offset,self.top] if 2*abs(self.offset)!=self.width else [self.x+self.width/2+self.offset,self.top+j, self.x+self.width/2+self.offset,self.top-10, self.x+self.width/2+self.offset-(self.offset/abs(self.offset))*j,self.top]
+    Label:
+        markup: True
+        text: root.s_title
+        size: root.size
+        text_size: self.size
+        pos: root.pos        
+        font_size: p.extra_small_font
+        valign: 'middle'
+        halign: 'center'
+
+<UltraSlider>:
+    #:set slider_pos_y 95
+    size_hint: None,None
+    size: p.screen_width - 2*p.small_padding - 2*p.padding, 200
+    px: self.x + p.padding
+    canvas:
+        Color:
+            rgba: (1,1,1,1) if root.pressed else p.btn
+        RoundedRectangle:
+            radius: (4,)
+            size: root.width-2*p.padding, 8
+            pos: root.x+p.padding, slider_pos_y-4+root.y
+        Color:
+            rgba: (0, 0, 0, 0) if root.pressed else p.medium_light_gray
+        RoundedRectangle:
+            radius: (4,4,4,4)
+            size: self.px - p.padding - self.x + 1, 8
+            pos: root.x+p.padding, slider_pos_y-4+root.y
+        Color:
+            rgba: (0,0,0,0) if root.pressed  else (1,1,1,1) 
+        Ellipse:
+            size: 20,20
+            pos: root.px-10,slider_pos_y-10+root.y
+    Label:
+        id: value_label
+        text: root.disp
+        max_lines: 1
+        size_hint: None,None
+        pos_hint: None,None
+        size: root.width, p.large_font
+        font_size: p.large_font
+        y: root.y + 120
+        center_x: root.center_x
+        color: p.light_gray
+        valign: 'middle'
+        halign: 'center'
+
+# Not used, this is for when klipper supports temperature offset
+# <UltraOffsetSlider>:
+#     offset: 0
+#     RoundButton:
+#         id: btn_plus
+#         on_release: self.offset += 2.5
+#         size: 62, 62
+#         right: root.right-p.padding
+#         y: root.y + 120
+#         canvas:
+#             Color:
+#                 rgba: 1,1,1,1
+#             Rectangle:
+#                 size: 34, 5
+#                 pos: self.center_x - 34/2, self.center_y - 5/2
+#             Rectangle:
+#                 size: 5, 34
+#                 pos: self.center_x - 5/2, self.center_y - 34/2
+#     RoundButton:
+#         id: btn_minus
+#         on_release: self.offset -= 2.5
+#         size: 62, 62
+#         right: btn_plus.x
+#         y: btn_plus.y
+#         canvas:
+#             Color:
+#                 rgba: 1,1,1,1
+#             Rectangle:
+#                 size: 34, 5
+#                 pos: self.center_x - 34/2, self.center_y - 5/2
+#     RoundButton:
+#         on_release: self.offset = 0
+#         size: 62, 62
+#         right: btn_minus.x
+#         y: btn_plus.y
+#         canvas:
+#             Color:
+#                 rgba: (0,0,0,0) if root.offset == 0 else (1,1,1,1)
+#             Line:
+#                 width: 2.6
+#                 circle: (self.center_x, self.center_y, 15, 0, 270)
+#             Triangle:
+#                 points: (self.center_x - 8, self.center_y + 15, self.center_x, self.center_y + 15 + 8, self.center_x, self.center_y + 15 - 8)
+
+
+# MISC
+
+<Option>:
+    selected: False
+    size: 90, 60
+    #: set o_padding 8
+    canvas.before:
+        Color:
+            rgba: p.btn if self.selected else (0,0,0,0)
+        RoundedRectangle:
+            size: self.size
+            pos: self.pos
+            radius: (p.radius,)
+        Color:
+            rgba: self.option_color
+        RoundedRectangle:
+            size: self.width - 2*o_padding, self.height - 2*o_padding
+            pos: self.x + o_padding, self.y + o_padding
+            radius: (p.icon_radius,)
+
+<OptionBox>:
+    title: " "
+    # canvas:
+    #     Color:
+    #         rgba:(0,0,0,0.1)
+    #     Rectangle:
+    #         size: self.size
+    #         pos: self.pos
+    Label:
+        id: box_title
+        text: root.title
+        font_size: p.normal_font
+        size: self.texture_size
+        pos_hint: {'top':1, 'x':0}
+        size_hint: None, None
+        color: p.light_gray
+        valign: 'middle'
+        halign: 'left'
+        padding_y: 6
+        padding_x: 2 * o_padding
+    Divider:
+        width: root.width 
+        pos: root.x, box_title.y
+    StackLayout:
+        size: root.width, root.height - box_title.height
+        size_hint: None, None
+        pos: root.pos
+        id: stack
+        spacing: [0]
+        padding: [o_padding]
+
+
+<BasePopup>:
+    title_size: p.large_font
+    title_align: 'center'
+    background_color: (0.03,0.03,0.03,0.56) #reduces background darkening from 0.7
+    size_hint: 0.67, 0.3
+    pos_hint: {'center_y': 0.5, 'center_x':0.5}
+
+<Divider@Widget>:
+    size_hint: None, None
+    height: 1
+    width: p.screen_width - 2*p.small_padding
+    x: p.small_padding
+    canvas:
+        Color:
+            rgba: p.divider
+        Rectangle:
+            pos: self.pos
+            size: self.width, 1
+
+<Background@Widget>:
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: self.pos
+            size: self.size

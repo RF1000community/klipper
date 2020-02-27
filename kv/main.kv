@@ -1,0 +1,92 @@
+#:kivy 1.8.0
+
+# note that this requires the kgui folder to be in PYTHONPATH or sys.path, unless the 
+# interpreter is started in this folder because the import is happening in kivy/lang/parser.py 
+#:import p parameters
+
+# Root widget and other global widgets
+
+FloatLayout:
+    StatusBar:
+        id: status_bar
+        height: p.status_bar_height
+        size_hint: 1, None
+        top: root.top
+    MainTabs:
+        id: tabs
+        height: root.height - p.status_bar_height
+        size_hint_y: None
+
+
+<MainTabs@TabbedPanel>:
+    tab_pos: 'bottom_mid'
+    tab_width: p.screen_width/3
+    tab_height: p.tab_height
+    do_default_tab: False
+    HomeTab:
+        id: home_tab
+    FileTab:
+        id: file_tab
+    SettingTab:
+        id: set_tab
+
+<StatusBar@BoxLayout>:
+    orientation: 'horizontal'
+    canvas:
+        Color:
+            rgba: p.red if 'error' in app.state else p.green if 'done' == app.print_state else p.accent if app.print_state == 'printing' else p.flat_accent
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    StackLayout:
+        id: left
+        orientation: 'lr-tb'
+        width: self.minimum_width
+        x: root.x
+        Label:
+            id: state
+            text: "state: " + app.state + ", " + app.print_state
+            size_hint_x: None
+            size: self.texture_size
+            font_size: root.height - 5
+            padding: 7, 0
+    StackLayout:
+        id: right
+        orientation: 'rl-tb'
+        width: self.minimum_width
+        right: root.right
+        ConnectionIcon:
+            id: con
+            size_hint: None, None
+            size: 0, root.height
+            topright: root.right, root.top
+        TimeLabel:
+            id: time
+            text: self.time
+            size_hint_x: None
+            size: self.texture_size
+            font_size: root.height - 4
+            padding: 7, 0
+
+<ErrorPopup>:
+    size_hint: 0.8, 0.5
+    error: True
+    message: "--"
+    title: "Error - Firmware stopped"
+    FloatLayout:
+        Label:
+            text: root.message
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 5
+            size_hint: 0.9, 0.5
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.1}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        Btn_P_Cancel:
+            id: btn_cancel
+            text: "Restart Printer"
+            width: root.width
+            pos: root.pos
+            on_release: app.restart_klipper()
