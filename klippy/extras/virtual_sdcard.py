@@ -78,17 +78,17 @@ class VirtualSD(object):
         self.deb('resume_printjob')
         if self.state == 'paused':
             self.state = 'printing'
-            #self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1") TODO make work
             self.must_pause_work = False
+            # work handler has finished while paused, and saved a gcode state
             if self.work_timer is None:
                 self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
+                self.cmd_RESTORE_GCODE_STATE({'NAME':"PAUSE_STATE", 'MOVE':1})
 
     def pause_printjob(self):
         self.deb('pause')
         if self.state == 'printing':
             self.state = 'paused'
             self.pause_work()
-            #self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
             self.start_stop_times[-1][1] = self.toolhead.get_last_move_time()
  
     def stop_printjob(self):
@@ -166,14 +166,17 @@ class VirtualSD(object):
             self.cmd_from_sd = False
             self.file_position += len(lines.pop()) + 1
         logging.warning("Exiting SD card print (position %d)", self.file_position)
-        self.work_timer = None
         self.cmd_from_sd = False
+        if self.state == 'paused':
+            self.cmd_SAVE_GCODE_STATE({'NAME': "PAUSE_STATE"})
+        self.work_timer = None
         if self.state != 'paused':
             # switch off all heaters, especially necessary after print was stopped
             heater_manager = self.printer.lookup_object('heater')
             for heater in heater_manager.heaters.values():
                 heater.set_temp(0)
-        self.check_queue()
+            # print next file in queue
+            self.check_queue()
         return self.reactor.NEVER
 
     def get_printed_time(self):
@@ -186,6 +189,7 @@ class VirtualSD(object):
     def handle_gcode_metadata(self, eventtime, params):
         line = params['#original']
         # recieves all gcode-comment-lines as they are printed, and searches for print-time estimations
+        # needs to be aware of printed file so 
         slicer_estimated_time = [
             r'\s\s\d*\.\d*\sminutes' , 						#	Kisslicer
             r'; estimated printing time' ,					#	Slic3r
