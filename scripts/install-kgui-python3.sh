@@ -102,12 +102,12 @@ install_usb_automounting()
 {
     report_status "Install usbmount.conf..."
     mkdir -p ~/sdcard/USB-Device
-    sudo cp ${SRCDIR}/klippy/extras/kgui/usbmount.conf /etc/usbmount/usbmount.comf
+    sudo cp ${SRCDIR}/klippy/extras/kgui/usbmount.conf /etc/usbmount/usbmount.conf
     #https://raspberrypi.stackexchange.com/questions/100312/raspberry-4-usbmount-not-working
     #https://www.oguska.com/blog.php?p=Using_usbmount_with_ntfs_and_exfat_filesystems
     
     #maybe needed TODO test this
-    #sudo sed -i 's/PrivateMounts=yes/PrivateMounts=no/' /lib/systemd/system/systemd-udevd.service
+    sudo sed -i 's/PrivateMounts=yes/PrivateMounts=no/' /lib/systemd/system/systemd-udevd.service
 }
 
 
