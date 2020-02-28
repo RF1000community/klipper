@@ -69,7 +69,7 @@ class FC(RecycleView):
         i = self.ids.fc_box.selected_nodes[0]
         queue = self.app.queued_files
         if i == 0:
-            StopPopup(queue[i]).open()
+            StopPopup().open()
         elif len(queue) > i:
             to_remove = queue.pop(i)
             self.ids.fc_box.selected_nodes = []
@@ -317,7 +317,5 @@ class DelPopup(BasePopup):
         app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)
 
 class StopPopup(BasePopup):
-    def __init__(self, path, **kwargs):
-        self.path = path
-        super(StopPopup, self).__init__(**kwargs) 
+    pass
 

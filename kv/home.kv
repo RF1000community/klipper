@@ -48,7 +48,7 @@
             halign: 'right'
             valign: 'bottom'
         Btn_Stop:
-            on_release: app.send_stop()
+            on_release: Factory.StopPopup().open()
             id: btn_stop
             size: 118,118
             center_y: progress_bar.top + p.padding + p.btn_stop/2
