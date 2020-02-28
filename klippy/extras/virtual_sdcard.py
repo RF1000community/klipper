@@ -20,6 +20,7 @@ class VirtualSD(object):
         self.must_pause_work = False
         self.cmd_from_sd = False
         self.work_timer = None
+        self.saved_pause_state = False
         self.gcode = self.printer.lookup_object('gcode')
         self.current_file = None # python file object
         self.queued_files = [] # as str, first element is current filepath
@@ -82,7 +83,9 @@ class VirtualSD(object):
             # work handler has finished while paused, and saved a gcode state
             if self.work_timer is None:
                 self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
-                self.cmd_RESTORE_GCODE_STATE({'NAME':"PAUSE_STATE", 'MOVE':1})
+            if self.saved_pause_state:
+                self.gcode.cmd_RESTORE_GCODE_STATE({'NAME':"PAUSE_STATE", 'MOVE':1})
+                self.saved_pause_state = False
 
     def pause_printjob(self):
         self.deb('pause')
@@ -105,7 +108,7 @@ class VirtualSD(object):
 
         if self.work_timer is not None:
             self.must_pause_work = True
-            while self.work_timer is not None:# and not self.cmd_from_sd:
+            while self.work_timer is not None and not self.cmd_from_sd:
                 self.reactor.pause(self.reactor.monotonic() + .001)
             logging.warning("stopped pausing work &&&&&&&&&: cmd_from is {}, work timer is {}".format(self.cmd_from_sd, self.work_timer))
 
@@ -166,11 +169,13 @@ class VirtualSD(object):
             self.cmd_from_sd = False
             self.file_position += len(lines.pop()) + 1
         logging.warning("Exiting SD card print (position %d)", self.file_position)
-        self.cmd_from_sd = False
-        if self.state == 'paused':
-            self.cmd_SAVE_GCODE_STATE({'NAME': "PAUSE_STATE"})
         self.work_timer = None
-        if self.state != 'paused':
+        # in some cases we are paused without having a saved pause state, e.g. when starting
+        # a printjob from queue as paused or when work handler didnt terminate in time
+        if self.state == 'paused':
+            self.gcode.cmd_SAVE_GCODE_STATE({'NAME': "PAUSE_STATE"})
+            self.saved_pause_state = True
+        else:
             # switch off all heaters, especially necessary after print was stopped
             heater_manager = self.printer.lookup_object('heater')
             for heater in heater_manager.heaters.values():
@@ -343,7 +348,7 @@ class GcodeVirtualSD(VirtualSD):
         filename = files_by_lower[filename.lower()]
         self.selected_file = os.path.join(self.sdcard_dirname, filename)
         self.gcode.respond("File {} selected".format(filename))
- 
+
     def cmd_M24(self, params):
         # Start/resume SD print
         if self.state == 'paused':
