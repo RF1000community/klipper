@@ -39,18 +39,18 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5.6"
-     inkscape:cx="39.645408"
+     inkscape:zoom="16.7"
+     inkscape:cx="40"
      inkscape:cy="32.337199"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      units="px"
-     inkscape:window-width="1313"
-     inkscape:window-height="1018"
-     inkscape:window-x="-7"
-     inkscape:window-y="0"
-     inkscape:window-maximized="0"
+     inkscape:window-width="1920"
+     inkscape:window-height="1027"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
      inkscape:pagecheckerboard="false"
      inkscape:document-rotation="0" />
   <metadata
@@ -81,7 +81,7 @@
        inkscape:connector-curvature="0"
        id="path2185"
        d="m 12.252435,277.21769 h 7.450693 l 0.05447,7.81458 h -7.450693"
-       style="fill:none;stroke:#ffffff;stroke-width:0.79375;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+       style="fill:#adadad;stroke:#adadad;stroke-width:0.79375;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1" />
     <rect
        transform="matrix(1,0,0,1.0139864,-3.5254697,-8.726761)"
        d="m 18.741264,283.16879 h 1.802449 v 1.64829 h -1.802449 z m 0,273.62421 h 1.802449 v -1.64828 h -1.802449 z"
@@ -93,7 +93,7 @@
        height="1.6482873"
        width="1.8024491"
        id="rect2189"
-       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:0;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill" />
+       style="fill:#111111;fill-opacity:1;stroke:#ffffff;stroke-width:0;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:0;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -101,7 +101,7 @@
      inkscape:label="front">
     <path
        transform="translate(0,-270.54164)"
-       style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:1.32291666;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:1.32291666;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="M 1.9001187,276.26767 H 12.078676 v 9.71463 H 1.9001187 Z"
        id="rect851"
        inkscape:connector-curvature="0"
