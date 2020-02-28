@@ -24,9 +24,12 @@ class FC(RecycleView):
         self.app = App.get_running_app()
         self.load_queue(in_background=False)
         self.app.bind(queued_files=self.load_queue)
+        self.app.bind(print_state=self.load_queue)
 
     def load_queue(self, instance=None, queue=None, in_background=True):
-        queue = [{'name': basename(qd), 'details': (self.app.print_state.capitalize() if i==0 else "{}.".format(i)), 'path': qd} for i,qd in enumerate(self.app.queued_files)]
+        queue = [{'name': basename(qd),
+                  'details': (self.app.print_state.capitalize() if i==0 else "{}.".format(i)),
+                  'path': qd} for i,qd in enumerate(self.app.queued_files)]
         self.data = queue 
         self.refresh_from_data()
         if not in_background and 'fc_box' in self.ids:

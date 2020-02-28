@@ -152,7 +152,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         logging.info("run handle_disconnect -> shutdown gui")
         self.stop()
 
-    def handle_homed(self, homing, rails):
+    def handle_homed(self, rails):
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
@@ -228,7 +228,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
         # check if queue has changed
         if len(s['queued_files']) > max(len(self.queued_files), 1):
-            self.notify.show("Added Printjob", "Added {} to print Queue".format(basename(s['queued_files'][0])))
+            self.notify.show("Added Printjob", "Added {} to print Queue".format(basename(s['queued_files'][-1])))
         self.queued_files = s['queued_files']
 
         # this also returns the last printed file if not printing
