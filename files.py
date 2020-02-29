@@ -147,11 +147,12 @@ class GC(RecycleView):
         content = os.listdir(self.path)
         # filter usb
         usb = []
-        if "USB_Device" in content:
-            content.remove("USB Device")
+        if "USB-Device" in content:
+            content.remove("USB-Device")
             # Check if folder is not empty -> a usb stick is plugged in
-            if len(os.listdir(join(root, "USB_Device"))) > 0:
-                usb = [{'name': "USB_Device", 'item_type': 'usb', 'path': (join(root, "USB_Device")), 'details':""}]
+            if len(os.listdir(join(root, "USB-Device"))) > 0:
+                logging.info("USB folders:".format(os.listdir(join(root, "USB-Device"))))
+                usb = [{'name': "USB-Device", 'item_type': 'usb', 'path': (join(root, "USB-Device")), 'details':""}]
         files = []
         folders = []
         for base in content:

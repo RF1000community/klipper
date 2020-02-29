@@ -46,8 +46,6 @@
             height: self.minimum_height
             pos: 0, root.height - self.height
             size_hint_y: None
-            Divider:
-                pos_hint: {'center_x':0.5}
             SI_Switch:
                 left_title: "Light"
             SI_Switch:
@@ -70,6 +68,8 @@
                 on_release: root.manager.current = "UpdateScreen"
             SI_Timezone:
                 id: si_timezone
+            Divider:
+                pos_hint: {'center_x':0.5}
 
 <WifiScreen>:
     name: 'WifiScreen'
@@ -139,7 +139,7 @@
         right: p.screen_width
         padding_x: p.padding
     Divider:
-        y: root.y
+        y: root.top - 1
 
 <SI_Switch@SetItem>:
     enabled: False
@@ -181,39 +181,47 @@
 
 <PasswordPopup>:
     txt_input: pwd_input
+    size_hint: 0.86, 0.3
     FloatLayout:
         Label:
             text: 'Password'
             font_size: p.normal_font
+            color: p.light_gray
             size: self.texture_size
             size_hint: None, None
-            pos_hint: {'x': 0.1, 'y': 0.75}
+            pos_hint: {'x': 0.07, 'y': 0.77}
         TextInput:
             id: pwd_input
             multiline: False
             password: True
+            font_size: p.normal_font
+            foreground_color: (1,1,1,1)
+            padding: (15,12,25,12)
             height: self.minimum_height
-            size_hint: 0.7, None
-            pos_hint: {'x': 0.1, 'center_y': 0.63}
-        RectangleButton:
-            on_press: 
+            background_color: p.medium_gray
+            cursor_color: (1,1,1,1)
+            size_hint: 0.72, None
+            pos_hint: {'x': 0.07, 'center_y': 0.63}
+        BaseButton:
+            on_press:
                 pwd_input.password = not pwd_input.password
                 lb_show.text = "show" if pwd_input.password else "hide"
             on_release:
                 pwd_input.focus = True
             id: btn_s
             height: pwd_input.height-1
-            size_hint: 0.1, None
-            pos_hint: {'x': 0.81, 'center_y': 0.63}
+            size_hint: 0.11, None
+            pos_hint: {'right': 0.93, 'center_y': 0.63}
             Label:
                 id: lb_show
                 size: btn_s.size
                 pos: btn_s.pos
                 text_size: self.size
                 text: "show"
-                font_size: p.extra_small_font
+                font_size: p.normal_font
                 halign: 'center'
                 valign: 'middle'
+                color: p.light_gray
         Btn_P_Cancel:
             width: root.width/2
             pos: root.pos

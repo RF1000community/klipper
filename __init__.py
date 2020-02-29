@@ -134,7 +134,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.printer_objects_available = True
         Clock.schedule_once(self.bind_updating, 0)
         Clock.schedule_once(self.control_updating, 0)
-        Clock.schedule_interval(self.update_always, 0.3)
+        Clock.schedule_interval(self.update_always, 0.8)
 
     def handle_ready(self):
         self.state = "ready"
@@ -189,20 +189,18 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 self.scheduled_updating = Clock.schedule_interval(self.update_printing, 1.5)
         if tab == self.root.ids.tabs.ids.set_tab:
             self.update_setting()
-            self.scheduled_updating = Clock.schedule_interval(self.update_setting, 2)
+            self.scheduled_updating = Clock.schedule_interval(self.update_setting, 2.2)
 
     def update_always(self, *args):
-        self.print_state = self.sdcard.get_status(self.reactor.monotonic())['state']
+        self.get_printjob_state()
 
     def update_home(self, *args):
-        self.get_printjob_state()
         self.get_homing_state()
         self.get_temp()
         self.get_pos()
 
     def update_printing(self, *args):
         self.get_pressure_advance()
-        self.get_printjob_state()
         self.get_acceleration()
         self.get_z_adjust()
         self.get_speed()
@@ -224,6 +222,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 return "{minutes} minutes".format(**locals())
 
         # get status from virtual_sdcard
+        # do not set print_state outside of this, there will be no reaction to state changes
         s = self.sdcard.get_status(self.reactor.monotonic())
 
         # check if queue has changed
@@ -499,6 +498,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         try:
             self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
         except:
+            logging.info("RESTART FAILED!!!!!!!!!!!!!:")
             Popen(['sudo', 'systemctl', 'restart', 'klipper.service'])
         self.stop()
     def quit(self):
