@@ -1,7 +1,9 @@
+import json
 import logging
 import os
 from os.path import getmtime, basename, dirname, exists, abspath, join
 import shutil, re
+import time
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -11,7 +13,8 @@ from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.floatlayout import FloatLayout
-from kivy.properties import ListProperty, ObjectProperty, NumericProperty, DictProperty, StringProperty, BooleanProperty, OptionProperty
+from kivy.properties import (ListProperty, ObjectProperty, NumericProperty,
+    DictProperty, StringProperty, BooleanProperty, OptionProperty)
 
 from elements import *
 import parameters as p
@@ -25,12 +28,39 @@ class FC(RecycleView):
         self.load_queue(in_background=False)
         self.app.bind(queued_files=self.load_queue)
         self.app.bind(print_state=self.load_queue)
+        self.app.history.bind(history=self.load_queue)
 
     def load_queue(self, instance=None, queue=None, in_background=True):
-        queue = [{'name': basename(qd),
-                  'details': (self.app.print_state.capitalize() if i==0 else "{}.".format(i)),
-                  'path': qd} for i,qd in enumerate(self.app.queued_files)]
-        self.data = queue 
+        queue = []
+        for i, e in enumerate(self.app.queued_files):
+            new = {}
+            new["name"] = basename(q)
+            new["details"] = (self.app.print_state.capitalize() if i == 0 else "{}.".format(i))
+            new["path"] = q
+            new["status"] = "queued"
+            queue.insert(0, new) # next queue item is displayed last
+
+        history = []
+        for e in self.app.history.history:
+            new = {}
+            new["name"] = basename(e[0])
+            new["details"] = e[1].capitalize() # "stopped" or "done"
+            new["path"] = e[0]
+            new["status"] = e[1]
+            history.insert(0, new) # history is sorted last file at end
+
+        if self.app.state == "printing":
+            printing = [{"name": basename(self.app.sdcard.current_file.name),
+                "details": "", "path": self.app.sdcard.current_file.name,
+                "status": "printing"}]
+        elif self.app.state == "paused":
+            printing = [{"name": basename(self.app.sdcard.current_file.name),
+                "details": "Paused", "path": self.app.sdcard.current_file.name,
+                "status": "paused"}]
+        else:
+            printing = []
+
+        self.data = queue + printing + history
         self.refresh_from_data()
         if not in_background and 'fc_box' in self.ids:
             self.ids.fc_box.selected_nodes = []
@@ -86,6 +116,7 @@ class FCItem(RecycleDataViewBehavior, Label):
     name = StringProperty()
     path = StringProperty()
     details = StringProperty()
+    status = OptionProperty("queued", options=["queued", "printing", "stopped", "done"])
     index = None
     selected = BooleanProperty(False)
     pressed = BooleanProperty(False)
@@ -116,6 +147,7 @@ class FCItem(RecycleDataViewBehavior, Label):
     def apply_selection(self, rv, index, is_selected):
         # Respond to the selection of items in the view
         self.selected = is_selected
+
 
 class GC(RecycleView):
     path = StringProperty()
@@ -276,6 +308,7 @@ class GCItem(RecycleDataViewBehavior, Label):
         # Respond to the selection of items in the view
         self.selected = is_selected
 
+
 class PrintPopup(BasePopup):
 
     def __init__(self, path, filechooser, **kwargs):
@@ -323,3 +356,39 @@ class DelPopup(BasePopup):
 class StopPopup(BasePopup):
     pass
 
+
+class History(object):
+    """
+    Manage print history file
+
+    The history file is json-formatted as a list of lists each containing
+    the elements
+        [path, status, timestamp],
+    whith path being the path of the gcode file,
+    status being a string defining the outcome of the print, one of
+        "done", "stopped",
+    timestamp being the time of completion in seconds since epoch.
+    """
+    history = ListProperty()
+
+    def __init__(self):
+        self.history = self.read()
+
+    def read(self):
+        """Read the history file and return it as a list object"""
+        try:
+            with open(p.history_file, "r") as fp:
+                history = json.load(fp)
+        except IOError: # File doesn't exist yet
+            history = []
+        return history
+
+    def write(self, history):
+        """Write the object to the history file"""
+        with open(p.history_file, "w") as fp:
+            json.dump(history, fp, indent=True)
+
+    def add(self, path, status):
+        """Add a new entry to the history with the path and status string specified"""
+        self.history.append([path, status, time.time()])
+        self.write(self.history)

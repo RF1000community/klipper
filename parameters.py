@@ -1,6 +1,7 @@
-from os.path import dirname, expanduser
+from os.path import dirname, expanduser, join
 kgui_dir = dirname(__file__)
-sdcard_path = expanduser('/home/pi/sdcard')
+sdcard_path = expanduser('~/sdcard')
+history_file = join(sdcard_path, ".history.json")
 
 #never assume pixels are square :}
 disp_vertical_stretch = 1.05 

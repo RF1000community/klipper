@@ -73,6 +73,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def __init__(self, config = None, **kwargs):
         logging.info("Kivy app initializing...")
+        self.history = History()
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
@@ -243,9 +244,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 self.progress = 1
                 self.print_time = "done" 
                 self.print_done_time = "took " + format_time(self.sdcard.get_printed_time(self.reactor.monotonic()))
+                self.history.add(self.sdcard.current_file.name, "done")
             elif s['state'] == 'stopped':
                 self.print_time = "stopped"
                 self.print_done_time = ""
+                self.history.add(self.sdcard.current_file.name, "stopped")
 
         # set printtime prediction if necessary
         if s['state'] == 'printing'\
