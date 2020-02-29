@@ -7,6 +7,7 @@ import time
 
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.event import EventDispatcher
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
@@ -34,9 +35,9 @@ class FC(RecycleView):
         queue = []
         for i, e in enumerate(self.app.queued_files):
             new = {}
-            new["name"] = basename(q)
+            new["name"] = basename(e)
             new["details"] = (self.app.print_state.capitalize() if i == 0 else "{}.".format(i))
-            new["path"] = q
+            new["path"] = e
             new["status"] = "queued"
             queue.insert(0, new) # next queue item is displayed last
 
@@ -47,20 +48,21 @@ class FC(RecycleView):
             new["details"] = e[1].capitalize() # "stopped" or "done"
             new["path"] = e[0]
             new["status"] = e[1]
+            new["timestamp"] = e[2]
             history.insert(0, new) # history is sorted last file at end
 
-        if self.app.state == "printing":
-            printing = [{"name": basename(self.app.sdcard.current_file.name),
-                "details": "", "path": self.app.sdcard.current_file.name,
-                "status": "printing"}]
-        elif self.app.state == "paused":
-            printing = [{"name": basename(self.app.sdcard.current_file.name),
-                "details": "Paused", "path": self.app.sdcard.current_file.name,
-                "status": "paused"}]
-        else:
-            printing = []
+        if self.app.print_state in {"printing", "paused"}:
+            queue[-1]["status"] = self.app.print_state
+        #TEST
+        queue.append({"name": "print.gco", "path": "/home/gabriel/sdcard/print.gco",
+            "status": "paused", "details": "Paused"})
 
-        self.data = queue + printing + history
+        if len(queue) > 1:
+            queue.insert(0, {"name": "Queue:"})
+        if len(history) >= 1:
+            history.insert(0, {"name": "History:"})
+
+        self.data = queue + history
         self.refresh_from_data()
         if not in_background and 'fc_box' in self.ids:
             self.ids.fc_box.selected_nodes = []
@@ -116,7 +118,8 @@ class FCItem(RecycleDataViewBehavior, Label):
     name = StringProperty()
     path = StringProperty()
     details = StringProperty()
-    status = OptionProperty("queued", options=["queued", "printing", "stopped", "done"])
+    status = OptionProperty("header", options=["header", "queued", "printing", "paused", "stopped", "done"])
+    timestamp = NumericProperty(0)
     index = None
     selected = BooleanProperty(False)
     pressed = BooleanProperty(False)
@@ -124,12 +127,18 @@ class FCItem(RecycleDataViewBehavior, Label):
     def refresh_view_attrs(self, rv, index, data):
         # Catch and handle the view changes
         self.index = index
-        return super(FCItem, self).refresh_view_attrs(rv, index, data)
+        # Default has to be explicitly set for some reason
+        default_data = {"name": "", "path": "", "details": "",
+                "status": "header", "timestamp": 0}
+        default_data.update(data)
+        return super(FCItem, self).refresh_view_attrs(rv, index, default_data)
 
     def on_touch_down(self, touch):
         # Add selection on touch down
         if super(FCItem, self).on_touch_down(touch):
             return True
+        if self.status == "header":
+            return False
         if self.collide_point(*touch.pos):
             self.pressed = True
             self.parent.select_with_touch(self.index, touch)
@@ -357,7 +366,7 @@ class StopPopup(BasePopup):
     pass
 
 
-class History(object):
+class History(EventDispatcher):
     """
     Manage print history file
 

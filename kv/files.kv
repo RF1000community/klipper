@@ -80,7 +80,7 @@
 <FC>:
     FCBox:
         id: fc_box
-        default_size: dp(150), dp(110)
+        default_size: None, None
         default_size_hint: 1, None
         size_hint_y: None
         height: self.minimum_height
@@ -90,18 +90,22 @@
 
 <FCItem>:
     size: p.screen_width, 777
+    # Extra background color
+    canvas.before:
+        Color:
+            rgba: p.accent if self.status in {"printing", "paused"} else (0, 0, 0, 0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
     canvas:
         Color:
             rgba: p.translucent_white if (self.selected or self.pressed) else (0,0,0,0)
         Rectangle:
             size: self.size
             pos: self.pos
-        Color:
-            rgba: p.divider
-        Rectangle:
-            size: p.screen_width - 2 * p.small_padding, 1
-            pos: p.small_padding, self.top - 1
     #Label
+    size_hint_y: None
+    height: 40 if self.status == "header" else 110
     text: root.details
     halign: 'right'
     valign: 'middle'
@@ -109,8 +113,8 @@
     padding_x: p.h_padding
     padding_y: 20
     text_size: self.size
-    font_size: p.normal_font
-    color: p.medium_light_gray
+    font_size: p.small_font if self.status == "header" else p.normal_font
+    color: p.medium_dark_gray if self.status in {"printing", "paused"} else p.medium_light_gray
     Label:
         text: root.name
         shorten: True
@@ -122,8 +126,11 @@
         size: root.size
         pos: root.pos
         text_size: self.size
-        font_size: p.normal_font
+        font_size: p.normal_font #p.small_font if root.status == "header" else p.normal_font
         color: (1,1,1,1)
+        bold: root.status == "header"
+    Divider:
+        y: root.top - 1
     
 <GC>:
     GCGrid:
