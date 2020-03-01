@@ -75,7 +75,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def __init__(self, config = None, **kwargs):
         logging.info("Kivy app initializing...")
-        self.history = History()
+        self.history = History(trim=True)
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
