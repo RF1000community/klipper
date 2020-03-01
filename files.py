@@ -26,7 +26,7 @@ class GC(RecycleView):
         if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
         else:
-            self.path = os.getenv("HOME")
+            self.path = "/"
         super(GC, self).__init__(**kwargs)
         Clock.schedule_once(self.bind_tab, 0)
         self.load_files()
@@ -50,9 +50,9 @@ class GC(RecycleView):
         if "USB-Device" in content:
             content.remove("USB-Device")
             # Check if folder is not empty -> a usb stick is plugged in
-            if len(os.listdir(join(root, "USB-Device"))) > 0:
-                logging.info("USB folders:".format(os.listdir(join(root, "USB-Device"))))
-                usb = [{'name': "USB-Device", 'item_type': 'usb', 'path': (join(root, "USB-Device")), 'details':""}]
+            if len(os.listdir(join(self.path, "USB-Device"))) > 0:
+                logging.info("USB folders:".format(os.listdir(join(self.path, "USB-Device"))))
+                usb = [{'name': "USB-Device", 'item_type': 'usb', 'path': (join(self.path, "USB-Device")), 'details':""}]
         files = []
         folders = []
         for base in content:
