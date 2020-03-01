@@ -214,8 +214,11 @@ class History(EventDispatcher):
 
     def write(self, history):
         """Write the object to the history file"""
-        with open(p.history_file, "w") as fp:
-            json.dump(history, fp, indent=True)
+        try:
+            with open(p.history_file, "w") as fp:
+                json.dump(history, fp, indent=True)
+        except IOError:
+            return
 
     def add(self, path, status):
         """Add a new entry to the history with the path and status string specified"""
