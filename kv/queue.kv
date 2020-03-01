@@ -1,11 +1,5 @@
 #:kivy 1.8.0
 
-#:import basename os.path.basename
-#:import dirname os.path.dirname
-#:import relpath os.path.relpath
-
-#:import screenmanager kivy.uix.screenmanager
-
 #:import p parameters
 
 <QueueTab@TabbedPanelItem>:
@@ -41,15 +35,105 @@
             right: p.screen_width - p.h_padding +10
             y: p.tab_height + p.padding 
             on_release: fc.remove()
-            enabled: len(fc.ids.fc_box.selected_nodes)    
+            enabled: fc.selected is not None and fc.selected.status == "queued"
         Btn_QUp:
             id: q_up
             right: q_x.x - p.h_padding  +10
             y: p.tab_height + p.padding
             on_release: fc.move_up()
-            enabled: len(fc.ids.fc_box.selected_nodes) and fc.ids.fc_box.selected_nodes[0] != 0
+            enabled: fc.selected is not None and fc.selected.status == "queued"
         Btn_QDown:
             right: q_up.x - p.h_padding  + 10
             y: p.tab_height + p.padding
             on_release: fc.move_down()
-            enabled: len(fc.ids.fc_box.selected_nodes) and fc.ids.fc_box.selected_nodes[0] != 0
+            enabled: fc.selected is not None and fc.selected.status == "queued"
+
+<FC>:
+    FCBox:
+        id: fc_box
+        default_size: None, None
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False
+
+<FCItem>:
+    size: p.screen_width, 777
+    # Extra background color
+    canvas.before:
+        Color:
+            rgba: p.accent if self.status in {"printing", "paused"} else (0, 0, 0, 0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    canvas:
+        Color:
+            rgba: p.translucent_white if (self.selected or self.pressed) else (0,0,0,0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    #Label
+    size_hint_y: None
+    height: 40 if self.status == "header" else 110
+    text: root.details
+    halign: 'right'
+    valign: 'middle'
+    max_lines: 1
+    padding_x: p.h_padding
+    padding_y: 20
+    text_size: self.size
+    font_size: p.small_font if self.status == "header" else p.normal_font
+    color: p.medium_dark_gray if self.status in {"printing", "paused"} else p.medium_light_gray
+    Label:
+        text: root.name
+        shorten: True
+        halign: 'left'
+        valign: 'middle'
+        max_lines: 1
+        padding_x: p.h_padding
+        padding_y: 20
+        size: root.size
+        pos: root.pos
+        text_size: self.size
+        font_size: p.normal_font #p.small_font if root.status == "header" else p.normal_font
+        color: (1,1,1,1)
+        bold: root.status == "header"
+    Divider:
+        y: root.top - 1
+
+
+# BUTTONS
+
+#:set pad 24
+<Btn_QUp@FloatingButton>:
+    id: q_up
+    btn_color: p.accent
+    canvas:
+        Color:
+            rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
+        Triangle:
+            points: self.x+pad-4, self.y+pad+4,  self.right-pad+4, self.y+pad+4,  self.center_x, self.top-pad
+
+<Btn_QDown@FloatingButton>:
+    btn_color: p.accent
+    canvas:
+        Color:
+            rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
+        Triangle:
+            points: self.x+pad-4, self.top-pad-4,  self.right-pad+4, self.top-pad-4,  self.center_x, self.y+pad
+
+<Btn_QX@FloatingButton>:
+    btn_color: p.accent
+    canvas:
+        Color:
+            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
+        Line:
+            points: self.x+pad, self.top-pad,  self.right-pad, self.y+pad
+            width: 5
+            cap: 'none'
+        Line:
+            points: self.x+pad, self.y+pad,  self.right-pad, self.top-pad
+            width: 5
+            cap: 'none'

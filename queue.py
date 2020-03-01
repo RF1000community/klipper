@@ -6,7 +6,7 @@ import time
 from kivy.app import App
 from kivy.event import EventDispatcher
 from kivy.properties import (ListProperty, NumericProperty, StringProperty,
-    BooleanProperty, OptionProperty)
+    BooleanProperty, OptionProperty, ObjectProperty)
 from kivy.uix.label import Label
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview import RecycleView
@@ -18,6 +18,8 @@ import parameters as p
 
 class FC(RecycleView):
     path = StringProperty()
+    # Initially is None, then always the last selected view object
+    selected = ObjectProperty(None)
     def __init__(self, **kwargs):
         super(FC, self).__init__(**kwargs)
         self.app = App.get_running_app()
@@ -28,7 +30,8 @@ class FC(RecycleView):
 
     def load_queue(self, instance=None, queue=None, in_background=True):
         queue = []
-        for i, e in enumerate(self.app.queued_files):
+        testq = ["/path/{}.gco".format(i) for i in range(10)]
+        for i, e in enumerate(testq): #self.app.queued_files):
             new = {}
             new["name"] = basename(e)
             new["details"] = (self.app.print_state.capitalize() if i == 0 else "{}.".format(i))
@@ -39,11 +42,9 @@ class FC(RecycleView):
         history = []
         for e in self.app.history.history:
             new = {}
+            new["path"], new["status"], new["timestamp"] = e
             new["name"] = basename(e[0])
             new["details"] = e[1].capitalize() # "stopped" or "done"
-            new["path"] = e[0]
-            new["status"] = e[1]
-            new["timestamp"] = e[2]
             history.insert(0, new) # history is sorted last file at end
 
         if self.app.print_state in {"printing", "paused"}:
@@ -151,6 +152,8 @@ class FCItem(RecycleDataViewBehavior, Label):
     def apply_selection(self, rv, index, is_selected):
         # Respond to the selection of items in the view
         self.selected = is_selected
+        if is_selected:
+            rv.selected = self
 
 
 class History(EventDispatcher):
