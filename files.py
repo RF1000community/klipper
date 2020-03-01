@@ -298,7 +298,7 @@ class PrintPopup(BasePopup):
 
     def delete(self):
         """Open a confirmation dialog to delete the file"""
-        super(PrintPopup, self).dismiss() # dismiss bypassing deselection
+        super(PrintPopup, self).dismiss()
         self.confirm_del = DelPopup(path = self.path, filechooser=self.filechooser)
         self.confirm_del.open()
 

@@ -30,6 +30,7 @@ from files import *
 from home import *
 from settings import *
 from status import *
+from update import *
 import parameters as p
 
 
