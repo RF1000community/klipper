@@ -27,7 +27,7 @@ from kivy.properties import OptionProperty, BooleanProperty, DictProperty, Numer
 
 from elements import UltraKeyboard
 from files import *
-from queue import *
+from timeline import *
 from home import *
 from settings import *
 from status import *
@@ -75,7 +75,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def __init__(self, config = None, **kwargs):
         logging.info("Kivy app initializing...")
-        self.history = History()
+        self.history = History(trim=True)
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
@@ -550,7 +550,7 @@ def set_kivy_config():
 
     # All files to read (order is important)
     # main.kv is read automatically
-    kv_files = ("style.kv", "overwrites.kv", "elements.kv", "home.kv","queue.kv", "files.kv", "settings.kv")
+    kv_files = ("style.kv", "overwrites.kv", "elements.kv", "home.kv", "timeline.kv", "files.kv", "settings.kv")
     for fname in kv_files:
         Builder.load_file(join(p.kgui_dir, "kv", fname))
 

@@ -1,12 +1,12 @@
 # coding: utf-8
 import json
-from os.path import basename
+from os.path import basename, exists
 import time
 
 from kivy.app import App
 from kivy.event import EventDispatcher
 from kivy.properties import (ListProperty, NumericProperty, StringProperty,
-    BooleanProperty, OptionProperty)
+    BooleanProperty, OptionProperty, ObjectProperty)
 from kivy.uix.label import Label
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview import RecycleView
@@ -16,19 +16,23 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 import parameters as p
 
 
-class FC(RecycleView):
+class Timeline(RecycleView):
     path = StringProperty()
+    # Initially is None, then always the last selected view object
+    selected = ObjectProperty(None)
     def __init__(self, **kwargs):
-        super(FC, self).__init__(**kwargs)
+        super(Timeline, self).__init__(**kwargs)
         self.app = App.get_running_app()
-        self.load_queue(in_background=False)
-        self.app.bind(queued_files=self.load_queue)
-        self.app.bind(print_state=self.load_queue)
-        self.app.history.bind(history=self.load_queue)
+        self.load_all(in_background=False)
+        self.app.bind(queued_files=self.load_all)
+        self.app.bind(print_state=self.load_all)
+        self.app.history.bind(history=self.load_all)
 
-    def load_queue(self, instance=None, queue=None, in_background=True):
+    def load_all(self, instance=None, value=None, in_background=True):
         queue = []
-        for i, e in enumerate(self.app.queued_files):
+        #TEST
+        testq = ["/path/{}.gco".format(i) for i in range(10)]
+        for i, e in enumerate(testq): #self.app.queued_files):
             new = {}
             new["name"] = basename(e)
             new["details"] = (self.app.print_state.capitalize() if i == 0 else "{}.".format(i))
@@ -39,11 +43,9 @@ class FC(RecycleView):
         history = []
         for e in self.app.history.history:
             new = {}
+            new["path"], new["status"], new["timestamp"] = e
             new["name"] = basename(e[0])
             new["details"] = e[1].capitalize() # "stopped" or "done"
-            new["path"] = e[0]
-            new["status"] = e[1]
-            new["timestamp"] = e[2]
             history.insert(0, new) # history is sorted last file at end
 
         if self.app.print_state in {"printing", "paused"}:
@@ -105,11 +107,11 @@ class FC(RecycleView):
             self.ids.fc_box.selected_nodes = []
             self.send_queue(queue)
 
-class FCBox(LayoutSelectionBehavior, RecycleBoxLayout):
+class TimelineBox(LayoutSelectionBehavior, RecycleBoxLayout):
     # Adds selection behaviour to the view
     pass
 
-class FCItem(RecycleDataViewBehavior, Label):
+class TimelineItem(RecycleDataViewBehavior, Label):
     name = StringProperty()
     path = StringProperty()
     details = StringProperty()
@@ -126,11 +128,11 @@ class FCItem(RecycleDataViewBehavior, Label):
         default_data = {"name": "", "path": "", "details": "",
                 "status": "header", "timestamp": 0}
         default_data.update(data)
-        return super(FCItem, self).refresh_view_attrs(rv, index, default_data)
+        return super(TimelineItem, self).refresh_view_attrs(rv, index, default_data)
 
     def on_touch_down(self, touch):
         # Add selection on touch down
-        if super(FCItem, self).on_touch_down(touch):
+        if super(TimelineItem, self).on_touch_down(touch):
             return True
         if self.status == "header":
             return False
@@ -142,7 +144,7 @@ class FCItem(RecycleDataViewBehavior, Label):
     def on_touch_up(self, touch):
         was_pressed = self.pressed
         self.pressed = False
-        if super(FCItem, self).on_touch_up(touch):
+        if super(TimelineItem, self).on_touch_up(touch):
             return True
         if self.collide_point(*touch.pos) and was_pressed:
             return True
@@ -151,6 +153,8 @@ class FCItem(RecycleDataViewBehavior, Label):
     def apply_selection(self, rv, index, is_selected):
         # Respond to the selection of items in the view
         self.selected = is_selected
+        if is_selected:
+            rv.selected = self
 
 
 class History(EventDispatcher):
@@ -167,8 +171,24 @@ class History(EventDispatcher):
     """
     history = ListProperty()
 
-    def __init__(self):
-        self.history = self.read()
+    def __init__(self, trim=False):
+        """trim: calls self.trim_history once if True"""
+        if trim:
+            self.history = self.trim_history()
+        else:
+            self.history = self.read()
+
+    def trim_history(self):
+        """Remove all entries of deleted files"""
+        history = self.read()
+        to_remove = []
+        for e in history:
+            if not exists(e[0]):
+                to_remove.append(e)
+        for e in to_remove:
+            history.remove(e)
+        self.write(history)
+        return history
 
     def read(self):
         """Read the history file and return it as a list object"""
