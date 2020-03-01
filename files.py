@@ -1,23 +1,19 @@
-import json
 import logging
 import os
 from os.path import getmtime, basename, dirname, exists, abspath, join
-import shutil, re
-import time
+import re
+import shutil
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.event import EventDispatcher
+from kivy.uix.label import Label
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
-from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.recycleview import RecycleView
-from kivy.uix.floatlayout import FloatLayout
-from kivy.properties import (ListProperty, ObjectProperty, NumericProperty,
-    DictProperty, StringProperty, BooleanProperty, OptionProperty)
+from kivy.properties import BooleanProperty, OptionProperty, StringProperty
 
-from elements import *
+from elements import BasePopup
 import parameters as p
 
 

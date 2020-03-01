@@ -1,26 +1,11 @@
-import urllib2 # is called urllib.request for py3
 import json
+import urllib2 # is called urllib.request for py3
 
-import logging
-import os, time
-
-from kivy.app import App
 from kivy.clock import Clock
-from kivy.event import EventDispatcher
-from kivy.logger import Logger
-from kivy.properties import ListProperty, ObjectProperty, NumericProperty, DictProperty, StringProperty, BooleanProperty
-from kivy.uix.behaviors import FocusBehavior
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.label import Label
-from kivy.uix.recycleboxlayout import RecycleBoxLayout
-from kivy.uix.recycleview import RecycleView
-from kivy.uix.recycleview.layout import LayoutSelectionBehavior
-from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 
-from elements import *
-from settings import SetItem
 import parameters as p
+from settings import SetItem
 
 
 class UpdateScreen(Screen):
