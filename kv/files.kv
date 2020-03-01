@@ -15,8 +15,8 @@
     canvas:
         Rectangle:
             source: p.kgui_dir+'/Logos/FilesIcon.png'
-            size: 100,100
-            pos: 250, 0
+            size: 80,80
+            pos: 375-40, 10
     FloatLayout:
         pos: 0, p.tab_height
         canvas.before:
@@ -27,55 +27,16 @@
                 pos: 0, p.tab_height
         TitleBar:
             id: title_bar
-            enabled: False if (screen_man.current == 'FileScreen' and gc.path == p.sdcard_path) else True
-            on_release:
-                if screen_man.current == 'FileScreen': gc.back()
-                else: screen_man.current = 'FileScreen'
+            enabled: gc.path != p.sdcard_path
+            on_release: gc.back()
             pos_hint: {'x':0, 'top':1}
-            title: relpath(gc.path, dirname(p.sdcard_path)) if screen_man.current == 'FileScreen' else "Queued Prinjobs"
-        ScreenManager:
-            id: screen_man
-            name: 'FileScreenManager'
-            transition: screenmanager.NoTransition()
-            Screen:
-                id: file_screen
-                name: 'FileScreen'
-                GC:
-                    id: gc
-                    viewclass: 'GCItem'
-                    size_hint: None, None
-                    size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
-                    pos: 0, p.tab_height
-                Btn_Queue:
-                    right: p.screen_width - p.h_padding
-                    y: p.tab_height + p.padding
-                    on_release: screen_man.current = 'QueueScreen'
-            Screen:
-                id: queue_screen
-                name: 'QueueScreen'
-                FC:
-                    id: fc
-                    viewclass: 'FCItem'
-                    size_hint: None, None
-                    size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
-                    pos: 0, p.tab_height
-                Btn_QX:
-                    id: q_x
-                    right: p.screen_width - p.h_padding +10
-                    y: p.tab_height + p.padding 
-                    on_release: fc.remove()
-                    enabled: len(fc.ids.fc_box.selected_nodes)    
-                Btn_QUp:
-                    id: q_up
-                    right: q_x.x - p.h_padding  +10
-                    y: p.tab_height + p.padding
-                    on_release: fc.move_up()
-                    enabled: len(fc.ids.fc_box.selected_nodes) and fc.ids.fc_box.selected_nodes[0] != 0
-                Btn_QDown:
-                    right: q_up.x - p.h_padding  + 10
-                    y: p.tab_height + p.padding
-                    on_release: fc.move_down()
-                    enabled: len(fc.ids.fc_box.selected_nodes) and fc.ids.fc_box.selected_nodes[0] != 0
+            title: relpath(gc.path, dirname(p.sdcard_path))
+        GC:
+            id: gc
+            viewclass: 'GCItem'
+            size_hint: None, None
+            size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
+            pos: 0, p.tab_height
 
 <FC>:
     FCBox:
