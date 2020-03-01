@@ -1,0 +1,55 @@
+#:kivy 1.8.0
+
+#:import basename os.path.basename
+#:import dirname os.path.dirname
+#:import relpath os.path.relpath
+
+#:import screenmanager kivy.uix.screenmanager
+
+#:import p parameters
+
+<QueueTab@TabbedPanelItem>:
+    background_down: ''
+    background_normal: p.kgui_dir+'/Logos/Black.png'
+    background_color: p.background
+    canvas:
+        Rectangle:
+            source: p.kgui_dir+'/Logos/Queue.png'
+            size: 70,70
+            pos: 225-35, 15
+    FloatLayout:
+        pos: 0, p.tab_height
+        canvas.before:
+            Color:
+                rgba: p.background
+            Rectangle:
+                size: p.screen_width, p.screen_height - p.tab_height - p.status_bar_height
+                pos: 0, p.tab_height
+        TitleBar:
+            id: title_bar
+            enabled: False
+            pos_hint: {'x':0, 'top':1}
+            title: "Queued Prinjobs"
+        FC:
+            id: fc
+            viewclass: 'FCItem'
+            size_hint: None, None
+            size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
+            pos: 0, p.tab_height
+        Btn_QX:
+            id: q_x
+            right: p.screen_width - p.h_padding +10
+            y: p.tab_height + p.padding 
+            on_release: fc.remove()
+            enabled: len(fc.ids.fc_box.selected_nodes)    
+        Btn_QUp:
+            id: q_up
+            right: q_x.x - p.h_padding  +10
+            y: p.tab_height + p.padding
+            on_release: fc.move_up()
+            enabled: len(fc.ids.fc_box.selected_nodes) and fc.ids.fc_box.selected_nodes[0] != 0
+        Btn_QDown:
+            right: q_up.x - p.h_padding  + 10
+            y: p.tab_height + p.padding
+            on_release: fc.move_down()
+            enabled: len(fc.ids.fc_box.selected_nodes) and fc.ids.fc_box.selected_nodes[0] != 0
