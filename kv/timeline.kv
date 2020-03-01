@@ -78,27 +78,27 @@
     size_hint_y: None
     height: 40 if self.status == "header" else 110
     text: root.details
-    halign: 'right'
+    halign: 'center' if self.status == "header" else 'right'
     valign: 'middle'
     max_lines: 1
     padding_x: p.h_padding
-    padding_y: 20
     text_size: self.size
     font_size: p.small_font if self.status == "header" else p.normal_font
     color: p.medium_dark_gray if self.status in {"printing", "paused"} else p.medium_light_gray
+    italic: self.status == "header"
     Label:
         text: root.name
         shorten: True
+        shorten_from: 'right'
         halign: 'left'
         valign: 'middle'
-        max_lines: 1
         padding_x: p.h_padding
-        padding_y: 20
-        size: root.size
+        size_hint: None, None
+        size: root.width - 120, root.height
         pos: root.pos
         text_size: self.size
-        font_size: p.normal_font #p.small_font if root.status == "header" else p.normal_font
-        color: (1,1,1,1)
+        font_size: p.normal_font
+        color: p.green if root.status == "done" else p.red if root.status == "stopped" else (1,1,1,1)
         bold: root.status == "header"
     Divider:
         y: root.top - 1

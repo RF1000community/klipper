@@ -1,4 +1,5 @@
 # coding: utf-8
+from datetime import date
 import json
 from os.path import basename, exists
 import time
@@ -41,17 +42,29 @@ class Timeline(RecycleView):
             queue.insert(0, new) # next queue item is displayed last
 
         history = []
+        if self.app.history.history != []:
+            # latest date in history
+            prev_date = date.fromtimestamp(self.app.history.history[0][2])
         for e in self.app.history.history:
+            new_date = date.fromtimestamp(e[2])
+            # This print happened on a later day than the previous
+            if new_date != prev_date:
+                # Format date like "25. Aug 1991"
+                history.insert(0, {"details": prev_date.strftime("%d. %b %Y")})
+                prev_date = new_date
             new = {}
             new["path"], new["status"], new["timestamp"] = e
             new["name"] = basename(e[0])
             new["details"] = e[1].capitalize() # "stopped" or "done"
             history.insert(0, new) # history is sorted last file at end
+        # Also show the newest date, but not if the last print happened today
+        if new_date != date.today():
+            history.insert(0, {"details": new_date.strftime("%d. %b %Y")})
 
         if self.app.print_state in {"printing", "paused"}:
             queue[-1]["status"] = self.app.print_state
-        #TEST
-        queue.append({"name": "print.gco", "path": "/home/gabriel/sdcard/print.gco",
+        #TEST: Breaks status details a bit, but shows an example of printing files
+        queue.append({"name": "print.gco", "path": "/sdcard/print.gco",
             "status": "paused", "details": "Paused"})
 
         if len(queue) > 1:
