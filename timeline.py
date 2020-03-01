@@ -16,20 +16,21 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 import parameters as p
 
 
-class FC(RecycleView):
+class Timeline(RecycleView):
     path = StringProperty()
     # Initially is None, then always the last selected view object
     selected = ObjectProperty(None)
     def __init__(self, **kwargs):
-        super(FC, self).__init__(**kwargs)
+        super(Timeline, self).__init__(**kwargs)
         self.app = App.get_running_app()
-        self.load_queue(in_background=False)
-        self.app.bind(queued_files=self.load_queue)
-        self.app.bind(print_state=self.load_queue)
-        self.app.history.bind(history=self.load_queue)
+        self.load_all(in_background=False)
+        self.app.bind(queued_files=self.load_all)
+        self.app.bind(print_state=self.load_all)
+        self.app.history.bind(history=self.load_all)
 
-    def load_queue(self, instance=None, queue=None, in_background=True):
+    def load_all(self, instance=None, value=None, in_background=True):
         queue = []
+        #TEST
         testq = ["/path/{}.gco".format(i) for i in range(10)]
         for i, e in enumerate(testq): #self.app.queued_files):
             new = {}
@@ -106,11 +107,11 @@ class FC(RecycleView):
             self.ids.fc_box.selected_nodes = []
             self.send_queue(queue)
 
-class FCBox(LayoutSelectionBehavior, RecycleBoxLayout):
+class TimelineBox(LayoutSelectionBehavior, RecycleBoxLayout):
     # Adds selection behaviour to the view
     pass
 
-class FCItem(RecycleDataViewBehavior, Label):
+class TimelineItem(RecycleDataViewBehavior, Label):
     name = StringProperty()
     path = StringProperty()
     details = StringProperty()
@@ -127,11 +128,11 @@ class FCItem(RecycleDataViewBehavior, Label):
         default_data = {"name": "", "path": "", "details": "",
                 "status": "header", "timestamp": 0}
         default_data.update(data)
-        return super(FCItem, self).refresh_view_attrs(rv, index, default_data)
+        return super(TimelineItem, self).refresh_view_attrs(rv, index, default_data)
 
     def on_touch_down(self, touch):
         # Add selection on touch down
-        if super(FCItem, self).on_touch_down(touch):
+        if super(TimelineItem, self).on_touch_down(touch):
             return True
         if self.status == "header":
             return False
@@ -143,7 +144,7 @@ class FCItem(RecycleDataViewBehavior, Label):
     def on_touch_up(self, touch):
         was_pressed = self.pressed
         self.pressed = False
-        if super(FCItem, self).on_touch_up(touch):
+        if super(TimelineItem, self).on_touch_up(touch):
             return True
         if self.collide_point(*touch.pos) and was_pressed:
             return True

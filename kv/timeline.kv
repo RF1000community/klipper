@@ -2,13 +2,13 @@
 
 #:import p parameters
 
-<QueueTab@TabbedPanelItem>:
+<TimelineTab@TabbedPanelItem>:
     background_down: ''
     background_normal: p.kgui_dir+'/Logos/Black.png'
     background_color: p.background
     canvas:
         Rectangle:
-            source: p.kgui_dir+'/Logos/Queue.png'
+            source: p.kgui_dir+'/Logos/Timeline.png'
             size: 70,70
             pos: 225-35, 15
     FloatLayout:
@@ -23,10 +23,10 @@
             id: title_bar
             enabled: False
             pos_hint: {'x':0, 'top':1}
-            title: "Queued Prinjobs"
-        FC:
-            id: fc
-            viewclass: 'FCItem'
+            title: "Timeline"
+        Timeline:
+            id: tl
+            viewclass: 'TimelineItem'
             size_hint: None, None
             size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
             pos: 0, p.tab_height
@@ -34,23 +34,23 @@
             id: q_x
             right: p.screen_width - p.h_padding +10
             y: p.tab_height + p.padding 
-            on_release: fc.remove()
-            enabled: fc.selected is not None and fc.selected.status == "queued"
+            on_release: tl.remove()
+            enabled: tl.selected is not None and tl.selected.status == "queued"
         Btn_QUp:
             id: q_up
             right: q_x.x - p.h_padding  +10
             y: p.tab_height + p.padding
-            on_release: fc.move_up()
-            enabled: fc.selected is not None and fc.selected.status == "queued"
+            on_release: tl.move_up()
+            enabled: tl.selected is not None and tl.selected.status == "queued"
         Btn_QDown:
             right: q_up.x - p.h_padding  + 10
             y: p.tab_height + p.padding
-            on_release: fc.move_down()
-            enabled: fc.selected is not None and fc.selected.status == "queued"
+            on_release: tl.move_down()
+            enabled: tl.selected is not None and tl.selected.status == "queued"
 
-<FC>:
-    FCBox:
-        id: fc_box
+<Timeline>:
+    TimelineBox:
+        id: tl_box
         default_size: None, None
         default_size_hint: 1, None
         size_hint_y: None
@@ -59,7 +59,7 @@
         multiselect: False
         touch_multiselect: False
 
-<FCItem>:
+<TimelineItem>:
     size: p.screen_width, 777
     # Extra background color
     canvas.before:
