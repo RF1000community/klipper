@@ -569,7 +569,7 @@ site.addsitedir(p.kgui_dir)
 # Read custom Kivy config file, set rotation and load custom style.kv
 set_kivy_config()
 
-#Entry point, order of execution: __init__()  run()  main.kv  setup_after_run()  handle_connect()  handle_ready()
+# Entry point, order of execution: __init__()  run()  main.kv  setup_after_run()  handle_connect()  handle_ready()
 def load_config(config):
     kgui_object = mainApp(config)
     kgui_object.start()
