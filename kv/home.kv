@@ -7,13 +7,12 @@
 
 <HomeTab@TabbedPanelItem>:
     background_down: '' # dadurch nimmt es background color an, sowieso immer mit dessen opacity auch waere es ein bild
-    background_normal: p.kgui_dir+'/Logos/Black.png'
     background_color: p.background
     canvas:
         Rectangle:
-            source: p.kgui_dir+'/Logos/HomeIcon.png'
-            size: 80, 80
-            pos: 75-40, 10
+            source: p.kgui_dir+'/logos/home.png'
+            size: 60, 60
+            pos: 75-30, 20
     FloatLayout:
         Background:
             pos_hint: {'x':0,'y':0}
@@ -507,7 +506,7 @@
         Color:
             rgba: (1,1,1,1) if self.enabled else p.btn_disabled
         Rectangle:
-            source: p.kgui_dir+'/Logos/HomeAxisIcon.png'
+            source: p.kgui_dir+'/logos/home_axis.png'
             size: 66, 66
             pos: self.center_x-32, self.center_y-32
         Color:

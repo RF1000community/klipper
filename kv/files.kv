@@ -10,13 +10,12 @@
 
 <FileTab@TabbedPanelItem>:
     background_down: ''
-    background_normal: p.kgui_dir+'/Logos/Black.png'
     background_color: p.background
     canvas:
         Rectangle:
-            source: p.kgui_dir+'/Logos/FilesIcon.png'
-            size: 80,80
-            pos: 375-40, 10
+            source: p.kgui_dir+'/logos/files.png'
+            size: 60,60
+            pos: 375-30, 20
     FloatLayout:
         pos: 0, p.tab_height
         canvas.before:
@@ -59,7 +58,7 @@
         Color:
             rgba: p.medium_gray
         Rectangle:
-            source: p.kgui_dir + ('/Logos/File.png' if self.item_type == 'file' else '/Logos/Usb.png' if self.item_type == 'usb' else '/Logos/Folder.png' )
+            source: p.kgui_dir + ('/logos/file.png' if self.item_type == 'file' else '/logos/usb.png' if self.item_type == 'usb' else '/logos/folder.png' )
             size: 84, 84
             pos: self.center_x - 42, self.center_y - 5
         Color:

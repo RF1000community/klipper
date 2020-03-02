@@ -1,11 +1,15 @@
+import os
 import json
 import urllib2 # is called urllib.request for py3
 import threading
 import logging
+import tarfile
+import StringIO
 
 from kivy.clock import Clock
 from kivy.uix.screenmanager import Screen
 from kivy.properties import NumericProperty
+from io import BytesIO
 
 import parameters as p
 from settings import SetItem
@@ -23,7 +27,7 @@ class UpdateScreen(Screen):
     def finish_drawing_releases(self, releases):
         releases = json.JSONDecoder().decode(releases)
         self.ids.box.clear_widgets()
-     
+
         for release in releases:
             entry = SI_Release(release['zipball_url'], left_title = release['tag_name'], right_title = release['published_at'].split("T")[0])
             self.ids.box.add_widget(entry)
@@ -60,7 +64,7 @@ class Download(threading.Thread):
             data += chunk
             self.comm_list[0] = bytes_so_far
 
-        result = "".join(data)
+        result = "".join(data) # returns data as string
         Clock.schedule_once(lambda dt: self.result_handler(result))
 
 class UpdatePopup(BasePopup):
@@ -71,12 +75,22 @@ class UpdatePopup(BasePopup):
         Download(url, self.comm_list, self.download_finished).start()
 
     def download_finished(self, data):
-        self.data = file
-        #self.ids.progress_bar.value = 1
+        self.data = data
         self.ids.confirm.enabled = True
-    
+
     def install(self):
-        pass
+        # as a convention klipper is always installed in HOME directory
+        install_dir = os.path.expanduser('~')
+        logging.info(type(self.data))
+        data_file = StringIO(self.data)
+        logging.info(data_file)
+
+        #self.data.seek(0)
+        info = tarfile.TarInfo(name=self.version)
+        info.size = len(self.data.encode('utf8'))
+        tar = tarfile.open(fileobj=data_file, tarinfo=info)
+        tar.extractall(install_dir)
+        tar.close()
 
     def dismiss(self, **kwargs):
         super(UpdatePopup, self).dismiss(**kwargs)

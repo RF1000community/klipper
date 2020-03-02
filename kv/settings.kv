@@ -7,13 +7,12 @@
 
 <SettingTab@TabbedPanelItem>:
     background_down: '' 
-    background_normal: p.kgui_dir+'/Logos/Black.png'
     background_color: p.background
     canvas:
         Rectangle:
-            source: p.kgui_dir+'/Logos/SettingsIcon.png'
-            size: 80 * p.disp_vertical_stretch, 80
-            pos: 525 - 40 * p.disp_vertical_stretch, 10
+            source: p.kgui_dir+'/logos/settings.png'
+            size: 60 * p.disp_vertical_stretch, 60
+            pos: 525 - 30 * p.disp_vertical_stretch, 20
     BoxLayout:
         orientation: 'vertical'
         TitleBar:
@@ -442,15 +441,15 @@
             Color:
                 rgba: p.medium_gray
             RoundedRectangle:
-                size: self.width - 2*p.padding, 8
+                size: self.width - 2*p.padding, 10
                 pos: self.x + p.padding, self.center_y
                 radius: (4,)
             Color:
-                rgba: p.accent
+                rgba: p.light_gray
             RoundedRectangle:
-                size: (self.width - 2*p.padding)*root.comm_list[0]/float(root.comm_list[1]), 8
+                size: (self.width - 2*p.padding)*root.comm_list[0]/float(root.comm_list[1]), 10
                 pos: self.x + p.padding, self.center_y
-                radius: (4,)
+                radius: (5,)
         Label:
             text: root.version
             halign: 'center'
@@ -461,14 +460,6 @@
             text_size: self.size
             font_size: p.large_font
             color: p.light_gray
-        # ProgressBar:
-        #     enabled: True
-        #     id: progress_bar
-        #     max: 1
-        #     value: root.comm_list[0]/float(root.comm_list[1] )
-        #     size_hint: None, None
-        #     size: root.width - 2*p.padding, 8
-        #     pos: root.x + p.padding, root.y + 200
         Label:
             text: "{}/{}kb".format(root.comm_list[0]/1024,root.comm_list[1]/1024)
             size_hint: None, None

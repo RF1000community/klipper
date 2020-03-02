@@ -2,15 +2,15 @@ KGUI:
 
     fix ethernet icon not showing up
 
-    fix virtualsd
-
-    make mount point name USB Device
-
     https://wiki.archlinux.org/index.php/Display_Power_Management_Signaling
 
     OTA Updates of klipperui + dependencies
 
-    see if timer to close error persists
+    Klipper bugs
+        see if timer to close error persists
+        DripModeEndSignal during homing maybe due to add. gcode move command
+
+    See if progress bar shows wrong progress on homescreen as well
 
     microcontroller flashing
 

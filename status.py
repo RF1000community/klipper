@@ -55,7 +55,7 @@ class ConnectionIcon(Widget):
             self.wifi_color = Color(rgba=self.transparent)
             self.wifi = Ellipse(pos=(0, 0), size=(0, 0), angle_start=315, angle_end=405)
             self.eth_color = Color(rgba=p.red)
-            self.eth = Rectangle(pos=(0, 0), size=(0, 0), source="Logos/ethernet.png")
+            self.eth = Rectangle(pos=(0, 0), size=(0, 0), source="logos/ethernet.png")
         self.draw_nothing()
 
     def draw_wifi(self):
@@ -129,7 +129,7 @@ class Notifications(FloatLayout):
         with self.canvas:
             Color(rgb=p.background[:3], a=0.8)
             BorderImage(
-                source=p.kgui_dir+'/Logos/shadow.png',
+                source=p.kgui_dir+'/logos/shadow.png',
                 pos=(self.x-64, self.y-64),
                 size=(self.width + 128, self.height + 127),
                 border=(64, 64, 64, 64))

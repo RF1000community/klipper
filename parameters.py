@@ -4,7 +4,7 @@ sdcard_path = expanduser('~/sdcard')
 history_file = join(sdcard_path, ".history.json")
 
 #never assume pixels are square :}
-disp_vertical_stretch = 1.05 
+disp_vertical_stretch = 1.05
 
 large_font = 32
 normal_font = 23

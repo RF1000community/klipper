@@ -532,7 +532,7 @@ def set_kivy_config():
     # This needs an absolute path otherwise config will only be loaded when
     # working directory is the parent directory
     if TESTING:
-        Config.read(join(p.kgui_dir, "config-test.ini"))
+        Config.read(join(p.kgui_dir, "config_test.ini"))
     else:
         Config.read(join(p.kgui_dir, "config.ini"))
         # Read the display rotation value
