@@ -56,8 +56,7 @@ def freedir(directory, threshold=100, stop=500):
     fcount = 0
     while get_space(dirs[0]) < stop and files:
         cur_file = files.pop()
-        # Uncomment to disable safeguard
-        ###remove(cur_file)
+        remove(cur_file)
         fcount += 1
 
     return (fcount, get_space(dirs[0]) - avail)
@@ -92,7 +91,7 @@ def reducedir(directory, nfiles=100):
     ndel = len(files) - nfiles
 
     for i in range(ndel):
-        ###remove(files[i])
+        remove(files[i])
     return ndel
 
 
