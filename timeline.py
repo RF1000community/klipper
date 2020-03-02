@@ -58,21 +58,23 @@ class Timeline(RecycleView):
             new["details"] = e[1].capitalize() # "stopped" or "done"
             history.insert(0, new) # history is sorted last file at end
         # Also show the newest date, but not if the last print happened today
-        if new_date != date.today():
+        if self.app.history.history != [] and new_date != date.today():
             history.insert(0, {"details": new_date.strftime("%d. %b %Y")})
 
         if self.app.print_state in {"printing", "paused"}:
             queue[-1]["status"] = self.app.print_state
         #TEST: Breaks status details a bit, but shows an example of printing files
-        queue.append({"name": "print.gco", "path": "/sdcard/print.gco",
-            "status": "paused", "details": "Paused"})
+        queue.append({"name": "print.gco", "path": "/sdcard/print.gco", "status": "paused", "details": "Paused"})
 
         if len(queue) > 1:
             queue.insert(0, {"name": "Queue:"})
         if len(history) >= 1:
             history.insert(0, {"name": "History:"})
 
-        self.data = queue + history
+        if len(queue) + len(history) == 0: # Give message in case of empty list
+            self.data = [{"details": "No printjobs scheduled or finished"}]
+        else:
+            self.data = queue + history
         self.refresh_from_data()
         if not in_background and 'fc_box' in self.ids:
             self.ids.fc_box.selected_nodes = []
