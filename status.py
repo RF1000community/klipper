@@ -115,15 +115,17 @@ class Notifications(FloatLayout):
         super(Notifications, self).__init__()
         # Initialize update_clock as a ClockEvent in case it gets canceled first
         self.update_clock = Clock.schedule_once(lambda x: 0, -1)
+        self.active = False
+        self.early_notification = None # Save notifications during startup
+        self.initialized = False
+        Clock.schedule_once(self.late_setup, 0)
+
+    def late_setup(self, dt):
         self.root_widget = App.get_running_app().root
         self.size_hint = (None, None)
         self.size = self.root_widget.width - 2*p.notification_padding, 110
         self.x = self.root_widget.x + p.notification_padding
         self.top = self.root_widget.top - p.notification_padding
-        self.active = False
-        Clock.schedule_once(self.init_drawing, 0)
-
-    def init_drawing(self, dt):
         with self.canvas:
             Color(rgb=p.background[:3], a=0.8)
             BorderImage(
@@ -154,6 +156,9 @@ class Notifications(FloatLayout):
         message.top = title.y - p.notification_text_padding/2
         self.add_widget(message)
         self.message_label = message
+        self.initialized = True
+        if self.early_notification is not None:
+            self.show(**self.early_notification)
 
     def show(self, title="", message="", level="info", log=True, delay=-1, color=None):
         """
@@ -171,6 +176,10 @@ class Notifications(FloatLayout):
                 or string   value set by the level preset. Can also be the name of
                             different preset that the specified log level.
         """
+        if not self.initialized:
+            self.early_notification = {"title": title, "message": message,
+                "level": level, "log": log, "delay": delay, "color": color}
+            return
         color_presets = {
                 "info": p.notify_info,
                 "warning": p.notify_warning,

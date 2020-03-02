@@ -186,24 +186,23 @@ class History(EventDispatcher):
     """
     history = ListProperty()
 
-    def __init__(self, trim=False):
-        """trim: calls self.trim_history once if True"""
-        if trim:
-            self.history = self.trim_history()
-        else:
-            self.history = self.read()
+    def __init__(self):
+        self.history = self.read()
 
     def trim_history(self):
-        """Remove all entries of deleted files"""
-        history = self.read()
+        """Remove all entries of deleted files, return number of removed entries"""
+        history = self.history
         to_remove = []
         for e in history:
             if not exists(e[0]):
                 to_remove.append(e)
-        for e in to_remove:
-            history.remove(e)
-        self.write(history)
-        return history
+        if to_remove != []:
+            for e in to_remove:
+                history.remove(e)
+            self.write(history)
+            self.history = history
+            return len(to_remove)
+        return 0
 
     def read(self):
         """Read the history file and return it as a list object"""

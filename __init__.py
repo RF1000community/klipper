@@ -27,6 +27,7 @@ from kivy.properties import OptionProperty, BooleanProperty, DictProperty, Numer
 
 from elements import UltraKeyboard
 from files import *
+from freedir import freedir
 from timeline import *
 from home import *
 from settings import *
@@ -75,7 +76,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def __init__(self, config = None, **kwargs):
         logging.info("Kivy app initializing...")
-        self.history = History(trim=True)
+        self.notify = Notifications()
+        self.history = History()
+        self.clean()
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
@@ -117,6 +120,12 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.extruder_count = 2
         self.kv_file = join(p.kgui_dir, "kv/main.kv")
         super(mainApp, self).__init__(**kwargs)
+
+    def clean(self):
+        ndel, freed = freedir(p.sdcard_path)
+        self.history.trim_history()
+        if ndel:
+            self.notify.show("Disk space freed", "Deleted {} files, freeing {} MiB".format(ndel, freed))
 
     def handle_connect(self): #runs in klippy thread
         self.fan = self.printer.lookup_object('fan', None)
@@ -169,7 +178,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         super(mainApp, self).run()
 
     def setup_after_run(self, dt):
-        self.notify = Notifications()
         try:
             self.root_window.set_vkeyboard_class(UltraKeyboard)
         except:
