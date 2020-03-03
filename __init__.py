@@ -78,13 +78,13 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         logging.info("Kivy app initializing...")
         self.notify = Notifications()
         self.history = History()
-        self.clean()
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
         self.z_timer = None
         self.extrude_timer = None
         if not TESTING:
+            self.clean()
             self.kgui_config = config
             self.printer = config.get_printer()
             self.reactor = self.printer.get_reactor()
