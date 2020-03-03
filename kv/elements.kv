@@ -100,7 +100,6 @@
             pos: self.pos
             size: self.size
 
-
 <Btn_Slider>:
     #:set t 9  #half of width
     #:set j 15
@@ -211,55 +210,40 @@
 
 # MISC
 
-<Option>:
-    selected: False
-    size: 90, 60
-    #: set o_padding 8
+<TitleBar@BaseButton>:
+    size: 140, 110
+    enabled: False
+    title: ""
+    #: set q 26
     canvas.before:
         Color:
-            rgba: p.btn if self.selected else (0,0,0,0)
-        RoundedRectangle:
+            rgba: p.background
+        Rectangle:
+            size: p.screen_width, self.height
+            pos: self.pos
+        Color:
+            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
+        Triangle:
+            points: p.h_padding, self.center_y,   p.h_padding + q, self.center_y-q,   p.h_padding + q, self.center_y+q
+        Color:
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+        Rectangle:
             size: self.size
             pos: self.pos
-            radius: (p.radius,)
-        Color:
-            rgba: self.option_color
-        RoundedRectangle:
-            size: self.width - 2*o_padding, self.height - 2*o_padding
-            pos: self.x + o_padding, self.y + o_padding
-            radius: (p.icon_radius,)
-
-<OptionBox>:
-    title: " "
-    # canvas:
-    #     Color:
-    #         rgba:(0,0,0,0.1)
-    #     Rectangle:
-    #         size: self.size
-    #         pos: self.pos
     Label:
-        id: box_title
         text: root.title
-        font_size: p.normal_font
-        size: self.texture_size
-        pos_hint: {'top':1, 'x':0}
-        size_hint: None, None
-        color: p.light_gray
+        shorten: True
+        shorten_from: 'left'
+        halign: 'center'
         valign: 'middle'
-        halign: 'left'
-        padding_y: 6
-        padding_x: 2 * o_padding
-    Divider:
-        width: root.width 
-        pos: root.x, box_title.y
-    StackLayout:
-        size: root.width, root.height - box_title.height
+        max_lines: 1
         size_hint: None, None
-        pos: root.pos
-        id: stack
-        spacing: [0]
-        padding: [o_padding]
-
+        size: p.screen_width - 200, root.height
+        center_x: p.screen_width/2
+        y: root.y
+        text_size: self.size
+        font_size: p.large_font
+        color: (1,1,1,1)
 
 <BasePopup>:
     title_size: p.large_font
@@ -287,3 +271,51 @@
         Rectangle:
             pos: self.pos
             size: self.size
+
+<ErrorPopup>:
+    size_hint: 0.8, 0.5
+    error: True
+    message: "--"
+    title: "Error - Firmware stopped"
+    FloatLayout:
+        Label:
+            text: root.message
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 5
+            size_hint: 0.9, 0.5
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.1}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        Btn_P_Cancel:
+            id: btn_cancel
+            text: "Restart Printer"
+            width: root.width
+            pos: root.pos
+            on_release: app.restart_klipper()
+
+<StopPopup>:
+    title: 'Stop'
+    title_size: p.large_font
+    size_hint: 0.8, 0.3
+    FloatLayout:
+        Label:
+            text: app.print_title
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 2
+            size_hint: 0.9, 0.5
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.2}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        Btn_P_Cancel:
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        Btn_P_Confirm:
+            enabled: True
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.dismiss(); app.send_stop()

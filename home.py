@@ -27,7 +27,7 @@ class XyField(Widget):
                                    self.app.pos_max['y'] - self.app.pos_min['y'])
         self.app.bind(pos=self.update_with_mm)
         Clock.schedule_once(self.init_drawing, 0)
-        
+
     def init_drawing(self, dt):
         #Calculate bounds of actual field
         self.origin = [self.x+self.point_radius, self.y+self.point_radius]
@@ -174,6 +174,7 @@ class ExtTempSlider(UltraSlider):
         x = (float(val-40)/float(280-40))*self.px_width+self.px_min
         if x < self.px_min: x = self.px_min
         return x
+
 """
 class ExtTempOffsetSlider(UltraOffsetSlider):
     def __init__(self, **kwargs:
@@ -204,6 +205,7 @@ class ExtTempOffsetSlider(UltraOffsetSlider):
         if x < self.px_min: x = self.px_min
         return x
 """
+
 class Option(RoundButton):
     option_color = ListProperty([0,0,0,0])
     def __init__(self, box_color, **kwargs):
@@ -248,17 +250,13 @@ class BtnTriple(Widget):
         that everything is clearly visible.
         """
         l = self.lightness(*self.filament_color)
-
         # add divider if lightness is too close to background
         if abs(l - self.lightness(*p.background[:3])) < 0.07:
             self.divider_color = [1,1,1,0.15]
         else:
             self.divider_color = [0,0,0,0]
-        
         # darken if color is to bright
-    
         if l > 0.48:
-            
             self.filament_color_adjusted = [c*0.48/l for c in self.filament_color]
         else:
             self.filament_color_adjusted = self.filament_color
