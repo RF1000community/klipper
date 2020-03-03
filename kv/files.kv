@@ -92,41 +92,6 @@
         font_size: p.normal_font - 3
         color: (1,1,1,1)
 
-<TitleBar@BaseButton>:
-    size: 140, 110
-    enabled: False
-    title: ""
-    #: set q 26
-    canvas.before:
-        Color:
-            rgba: p.background
-        Rectangle:
-            size: p.screen_width, self.height
-            pos: self.pos
-        Color:
-            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
-        Triangle:
-            points: p.h_padding, self.center_y,   p.h_padding + q, self.center_y-q,   p.h_padding + q, self.center_y+q
-        Color:
-            rgba: p.translucent_white if self.pressed else (0,0,0,0)
-        Rectangle:
-            size: self.size
-            pos: self.pos
-    Label:
-        text: root.title
-        shorten: True
-        shorten_from: 'left'
-        halign: 'center'
-        valign: 'middle'
-        max_lines: 1
-        size_hint: None, None
-        size: p.screen_width - 200, root.height
-        center_x: p.screen_width/2
-        y: root.y
-        text_size: self.size
-        font_size: p.large_font
-        color: (1,1,1,1)
-
 
 # POPUPS
 

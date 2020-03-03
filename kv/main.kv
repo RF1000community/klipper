@@ -17,7 +17,6 @@ FloatLayout:
         height: root.height - p.status_bar_height
         size_hint_y: None
 
-
 <MainTabs@TabbedPanel>:
     tab_pos: 'bottom_mid'
     tab_width: p.screen_width/4
@@ -70,50 +69,3 @@ FloatLayout:
             font_size: root.height - 4
             padding: 7, 0
 
-<ErrorPopup>:
-    size_hint: 0.8, 0.5
-    error: True
-    message: "--"
-    title: "Error - Firmware stopped"
-    FloatLayout:
-        Label:
-            text: root.message
-            halign: 'center'
-            valign: 'middle'
-            max_lines: 5
-            size_hint: 0.9, 0.5
-            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.1}
-            text_size: self.size
-            font_size: p.large_font
-            color: p.light_gray
-        Btn_P_Cancel:
-            id: btn_cancel
-            text: "Restart Printer"
-            width: root.width
-            pos: root.pos
-            on_release: app.restart_klipper()
-
-<StopPopup>:
-    title: 'Stop'
-    title_size: p.large_font
-    size_hint: 0.8, 0.3
-    FloatLayout:
-        Label:
-            text: app.print_title
-            halign: 'center'
-            valign: 'middle'
-            max_lines: 2
-            size_hint: 0.9, 0.5
-            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.2}
-            text_size: self.size
-            font_size: p.large_font
-            color: p.light_gray
-        Btn_P_Cancel:
-            width: root.width/2
-            pos: root.pos
-            on_release: root.dismiss()
-        Btn_P_Confirm:
-            enabled: True
-            width: root.width/2
-            pos: root.center_x, root.y
-            on_release: root.dismiss(); app.send_stop()

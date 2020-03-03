@@ -430,6 +430,7 @@ class PasswordPopup(BasePopup):
                 level="warning", delay=4)
         return True
 
+
 class ConnectionPopup(BasePopup):
 
     def __init__(self, network, **kwargs):
@@ -461,7 +462,7 @@ class SI_Timezone(SetItem):
     def __init__(self, **kwargs):
         super(SI_Timezone, self).__init__(**kwargs)
         self.set_timezone()
-    
+
     def set_timezone(self):
         if os.path.exists("/etc/localtime"):
             self.right_title = os.path.basename(os.readlink("/etc/localtime"))
@@ -516,7 +517,6 @@ class TimezoneRVItem(RecycleDataViewBehavior, Label):
     # Add selection support to the Label
     index = None
     selected = BooleanProperty(False)
-    selectable = BooleanProperty(True) #is this needed?
 
     def refresh_view_attrs(self, rv, index, data):
         # Catch and handle the view changes
@@ -527,7 +527,7 @@ class TimezoneRVItem(RecycleDataViewBehavior, Label):
         # Add selection on touch down
         if super(TimezoneRVItem, self).on_touch_down(touch):
             return True
-        if self.collide_point(*touch.pos) and self.selectable:
+        if self.collide_point(*touch.pos):
             return self.parent.select_with_touch(self.index, touch)
 
     def apply_selection(self, rv, index, is_selected):
