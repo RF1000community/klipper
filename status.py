@@ -112,7 +112,6 @@ class ConnectionIcon(Widget):
 class Notifications(FloatLayout):
 
     def __init__(self):
-        super(Notifications, self).__init__()
         # Initialize update_clock as a ClockEvent in case it gets canceled first
         self.update_clock = Clock.schedule_once(lambda x: 0, -1)
         self.active = False
@@ -121,6 +120,7 @@ class Notifications(FloatLayout):
         Clock.schedule_once(self.late_setup, 0)
 
     def late_setup(self, dt):
+        super(Notifications, self).__init__()
         self.root_widget = App.get_running_app().root
         self.size_hint = (None, None)
         self.size = self.root_widget.width - 2*p.notification_padding, 110
