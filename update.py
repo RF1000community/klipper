@@ -29,7 +29,7 @@ class UpdateScreen(Screen):
         self.ids.box.clear_widgets()
 
         for release in releases:
-            entry = SI_Release(release['zipball_url'], left_title = release['tag_name'], right_title = release['published_at'].split("T")[0])
+            entry = SI_Release(release['tarball_url'], left_title = release['tag_name'], right_title = release['published_at'].split("T")[0])
             self.ids.box.add_widget(entry)
 
 class Download(threading.Thread):
@@ -67,12 +67,50 @@ class Download(threading.Thread):
         result = "".join(data) # returns data as string
         Clock.schedule_once(lambda dt: self.result_handler(result))
 
+class FileDownload(threading.Thread):
+    def __init__(self, url, comm_list, result_handler):
+        super(FileDownload, self).__init__()
+        self.url = url
+        self.comm_list = comm_list # [bytes, totalbytes, cancel_signal]
+        self.result_handler = result_handler
+
+    def run(self):
+        super(FileDownload, self).run()
+
+        CHUNK_SIZE=32768
+        for i in range(20): # TODO make cleaner
+            response = urllib2.urlopen(self.url)
+            total_size = response.info().getheader('Content-Length')
+            if total_size:
+                break
+            logging.info("Download Retry")
+        else:
+            logging.info("Download Failed")
+        total_size.strip()
+        total_size = int(total_size)
+        self.comm_list[1] = total_size
+        bytes_so_far = 0
+        data = StringIO.StringIO()
+
+        # download chunks
+        while not self.comm_list[2]:
+            chunk = response.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            bytes_so_far += len(chunk)
+            data.write(chunk)
+            self.comm_list[0] = bytes_so_far
+
+        data.seek(0)
+        
+        Clock.schedule_once(lambda dt: self.result_handler(data))
+
 class UpdatePopup(BasePopup):
     comm_list = ListProperty([0, 1, False]) # Lists allow passing a reference, whereas ints are copied
     def __init__(self, version_tag, url, **kwargs):
         self.version = version_tag
         super(UpdatePopup, self).__init__(**kwargs)
-        Download(url, self.comm_list, self.download_finished).start()
+        FileDownload(url, self.comm_list, self.download_finished).start()
 
     def download_finished(self, data):
         self.data = data
@@ -80,15 +118,9 @@ class UpdatePopup(BasePopup):
 
     def install(self):
         # as a convention klipper is always installed in HOME directory
-        install_dir = os.path.expanduser('~')
-        logging.info(type(self.data))
-        data_file = StringIO(self.data)
-        logging.info(data_file)
-
-        #self.data.seek(0)
-        info = tarfile.TarInfo(name=self.version)
-        info.size = len(self.data.encode('utf8'))
-        tar = tarfile.open(fileobj=data_file, tarinfo=info)
+        install_dir = "/Users/Konstantin/Desktop"#os.path.expanduser('~')
+        tar = tarfile.open(fileobj = self.data, mode = 'r|gz')
+        logging.info("extraxting {}".format(tar))
         tar.extractall(install_dir)
         tar.close()
 

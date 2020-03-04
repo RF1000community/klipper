@@ -279,7 +279,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                     self.print_done_time = done.strftime("tomorrow %-H:%M") # "ca. doesnt fit on screen
                 else:
                     self.print_done_time = done.strftime("ca. %a %-H:%M")
-            
+
 ##################################################################
 ### TUNING
 
@@ -326,7 +326,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def send_fan(self, speed):
         self.fan_speed = speed
         self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed/100.))
-    
+
     def get_pressure_advance(self):#gives pressure_advance value of 1. extruder for now
         self.pressure_advance = self.extruders[0].get_status(self.reactor.monotonic())['pressure_advance']
     def send_pressure_advance(self, val):
@@ -359,7 +359,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 val = Section.get(option)
             setattr(self, property_name, val)
         self.reactor.register_async_callback(read_config)
-    
+
     def set_config(self, section, option, value):
         logging.info("trying to set config section {} option {} to value {}".format(section, option, value))
         self.reactor.register_async_callback(lambda e: self.klipper_config_manager.set(section, option, value))

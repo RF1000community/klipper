@@ -45,10 +45,6 @@
             height: self.minimum_height
             pos: 0, root.height - self.height
             size_hint_y: None
-            SI_Switch:
-                left_title: "Light"
-            SI_Switch:
-                left_title: "Calibrate for every printjob"
             SetItem:
                 left_title: "Max. printhead Acceleration"
                 right_title: str(app.default_acceleration)+"mm/s²"
@@ -59,14 +55,17 @@
                 on_release: Factory.PressureAdvanceConfPopup(val=app.default_pressure_advance).open()
             SI_Wifi:
                 left_title: "Wifi"
+            SI_Timezone:
+                id: si_timezone
             SetItem:
                 left_title: "Shutdown..."
                 on_release: Factory.PowerPopup().open()
             SetItem:
                 left_title: "Update"
                 on_release: root.manager.current = "UpdateScreen"
-            SI_Timezone:
-                id: si_timezone
+            SetItem:
+                left_title: "Flash Microcontroller Firmware"
+                on_release: root.manater.current = "FlashScreen"
             Divider:
                 pos_hint: {'center_x':0.5}
 
@@ -140,7 +139,7 @@
         text: root.left_title
         font_size: p.normal_font
         text_size: self.size
-        size: root.size
+        size: root.width - root.height, root.height
         valign: 'middle'
         pos: root.pos
         padding_x: p.padding
