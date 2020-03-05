@@ -14,6 +14,9 @@ from kivy.uix.widget import Widget
 import parameters as p
 
 
+class Divider(Widget):
+    pass
+
 class BaseButton(Label):
 
     pressed = BooleanProperty(False)

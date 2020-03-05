@@ -22,50 +22,17 @@ class UpdateScreen(Screen):
         Clock.schedule_once(self.draw_releases, 0)
 
     def draw_releases(self, dt):
-        Download("https://api.github.com/repos/D4SK/klipperui/releases", [None,None,False], self.finish_drawing_releases).start()
+        #self.ids.message = "Installed Version: " + util.get_git_version(from_file=False)
+        
+        FileDownload("https://api.github.com/repos/D4SK/klipperui/releases", [None,None,False], self.finish_drawing_releases).start()
 
     def finish_drawing_releases(self, releases):
-        releases = json.JSONDecoder().decode(releases)
+        releases = json.load(releases)
         self.ids.box.clear_widgets()
 
         for release in releases:
             entry = SI_Release(release['tarball_url'], left_title = release['tag_name'], right_title = release['published_at'].split("T")[0])
             self.ids.box.add_widget(entry)
-
-class Download(threading.Thread):
-    def __init__(self, url, comm_list, result_handler):
-        super(Download, self).__init__()
-        self.url = url
-        self.comm_list = comm_list # [bytes, totalbytes, cancel_signal]
-        self.result_handler = result_handler
-
-    def run(self):
-        super(Download, self).run()
-        CHUNK_SIZE=32768
-        for i in range(20): # TODO make cleaner
-            response = urllib2.urlopen(self.url)
-            total_size = response.info().getheader('Content-Length')
-            if total_size:
-                break
-        else:
-            logging.info("Download Failed")
-        total_size.strip()
-        total_size = int(total_size)
-        self.comm_list[1] = total_size
-        bytes_so_far = 0
-        data = []
-
-        # download chunks
-        while not self.comm_list[2]:
-            chunk = response.read(CHUNK_SIZE)
-            if not chunk:
-                break
-            bytes_so_far += len(chunk)
-            data += chunk
-            self.comm_list[0] = bytes_so_far
-
-        result = "".join(data) # returns data as string
-        Clock.schedule_once(lambda dt: self.result_handler(result))
 
 class FileDownload(threading.Thread):
     def __init__(self, url, comm_list, result_handler):
@@ -76,17 +43,20 @@ class FileDownload(threading.Thread):
 
     def run(self):
         super(FileDownload, self).run()
-
         CHUNK_SIZE=32768
-        for i in range(20): # TODO make cleaner
-            response = urllib2.urlopen(self.url)
-            total_size = response.info().getheader('Content-Length')
-            if total_size:
+        for i in range(20):
+            try:
+                response = urllib2.urlopen(self.url)
+                total_size = response.info().getheader('Content-Length')
+                total_size.strip()
                 break
-            logging.info("Download Retry")
+
+            except Exception:
+                pass
+            logging.warning("Downlaod Retry")
         else:
-            logging.info("Download Failed")
-        total_size.strip()
+            logging.warning("Download Failure: with url: {}".format(self.url))
+            return
         total_size = int(total_size)
         self.comm_list[1] = total_size
         bytes_so_far = 0
@@ -100,9 +70,7 @@ class FileDownload(threading.Thread):
             bytes_so_far += len(chunk)
             data.write(chunk)
             self.comm_list[0] = bytes_so_far
-
         data.seek(0)
-        
         Clock.schedule_once(lambda dt: self.result_handler(data))
 
 class UpdatePopup(BasePopup):
@@ -118,7 +86,7 @@ class UpdatePopup(BasePopup):
 
     def install(self):
         # as a convention klipper is always installed in HOME directory
-        install_dir = "/Users/Konstantin/Desktop"#os.path.expanduser('~')
+        install_dir = os.path.expanduser('~')
         tar = tarfile.open(fileobj = self.data, mode = 'r|gz')
         logging.info("extraxting {}".format(tar))
         tar.extractall(install_dir)

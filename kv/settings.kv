@@ -2,7 +2,6 @@
 
 #:import Factory kivy.factory.Factory
 #:import screenmanager kivy.uix.screenmanager
-
 #:import p parameters
 
 <SettingTab@TabbedPanelItem>:
@@ -30,6 +29,8 @@
                 id: wifi_screen
             UpdateScreen:
                 id: update_screen
+            FlashScreen:
+                id: flash_screen
 
 <SettingScreen@Screen>:
     name: 'SettingScreen'
@@ -65,7 +66,7 @@
                 on_release: root.manager.current = "UpdateScreen"
             SetItem:
                 left_title: "Flash Microcontroller Firmware"
-                on_release: root.manater.current = "FlashScreen"
+                on_release: root.manager.current = "FlashScreen"
             Divider:
                 pos_hint: {'center_x':0.5}
 
@@ -89,14 +90,28 @@
 
 <UpdateScreen>:
     name: 'UpdateScreen'
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0,0
+            size: self.size
+    Divider:
+        pos_hint: {'center_x':0.5, 'top':1}
+    Label:
+        id: message
+        text: "Choose a Version to install"
+        font_size: p.large_font
+        text_size: self.size
+        size_hint: 1, 0.2
+        valign: 'top'
+        halign: 'left'
+        padding_x: p.padding
+        padding_y: p.padding - 10
+        pos_hint: {'x':0, 'top':1}
+        color: p.medium_light_gray
     ScrollView:
-        canvas.before:
-            Color:
-                rgba: p.background
-            Rectangle:
-                pos: self.pos
-                size: self.size
-        size_hint: 1, 1
+        size_hint: 1, 0.8
         pos_hint: {'x':0, 'y':0}
         do_scroll_x: False
         BoxLayout:
@@ -105,28 +120,163 @@
             height: self.minimum_height
             size_hint_y: None
 
-            Label:
-                text: "Host Software"
-                font_size: p.large_font
-                text_size: self.size
-                size: p.screen_width, 100
-                valign: 'top'
-                halign: 'left'
-                padding_x: p.padding
-                padding_y: p.padding
-                #pos_hint: {'x':0, 'top':1}
-                color: p.medium_light_gray
-            Label:
-                text: "Host Software"
-                font_size: p.large_font
-                text_size: self.size
-                size: p.screen_width, 100
-                valign: 'top'
-                halign: 'left'
-                padding_x: p.padding
-                padding_y: p.padding
-                #pos_hint: {'x':0, 'top':1}
-                color: p.medium_light_gray
+<FlashScreen>:
+    name: 'FlashScreen'
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0,0
+            size: self.size
+    Divider:
+        pos_hint: {'center_x':0.5, 'top':1}
+    Label:
+        id: message
+        text: "Configure Firmware to flash to Printer Controlboard"
+        font_size: p.large_font
+        text_size: self.size
+        size_hint: 1, 0.2
+        valign: 'top'
+        halign: 'left'
+        padding_x: p.padding
+        padding_y: p.padding - 10
+        pos_hint: {'x':0, 'top':1}
+        color: p.medium_light_gray
+    Divider:
+        y: message.y
+    ScrollView:
+        size_hint: 1, 0.8
+        pos_hint: {'x':0, 'y':0}
+        do_scroll_x: False
+        BoxLayout:
+            id: box
+            orientation: 'vertical'
+            height: self.minimum_height
+            size_hint_y: None
+
+<Btn_Radio@BaseButton>:
+    selected: True
+    size_hint: None, None
+    size: 35, 34
+    canvas:
+        Color:
+            rgba: p.medium_gray
+        Ellipse:
+            size: self.size
+            pos: self.pos
+        Color:
+            rgba: (1,1,1,1) if self.selected else (0,0,0,0)
+        Ellipse:
+            pos: self.x + 6, self.y + 6
+            size: self.width - 12, self.height - 12
+
+<Btn_Tristate@BaseButton>:
+    state: 2 # 0=False, 1=True, 2=M (if available)
+    states: 3
+    size_hint: None, None
+    size: 38, 37
+    on_release: self.state = (self.state + 1) % self.states #cycle through states
+    canvas.before:
+        Color:
+            rgba: p.medium_gray
+        RoundedRectangle:
+            radius: (p.icon_radius,)
+            size: self.size
+            pos: self.pos
+        Color:
+            rgba: (1,1,1,1) if self.state else (0,0,0,0)
+        RoundedRectangle:
+            radius: (p.icon_radius/2,)
+            pos: self.x + 5, self.y + 5
+            size: self.width - 10, self.height - 10
+        Color:
+            rgba: (0,0,0,0.3) if self.state == 1 else (0,0,0,0)
+        Line:
+            width: 2
+            points: self.center_x -10, self.center_y,     self.center_x-2.5, self.center_y -9,     self.center_x + 10, self.center_y + 7
+    Label:
+        text: "M" if root.state == 2 else ""
+        bold: True
+        font_size: p.normal_font
+        color: p.medium_gray
+        size: root.size
+        pos: root.pos
+        text_size: self.size
+        valign: 'middle'
+        halign: 'center'
+       
+<CI_Tristate>:
+    size: p.screen_width, 80
+    size_hint: None, None
+    state: 0
+    states: 2
+    indent: 0
+    text: "Tristate"
+    font_size: p.normal_font
+    text_size: self.size
+    valign: 'middle'
+    halign: 'right'
+    padding_x: p.padding
+    Btn_Tristate:
+        states: root.states
+        state: root.state
+        x: p.padding + root.indent*p.padding
+        center_y: root.center_y
+
+<CI_Radio>:
+    selected: False
+    size: p.screen_width, 80
+    size_hint: None, None
+    indent: 0
+    text: "Radio"
+    font_size: p.normal_font
+    text_size: self.size
+    valign: 'middle'
+    halign: 'right'
+    padding_x: p.padding
+    Btn_Radio:
+        selected: root.selected
+        x: p.padding + root.indent*p.padding
+        center_y: root.center_y
+
+<CI_Value>:
+    value: ""
+    size_hint: None, None
+    size: p.screen_width, 80
+    indent: 0
+    text: "Value"
+    font_size: p.normal_font
+    text_size: self.size
+    valign: 'middle'
+    halign: 'right'
+    padding_x: p.padding
+    TextInput:
+        text: root.value
+        id: text_input
+        multiline: False
+        size_hint: None, None
+        font_size: p.normal_font
+        foreground_color: p.light_gray if root.locked else (1,1,1,1)
+        height: p.normal_font + 15
+        valign: 'middle'
+        width: 150
+        background_color: p.medium_gray
+        cursor_color: (1,1,1,1)
+        x: p.padding
+        center_y: root.center_y
+
+<CI_Text>:
+    size_hint: None, None
+    size: p.screen_width, 80
+    indent: 0
+    text: "Text"
+    font_size: p.large_font
+    text_size: self.size
+    valign: 'middle'
+    color: p.medium_light_gray
+    halign: 'left'
+    padding_x: p.padding * (self.indent + 1)
+  
 
 # SETITEMS
 

@@ -33,6 +33,7 @@ from home import *
 from settings import *
 from status import *
 from update import *
+from kconfig_ui import *
 import parameters as p
 
 
