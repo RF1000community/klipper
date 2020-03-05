@@ -127,7 +127,7 @@ class Notifications(FloatLayout):
         self.x = self.root_widget.x + p.notification_padding
         self.top = self.root_widget.top - p.notification_padding
         with self.canvas:
-            Color(rgb=p.background[:3], a=0.8)
+            Color(rgb=p.notification_shadow)
             BorderImage(
                 source=p.kgui_dir+'/logos/shadow.png',
                 pos=(self.x-64, self.y-64),
@@ -156,6 +156,7 @@ class Notifications(FloatLayout):
         message.top = title.y - p.notification_text_padding/2
         self.add_widget(message)
         self.message_label = message
+
         self.initialized = True
         if self.early_notification is not None:
             self.show(**self.early_notification)
@@ -174,7 +175,7 @@ class Notifications(FloatLayout):
                             Never automatically hide for any negative value.
         color   rgba list   Background color of the notification. Overwrites the
                 or string   value set by the level preset. Can also be the name of
-                            different preset that the specified log level.
+                            different preset than the specified log level.
         """
         if not self.initialized:
             self.early_notification = {"title": title, "message": message,
