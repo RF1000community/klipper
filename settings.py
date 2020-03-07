@@ -267,7 +267,7 @@ class SI_Wifi(SetItem):
     def __init__(self, **kwargs):
         super(SI_Wifi, self).__init__(**kwargs)
         self.network_manager = App.get_running_app().network_manager
-        self.network_manager.bind(on_connected_ssid=self.update)
+        self.network_manager.bind(connected_ssid=self.update)
         # Set default messages after everything is set up and running
         Clock.schedule_once(self.late_setup, 0)
 

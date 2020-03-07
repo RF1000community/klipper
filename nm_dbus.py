@@ -116,8 +116,8 @@ class NetworkManager(EventDispatcher, Thread):
         """
         if "LastScan" in props:
             self.handle_scan_complete()
-        if "ActiveConnection" in props:
-            self.handle_connected_ssid(props['ActiveConnection'])
+        if "ActiveAccessPoint" in props:
+            self.handle_connected_ssid(props['ActiveAccessPoint'])
 
     def handle_new_connection(self, state, reason):
         """
@@ -131,7 +131,6 @@ class NetworkManager(EventDispatcher, Thread):
         """
         if state > 2: # DEACTIVATING or DEACTIVATED
             self.dispatch('on_connect_failed')
-            print(state, reason)
         if state in (2, 4): # ACTIVATED or DEACTIVATED
             # done, no need to listen further
             self.new_connection_subscription.disconnect()
@@ -187,14 +186,13 @@ class NetworkManager(EventDispatcher, Thread):
         Sets the ssid of the currently connected wifi connection.
         If no wifi connection currently exists, set "".
         """
-        if active_path == "/" or active_path not in self.nm.ActiveConnections:
+        if active_path == "/":
             # There is no wifi connection right now
             self.connected_ssid = ""
         else:
             active = self.bus.get(_NM, active_path)
             # The id which isn't guaranteed to be, but by default is the ssid
-            self.connected_ssid = active.Id
-
+            self.connected_ssid = _bytes_to_string(active.Ssid)
 
     def set_scan_frequency(self, freq):
         """
@@ -341,11 +339,7 @@ class AccessPoint(object):
         self._path = path
 
         self.b_ssid = self._proxy.Ssid # type: ay
-        #PYTHON3: self.ssid = str(bytes(self.b_ssid).decode('utf-8'))
-        self.ssid = "" # SSID string
-        for c in self.b_ssid:
-            # Will generate stupid things (e.g. '\xc8') for unicode chars
-            self.ssid += chr(c)
+        self.ssid = _bytes_to_string(self.b_ssid)
         self.signal = self._proxy.Strength # type: y, Sinal strength
         self.freq = self._proxy.Frequency # type: u, Radio channel frequency in MHz
         self.saved = self.b_ssid in self._network_manager.saved_ssids # whether the connection is known
@@ -365,3 +359,11 @@ class AccessPoint(object):
 
     def delete(self):
         self._network_manager.wifi_delete(self)
+
+def _bytes_to_string(b):
+    #PYTHON3: self.ssid = str(bytes(self.b_ssid).decode('utf-8'))
+    # Will generate stupid things (e.g. '\xc8') for unicode chars
+    s = ""
+    for c in b:
+        s += chr(c)
+    return s
