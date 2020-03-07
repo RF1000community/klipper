@@ -1,8 +1,6 @@
 # coding: utf-8
-from functools import partial
-from subprocess import Popen, PIPE, STDOUT
 import logging
-import os, time
+import os
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -20,233 +18,6 @@ from kivy.uix.screenmanager import Screen
 
 from elements import *
 import parameters as p
-
-
-class Wifi(EventDispatcher):
-
-    #How often to rescan. 0 means never (disabled)
-    update_freq = NumericProperty(15)
-    connection_types = DictProperty({'wifi': False, 'eth': False})
-
-    def __init__(self, **kwargs):
-        super(Wifi, self).__init__(**kwargs)
-        self.state = self.check_nmcli()
-        self.register_event_type('on_networks')
-        self.register_event_type('on_wrong_pw')
-        self.scan_output = self.connections_output = None
-        self.update_clock = None
-        self.networks = []
-        Clock.schedule_once(partial(self.get_wifi_list, True), 1)
-        if self.state == 0:
-            self.update_clock = Clock.schedule_interval(self.get_wifi_list, self.update_freq)
-
-    def check_nmcli(self):
-        # state codes:
-        #
-        # 0     No problems
-        # 2     network-manager not installed
-        # 3     network-manager not running
-        # 10    Any Error while running nmcli
-
-        try:
-            proc = Popen(['nmcli', '-g', 'RUNNING', 'general'], stdout=PIPE, stderr=STDOUT, universal_newlines=True)
-        except OSError as e:
-            # errno 2 is "No such file or directory" error
-            if e.errno == 2:
-                Logger.error("Wifi: NetworkManager not available. Wifimenu will be disabled. ")
-                Logger.error("Wifi: Use 'sudo apt-get install network-manager' to install")
-                return 2
-            else:
-                # crash in case of unknown error
-                Logger.critical('Wifi: NetworkManager failed with Error:')
-                raise
-        stdout, stderr = proc.communicate()
-        if stdout.rstrip('\n') == 'running':
-            return 0
-        else:
-            Logger.error('Wifi: NetworkManager not running:')
-            if stdout or stderr:
-                Logger.error('NetworkManager: ', stdout, stderr)
-            return 3
-
-    def on_update_freq(self, instance, value):
-        return
-        if self.update_clock:
-            self.update_clock.cancel()
-        if self.state:
-            return
-        if value > 0:
-            self.get_wifi_list()
-            self.update_clock = Clock.schedule_interval(self.get_wifi_list, value)
-
-    def get_wifi_list(self, dt=0, no_rescan=False):
-        # no_rescan: when True set --rescan to no to immediately (still ~100ms delay) return a list, even if
-        # it is too old. Otherwise rescan if necessary (handled by using 'auto'), possibly taking a few
-        # seconds, unless the latest rescan was very recent.
-        # bind to on_networks event to receive the final list
-        if self.state:
-            return
-        self.get_connection_types()
-        rescan = 'no' if no_rescan else 'auto'
-        cmd = ['nmcli', '--get-values', 'SIGNAL,IN-USE,SSID', 'device', 'wifi', 'list', '--rescan', rescan]
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        self.poll(proc, self.parse_wifi_list)
-        # Also get the list of stored connections to apply to the wifi list
-        ccmd = ['nmcli', '--get-values', 'NAME', 'connection', 'show']
-        cproc = Popen(ccmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        self.poll(cproc, self.parse_connections)
-
-    def poll(self, proc, callback, *args):
-        # This function keeps checking whether the given process is done and only forwards it
-        # to the given callback once it is complete, which is checked by Popen.poll(), which
-        # returns the returncode when the process is complete.
-        # accept *args to catch dt from Clock if provided
-        # if process is still running
-        if proc.poll() == None:
-            # partial returns a new callable with the given default args
-            # because Clock itself can't add args to the callback
-            Clock.schedule_once(partial(self.poll, proc, callback), 0)
-        # if process is done forward to callback
-        else:
-            if callback:
-                callback(proc)
-            else:
-                # If no callback was provided forward directly to error handling
-                self.nmcli_error_handling(proc)
-
-    def nmcli_error_handling(self, proc):
-        stdout, stderr = proc.communicate()
-        returncode = proc.returncode
-        app = App.get_running_app()
-        if not hasattr(app, 'notify'): return #to prevent an Exception when notify isnt available yet (happens on FIRMWARE_RESATRT)
-        notify = app.notify
-        if stderr:
-            Logger.info('NetworkManager: ' + stderr.strip())
-        if "Secrets were required, but not provided" in stdout:
-            self.dispatch('on_wrong_pw')
-            notify.show("Wrong password", "Secrets were required, but not provided.", level="warning")
-        if returncode ==3:
-            notify.show("NetworkManager timeout", "Operation timed out. Please try again later.", level="warning")
-        elif 4 <= returncode <= 7:
-            notify.show("NetworkManager", "Operation failed. Please try again later", level="warning")
-        elif returncode == 8:
-            Logger.error('Wifi: NetworkManager not running')
-            self.state = 3
-        elif returncode == 10:
-            notify.show("NetworkManager", "Network not found. Please try again later", level="warning")
-        elif returncode != 0:
-            self.state = 10
-            Logger.error("NetworkManager: nmcli failed, returning " + str(returncode))
-        else:
-            # Finally, if everything is fine, return standard output. Otherwise None is returned
-            return stdout
-
-    def parse_connections(self, proc):
-        self.parse_wifi_list(proc, True)
-
-    def parse_wifi_list(self, proc, connections=False):
-        stdout = self.nmcli_error_handling(proc)
-        if not stdout:
-            return
-
-        # Remember the output for each command
-        if not connections:
-            self.scan_output = stdout
-        elif connections:
-            self.connections_output = stdout
-
-        # Only proceed if output of both commands is present
-        if self.scan_output and self.connections_output:
-            wifi_list = []
-            for wifi in self.scan_output.splitlines():
-                # Only allow two splits in case some doofus puts ':' in the wifi name
-                f = wifi.split(':', 2)
-                in_use = '*' in f[1]
-                # create a dictionary for each network containing the fields
-                entry = {'signal': int(f[0]), 'in-use': in_use, 'ssid': f[2]}
-                stored = entry['ssid'] in self.connections_output.splitlines()
-                entry['stored'] = stored
-                # Put in-use network to beginning of list
-                if entry['in-use']:
-                    wifi_list.insert(0, entry)
-                else:
-                    wifi_list.append(entry)
-            self.networks = wifi_list
-            self.dispatch('on_networks', self.networks)
-            # Reset output cache for next update
-            self.scan_output = self.connections_output = None
-
-    def connect(self, ssid, password):
-        # Connect a new, unknown network
-        if self.state:
-            return
-        cmd = ['nmcli', 'device', 'wifi', 'connect', ssid, 'password', password]
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        self.poll(proc, self.process_connections)
-
-    def up(self, ssid):
-        # Connect to an existing wifi connection
-        if self.state:
-            return
-        cmd = ['nmcli', 'connection', 'up', ssid]
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        self.poll(proc, self.process_connections)
-
-    def down(self, ssid):
-        # Disconnect a connected wifi network and disable autoconnect until next reboot
-        if self.state:
-            return
-        cmd = ['nmcli', 'connection', 'down', ssid]
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        self.poll(proc, self.process_connections)
-
-    def delete(self, ssid):
-        # Remove a connection along with its stored password
-        if self.state:
-            return
-        cmd = ['nmcli', 'connection', 'delete', ssid]
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        self.poll(proc, self.process_connections)
-
-    def process_connections(self, proc):
-        # Receive finished processes to change connections (up, down, delete, connect)
-        stdout = self.nmcli_error_handling(proc)
-        if not stdout:
-            return
-
-        # Somehow requesting the wifi list right after some actions returns empty output
-        Clock.schedule_once(partial(self.get_wifi_list, no_rescan=True), 1)
-
-    def get_connection_types(self, *args):
-        if self.state:
-            return
-        cmd = ['nmcli', '--get-values', 'TYPE', 'connection', 'show', '--active']
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        self.poll(proc, self.parse_connection_types)
-
-    def parse_connection_types(self, proc):
-        stdout = self.nmcli_error_handling(proc)
-        if not stdout:
-            return
-
-        wifi = eth = False
-        for i in stdout.splitlines():
-            if i.endswith("wireless"):
-                wifi = True
-            elif i.endswith("ethernet"):
-                eth = True
-        self.connection_types['wifi'] = wifi
-        self.connection_types['eth'] = wifi
-
-
-    def on_networks(self, value):
-        Logger.debug('Wifi: Wifi scan complete returning {} networks'.format(len(value)))
-
-    def on_wrong_pw(self, value):
-        pass
-
-
-wifi = Wifi()
 
 
 class RectangleButton(BaseButton):
@@ -401,7 +172,8 @@ class PasswordPopup(BasePopup):
         try:
             self.ap.connect(self.password)
         except:
-            self.app.notify.show("Connection Failed", "Find out why", delay=4)
+            self.app.notify.show("Connection Failed", "Find out why",
+                    delay=4, level="warning")
         self.dismiss()
 
     def connect_failed(self, instance):
@@ -417,7 +189,8 @@ class PasswordPopup(BasePopup):
 class ConnectionPopup(BasePopup):
 
     def __init__(self, ap, **kwargs):
-        self.network_manager = App.get_running_app().network_manager
+        self.app = App.get_running_app()
+        self.network_manager = self.app.network_manager
         self.ap = ap
         super(ConnectionPopup, self).__init__(**kwargs)
 
@@ -428,15 +201,27 @@ class ConnectionPopup(BasePopup):
             self.up()
 
     def up(self):
-        self.ap.up()
+        try:
+            self.ap.up()
+        except:
+            self.app.notify.show("Connection failed",
+                    "Please try again later", delay=6, level="warning")
         self.dismiss()
 
     def down(self):
-        self.ap.down()
+        try:
+            self.ap.down()
+        except:
+            self.app.notify.show("Failed to disconnect",
+                    "Please try again later", delay=6, level="warning")
         self.dismiss()
 
     def delete(self):
-        self.ap.delete()
+        try:
+            self.ap.delete()
+        except:
+            self.app.notify.show("Failed to delete connection",
+                    "Please try again later", delay=6, level="warning")
         self.dismiss()
 
 class SI_Timezone(SetItem):

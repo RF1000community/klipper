@@ -11,7 +11,6 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
 import parameters as p
-from settings import wifi
 
 
 class TimeLabel(Label):
@@ -39,24 +38,25 @@ class TimeLabel(Label):
 class ConnectionIcon(Widget):
 
     def __init__(self, **kwargs):
+        self.network_manager = App.get_running_app().network_manager
         self.topright = []
-        super(ConnectionIcon, self).__init__(**kwargs)
-        Clock.schedule_once(self.init_drawing, 0)
-
-        self.show_wifi = False
-        self.show_eth = False
-        wifi.bind(on_connection_types=self.set_icon)
-        wifi.bind(on_networks=self.update_wifi)
-
-    def init_drawing(self, dt):
+        self.signal = 1
         self.icon_padding = 2
         self.transparent = (0, 0, 0, 0)
+        super(ConnectionIcon, self).__init__(**kwargs)
+
+        self.signal_timer = None # Clock timer for requesting signal strength
+        self.network_manager.bind(connection_type=self.set_icon)
+
+        Clock.schedule_once(self.init_drawing, 0)
+
+    def init_drawing(self, dt):
         with self.canvas:
             self.wifi_color = Color(rgba=self.transparent)
             self.wifi = Ellipse(pos=(0, 0), size=(0, 0), angle_start=315, angle_end=405)
-            self.eth_color = Color(rgba=p.red)
+            self.eth_color = Color(rgba=self.transparent)
             self.eth = Rectangle(pos=(0, 0), size=(0, 0), source="logos/ethernet.png")
-        self.draw_nothing()
+        self.set_icon(None, self.network_manager.connection_type)
 
     def draw_wifi(self):
         padding = self.icon_padding
@@ -86,7 +86,7 @@ class ConnectionIcon(Widget):
         pos = [self.topright[0] - size[0] - padding,
                self.topright[1] - size[1] - padding]
 
-        self.eth_color.rgba = p.medium_gray
+        self.eth_color.rgba = p.translucent_white
         self.wifi_color.rgba = self.transparent
 
         self.eth.pos = pos
@@ -94,18 +94,22 @@ class ConnectionIcon(Widget):
 
     def draw_nothing(self):
         self.width = 0
-        self.eth_color.rgba = self.wifi_color.rgba = self.transparent
+        self.eth_color.rgba = self.transparent
+        self.wifi_color.rgba = self.transparent
 
     def set_icon(self, instance, value):
-        if value['eth']:
+        if self.signal_timer is not None:
+            self.signal_timer.cancel()
+        if value == "ethernet":
             self.draw_eth()
-        elif value['wifi']:
-            self.draw_wifi()
+        elif value == "wireless":
+            self.signal_timer = Clock.schedule_interval(self.update_wifi, 4)
+            self.update_wifi() # Takes care of drawing too
         else:
             self.draw_nothing()
 
-    def update_wifi(self, instance, value):
-        self.signal = value[0]['signal'] / 100.0
+    def update_wifi(self, *args):
+        self.signal = self.network_manager.get_connection_strength() / 100.0
         self.draw_wifi()
 
 

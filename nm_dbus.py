@@ -102,12 +102,12 @@ class NetworkManager(EventDispatcher, Thread):
         if "PrimaryConnectionType" in props:
             # Connection Type changed
             con_type = props['PrimaryConnectionType']
-            if con_type == '': # No active connection
-                self.connection_type = "none"
-            elif con_type == '802-3-ethernet': # TODO verify this is the correct string
+            if con_type == '802-3-ethernet':
                 self.connection_type = "ethernet"
             elif con_type == '802-11-wireless': # Wi-Fi connected
                 self.connection_type = "wireless"
+            else: # No active connection
+                self.connection_type = "none"
 
     def handle_wifi_dev_props(self, iface, props, inval):
         """
@@ -149,6 +149,12 @@ class NetworkManager(EventDispatcher, Thread):
         """
         # Needed to accurately build AccessPoint objects
         self.saved_ssids = self.get_saved_ssids()
+        access_points = []
+        for path in self.wifi_dev.AccessPoints:
+            try:
+                access_points.append(AccessPoint(self, path))
+            except: # DBus sometimes throws a random error here
+                continue
         access_points = [AccessPoint(self, path) for path in self.wifi_dev.AccessPoints]
         # Sort by signal strength and then by 'in-use'
         access_points.sort(key=lambda x: x.signal, reverse=True)
@@ -260,7 +266,7 @@ class NetworkManager(EventDispatcher, Thread):
     def wifi_up(self, ap):
         """Activate a connection that is already stored"""
         if not (ap._path in self.wifi_dev.AccessPoints and ap.saved):
-            raise Exception("Can't activate connection " + ssid)
+            raise Exception("Can't activate connection " + ap.ssid)
         active = self.nm.ActivateConnection("/", self.wifi_dev._path, ap._path)
         active = self.bus.get(_NM, active)
         self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
