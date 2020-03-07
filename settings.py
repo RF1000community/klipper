@@ -44,7 +44,7 @@ class SI_Wifi(SetItem):
 
     def late_setup(self, dt):
         if self.network_manager.available:
-            self.display = [self.network_manager.connected_ssid or "...",
+            self.display = [self.network_manager.connected_ssid or "not_connected",
                 bool(self.network_manager.connected_ssid)]
         else:
             self.display = ['not available', False]
@@ -59,7 +59,7 @@ class SI_Wifi(SetItem):
         """Called whenever the active wifi connection changes"""
         if value:
             self.display = [value, True]
-        else: # value = "" <==> currently no wifi connection
+        else: # value = "" <=> currently no wifi connection
             self.display = ['not connected', False]
 
     def on_display(self, instance, value):

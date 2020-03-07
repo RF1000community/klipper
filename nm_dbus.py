@@ -1,19 +1,15 @@
 # coding: utf-8
-
 """
-Needs python-gobject or python-gi
+Needs python-gobject (sometimes called python-gi)
 and python-pydbus
 
-TODO:
-    account for wifi access points with no security
-
+NOTES:
 In case no password is required, ap.Flags and ap.RsnFlags are both 0x0.
 In case PSK is supported, at least ap.Flags has 0x1
 and ap.RsnFlags must have 0x100.
 
 eduroam with wpa-enterprise? has 0x200, but not 0x100 in RsnFlags.
 """
-
 from gi.repository import GLib
 from kivy.event import EventDispatcher
 from kivy.properties import OptionProperty, BooleanProperty, StringProperty
@@ -146,6 +142,9 @@ class NetworkManager(EventDispatcher, Thread):
         in-use  whether we are currently connected with the wifi
         saved   whether the connection is already known and saved
         path    the dbus object path of the access point.
+
+        WARNING: Because of some DBus calls, this function can take
+        from 0.5 up to 5 seconds to complete.
         """
         # Needed to accurately build AccessPoint objects
         self.saved_ssids = self.get_saved_ssids()
@@ -155,7 +154,6 @@ class NetworkManager(EventDispatcher, Thread):
                 access_points.append(AccessPoint(self, path))
             except: # DBus sometimes throws a random error here
                 continue
-        access_points = [AccessPoint(self, path) for path in self.wifi_dev.AccessPoints]
         # Sort by signal strength and then by 'in-use'
         access_points.sort(key=lambda x: x.signal, reverse=True)
         access_points.sort(key=lambda x: x.in_use, reverse=True)
@@ -207,7 +205,6 @@ class NetworkManager(EventDispatcher, Thread):
         If freq is 0, the rescan clock is cancelled.
         """
         if freq == 0:
-
             if self.scan_timer_id:
                 GLib.source_remove(self.scan_timer_id)
                 self.scan_timer_id = None
@@ -270,7 +267,6 @@ class NetworkManager(EventDispatcher, Thread):
         active = self.nm.ActivateConnection("/", self.wifi_dev._path, ap._path)
         active = self.bus.get(_NM, active)
         self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
-        self.handle_scan_complete()
 
     def wifi_down(self):
         """Deactivate the currently active wifi connection, if any"""
@@ -278,7 +274,6 @@ class NetworkManager(EventDispatcher, Thread):
         if active == "/":
             return False
         self.nm.DeactivateConnection(active)
-        self.handle_scan_complete()
         return True
 
     def wifi_delete(self, ap):
@@ -340,19 +335,26 @@ class AccessPoint(object):
     """Simpler wrapper class for dbus' AccessPoint proxy objects"""
 
     def __init__(self, network_manager, path):
-        self._network_manager = network_manager # the running NetworkManager instance
+        # the running NetworkManager instance
+        self._network_manager = network_manager
         self._proxy = self._network_manager.bus.get(_NM, path)
         self._path = path
 
         self.b_ssid = self._proxy.Ssid # type: ay
         self.ssid = _bytes_to_string(self.b_ssid)
-        self.signal = self._proxy.Strength # type: y, Sinal strength
-        self.freq = self._proxy.Frequency # type: u, Radio channel frequency in MHz
-        self.saved = self.b_ssid in self._network_manager.saved_ssids # whether the connection is known
-        self.in_use = self._path == self._network_manager.wifi_dev.ActiveAccessPoint # whether we are connected with this connection
-        security_flags = self._proxy.RsnFlags or self._proxy.WpaFlags # whichever is not 0x0
-        self.encrypted = bool(self._proxy.Flags) # False when no password is required, True otherwise
-        self.supports_psk = security_flags & 0x100 # Pre-shared Key encryption is supported
+        self.signal = self._proxy.Strength # type: y, Signal strength
+        # type: u, Radio channel frequency in MHz
+        self.freq = self._proxy.Frequency
+        # whether the connection is known
+        self.saved = self.b_ssid in self._network_manager.saved_ssids
+        # whether we are connected with this connection
+        self.in_use = self._path == self._network_manager.wifi_dev.ActiveAccessPoint
+        # whichever is not 0x0
+        security_flags = self._proxy.RsnFlags or self._proxy.WpaFlags
+        # False when no password is required, True otherwise
+        self.encrypted = bool(self._proxy.Flags)
+        # Pre-shared Key encryption is supported
+        self.supports_psk = security_flags & 0x100
 
     def connect(self, password=None):
         self._network_manager.wifi_connect(self, password)
@@ -367,6 +369,7 @@ class AccessPoint(object):
         self._network_manager.wifi_delete(self)
 
 def _bytes_to_string(b):
+    """Helper function to transform a bytearray to a string"""
     #PYTHON3: self.ssid = str(bytes(self.b_ssid).decode('utf-8'))
     # Will generate stupid things (e.g. '\xc8') for unicode chars
     s = ""
