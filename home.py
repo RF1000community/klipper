@@ -205,69 +205,87 @@ class ExtTempOffsetSlider(UltraOffsetSlider):
         if x < self.px_min: x = self.px_min
         return x
 """
-
-class Option(RoundButton):
-    option_color = ListProperty([0,0,0,0])
-    def __init__(self, box_color, **kwargs):
-        if box_color is not None:
-            self.option_color = box_color + [1]
-        super(Option, self).__init__(**kwargs)
-
-    def on_release(self):
-        self.selected = True
-
-class OptionBox(FloatLayout, Widget):
-    def __init__(self, **kwargs):
+class FilamentChooserPopup(BasePopup):
+    tab = BooleanProperty(False) # 0 left tab, 1 right tab
+    def __init__(self, tool_id, **kwargs):
+        super(FilamentChooserPopup, self).__init__(**kwargs)
+        self.app = App.get_running_app()
+        self.tool_id = tool_id
         self.selected = None
-        self.options = [["PLA", [1,0,0], None], ["PETG", [0,0,1], None],["ABS", [0,1,0], None],["PP", None, None],["PC", None, None]]
-        super(OptionBox, self).__init__(**kwargs)
-        Clock.schedule_once(self.init_drawing, 0)
+        self.selected_type = None
+        self.selected_brand = None
+        self.selected_color = None
+        Clock.schedule_once(self.get_my_materials, 0)
+        Clock.schedule_once(self.get_library, 0)
 
-    def init_drawing(self, dt):
-        for o in self.options:
-            o[2] = Option(y=self.y + 200, text=o[0], box_color=o[1])
-            o[2].bind(on_release=self.on_selected)
-            self.ids.stack.add_widget(o[2])
+        Clock.schedule_once(self.draw_options, 0)
+
+    def get_library(self, dt=None):
+        self.material_library = []
+        self.material_library.append([[typ, None, None] for typ in self.app.filament_manager.tmc_to_guid.keys()])
+
+    def get_my_materials(self, dt=None):
+        self.my_materials = [[["Vellemann PLA", [1,0,0], None], ["PETG", [0,0,1], None],["ABS", [0,1,0], None],["PP", None, None],["PC", None, None]]]
+
+    def draw_options(self, dt=None):
+        self.ids.option_stack.clear_widgets()
+        first = True
+        if self.tab:
+            options = self.my_materials
+        else:
+            options = self.material_library
+        
+        for group in options:
+            if not first:
+                self.ids.option_stack.add_widget(OptionDivider())
+            else:
+                first = False
+            for option in group:
+                logging.info(option)
+                option[2] = Option(y=self.y + 200, text=option[0], box_color=option[1])
+                option[2].bind(on_press=self.on_selected)
+                self.ids.option_stack.add_widget(option[2])
+
+    def on_tab(self, instance, tab):
+        self.draw_options()
 
     def on_selected(self, option):
         if self.selected:
             self.selected.selected = False
         self.selected = option
 
+class Option(BaseButton):
+    option_color = ListProperty([0,0,0,0])
+    def __init__(self, box_color, **kwargs):
+        if box_color is not None:
+            self.option_color = calculate_filament_color(box_color) + [1]
+        super(Option, self).__init__(**kwargs)
+
+    def on_press(self):
+        self.selected = True
+
+class OptionDivider(Widget):
+    pass
+
 class BtnTriple(Widget):
     filament_color = ListProperty([random.randint(0,100)/100. for i in range(3)])
     filament_color_adjusted = ListProperty([0,0,0])
     filament_amount = NumericProperty(0.6)
-    divider_color = ListProperty([1,1,1,0])
 
     def __init__(self, **kwargs):
         super(BtnTriple, self).__init__(**kwargs)
-        Clock.schedule_once(self.calculate_colors, 0)
-
-    def calculate_colors(self, *args):
-        """
-        From self.filament_color calculate bg and label colors such
-        that everything is clearly visible.
-        """
-        l = self.lightness(*self.filament_color)
-        # add divider if lightness is too close to background
-        if abs(l - self.lightness(*p.background[:3])) < 0.07:
-            self.divider_color = [1,1,1,0.15]
-        else:
-            self.divider_color = [0,0,0,0]
-        # darken if color is to bright
-        if l > 0.48:
-            self.filament_color_adjusted = [c*0.48/l for c in self.filament_color]
-        else:
-            self.filament_color_adjusted = self.filament_color
-
-    def lightness(self, r, g, b):
-        """
-        Returns the lightness of an rgb color.
-        This is equal to the average between the minimum and
-        maximum value.
-        """
-        return 0.5*(max(r, g, b) + min(r, g, b))
+        Clock.schedule_once(self.on_filament_color, 0)
 
     def on_filament_color(self, *args):
-        self.calculate_colors()
+        self.filament_color_adjusted = calculate_filament_color(self.filament_color)
+
+def calculate_filament_color(filament_color):
+    # Calculate the lightness of an rgb color.
+    # This is equal to the average between the minimum and
+    # maximum value.
+    l = 0.5*(max(filament_color) + min(filament_color))
+    # darken if color is to bright
+    if l > 0.48:
+        return [c*0.48/l for c in filament_color]
+    else:
+        return filament_color

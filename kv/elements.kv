@@ -38,7 +38,13 @@
 <FloatingButton@BaseButton>:
     btn_color: (0,0,0,0)
     size: 74 * p.disp_vertical_stretch, 74
-    canvas:
+    bold: True
+    halign: 'center'
+    valign: 'middle'
+    text_size: self.size
+    font_size: p.normal_font
+    color: (1,1,1,1)
+    canvas.before:
         Color:
             rgba: self.btn_color if self.enabled else (0,0,0,0)
         Ellipse:
@@ -50,7 +56,7 @@
             size: self.size
             pos: self.pos
 
-# Is this needed
+# Basic button for future use
 #<Btn@RoundButton>:
 #    canvas:
 #        Color:
@@ -211,7 +217,7 @@
 # MISC
 
 <TitleBar@BaseButton>:
-    size: 140, 110
+    size: 150, 110
     enabled: False
     title: ""
     #: set q 26

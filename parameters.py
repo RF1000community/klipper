@@ -39,7 +39,7 @@ btn_temp_width = 158
 btn_width = screen_width - 3*h_padding - btn_temp_width
 
 background = [0.065,0.065,0.065,1]
-notification_shadow = (0.065, 0.065, 0.065, 0.6)
+notification_shadow = (0.065, 0.065, 0.065, 0.6) #doesnt do anything
 popup = (0.15,0.15,0.15,1)
 divider = (1,1,1,0.09)
 btn = (1,1,1,0.08)

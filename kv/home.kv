@@ -128,7 +128,7 @@
                 #:set bx2 +19
                 #:set bh 40
                 #:set bo 16
-                #:set icon_center 26
+                #:set icon_center 25 #25 so its above tab icons
                 Line:
                     width: p.icon_radius
                     points: self.x + icon_center - bw/2, self.center_y - p.btn_height/2 + p.icon_radius,   self.x + icon_center + bw/2, self.center_y - p.btn_height/2 + p.icon_radius
@@ -149,7 +149,7 @@
             w1: p.btn_height
             w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
-            id: btn_tr_T1
+            tool_id: 'T1'
             y: p.padding if app.extruder_count > 1 else p.mars
             right: p.screen_width - p.h_padding
         BtnTriple:
@@ -157,6 +157,7 @@
             w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
             id: btn_tr_T0
+            tool_id: 'T0'
             y: p.padding*2 + p.btn_height
             right: p.screen_width - p.h_padding
         Btn_Outline:
@@ -164,7 +165,7 @@
             on_release: app.send_calibrate()
             enabled: app.printer_objects_available
             text: "Mesh Bed Leveling"
-            size: btn_tr_T1.size
+            size: btn_tr_T0.size
             pos: btn_tr_T0.x, 3*p.padding+2*p.btn_height
         BtnTripleZ:
             id: btn_tr_Z
@@ -327,12 +328,12 @@
             close: True
     # this needs a new label instance since the properties set in BaseButton cannot be overwritten in rule definition (only in instance)
     Label:
-        text: root.heater_id
+        text: str(int(root.heater_id[1]) + 1)
         bold: True
         color: p.background
         center_x: root.center_x
         center_y: root.center_y + 2      
-        font_size: p.large_font
+        font_size: p.large_font + 4
 
 <BtnTriple>:
     title: "Unload\n 700g PET-G"
@@ -367,10 +368,10 @@
         Line:
             points: self.x+self.w1+1+self.w2, self.y+6, self.x+self.w1+1+self.w2, self.top-6
         Color:
-            rgba: root.divider_color
+            rgba: p.btn_outline
         Rectangle:
-            size: 3, root.height
-            pos: root.x + root.filament_amount * root.width - 3, root.y
+            size: 1, root.height
+            pos: root.x + root.filament_amount * root.width - 1, root.y
     BaseButton:
         size: root.w1, root.height
         pos: root.pos
@@ -382,12 +383,6 @@
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points: (self.x+self.width/2+w/2, self.center_y- w, self.x+self.width/2+w/2, self.center_y+ w, self.x+self.width/2-w/2, self.center_y)
-            # Color:
-            #     rgba: p.background[:3] + [0.3]
-            # Line:
-            #     points: (self.x+self.width/2+w/2, self.center_y- w, self.x+self.width/2+w/2, self.center_y+ w, self.x+self.width/2-w/2, self.center_y)
-            #     width: 1
-            #     close: True
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
@@ -398,18 +393,15 @@
         id: btn_load
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
-        enabled: app.printer_objects_available
-        on_release: Factory.FilamentChooserPopup().open()
+        enabled: True #app.printer_objects_available
+        on_release: Factory.FilamentChooserPopup(root.tool_id).open()
         color: (1,1,1,1) if btn_load.enabled else p.btn_disabled
-        #outline_color: p.background[:3]
-        #outline_width: 1
         text: root.title
         text_size: self.size
         font_size: p.normal_font
         halign: 'center'
         valign: 'middle'
         padding_y: 8
-       
     BaseButton:
         size: root.w3, root.height
         pos: root.x + root.w1+root.w2,root.y
@@ -421,12 +413,6 @@
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points: (self.x+self.width/2-w/2, self.center_y- w, self.x+self.width/2-w/2, self.center_y+ w, self.x+self.width/2+w/2, self.center_y)
-            # Color:
-            #     rgba: p.background[:3] + [0.3]
-            # Line:
-            #     points: (self.x+self.width/2-w/2, self.center_y- w, self.x+self.width/2-w/2, self.center_y+ w, self.x+self.width/2+w/2, self.center_y)
-            #     width: 1
-            #     close: True
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
@@ -789,7 +775,7 @@
 
 <ExtTempPopup@BasePopup>:
     size_hint: 0.95, 0.4
-    title: "Set "+root.creator.heater_id+" Temperature"
+    title: "Set Extruder {} Temperature".format(int(self.creator.heater_id[1]) + 1)
     FloatLayout:
         ExtTempSlider:
             val: root.val[root.creator.heater_id][0]
@@ -828,22 +814,49 @@
 #             pos: root.center_x, root.y
 #             on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
 
-<FilamentChooserPopup@BasePopup>:
-    size_hint: 0.95, 0.55
-    title: "Choose a Material"
+<FilamentChooserPopup>:
+    size_hint: 0.95, 0.75
+    title: "Load Material"
     #TODO check if container id was already used
     FloatLayout:
         id: container
-        FloatLayout:
+        RectangleButton:
+            on_press: root.tab = False
+            id: left_title
+            text: "New Material"
+            font_size: p.normal_font
             size_hint: None, None
-            size: root.width, container.height-btn_cancel.height
-            pos: root.x, btn_cancel.top
-            OptionBox:
-                id: recent_materials
-                title: "Recently unloaded"
-                size_hint: 0.87, 0.3
-                pos_hint: {'center_x':0.5, 'top':1}
+            size: root.width/2, 70
+            pos_hint: {'top':1, 'x':0}
+            color: (1,1,1,1) if not root.tab else p.medium_light_gray
+            valign: 'middle'
+            halign: 'center'
+        RectangleButton:
+            on_press: root.tab = True
+            id: right_title
+            text: "Your Materials"
+            font_size: p.normal_font
+            size_hint: None, None
+            size: root.width/2, 70
+            pos_hint: {'top':1, 'right':1}
+            color: (1,1,1,1) if root.tab else p.medium_light_gray
+            valign: 'middle'
+            halign: 'center'
+        Divider:
+            width: root.width 
+            pos: root.x, left_title.y
 
+        ScrollView:
+            id: scroll_view
+            size_hint: None, None
+            size: root.width, container.height-btn_cancel.height-left_title.height
+            pos: root.x, btn_cancel.top
+            StackLayout:
+                id: option_stack
+                size_hint: None, None
+                size: root.width, self.minimum_height
+                spacing: [0]
+                padding: [p.padding - o_padding]
         Btn_P_Cancel:
             id: btn_cancel
             width: root.width/2
@@ -854,53 +867,39 @@
             text: "Start Loading"
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
-
-<OptionBox>:
-    title: " "
-    # canvas:
-    #     Color:
-    #         rgba:(0,0,0,0.1)
-    #     Rectangle:
-    #         size: self.size
-    #         pos: self.pos
-    Label:
-        id: box_title
-        text: root.title
-        font_size: p.normal_font
-        size: self.texture_size
-        pos_hint: {'top':1, 'x':0}
-        size_hint: None, None
-        color: p.light_gray
-        valign: 'middle'
-        halign: 'left'
-        padding_y: 6
-        padding_x: 2 * o_padding
-    Divider:
-        width: root.width 
-        pos: root.x, box_title.y
-    StackLayout:
-        size: root.width, root.height - box_title.height
-        size_hint: None, None
-        pos: root.pos
-        id: stack
-        spacing: [0]
-        padding: [o_padding]
+            on_release: pass
 
 <Option>:
+    #: set o_padding 10
     selected: False
-    size: 90, 60
-    #: set o_padding 8
+    size: 123, 84
+    padding_x: o_padding
     canvas.before:
-        Color:
-            rgba: p.btn if self.selected else (0,0,0,0)
-        RoundedRectangle:
-            size: self.size
-            pos: self.pos
-            radius: (p.radius,)
         Color:
             rgba: self.option_color
         RoundedRectangle:
             size: self.width - 2*o_padding, self.height - 2*o_padding
             pos: self.x + o_padding, self.y + o_padding
             radius: (p.icon_radius,)
+        Color:
+            rgba: (1,1,1,0.3) if self.selected else p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x+o_padding, self.y+o_padding, self.width-2*o_padding, self.height-2*o_padding, p.icon_radius)
+        Color:
+            rgba: p.translucent_white if self.selected else (0,0,0,0)
+        RoundedRectangle:
+            size: self.size
+            pos: self.pos
+            radius: (p.radius,)
+
+<OptionDivider>:
+    #: set od_h 10
+    size_hint: 1, None
+    height: 50 -2*o_padding
+    canvas.before:
+        Color:
+            rgba: p.medium_light_gray
+        Triangle:
+            points: self.center_x, self.center_y - od_h,    self.center_x - od_h*2, self.center_y + od_h,    self.center_x + od_h*2, self.center_y + od_h
+     

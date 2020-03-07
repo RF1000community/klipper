@@ -113,13 +113,18 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.printer.register_event_handler("klippy:exception", self.handle_exception)
             self.printer.register_event_handler("homing:home_rails_end", self.handle_homed)
         else:
+            try:
+                import filament_manager
+                self.filament_manager = filament_manager.load_config(None)
+            except Exception as e:
+                logging.warning("couldn't import filament_manager:")
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
             self.filament_diameter = 1.75
             self.xy_homing_controls = True
             self.extruders = [None, None, None]
             self.extruder_count = 2
-        self.kv_file = join(p.kgui_dir, "kv/main.kv")
+        self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell the app class where the root kv file is
         super(mainApp, self).__init__(**kwargs)
 
     def clean(self):
@@ -134,6 +139,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.sdcard = self.printer.lookup_object('virtual_sdcard', None)
         self.toolhead = self.printer.lookup_object('toolhead')
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
+        self.filament_manager = self.printer.lookup_object('filament_manager', None)
         self.heater_manager = self.printer.lookup_object('heater', None)
         self.heaters = {}
         if 'heater_bed' in self.heater_manager.heaters: 

@@ -5,6 +5,8 @@ import threading
 import logging
 import tarfile
 import StringIO
+import subprocess
+import traceback
 
 from kivy.clock import Clock
 from kivy.uix.screenmanager import Screen
@@ -19,11 +21,12 @@ from elements import *
 class UpdateScreen(Screen):
     def __init__(self, **kwargs):
         super(UpdateScreen, self).__init__(**kwargs)
+        self.klipper_dir = os.path.dirname(os.path.dirname(os.path.dirname(p.kgui_dir)))
+
         Clock.schedule_once(self.draw_releases, 0)
 
     def draw_releases(self, dt):
-        #self.ids.message = "Installed Version: " + util.get_git_version(from_file=False)
-        
+        self.ids.message = "Installed Version: " + self.get_git_version()
         FileDownload("https://api.github.com/repos/D4SK/klipperui/releases", [None,None,False], self.finish_drawing_releases).start()
 
     def finish_drawing_releases(self, releases):
@@ -33,6 +36,27 @@ class UpdateScreen(Screen):
         for release in releases:
             entry = SI_Release(release['tarball_url'], left_title = release['tag_name'], right_title = release['published_at'].split("T")[0])
             self.ids.box.add_widget(entry)
+
+    def get_git_version(self):
+        klippy_dir = os.path.dirname(os.path.dirname(p.kgui_dir))
+
+
+        # Obtain version info from "git" program
+        prog = ('git', '-C', self.klipper_dir, 'describe', '--always', '--tags', '--long', '--dirty')
+        try:
+            process = subprocess.Popen(prog, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            ver, err = process.communicate()
+            retcode = process.wait()
+            if retcode == 0:
+                return ver.strip()
+            else:
+                logging.debug("Error getting git version: %s", err)
+        except OSError:
+            logging.debug("Exception on run: %s", traceback.format_exc())
+
+        with open(os.path.join(klippy_dir, '.version')) as h:
+            return h.read().rstrip()
+        return ""
 
 class FileDownload(threading.Thread):
     def __init__(self, url, comm_list, result_handler):

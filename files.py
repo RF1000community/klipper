@@ -16,6 +16,7 @@ from kivy.properties import BooleanProperty, OptionProperty, StringProperty
 from elements import BasePopup
 import parameters as p
 
+from pytictoc import TicToc
 
 class GC(RecycleView):
     path = StringProperty()
@@ -25,8 +26,11 @@ class GC(RecycleView):
         self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2
         if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
+            logging.info(self.path)
         else:
             self.path = "/"
+            logging.info("rootpath")
+
         super(GC, self).__init__(**kwargs)
         Clock.schedule_once(self.bind_tab, 0)
         self.load_files()
@@ -44,6 +48,7 @@ class GC(RecycleView):
         self.load_files(in_background=True)
 
     def load_files(self, in_background = False):
+
         content = os.listdir(self.path)
         # filter usb
         usb = []
