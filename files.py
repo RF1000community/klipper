@@ -1,30 +1,35 @@
 import logging
 import os
 from os.path import getmtime, basename, dirname, exists, abspath, join
-import shutil, re
+import re
+import shutil
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.uix.filechooser import FileChooserIconView
+from kivy.uix.label import Label
+from kivy.uix.recycleview.layout import LayoutSelectionBehavior
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.recyclegridlayout import RecycleGridLayout
+from kivy.uix.recycleview import RecycleView
+from kivy.properties import BooleanProperty, OptionProperty, StringProperty
 
-from elements import *
+from elements import BasePopup
 import parameters as p
 
 
-class FC(FileChooserIconView):
-
+class GC(RecycleView):
+    path = StringProperty()
+    btn_back_visible = BooleanProperty(False)
     def __init__(self, **kwargs):
-        super(FC, self).__init__(**kwargs)
-        self.sort_func = self.modification_date_sort
-        self.filters = ['*.gco', '*.gcode']
-        self.multiselect = False
         self.app = App.get_running_app()
-        self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2 
-        if exists(p.sdcard_path):
-            self.rootpath = p.sdcard_path
+        self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2
+        if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
-        self.scheduled_updating = False
+        else:
+            self.path = "/"
+        super(GC, self).__init__(**kwargs)
         Clock.schedule_once(self.bind_tab, 0)
+        self.load_files()
 
     def bind_tab(self, e):
         tabs = self.app.root.ids.tabs
@@ -32,28 +37,60 @@ class FC(FileChooserIconView):
 
     def control_updating(self, instance, tab):
         if tab == instance.ids.file_tab:
-            self._update_files()
-            self.scheduled_updating = Clock.schedule_interval(self._update_files, 5)
-        elif self.scheduled_updating:
-            Clock.unschedule(self.scheduled_updating)
+            self.load_files(in_background = True)
+            Clock.schedule_interval(self.update, 10)
 
-    def modification_date_sort(self, files, filesystem):#sortierfunktion fuer Filechooser
-        return (sorted((f for f in files if filesystem.is_dir(f)), reverse=True) #folders
-              + sorted((f for f in files if not filesystem.is_dir(f)), key=getmtime, reverse=True)) #files
+    def update(self, dt):
+        self.load_files(in_background=True)
 
-    def on_selection(self, instance, filenames):
-        if not filenames:
-            return
-        self.popup = PrintPopup(filenames[0], creator=self)
-        self.popup.open()
+    def load_files(self, in_background = False):
+        content = os.listdir(self.path)
+        # filter usb
+        usb = []
+        if "USB-Device" in content:
+            content.remove("USB-Device")
+            # Check if folder is not empty -> a usb stick is plugged in
+            if len(os.listdir(join(self.path, "USB-Device"))) > 0:
+                logging.info("USB folders:".format(os.listdir(join(self.path, "USB-Device"))))
+                usb = [{'name': "USB-Device", 'item_type': 'usb', 'path': (join(self.path, "USB-Device")), 'details':""}]
+        files = []
+        folders = []
+        for base in content:
+            # Filter out hidden files/directories
+            if base.startswith("."):
+                continue
+            path = os.path.join(self.path, base)
+            dict_ = {"name": base, "path": path}
+            if os.path.isdir(path):
+                dict_["item_type"] = "folder"
+                dict_["details"] = ""
+                folders.append(dict_)
+            # Filter only gcode files
+            elif os.path.isfile(path) and os.path.splitext(base)[1].startswith(".gco"):
+                dict_["item_type"] = "file"
+                dict_["details"] = self.get_details(path) or "--"
+                files.append(dict_)
+        # Sort files by modification time (last modified first)
+        files.sort(key=lambda d: os.path.getmtime(d["path"]), reverse=True)
+        # Sort folders alphabetically
+        folders.sort(key=lambda d: d["name"].lower())
 
-    def get_nice_size(self, path):
-        '''Pass the filepath. Returns the filament use of a gcode file, instead of filesize.
-           Or '' if it is a directory.
-           Return value is shown below Name of each file
-        '''
-        if self.file_system.is_dir(path):
-            return ''
+        self.btn_back_visible = self.path != p.sdcard_path
+
+        new_data = usb + folders + files
+        if self.data != new_data:
+            self.data = new_data
+            self.refresh_from_data()
+            if not in_background:
+                self.scroll_y = 1
+
+    def back(self):
+        self.path = dirname(self.path)
+        self.load_files()
+    
+    def get_details(self, path):
+        # Pass the filepath. Returns the filament use of a gcode file 
+        # Return value is shown below Name of each file
         filament = [
             r'Ext.*=.*mm',                          # Kisslicer
             r';.*filament used =',                  # Slic3r
@@ -61,7 +98,7 @@ class FC(FileChooserIconView):
             r'.*filament\sused\s=\s.*mm',           # Slic3r PE
             r';Filament used: \d*.\d+m',            # Cura
             r';Material#1 Used:\s\d+\.?\d+',        # ideamaker
-            r'.*filament\sused\s.mm.\s=\s[0-9\.]+'  # PrusaSlicer
+            r'.*filament\sused\s.mm.\s=\s[0-9\.]+'  # PrusaSlicer 
             ]
         nlines = 100
         head = tail = []
@@ -88,66 +125,101 @@ class FC(FileChooserIconView):
                     match2 = re.search(r'\d*\.\d*', match.group())
                     if match2:
                         filament = float(match2.group())
-                        logging.info("filament =  ====== {}".format(filament))
                         if i == 4:
                             filament *= 1000 # Cura gives meters -> convert to mm
                         weight = self.filament_crossection*filament*0.0011 #density in g/mm^3
-                        return "{:4.1f}g".format(weight)
+                        return "{:4.0f}g".format(weight)
         return ""
+
+class GCGrid(LayoutSelectionBehavior, RecycleGridLayout):
+    # Adds selection behaviour to the view
+    pass
+
+class GCItem(RecycleDataViewBehavior, Label):
+    item_type = OptionProperty('file', options = ['file', 'folder', 'usb'])
+    name = StringProperty()
+    path = StringProperty()
+    details = StringProperty()
+    index = None
+    pressed = BooleanProperty(False)
+
+    def refresh_view_attrs(self, rv, index, data):
+        # Catch and handle the view changes
+        self.index = index
+        return super(GCItem, self).refresh_view_attrs(rv, index, data)
+
+    def on_touch_down(self, touch):
+        # Add selection on touch down
+        if super(GCItem, self).on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos):
+            self.pressed = True
+            return True
+
+    def on_touch_up(self, touch):
+        was_pressed = self.pressed
+        self.pressed = False
+        if super(GCItem, self).on_touch_up(touch):
+            return True
+        if self.collide_point(*touch.pos) and was_pressed:
+            gc = self.parent.parent
+            if self.item_type == 'file':
+                self.popup = PrintPopup(self.path, filechooser=gc)
+                self.popup.open()
+            elif self.item_type == 'folder' or self.item_type == 'usb':
+                gc.path = self.path
+                gc.load_files()
+            return True
+        return False
+
+    def apply_selection(self, rv, index, is_selected):
+        # Respond to the selection of items in the view
+        self.selected = is_selected
+
 
 class PrintPopup(BasePopup):
 
-    def __init__(self, path, **kwargs):
-        from os import symlink
+    def __init__(self, path, filechooser, **kwargs):
         self.path = path
-        # Extract only the filename from the path
-        self.prompt = basename(self.path)
+        self.filechooser = filechooser
         super(PrintPopup, self).__init__(**kwargs)
-
-    def dismiss(self):
-        super(PrintPopup, self).dismiss()
-        # Deselects the file in the filechooser when canceled
-        # Supposed to be read-only but still works that way
-        self.creator.selection = []
 
     def confirm(self):
         app = App.get_running_app()
         self.dismiss()
         new_path = self.path
-        if dirname(self.path) != p.sdcard_path:
+        if 'USB Device' in self.path:
             new_path = join(p.sdcard_path, basename(self.path))
-            if 'USB-Device' in self.path:
-                app.notify.show("Copying {} to Printer...".format(basename(self.path)))
-                shutil.copy(self.path, new_path)
-            else:
-                symlink(self.path, new_path)
+            app.notify.show("Copying {} to Printer...".format(basename(self.path)))
+            shutil.copy(self.path, new_path)
 
-        app.send_start(new_path)
+        app.send_print(new_path)
         tabs = app.root.ids.tabs
         tabs.switch_to(tabs.ids.home_tab)
 
-
     def delete(self):
         """Open a confirmation dialog to delete the file"""
-        super(PrintPopup, self).dismiss() # dismiss bypassing deselection
-        self.confirm_del = DelPopup(creator=self)
+        super(PrintPopup, self).dismiss()
+        self.confirm_del = DelPopup(path = self.path, filechooser=self.filechooser)
         self.confirm_del.open()
 
 
 class DelPopup(BasePopup):
     """Popup to confirm file deletion"""
-
-    def dismiss(self):
-        super(DelPopup, self).dismiss()
-        # Deselect in the filechooser
-        self.creator.creator.selection = []
+    def __init__(self, path, filechooser, **kwargs):
+        self.path = path
+        self.filechooser = filechooser
+        super(DelPopup, self).__init__(**kwargs)
 
     def confirm(self):
         """Deletes the file and closes the popup"""
-        os.remove(self.creator.path)
+        os.remove(self.path)
         # Update the files in the filechooser instance
-        self.creator.creator._update_files()
+        self.filechooser.load_files(in_background=True)
         self.dismiss()
 
         app = App.get_running_app()
-        app.notify.show("File deleted", "Deleted " + basename(self.creator.path), delay=4)
+        app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)
+
+class StopPopup(BasePopup):
+    pass

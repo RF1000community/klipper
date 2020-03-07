@@ -1,0 +1,632 @@
+#:kivy 1.8.0
+
+#:import Factory kivy.factory.Factory
+#:import screenmanager kivy.uix.screenmanager
+#:import p parameters
+
+<SettingTab@TabbedPanelItem>:
+    background_down: '' 
+    background_color: p.background
+    canvas:
+        Rectangle:
+            source: p.kgui_dir+'/logos/settings.png'
+            size: 60 * p.disp_vertical_stretch, 60
+            pos: 525 - 30 * p.disp_vertical_stretch, 20
+    BoxLayout:
+        orientation: 'vertical'
+        TitleBar:
+            title: "Wifi" if screen_man.current=='WifiScreen'  else  "Update" if screen_man.current=='UpdateScreen'  else  "Settings"
+            enabled: screen_man.current != 'SettingScreen'
+            on_release: screen_man.current = 'SettingScreen'
+            pos_hint: {'x':0, 'top':1}
+        ScreenManager:
+            id: screen_man
+            name: 'SettingScreenManager'
+            transition: screenmanager.NoTransition()
+            SettingScreen:
+                id: setting_screen
+            WifiScreen:
+                id: wifi_screen
+            UpdateScreen:
+                id: update_screen
+            FlashScreen:
+                id: flash_screen
+
+<SettingScreen@Screen>:
+    name: 'SettingScreen'
+    ScrollView:
+        canvas.before:
+            Color:
+                rgba: p.background
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        BoxLayout:
+            orientation:'vertical'
+            height: self.minimum_height
+            pos: 0, root.height - self.height
+            size_hint_y: None
+            SetItem:
+                left_title: "Max. printhead Acceleration"
+                right_title: str(app.default_acceleration)+"mm/s²"
+                on_release: Factory.AccConfPopup(val=app.default_acceleration).open()
+            SetItem:
+                left_title: "Pressure Advance"
+                right_title: "{:4.3f}s".format(app.default_pressure_advance)
+                on_release: Factory.PressureAdvanceConfPopup(val=app.default_pressure_advance).open()
+            SI_Wifi:
+                left_title: "Wifi"
+            SI_Timezone:
+                id: si_timezone
+            SetItem:
+                left_title: "Shutdown..."
+                on_release: Factory.PowerPopup().open()
+            SetItem:
+                left_title: "Update"
+                on_release: root.manager.current = "UpdateScreen"
+            SetItem:
+                left_title: "Flash Microcontroller Firmware"
+                on_release: root.manager.current = "FlashScreen"
+            Divider:
+                pos_hint: {'center_x':0.5}
+
+<WifiScreen>:
+    name: 'WifiScreen'
+    ScrollView:
+        canvas.before:
+            Color:
+                rgba: p.background
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        size_hint: 1, 1
+        pos_hint: {'x':0, 'y':0}
+        do_scroll_x: False
+        BoxLayout:
+            id: wifi_box
+            orientation: 'vertical'
+            height: self.minimum_height
+            size_hint_y: None
+
+<UpdateScreen>:
+    name: 'UpdateScreen'
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0,0
+            size: self.size
+    Divider:
+        pos_hint: {'center_x':0.5, 'top':1}
+    Label:
+        id: message
+        text: "Choose a Version to install"
+        font_size: p.large_font
+        text_size: self.size
+        size_hint: 1, 0.2
+        valign: 'top'
+        halign: 'left'
+        padding_x: p.padding
+        padding_y: p.padding - 10
+        pos_hint: {'x':0, 'top':1}
+        color: p.medium_light_gray
+    ScrollView:
+        size_hint: 1, 0.8
+        pos_hint: {'x':0, 'y':0}
+        do_scroll_x: False
+        BoxLayout:
+            id: box
+            orientation: 'vertical'
+            height: self.minimum_height
+            size_hint_y: None
+
+<FlashScreen>:
+    name: 'FlashScreen'
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0,0
+            size: self.size
+    Divider:
+        pos_hint: {'center_x':0.5, 'top':1}
+    Label:
+        id: message
+        text: "Configure Firmware to flash to Printer Controlboard"
+        font_size: p.large_font
+        text_size: self.size
+        size_hint: 1, 0.2
+        valign: 'top'
+        halign: 'left'
+        padding_x: p.padding
+        padding_y: p.padding - 10
+        pos_hint: {'x':0, 'top':1}
+        color: p.medium_light_gray
+    Divider:
+        y: message.y
+    ScrollView:
+        size_hint: 1, 0.8
+        pos_hint: {'x':0, 'y':0}
+        do_scroll_x: False
+        BoxLayout:
+            id: box
+            orientation: 'vertical'
+            height: self.minimum_height
+            size_hint_y: None
+
+<Btn_Radio@BaseButton>:
+    selected: True
+    size_hint: None, None
+    size: 35, 34
+    canvas:
+        Color:
+            rgba: p.medium_gray
+        Ellipse:
+            size: self.size
+            pos: self.pos
+        Color:
+            rgba: (1,1,1,1) if self.selected else (0,0,0,0)
+        Ellipse:
+            pos: self.x + 6, self.y + 6
+            size: self.width - 12, self.height - 12
+
+<Btn_Tristate@BaseButton>:
+    state: 2 # 0=False, 1=True, 2=M (if available)
+    states: 3
+    size_hint: None, None
+    size: 38, 37
+    on_release: self.state = (self.state + 1) % self.states #cycle through states
+    canvas.before:
+        Color:
+            rgba: p.medium_gray
+        RoundedRectangle:
+            radius: (p.icon_radius,)
+            size: self.size
+            pos: self.pos
+        Color:
+            rgba: (1,1,1,1) if self.state else (0,0,0,0)
+        RoundedRectangle:
+            radius: (p.icon_radius/2,)
+            pos: self.x + 5, self.y + 5
+            size: self.width - 10, self.height - 10
+        Color:
+            rgba: (0,0,0,0.3) if self.state == 1 else (0,0,0,0)
+        Line:
+            width: 2
+            points: self.center_x -10, self.center_y,     self.center_x-2.5, self.center_y -9,     self.center_x + 10, self.center_y + 7
+    Label:
+        text: "M" if root.state == 2 else ""
+        bold: True
+        font_size: p.normal_font
+        color: p.medium_gray
+        size: root.size
+        pos: root.pos
+        text_size: self.size
+        valign: 'middle'
+        halign: 'center'
+       
+<CI_Tristate>:
+    size: p.screen_width, 80
+    size_hint: None, None
+    state: 0
+    states: 2
+    indent: 0
+    text: "Tristate"
+    font_size: p.normal_font
+    text_size: self.size
+    valign: 'middle'
+    halign: 'right'
+    padding_x: p.padding
+    Btn_Tristate:
+        states: root.states
+        state: root.state
+        x: p.padding + root.indent*p.padding
+        center_y: root.center_y
+
+<CI_Radio>:
+    selected: False
+    size: p.screen_width, 80
+    size_hint: None, None
+    indent: 0
+    text: "Radio"
+    font_size: p.normal_font
+    text_size: self.size
+    valign: 'middle'
+    halign: 'right'
+    padding_x: p.padding
+    Btn_Radio:
+        selected: root.selected
+        x: p.padding + root.indent*p.padding
+        center_y: root.center_y
+
+<CI_Value>:
+    value: ""
+    size_hint: None, None
+    size: p.screen_width, 80
+    indent: 0
+    text: "Value"
+    font_size: p.normal_font
+    text_size: self.size
+    valign: 'middle'
+    halign: 'right'
+    padding_x: p.padding
+    TextInput:
+        text: root.value
+        id: text_input
+        multiline: False
+        size_hint: None, None
+        font_size: p.normal_font
+        foreground_color: p.light_gray if root.locked else (1,1,1,1)
+        height: p.normal_font + 15
+        valign: 'middle'
+        width: 150
+        background_color: p.medium_gray
+        cursor_color: (1,1,1,1)
+        x: p.padding
+        center_y: root.center_y
+
+<CI_Text>:
+    size_hint: None, None
+    size: p.screen_width, 80
+    indent: 0
+    text: "Text"
+    font_size: p.large_font
+    text_size: self.size
+    valign: 'middle'
+    color: p.medium_light_gray
+    halign: 'left'
+    padding_x: p.padding * (self.indent + 1)
+  
+
+# SETITEMS
+
+<SetItem>:
+    size_hint_y: None
+    height: 110
+    width: p.screen_width
+    Label:
+        id: left_label
+        text: root.left_title
+        font_size: p.normal_font
+        text_size: self.size
+        size: root.width - root.height, root.height
+        valign: 'middle'
+        pos: root.pos
+        padding_x: p.padding
+    Label:
+        id: right_label
+        text: root.right_title
+        font_size: p.normal_font
+        text_size: self.size
+        color: p.medium_light_gray
+        size: 250, root.height
+        size_hint: None, None
+        valign: 'middle'
+        halign: 'right'
+        y: root.y
+        right: p.screen_width
+        padding_x: p.padding
+    Divider:
+        y: root.top - 1
+
+<SI_Switch@SetItem>:
+    enabled: False
+    Switch:
+        id: knopf
+        size_hint: None, None
+        pos_hint: {'center_y': 0.5}
+        right: p.screen_width-p.padding +p.small_padding #to increase touch area
+
+<SI_Timezone>:
+    left_title: "Timezone"
+    on_release: Factory.TimezonePopup().open()
+
+<SI_WifiAccessPoint>:
+    Label:
+        text: root.ap.ssid
+        font_size: p.normal_font
+        text_size: self.size
+        color: p.light_gray
+        size: root.width, root.height
+        size_hint: None, None
+        valign: 'middle'
+        halign: 'right'
+        y: root.y
+        right: p.screen_width
+        padding_x: p.padding
+    Label:
+        text: str(root.ap.signal)
+        font_size: p.normal_font
+        padding_x: p.padding
+        width: self.texture_size[0]
+        height: root.height
+        size_hint: None, None
+        color: root.get_color()
+        pos: root.pos
+
+<SI_Release>:
+    on_release: Factory.UpdatePopup(self.left_title, self.url).open()
+
+# POPUPS
+
+<PasswordPopup>:
+    txt_input: pwd_input
+    size_hint: 0.86, 0.3
+    FloatLayout:
+        Label:
+            text: 'Password'
+            font_size: p.normal_font
+            color: p.light_gray
+            size: self.texture_size
+            size_hint: None, None
+            pos_hint: {'x': 0.07, 'y': 0.77}
+        TextInput:
+            id: pwd_input
+            multiline: False
+            password: True
+            font_size: p.normal_font
+            foreground_color: (1,1,1,1)
+            padding: (15,12,25,12)
+            height: self.minimum_height
+            background_color: p.medium_gray
+            cursor_color: (1,1,1,1)
+            size_hint: 0.72, None
+            pos_hint: {'x': 0.07, 'center_y': 0.63}
+        BaseButton:
+            on_press:
+                pwd_input.password = not pwd_input.password
+                lb_show.text = "show" if pwd_input.password else "hide"
+            on_release:
+                pwd_input.focus = True
+            id: btn_s
+            height: pwd_input.height-1
+            size_hint: 0.11, None
+            pos_hint: {'right': 0.93, 'center_y': 0.63}
+            Label:
+                id: lb_show
+                size: btn_s.size
+                pos: btn_s.pos
+                text_size: self.size
+                text: "show"
+                font_size: p.normal_font
+                halign: 'center'
+                valign: 'middle'
+                color: p.light_gray
+        Btn_P_Cancel:
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        Btn_P_Confirm:
+            enabled: len(pwd_input.text) > 3
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.confirm()
+
+<ConnectionPopup>:
+    title: self.ap.ssid
+    size_hint: 0.65, 0.4
+    FloatLayout:
+        RectangleButton:
+            id: btn_toggle_connect
+            text: 'Disconnect' if root.ap.in_use else 'Connect'
+            size_hint: 0.7, None
+            height: 80
+            pos_hint: {'center_x': 0.5, 'top': 1}
+            on_release: root.toggle_connected()
+        Divider:
+            size_hint: None, None
+            size: btn_toggle_connect.width, 1
+            pos: btn_toggle_connect.pos
+        RectangleButton:
+            id: btn_delete
+            text: 'Delete connection'
+            size: btn_toggle_connect.size
+            x: btn_toggle_connect.x
+            top: btn_toggle_connect.y
+            on_release: root.delete()
+        Btn_P_Cancel:
+            single: True
+            width: root.width
+            pos: root.pos
+            on_release: root.dismiss()
+
+<PowerPopup@BasePopup>:
+    title: "Shutdown..."
+    title_size: p.large_font
+    size_hint: 0.67, 0.5
+    FloatLayout:
+        RectangleButton:
+            id: btn_poweroff
+            text: "Shutdown"
+            size_hint: 1, None
+            height: 70
+            pos: root.x, btn_cancel.top
+            on_release: app.poweroff()
+        Divider:
+            width: root.width
+            pos: btn_reboot.pos
+        RectangleButton:
+            id: btn_reboot
+            text: "Reboot"
+            size: btn_poweroff.size
+            pos: btn_poweroff.x, btn_poweroff.top
+            on_release: app.reboot()
+        Divider:
+            width: root.width
+            pos: btn_restart_klipper.pos
+        RectangleButton:
+            id: btn_restart_klipper
+            text: "Restart Klipper"
+            size: btn_poweroff.size
+            pos: btn_poweroff.x, btn_reboot.top
+            on_release: app.restart_klipper()
+        Divider:
+            width: root.width
+            pos: btn_quit.pos
+        RectangleButton:
+            id: btn_quit
+            text: "Quit to tty"
+            size: btn_poweroff.size
+            pos: btn_poweroff.x, btn_restart_klipper.top
+            on_release: app.quit()
+        Divider:
+            width: root.width
+            pos: btn_quit.x, btn_quit.top
+        Btn_P_Cancel:
+            id: btn_cancel
+            single: True
+            width: root.width
+            pos: root.pos
+            on_release: root.dismiss()
+
+<TimezonePopup>:
+    size_hint: 0.9, 0.7
+    title: "Choose Region"
+    FloatLayout:
+        id: maincontainer
+        TimezoneRV:
+            id: rv
+            viewclass: 'TimezoneRVItem'
+            size_hint: None, None
+            size: root.width, maincontainer.height-btn_cancel.height
+            pos: root.x, btn_cancel.top
+            TimezoneRVBox:
+                id: rv_box
+                default_size: None, dp(70)
+                default_size_hint: 1, None
+                size_hint_y: None
+                height: self.minimum_height
+                orientation: 'vertical'
+                multiselect: False
+                touch_multiselect: False
+        Btn_P_Cancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        Btn_P_Confirm:
+            enabled: True if rv_box.selected_nodes else False
+            id: btn_confirm
+            title: "Confirm"
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.confirm()
+
+<TimezoneRVItem>:
+    # Draw a background to indicate selection
+    canvas:
+        Color:
+            rgba: p.translucent_white if self.selected else (0,0,0,0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    size_hint: None, None
+    padding_x: p.h_padding
+    font_size: p.normal_font
+    text_size: self.size
+    color: (1,1,1,1)
+    valign: 'middle'
+    halign: 'left'
+
+<AccConfPopup@BasePopup>:
+    title: "Configure Acceleration"
+    size_hint: 0.83,0.4
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            val_min: 2000
+            val_max: 50000
+            unit: "mm/s²"
+            roundto: -2
+            buttons: [[36000,0,"default",None],]
+            id: slider
+            width: root.width
+            pos_hint: {'center_x':0.5}
+            y: btn_cancel.top+40
+        Btn_P_Cancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        Btn_P_Confirm:
+            text: "Set and restart"
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.write_config('printer', 'max_accel', slider.val), root.dismiss()
+
+<PressureAdvanceConfPopup@BasePopup>:
+    size_hint: 0.95, 0.4
+    title: "Configure Pressure Advance"
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            buttons: []
+            val_min: 0
+            val_max: 0.05
+            unit: "mm/mm/s"
+            roundto: 3
+            id: slider
+            width: root.width
+            pos_hint: {'center_x':0.5, 'y':0.35}
+        Btn_P_Cancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        Btn_P_Confirm:
+            text: "Set and restart"
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.write_pressure_advance(slider.val), root.dismiss()
+
+<UpdatePopup>:
+    size_hint: 0.95, 0.4
+    title: "Downloading"
+    FloatLayout:
+        id: f_layout
+        canvas:
+            Color:
+                rgba: p.medium_gray
+            RoundedRectangle:
+                size: self.width - 2*p.padding, 10
+                pos: self.x + p.padding, self.center_y
+                radius: (4,)
+            Color:
+                rgba: p.light_gray
+            RoundedRectangle:
+                size: (self.width - 2*p.padding)*root.comm_list[0]/float(root.comm_list[1]), 10
+                pos: self.x + p.padding, self.center_y
+                radius: (5,)
+        Label:
+            text: root.version
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 5
+            size_hint: 0.8, None
+            pos_hint: {'center_x': 0.5, 'center_y': 0.8}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        Label:
+            text: "{}/{}kb".format(root.comm_list[0]/1024,root.comm_list[1]/1024)
+            size_hint: None, None
+            size: root.width, p.normal_font
+            top: f_layout.center_y - 5
+            x: root.x + p.padding
+            valign: 'top'
+            font_size: p.normal_font
+            color: p.light_gray
+            text_size: self.size
+        Btn_P_Cancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        Btn_P_Confirm:
+            id: confirm
+            text: "Install"
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.install(), root.dismiss()

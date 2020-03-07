@@ -1,9 +1,10 @@
-from os.path import dirname, expanduser
+from os.path import dirname, expanduser, join
 kgui_dir = dirname(__file__)
-sdcard_path = expanduser('/home/pi/sdcard')
+sdcard_path = expanduser('~/sdcard')
+history_file = join(sdcard_path, ".history.json")
 
 #never assume pixels are square :}
-disp_vertical_stretch = 1.05 
+disp_vertical_stretch = 1.05
 
 large_font = 32
 normal_font = 23
@@ -49,6 +50,7 @@ nozzle_selected = (0.3, 0.3, 0.3, 1)
 
 translucent_white = (1,1,1,0.1)
 accent = (0.15,0.4,0.45,1)
+flat_accent = (0.24,0.34,0.36,1)
 red = (0.83,0.05,0,1)
 green = (0,1,0.25,1)
 medium_dark_gray = (0.15, 0.15, 0.15, 1)
@@ -64,6 +66,10 @@ notify_success = (0.1,0.4,0.2,0.8)
 
 """
 Kivy Guide
+https://blog.kivy.org/2019/06/widget-interactions-between-python-and-kv/
+Screens (of screenmanager) are relative Layouts (new root for coordinate system)
+setting properties of parent class in kv rules doesnt work if they are assigned to a value in parent rule
+Defining Properties in kv is often bad since it happens too late, and prohibits setting them in __init__
 LABELS: try setting hints to None if it does shit e.g. setting size doesnt work
     size: outer dimensions of the label widget, available space, can be set to texture_size to show everything
     text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits bounding box for text

@@ -55,7 +55,7 @@ class ConnectionIcon(Widget):
             self.wifi_color = Color(rgba=self.transparent)
             self.wifi = Ellipse(pos=(0, 0), size=(0, 0), angle_start=315, angle_end=405)
             self.eth_color = Color(rgba=p.red)
-            self.eth = Rectangle(pos=(0, 0), size=(0, 0), source="Logos/ethernet.png")
+            self.eth = Rectangle(pos=(0, 0), size=(0, 0), source="logos/ethernet.png")
         self.draw_nothing()
 
     def draw_wifi(self):
@@ -112,22 +112,24 @@ class ConnectionIcon(Widget):
 class Notifications(FloatLayout):
 
     def __init__(self):
-        super(Notifications, self).__init__()
         # Initialize update_clock as a ClockEvent in case it gets canceled first
         self.update_clock = Clock.schedule_once(lambda x: 0, -1)
+        self.active = False
+        self.early_notification = None # Save notifications during startup
+        self.initialized = False
+        Clock.schedule_once(self.late_setup, 0)
+
+    def late_setup(self, dt):
+        super(Notifications, self).__init__()
         self.root_widget = App.get_running_app().root
         self.size_hint = (None, None)
         self.size = self.root_widget.width - 2*p.notification_padding, 110
         self.x = self.root_widget.x + p.notification_padding
         self.top = self.root_widget.top - p.notification_padding
-        self.active = False
-        Clock.schedule_once(self.init_drawing, 0)
-
-    def init_drawing(self, dt):
         with self.canvas:
-            Color(rgb=p.background[:3], a=0.8)
+            Color(rgb=p.notification_shadow)
             BorderImage(
-                source=p.kgui_dir+'/Logos/shadow.png',
+                source=p.kgui_dir+'/logos/shadow.png',
                 pos=(self.x-64, self.y-64),
                 size=(self.width + 128, self.height + 127),
                 border=(64, 64, 64, 64))
@@ -155,6 +157,10 @@ class Notifications(FloatLayout):
         self.add_widget(message)
         self.message_label = message
 
+        self.initialized = True
+        if self.early_notification is not None:
+            self.show(**self.early_notification)
+
     def show(self, title="", message="", level="info", log=True, delay=-1, color=None):
         """
         Show a notification popup with the given parameters. If log is set,
@@ -169,8 +175,12 @@ class Notifications(FloatLayout):
                             Never automatically hide for any negative value.
         color   rgba list   Background color of the notification. Overwrites the
                 or string   value set by the level preset. Can also be the name of
-                            different preset that the specified log level.
+                            different preset than the specified log level.
         """
+        if not self.initialized:
+            self.early_notification = {"title": title, "message": message,
+                "level": level, "log": log, "delay": delay, "color": color}
+            return
         color_presets = {
                 "info": p.notify_info,
                 "warning": p.notify_warning,

@@ -38,7 +38,6 @@ def freedir(directory, threshold=100, stop=500):
 
     dirs = _check_input(directory)
     avail = get_space(dirs[0])
-    print("Available space: " + str(avail) + "M")
 
     # Enough space left, return
     if avail > threshold:
@@ -57,9 +56,7 @@ def freedir(directory, threshold=100, stop=500):
     fcount = 0
     while get_space(dirs[0]) < stop and files:
         cur_file = files.pop()
-        # Uncomment to disable safeguard
-        ###remove(cur_file)
-        print("Deleted " + cur_file)
+        remove(cur_file)
         fcount += 1
 
     return (fcount, get_space(dirs[0]) - avail)
@@ -94,8 +91,7 @@ def reducedir(directory, nfiles=100):
     ndel = len(files) - nfiles
 
     for i in range(ndel):
-        print("Deleted " + files[i])
-        ###remove(files[i])
+        remove(files[i])
     return ndel
 
 

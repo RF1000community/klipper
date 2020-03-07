@@ -1,0 +1,36 @@
+#:kivy 1.8.0
+
+#:import p parameters
+
+# Override style.kv Switch widget
+<-Switch>:
+    active_norm_pos: max(0., min(1., (int(self.active) + self.touch_distance / sp(move))))
+    width: wdt - rad + Rad + 2*p.small_padding
+    canvas:
+        Color:
+            rgba: p.btn
+        #: set wdt 60
+        #: set rad 11
+        #: set Rad 16
+        #: set move wdt-2*rad
+        RoundedRectangle:
+            size: sp(wdt), sp(rad*2)
+            pos: int(self.center_x - sp(wdt/2)), int(self.center_y - sp(rad))
+            radius: (int(sp(rad)),)
+        Color:
+            rgba: (1,1,1,1) if self.active else p.medium_light_gray
+        
+        Ellipse:
+            size: sp(Rad*2), sp(Rad*2)
+            pos: int(self.center_x - sp(move/2+Rad)  + self.active_norm_pos * sp(move)), int(self.center_y - sp(Rad))
+        
+<-TabbedPanelStrip>:
+    canvas:
+        Color:
+            rgba: (0, 0, 0, 1) # black colour of the strip behind all 3 tab buttons
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+<StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
+    padding: (0,0,0,0)

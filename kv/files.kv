@@ -1,0 +1,160 @@
+#:kivy 1.8.0
+
+#:import basename os.path.basename
+#:import dirname os.path.dirname
+#:import relpath os.path.relpath
+
+#:import screenmanager kivy.uix.screenmanager
+
+#:import p parameters
+
+<FileTab@TabbedPanelItem>:
+    background_down: ''
+    background_color: p.background
+    canvas:
+        Rectangle:
+            source: p.kgui_dir+'/logos/files.png'
+            size: 60,60
+            pos: 375-30, 20
+    FloatLayout:
+        pos: 0, p.tab_height
+        canvas.before:
+            Color:
+                rgba: p.background
+            Rectangle:
+                size: p.screen_width, p.screen_height - p.tab_height - p.status_bar_height
+                pos: 0, p.tab_height
+        TitleBar:
+            id: title_bar
+            enabled: gc.path != p.sdcard_path
+            on_release: gc.back()
+            pos_hint: {'x':0, 'top':1}
+            title: relpath(gc.path, dirname(p.sdcard_path))
+        GC:
+            id: gc
+            viewclass: 'GCItem'
+            size_hint: None, None
+            size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
+            pos: 0, p.tab_height
+
+<GC>:
+    GCGrid:
+        id: gc_grid
+        cols: 3
+        padding: (15,)
+        spacing:(15,)
+        default_size: dp(180), dp(180)
+        # default_size_hint: 1, None
+        size_hint_y: None
+        size_hint_x: None
+        width: p.screen_width
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False
+
+<GCItem>:
+    canvas:
+        Color:
+            rgba: p.medium_gray
+        Rectangle:
+            source: p.kgui_dir + ('/logos/file.png' if self.item_type == 'file' else '/logos/usb.png' if self.item_type == 'usb' else '/logos/folder.png' )
+            size: 84, 84
+            pos: self.center_x - 42, self.center_y - 5
+        Color:
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+        RoundedRectangle:
+            radius: (p.radius,)
+            size: self.size
+            pos: self.pos
+    #Label
+    text: root.details
+    halign: 'center'
+    valign: 'bottom'
+    max_lines: 1
+    padding_x: 0
+    padding_y: 6
+    text_size: self.size
+    font_size: p.normal_font - 3
+    color: p.medium_light_gray
+    Label:
+        text: root.name
+        shorten: False
+        multiline: True
+        halign: 'center'
+        valign: 'top'
+        max_lines: 2
+        padding_x: 0
+        padding_y: 0
+        size: root.width, 80
+        pos: root.pos
+        text_size: self.size
+        font_size: p.normal_font - 3
+        color: (1,1,1,1)
+
+
+# POPUPS
+
+<PrintPopup>:
+    title: 'Print'
+    title_size: p.large_font
+    size_hint: 0.8, 0.3
+    FloatLayout:
+        Label:
+            text: basename(root.path)
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 2
+            size_hint: 0.9, 0.5
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.2}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        Btn_P_Cancel:
+            id: btn_cancel
+            width: root.width/3
+            pos: root.pos
+            on_release: root.dismiss()
+        RectangleButton:
+            id: btn_del
+            canvas:
+                Color:
+                    rgba: p.divider
+                Line:
+                    points: self.x, self.y, self.x, self.top, self.right, self.top
+            text: 'Delete'
+            size: root.width/3, 70
+            pos: btn_cancel.right, root.y
+            on_release: root.delete()
+        Btn_P_Confirm:
+            text: 'Print'
+            enabled: app.printer_objects_available
+            width: root.width/3
+            pos: btn_del.right, root.y
+            on_release: root.confirm()
+
+<DelPopup>:
+    title: 'Delete'
+    title_size: p.large_font
+    size_hint: 0.8, 0.3
+    FloatLayout:
+        Label:
+            text: basename(root.path)
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 2
+            size_hint: 0.9, 0.5
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.2}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        Btn_P_Cancel:
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        Btn_P_Confirm:
+            text: 'Delete'
+            width: root.width/2
+            enabled: True
+            pos: root.center_x, root.y
+            on_release: root.confirm()

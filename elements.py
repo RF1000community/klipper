@@ -1,17 +1,23 @@
 # coding: utf-8
-from kivy.uix.widget import Widget
-from kivy.uix.behaviors.button import ButtonBehavior
-from kivy.uix.popup import Popup
-from kivy.properties import NumericProperty, BooleanProperty, StringProperty, ListProperty
-from kivy.uix.vkeyboard import VKeyboard
-from kivy.clock import Clock
-from kivy.app import App
-from time import time
 from collections import deque
+from time import time
+
+from kivy.app import App
+from kivy.clock import Clock
+from kivy.properties import NumericProperty, BooleanProperty, StringProperty, ListProperty
+from kivy.uix.behaviors.button import ButtonBehavior
+from kivy.uix.label import Label
+from kivy.uix.popup import Popup
+from kivy.uix.vkeyboard import VKeyboard
+from kivy.uix.widget import Widget
+
 import parameters as p
 
 
-class BaseButton(Widget):
+class Divider(Widget):
+    pass
+
+class BaseButton(Label):
 
     pressed = BooleanProperty(False)
     enabled = BooleanProperty(True)
@@ -137,6 +143,7 @@ class UltraSlider(Widget):
     
     def __init__(self, **kwargs):
         self.btn_last_active = None
+        self.initialized = False
         super(UltraSlider, self).__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
 
@@ -152,10 +159,11 @@ class UltraSlider(Widget):
             b[3].bind(on_press=self.on_button)
             self.add_widget(b[3])
         self.highlight_button()
+        self.initialized = True
 
     def on_touch_down(self, touch):
         if touch.pos[0] > self.px_min - 30 and touch.pos[0] < self.px_max + 30 and\
-           touch.pos[1] > self.y + 95 - 18 and touch.pos[1] < self.y + 95 + 18:
+           touch.pos[1] > self.y + 95 - 18 and touch.pos[1] < self.y + 95 + 18 and self.initialized:
             self.pressed = True
             touch.grab(self)
             x = self.apply_bounds(touch.pos[0])

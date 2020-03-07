@@ -2,23 +2,28 @@ Installation Guide
 ==================
 
 
-### Raspberry Pi 4
-
-[Raspian buster lite](https://www.raspberrypi.org/downloads/raspbian) without desktop env.  
-add new 'ssh' file with no extension to boot folder to enable ssh  
+### Prepare OS on Raspberry Pi 4
+(raspberry pi 3 is not fast enough to run the UI properly and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
+- flash [Raspian buster lite](https://www.raspberrypi.org/downloads/raspbian) image to SD-Card
+- add new file named "ssh" (with no file extension) to the boot folder to enable ssh
+- Boot your pi and run the following commands via SSH
 
 ```bash
 sudo apt update
-sudo raspi-config #memory split = 256, GL Driver, autologin  
+sudo raspi-config 
+"""set memory split to 256,
+   GL Driver to OpenGL FKMS, 
+   Desktop/CLI to Console Autologin """ 
 sudo apt install git python-pip virtualenv  
 ```
 
-### Octoprint from source
+### Install Octoprint from source
+- This is optional, Klipper can be used just with KGUI
 
 ```bash
 cd
 git clone https://github.com/foosel/OctoPrint.git
-cd OctoPrint/
+cd Octoprint/
 virtualenv venv  
 ./venv/bin/python setup.py install
 
@@ -28,25 +33,26 @@ sudo systemctl enable octoprint
 #sudo journalctl -u octoprint
 ```
 
-### Klipperui with KGUI
+### Install Klipper with KGUI
 
 ```bash
 cd ~
 
 git clone --recurse-submodules https://github.com/D4SK/klipperui
-./klipperui/scripts/install-kgui-systemd.sh
+./klipperui/scripts/install-kgui.sh
 ```
 
-put printer.cfg file in home folder  
-connect OctoPrint to /tmp/printer using web interface  
+- move your printer configuration (printer.cfg) to /home/pi  
+- reboot
+- connect OctoPrint to /tmp/printer using web interface  
 
 
 ---
   
   
   
-  
-### KGUI deps
+## Manual Installation 
+#### KGUI deps
 
 Execute klipperui/scripts/install-kgui.sh or:
 
@@ -68,12 +74,10 @@ sudo apt purge dhcpcd5 && \
 python -m pip install --upgrade --user pip  && \
 python -m pip install --upgrade --user Cython==0.29.10  && \
 python -m pip install --user kivy==1.11.0 && \
-cd /usr/local/src/ && \
-sudo git clone https://github.com/goodtft/LCD-show.git && \
-sudo chmod -R 755 LCD-show && \
-cd LCD-show/ && \
-sudo ./LCD7C-show 90  
-#reboots when finished  
+
+sudo ./LCDC7-better.sh -r 90 && \
+sudo cp 10-dpms.conf /etc/X11/xorg.conf.d/
+
 #git clone https://github.com/D4SK/Klipper-GUI
 ```
 
@@ -82,6 +86,12 @@ opengl driver only works with autologin enabled and a reinstall of the lcd drive
 ### Automount usb
 
 [Link](https://raspberrypi.stackexchange.com/questions/66169/auto-mount-usb-stick-on-plug-in-without-uuid)  
+
+```bash
+sudo apt install usbmount
+sudo cp usbmount.conf /etc/usbmount/
+sudo sed -i 's/PrivateMounts=yes/PrivateMounts=no/' /lib/systemd/system/systemd-udevd.service
+```
 
 ### NetworkManager
 
@@ -106,6 +116,16 @@ Xorg: /var/log/
 ```bash
 sudo echo "%sudo ALL=(ALL) NOPASSWD: /bin/systemctl" >> /etc/sudoers
 ```
+
+### Klipper microcontroller flashing
+
+For use of the gtk configuration GUI a basic gtk installation must be available:
+
+`sudo apt install libgtk2.0-dev libglade2-dev libglib2.0-dev`
+
+Then from the klipperui directory execute
+`make gconfig`
+with a running X session.
 
 /home/pi/klippy-env/bin/python      klippy executable  
 /usr/bin/startx                     xorg

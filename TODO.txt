@@ -2,13 +2,15 @@ KGUI:
 
     fix ethernet icon not showing up
 
-    Klipper: remove necessity to rehome after motors were switched off
-
     https://wiki.archlinux.org/index.php/Display_Power_Management_Signaling
 
     OTA Updates of klipperui + dependencies
 
-    see if timer to close error persists
+    Klipper bugs
+        see if timer to close error persists
+        DripModeEndSignal during homing maybe due to add. gcode move command
+
+    See if progress bar shows wrong progress on homescreen as well
 
     microcontroller flashing
 
