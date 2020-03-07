@@ -1,6 +1,7 @@
 # coding: utf-8
 from datetime import date
 import json
+import logging
 from os.path import basename, exists
 import time
 
@@ -209,9 +210,25 @@ class History(EventDispatcher):
         try:
             with open(p.history_file, "r") as fp:
                 history = json.load(fp)
-        except IOError: # File doesn't exist yet
+        except IOError, ValueError: # No file or incorrect JSON
+            logging.info("History: Couldn't read file at {}".format(p.history_file))
+            history = []
+        if not self.verify_history(history):
+            logging.warning("History: Malformed history file")
             history = []
         return history
+
+    def verify_history(self, history):
+        """Only return True when the entire history has a correct structure"""
+        try:
+            for e in history:
+                if not (isinstance(e[0], (unicode, str)) and        # path
+                        (e[1] == "done" or e[1] == "stopped") and   # status
+                        isinstance(e[2], (float, int))):            # timestamp
+                    return False
+        except:
+            return False
+        return True
 
     def write(self, history):
         """Write the object to the history file"""
