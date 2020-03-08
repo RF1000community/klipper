@@ -1,13 +1,9 @@
 # coding: utf-8
 import logging
-import random
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.graphics.context_instructions import Color
-from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Line
-from kivy.properties import ListProperty, StringProperty, NumericProperty
-from kivy.uix.floatlayout import FloatLayout
+from kivy.properties import ListProperty, NumericProperty
 from kivy.uix.widget import Widget
 
 from elements import *
@@ -112,7 +108,7 @@ class TempSlider(UltraSlider):
         else:
             s = "{}°C".format(self.val)
         return s
- 
+
 
 class BedTempSlider(UltraSlider):
     def __init__(self, **kwargs):
@@ -210,11 +206,15 @@ from pytictoc import TicToc
 class FilamentChooserPopup(BasePopup):
     library_tab = BooleanProperty(True)
     def __init__(self, tool_id, **kwargs):
-        super(FilamentChooserPopup, self).__init__(**kwargs)
         self.app = App.get_running_app()
         self.tool_id = tool_id
-        self.selected = [None, None, None]
+        self.selection = [None, None, None]
+        self.selection_my = None
+        self.selected_guid = None
+
         self.options = [[], [], []]
+        super(FilamentChooserPopup, self).__init__(**kwargs)
+
         Clock.schedule_once(self.draw_options, 0)
 
 
@@ -222,7 +222,7 @@ class FilamentChooserPopup(BasePopup):
         tm = TicToc()
         tm.tic()
         self.selected_guid = None
-
+        logging.info("draw options with selecttion {}".format(self.selection))
         # Calculate options to draw based on selection
         if self.library_tab:
             # get material library from filament manager as type-manufacturer-color tree of dicts
@@ -230,73 +230,57 @@ class FilamentChooserPopup(BasePopup):
 
             # always show types
             self.options = [ [[t,None,1,None] for t in tmc.keys()], [], [] ] 
-            if self.selected[0]:
+            logging.info(type(self.selection))
+            logging.info(len(self.selection))
+            if self.selection[0]:
                 # type is selected, show manufacturers
-                self.options[1] = [[m, None, 1, None] for m in tmc[self.selected[0].text].keys()]
-                if self.selected[1]:
+                self.options[1] = [[m, None, 1, None] for m in tmc[self.selection[0]].keys()]
+                if self.selection[1]:
                     # type and manufacturer is selected, show colors
-                    self.options[2] = [["", c, 1, None] for c in tmc[self.selected[0].text][self.selected[1].text].keys()]
-                    if self.selected[2]:
+                    self.options[2] = [["", c, 1, None] for c in tmc[self.selection[0]][self.selection[1]].keys()]
+                    if self.selection[2]:
                         # type and manufacturer and color is selected, we have a material guid
-                        self.selected_guid = tmc[self.selected[0].text][self.selected[1].text][self.selected[2].hex_color]
+                        self.selected_guid = tmc[self.selection[0]][self.selection[1]][self.selection[2]]
+            # sort types by how many manufactures make them
+            # tmc[option[0]] is the dict of manufacturers for the current type option (e.g. for PLA)
+            self.options[0].sort(key = lambda option: len(tmc[option[0]]), reverse=True)
+            # sort manufacturers alphabetically
+            self.options[1].sort(key = lambda option: option[0], reverse=True)
+
         else:
             self.options = [ [["jkfopjio",None,1,None] for t in range(4)], [], [] ] 
 
 
         self.ids.option_stack.clear_widgets()
-        for i, group in enumerate(self.options):
+        for i in range(len(self.options)):
             if i:
                 self.ids.option_stack.add_widget(OptionDivider())
-            for option in group:
-                option[3] = Option(level=i, amount=option[2], text=option[0], hex_color=option[1])
-                option[3].bind(on_press=self.on_selected)
-                self.ids.option_stack.add_widget(option[3])
-        """
-        # redraw changed options 
-        found_change = False
-        for i, old_group, new_group in zip(range(len(self.options)), self.options, options):
-            if i: self.ids.option_stack.add_widget(OptionDivider()) # no divider before first group
+            for j in range(len(self.options[i])):
+                is_selected = self.options[i][j][0] == self.selection[i+1]
+                self.options[i][j][3] = Option(self, is_selected, level=i, amount=self.options[i][j][2], text=self.options[i][j][0], hex_color=self.options[i][j][1])
+                self.ids.option_stack.add_widget(self.options[i][j][3])
 
-            if len(old_group) == len(new_group) and not found_change:
-                # check that nothings changed
-                for old_option, new_option in zip(old_group, new_group):
-                    if old_option[:3] != new_option[:3]:
-                        found_change = True
-                        self.remove(old_option)
-                        self.draw(new_option, level=i)
-                        old_option = new_option # this updates self.options
-            else:
-                # redraw all options of this group
-                found_change = True
-                for option in old_group:
-                    self.remove(option)
-                for option in new_group:
-                    self.draw(option, level=i)
-                old_group = new_group # this updates self.options
-        """
         tm.toc()
-
-    def draw(self, option, level=0):
-        option[3] = Option(level=level, amount=option[2], text=option[0], hex_color=option[1])
-        option[3].bind(on_press=self.on_selected)
-        self.ids.option_stack.add_widget(option[3])
-
-    def remove(self, option):
-        self.ids.option_stack.remove_widget(option[3])
-
+    
     def on_library_tab(self, instance, tab):
         self.draw_options()
 
-    def on_selected(self, option):
-        for sel_option in self.selected[option.level:]:
-            if sel_option: # unselect and remove all options of later level
-                sel_option.selected = False
-                sel_option = None
-        self.selected[option.level] = option
+    def do_selection(self, option):
+        if self.library_tab:
+            self.selection[option.level] = option.text
+            for i in range(len(self.selection)):
+                if i> option.level:
+                    self.selection = None
+        else:
+            self.selection_my = option.guid
         self.draw_options()
 
 class Option(BaseButton):
-    def __init__(self, hex_color=None, amount=1, level=0, guid=None, **kwargs):
+    selected = BooleanProperty(False)
+    def __init__(self, filamentchooser, selected, hex_color=None, amount=1, level=0, guid=None, **kwargs):
+
+        self.selected = selected
+        self.filamentchooser = filamentchooser
         self.option_color = (0,0,0,0)
         self.amount = amount
         self.level = level
@@ -305,15 +289,21 @@ class Option(BaseButton):
         if hex_color is not None:
             self.option_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
         super(Option, self).__init__(**kwargs)
+        self.multiline = True
+        self.max_lines = 2
+        self.shorten_from = 'right'
+        self.font_size = p.normal_font - 2
 
-    def on_press(self):
+    def on_press(self, **kwargs):
+        
+        self.filamentchooser.do_selection(self)
         self.selected = True
 
 class OptionDivider(Widget):
     pass
 
 class BtnTriple(Widget):
-    filament_color = ListProperty([random.randint(0,100)/100. for i in range(3)])
+    filament_color = ListProperty([1,0,0])
     filament_color_adjusted = ListProperty([0,0,0])
     filament_amount = NumericProperty(0.6)
 

@@ -113,11 +113,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.printer.register_event_handler("klippy:exception", self.handle_exception)
             self.printer.register_event_handler("homing:home_rails_end", self.handle_homed)
         else:
-            try:
-                import filament_manager
-                self.filament_manager = filament_manager.load_config(None)
-            except Exception as e:
-                logging.warning("couldn't import filament_manager:")
+            site.addsitedir(dirname(p.kgui_dir))
+            import filament_manager
+            self.filament_manager = filament_manager.load_config(None)
+
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
             self.filament_diameter = 1.75

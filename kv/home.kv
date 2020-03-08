@@ -845,7 +845,6 @@
         Divider:
             width: root.width 
             pos: root.x, left_title.y
-
         ScrollView:
             id: scroll_view
             size_hint: None, None
@@ -864,16 +863,16 @@
             on_release: root.dismiss()
         Btn_P_Confirm:
             enabled: True
-            text: "Start Loading"
+            text: "Select" if root.selected_guid else "Who cares"
             width: root.width/2
             pos: root.center_x, root.y
             on_release: pass
 
 <Option>:
     #: set o_padding 10
-    selected: False
     size: 123, 84
-    padding_x: o_padding
+    padding: o_padding, o_padding
+
     canvas.before:
         Color:
             rgba: self.option_color
