@@ -26,10 +26,8 @@ class GC(RecycleView):
         self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2
         if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
-            logging.info(self.path)
         else:
             self.path = "/"
-            logging.info("rootpath")
 
         super(GC, self).__init__(**kwargs)
         Clock.schedule_once(self.bind_tab, 0)
