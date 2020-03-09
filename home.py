@@ -3,7 +3,7 @@ import logging
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.properties import ListProperty, NumericProperty
+from kivy.properties import ListProperty, NumericProperty, StringProperty
 from kivy.uix.widget import Widget
 
 from elements import *
@@ -254,16 +254,15 @@ class FilamentChooserPopup(BasePopup):
         # now draw generated options
         self.ids.option_stack.clear_widgets()
         for i in range(len(self.options)):
-            if i:
-                self.ids.option_stack.add_widget(OptionDivider())
             for j in range(len(self.options[i])):
                 # either text or hex_color is equal
                 is_selected = bool( self.selection[i] and (self.options[i][j][0] == self.selection[i] or self.options[i][j][1] == self.selection[i]))
                 self.options[i][j][3] = Option(self, is_selected, level=i, amount=self.options[i][j][2], text=self.options[i][j][0], hex_color=self.options[i][j][1])
                 self.ids.option_stack.add_widget(self.options[i][j][3])
-
+            if len(self.options) > i+1 and self.options[i+1]:
+                self.ids.option_stack.add_widget(OptionDivider(height=0))
         tm.toc()
-
+        logging.info("time to draw:{}".format(tm.elapsed))
     def on_library_tab(self, instance, tab):
         self.draw_options()
 
@@ -307,8 +306,8 @@ class OptionDivider(Widget):
 class BtnTriple(Widget):
     filament_color = ListProperty([1,0,0])
     filament_color_adjusted = ListProperty([0,0,0])
-    filament_amount = NumericProperty(0.6)
-
+    filament_amount = NumericProperty(0.99)
+    title = StringProperty()
     def __init__(self, **kwargs):
         super(BtnTriple, self).__init__(**kwargs)
         Clock.schedule_once(self.on_filament_color, 0)

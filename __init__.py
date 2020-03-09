@@ -84,6 +84,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.scheduled_updating = None
         self.z_timer = None
         self.extrude_timer = None
+        self.filament_manager = None
+        self.bed_mesh = True
         if not TESTING:
             self.clean()
             self.kgui_config = config
