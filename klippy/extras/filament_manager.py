@@ -14,7 +14,7 @@ class FilamentManager:
             self.grab_time = self.filament_manager_config.getfloat('grab_time', 4)
             self.grab_speed = self.filament_manager_config.getfloat('grab_speed', 5)
             self.load_speed = self.filament_manager_config.getfloat('load_speed', 60)
-            self.extrude_speed = self.filament_manager_config.get_float('extrude_speed', 5)
+            self.extrude_speed = self.filament_manager_config.getfloat('extrude_speed', 5)
             self.max_path_len = self.filament_manager_config.getfloat('max_path_length')
             self.min_path_len = self.filament_manager_config.getfloat('min_path_length')
             self.printer.register_event_handler("klippy:connect", self.handle_connect)
