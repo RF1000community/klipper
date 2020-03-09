@@ -166,7 +166,7 @@
             enabled: app.printer_objects_available
             text: "Mesh Bed Leveling"
             size: btn_tr_T0.size
-            pos: btn_tr_T0.x, 3*p.padding+2*p.btn_height
+            pos: btn_tr_T0.x, 3*p.padding+2*p.btn_height if app.bed_mesh else p.mars
         BtnTripleZ:
             id: btn_tr_Z
             height: xy_field.height
@@ -336,7 +336,6 @@
         font_size: p.large_font + 4
 
 <BtnTriple>:
-    title: "Unload\n 700g PET-G"
     tool_id: "T0"
     w1: 0
     w2: 0
@@ -361,17 +360,12 @@
         Line:
             width: 1
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
-        Color:
-            rgba: p.btn_outline
         Line:
-            points: self.x+self.w1, self.y+6, self.x+self.w1, self.top-6
+            points: self.x+self.w1, self.y+p.small_padding, self.x+self.w1, self.top-p.small_padding
         Line:
-            points: self.x+self.w1+1+self.w2, self.y+6, self.x+self.w1+1+self.w2, self.top-6
-        Color:
-            rgba: p.btn_outline
-        Rectangle:
-            size: 1, root.height
-            pos: root.x + root.filament_amount * root.width - 1, root.y
+            points: self.x+self.w1+1+self.w2, self.y+p.small_padding, self.x+self.w1+1+self.w2, self.top-p.small_padding
+        Line:
+            points: self.x+self.w1+1+self.w2*root.filament_amount, self.y+p.small_padding, self.x+self.w1+1+self.w2*root.filament_amount, self.top-p.small_padding
     BaseButton:
         size: root.w1, root.height
         pos: root.pos
@@ -393,7 +387,7 @@
         id: btn_load
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
-        enabled: True #app.printer_objects_available
+        enabled: bool(app.printer_objects_available and app.filament_manager)
         on_release: Factory.FilamentChooserPopup(root.tool_id).open()
         color: (1,1,1,1) if btn_load.enabled else p.btn_disabled
         text: root.title
@@ -852,8 +846,8 @@
             pos: root.x, btn_cancel.top
             StackLayout:
                 id: option_stack
-                size_hint: None, None
-                size: root.width, self.minimum_height
+                size_hint_y: None
+                height: self.minimum_height
                 spacing: [0]
                 padding: [p.padding - o_padding]
         Btn_P_Cancel:
@@ -895,8 +889,14 @@
 <OptionDivider>:
     #: set od_h 10
     size_hint: 1, None
-    height: 50 -2*o_padding
+    height: 50 - 2 * o_padding
+    actual_height: float(50 - 2 * o_padding)
     canvas.before:
+        Color:
+            rgba: p.popup
+        Rectangle:
+            size: self.width, float(50 - 2 * o_padding)
+            pos: self.pos
         Color:
             rgba: p.medium_light_gray
         Triangle:

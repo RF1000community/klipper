@@ -498,7 +498,7 @@
             pos: root.pos
             on_release: root.dismiss()
         Btn_P_Confirm:
-            enabled: True if rv_box.selected_nodes else False
+            enabled: bool(rv_box.selected_nodes)
             id: btn_confirm
             title: "Confirm"
             width: root.width/2
