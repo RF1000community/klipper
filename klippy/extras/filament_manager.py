@@ -41,31 +41,32 @@ class FilamentManager:
         t.tic()
         self.guid_to_path = {}
         self.tmc_to_guid = {}
-        root, dirs, files = next(walk(self.materials_path))
-        for f in files:
-            f_path = os.path.join(self.materials_path, f)
-            # iterparse implementaion is actually slower, so parse whole file in C
-            try:
-                f_root = cElementTree.parse(os.path.join(self.materials_path, f)).getroot()
-            except: 
-                print("fail {}".format(f))
-                continue
-            f_metadata = f_root.find('{http://www.ultimaker.com/material}metadata')
-            f_name = f_metadata.find('{http://www.ultimaker.com/material}name')
+        if os.path.exists(self.materials_path):
+            root, dirs, files = next(walk(self.materials_path))
+            for f in files:
+                f_path = os.path.join(self.materials_path, f)
+                # iterparse implementaion is actually slower, so parse whole file in C
+                try:
+                    f_root = cElementTree.parse(os.path.join(self.materials_path, f)).getroot()
+                except: 
+                    print("fail {}".format(f))
+                    continue
+                f_metadata = f_root.find('{http://www.ultimaker.com/material}metadata')
+                f_name = f_metadata.find('{http://www.ultimaker.com/material}name')
 
-            f_type = f_name.find('{http://www.ultimaker.com/material}material').text
-            f_brand = f_name.find('{http://www.ultimaker.com/material}brand').text
-            f_guid = f_metadata.find('{http://www.ultimaker.com/material}GUID').text
-            f_color = f_metadata.find('{http://www.ultimaker.com/material}color_code').text
+                f_type = f_name.find('{http://www.ultimaker.com/material}material').text
+                f_brand = f_name.find('{http://www.ultimaker.com/material}brand').text
+                f_guid = f_metadata.find('{http://www.ultimaker.com/material}GUID').text
+                f_color = f_metadata.find('{http://www.ultimaker.com/material}color_code').text
 
-            # generate Data 
-            self.guid_to_path[f_guid] = f_path
+                # generate Data 
+                self.guid_to_path[f_guid] = f_path
 
-            if self.tmc_to_guid.get(f_type):
-                if self.tmc_to_guid[f_type].get(f_brand):
-                    self.tmc_to_guid[f_type][f_brand][f_color] = f_guid #type dict and brand dict already there, add color entry
-                else: self.tmc_to_guid[f_type][f_brand] = {f_color: f_guid} #type dict already there, add dict for this brand with color entry
-            else: self.tmc_to_guid[f_type] = {f_brand: {f_color: f_guid}} #add dict for this type ..
+                if self.tmc_to_guid.get(f_type):
+                    if self.tmc_to_guid[f_type].get(f_brand):
+                        self.tmc_to_guid[f_type][f_brand][f_color] = f_guid #type dict and brand dict already there, add color entry
+                    else: self.tmc_to_guid[f_type][f_brand] = {f_color: f_guid} #type dict already there, add dict for this brand with color entry
+                else: self.tmc_to_guid[f_type] = {f_brand: {f_color: f_guid}} #add dict for this type ..
         t.toc()
         logging.info("time to parse: {}".format(t.elapsed))
 
@@ -84,10 +85,10 @@ class FilamentManager:
 
     def load(self, tool_id):
         pass
-        
+
     def unload(self, tool_id):
         pass
-        
+
     def stop(self, tool_id):
         pass
         
