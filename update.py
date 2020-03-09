@@ -1,10 +1,14 @@
 import os
 import json
-import urllib2 # is called urllib.request for py3
+try:
+    import urllib2 as urllib
+    import StringIO
+except ImportError:
+    import urllib
+    from io import StringIO
 import threading
 import logging
 import tarfile
-import StringIO
 import subprocess
 import traceback
 

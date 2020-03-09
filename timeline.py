@@ -210,7 +210,7 @@ class History(EventDispatcher):
         try:
             with open(p.history_file, "r") as fp:
                 history = json.load(fp)
-        except IOError, ValueError: # No file or incorrect JSON
+        except (IOError, ValueError): # No file or incorrect JSON
             logging.info("History: Couldn't read file at {}".format(p.history_file))
             history = []
         if not self.verify_history(history):
