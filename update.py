@@ -74,7 +74,7 @@ class FileDownload(threading.Thread):
         CHUNK_SIZE=32768
         for i in range(20):
             try:
-                response = urllib2.urlopen(self.url)
+                response = urllib.urlopen(self.url)
                 total_size = response.info().getheader('Content-Length')
                 total_size.strip()
                 break
