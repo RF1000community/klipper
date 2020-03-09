@@ -241,6 +241,7 @@ class FilamentChooserPopup(BasePopup):
                     if self.selection[2]:
                         # type and manufacturer and color is selected, we have a material guid
                         self.selected_guid = tmc[self.selection[0]][self.selection[1]][self.selection[2]]
+                        logging.info("material selected{}".format(self.selected_guid))
             # sort types by how many manufactures make them
             # tmc[option[0]] is the dict of manufacturers for the current type option (e.g. for PLA)
             self.options[0].sort(key = lambda option: len(tmc[option[0]]), reverse=True)
@@ -250,27 +251,28 @@ class FilamentChooserPopup(BasePopup):
         else:
             self.options = [ [["jkfopjio",None,1,None] for t in range(4)], [], [] ] 
 
-
+        # now draw generated options
         self.ids.option_stack.clear_widgets()
         for i in range(len(self.options)):
             if i:
                 self.ids.option_stack.add_widget(OptionDivider())
             for j in range(len(self.options[i])):
-                is_selected = self.options[i][j][0] == self.selection[i+1]
+                # either text or hex_color is equal
+                is_selected = bool( self.selection[i] and (self.options[i][j][0] == self.selection[i] or self.options[i][j][1] == self.selection[i]))
                 self.options[i][j][3] = Option(self, is_selected, level=i, amount=self.options[i][j][2], text=self.options[i][j][0], hex_color=self.options[i][j][1])
                 self.ids.option_stack.add_widget(self.options[i][j][3])
 
         tm.toc()
-    
+
     def on_library_tab(self, instance, tab):
         self.draw_options()
 
     def do_selection(self, option):
         if self.library_tab:
-            self.selection[option.level] = option.text
+            self.selection[option.level] = option.text or option.hex_color
             for i in range(len(self.selection)):
                 if i> option.level:
-                    self.selection = None
+                    self.selection[i] = None
         else:
             self.selection_my = option.guid
         self.draw_options()
