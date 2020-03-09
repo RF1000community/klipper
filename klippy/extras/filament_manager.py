@@ -33,8 +33,8 @@ class FilamentManager:
         #get Extruders from Printer
         self.extruders = []
         for i in range(0,10):
-		    ext = self.printer.lookup_object('extruder{}'.format('' if i==0 else i), None)
-		    if ext: self.extruders.append(ext)
+            ext = self.printer.lookup_object('extruder{}'.format('' if i==0 else i), None)
+            if ext: self.extruders.append(ext)
 
     def parse_xml(self):
         t = TicToc()
