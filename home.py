@@ -207,6 +207,7 @@ class FilamentChooserPopup(BasePopup):
     library_tab = BooleanProperty(True)
     def __init__(self, extruder_id, **kwargs):
         self.app = App.get_running_app()
+        self.fil_man = self.app.filament_manager
         self.extruder_id = extruder_id
         self.selection = [None, None, None]
         self.selection_my = None
@@ -226,42 +227,40 @@ class FilamentChooserPopup(BasePopup):
         # Calculate options to draw based on selection
         if self.library_tab:
             # get material library from filament manager as type-manufacturer-color tree of dicts
-            tmc = self.app.filament_manager.tmc_to_guid
+            tmc = self.fil_man.tmc_to_guid
 
             # always show types
-            self.options = [ [[t,None,1,None] for t in tmc.keys()], [], [] ] 
-
+            self.options = [ [Option(self, level=0, text=t, selected=(t==self.selection[0])) for t in tmc.keys()], [], [] ] 
             if self.selection[0]:
                 # type is selected, show manufacturers
-                self.options[1] = [[m, None, 1, None] for m in tmc[self.selection[0]].keys()]
+                self.options[1] = [Option(self, level=1, text=m, selected=(m==self.selection[1])) for m in tmc[self.selection[0]].keys()]
                 if self.selection[1]:
                     # type and manufacturer is selected, show colors
-                    self.options[2] = [["", c, 1, None] for c in tmc[self.selection[0]][self.selection[1]].keys()]
+                    self.options[2] = [Option(self, level=2, hex_color=c, selected=(c==self.selection[2])) for c in tmc[self.selection[0]][self.selection[1]].keys()]
                     if self.selection[2]:
                         # type and manufacturer and color is selected, we have a material guid
                         self.selected_guid = tmc[self.selection[0]][self.selection[1]][self.selection[2]]
                         logging.info("material selected{}".format(self.selected_guid))
+        
             # sort types by how many manufactures make them
-            # tmc[option[0]] is the dict of manufacturers for the current type option (e.g. for PLA)
-            self.options[0].sort(key = lambda option: len(tmc[option[0]]), reverse=True)
+            # tmc[option.text] is the dict of manufacturers for the current type option (e.g. for PLA)
+            self.options[0].sort(key = lambda option: len(tmc[option.text]), reverse=True)
             # sort manufacturers alphabetically
-            self.options[1].sort(key = lambda option: option[0], reverse=True)
+            self.options[1].sort(key = lambda option: option.text, reverse=True)
 
             # now draw generated options
             self.ids.option_stack.clear_widgets()
             for i in range(len(self.options)):
-                for j in range(len(self.options[i])):
-                    # either text or hex_color is equal
-                    is_selected = bool( self.selection[i] and (self.options[i][j][0] == self.selection[i] or self.options[i][j][1] == self.selection[i]))
-                    self.options[i][j][3] = Option(self, is_selected, level=i, amount=self.options[i][j][2], text=self.options[i][j][0], hex_color=self.options[i][j][1])
-                    self.ids.option_stack.add_widget(self.options[i][j][3])
+                for option in self.options[i]:
+                    self.ids.option_stack.add_widget(option)
                 if len(self.options) > i+1 and self.options[i+1]:
                     self.ids.option_stack.add_widget(OptionDivider(height=0))
         else:
-            materials = self.app.filament_manager.loaded_material['unloaded']
-            for guid, amount in materials:
-                option = Option(self, )
-                options[0].append()
+
+            materials = self.fil_man.loaded_material['unloaded']
+            self.options[0] = [Option(self, guid=guid, selected=(self.selected_my==guid), amount=amount/1000,
+                ext=self.fil_man.get_material_info(guid=guid, tags=[])) for guid, amount in materials]
+
         tm.toc()
         logging.info("time to draw:{}".format(tm.elapsed))
 
