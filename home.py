@@ -209,9 +209,9 @@ class FilamentChooserPopup(BasePopup):
         self.app = App.get_running_app()
         self.fil_man = self.app.filament_manager
         self.extruder_id = extruder_id
-        self.selection = [None, None, None]
-        self.selection_my = None
-        self.selected_guid = None
+        self.show12 = [True, True, True]
+        self.sel = [None, None, None, None] # selected [type, manufacturer, color, guid]
+        self.sel_my = None # selected guid
 
         self.options = [[], [], []]
         super(FilamentChooserPopup, self).__init__(**kwargs)
@@ -222,45 +222,70 @@ class FilamentChooserPopup(BasePopup):
         tm = TicToc()
         tm.tic()
         self.options = [[], [], []]
-        self.selected_guid = None
-        logging.info("draw options with selecttion {}".format(self.selection))
+        self.sel[3] = None
+        self.ids.option_stack.clear_widgets()
+        self.ids.btn_confirm.text = "Who Cares"
         # Calculate options to draw based on selection
         if self.library_tab:
             # get material library from filament manager as type-manufacturer-color tree of dicts
             tmc = self.fil_man.tmc_to_guid
 
             # always show types
-            self.options = [ [Option(self, level=0, text=t, selected=(t==self.selection[0])) for t in tmc.keys()], [], [] ] 
-            if self.selection[0]:
+            self.options = [[Option(self, level=0, text=t, selected=(t==self.sel[0])) 
+                           for t in tmc.keys()], [], []] 
+            if self.sel[0]:
                 # type is selected, show manufacturers
-                self.options[1] = [Option(self, level=1, text=m, selected=(m==self.selection[1])) for m in tmc[self.selection[0]].keys()]
-                if self.selection[1]:
+                # autoselect if there's only one manufacturer, or 'Generic' and none is selected
+                manufacturers = tmc[self.sel[0]].keys()
+                if len(manufacturers) == 1:
+                    self.sel[1] = manufacturers[0]
+                elif self.sel[1] is None and 'Generic' in manufacturers:
+                    self.sel[1] = 'Generic'
+                self.options[1] = [Option(self, level=1, text=m, selected=(m==self.sel[1]))
+                                  for m in manufacturers]
+                if self.sel[1]:
                     # type and manufacturer is selected, show colors
-                    self.options[2] = [Option(self, level=2, hex_color=c, selected=(c==self.selection[2])) for c in tmc[self.selection[0]][self.selection[1]].keys()]
-                    if self.selection[2]:
+                    # autoselect if there's only one color
+                    colors = tmc[self.sel[0]][self.sel[1]].keys()
+                    if len(colors) == 1:
+                        self.sel[2] = colors[0]
+                    self.options[2] = [Option(self, level=2, hex_color=c, selected=(c==self.sel[2])) 
+                                      for c in colors]
+                    if self.sel[2]:
                         # type and manufacturer and color is selected, we have a material guid
-                        self.selected_guid = tmc[self.selection[0]][self.selection[1]][self.selection[2]]
-                        logging.info("material selected{}".format(self.selected_guid))
-        
+                        self.sel[3] = tmc[self.sel[0]][self.sel[1]][self.sel[2]]
+                        logging.info("material selected{}".format(self.sel[3]))
+                        self.ids.btn_confirm.text = "Select {} {}".format(self.sel[1], self.sel[0])
+
             # sort types by how many manufactures make them
-            # tmc[option.text] is the dict of manufacturers for the current type option (e.g. for PLA)
+            # tmc[option.text] is the dict of manufacturers for the selected type (e.g. for PLA)
             self.options[0].sort(key = lambda option: len(tmc[option.text]), reverse=True)
             # sort manufacturers alphabetically
             self.options[1].sort(key = lambda option: option.text, reverse=True)
 
             # now draw generated options
-            self.ids.option_stack.clear_widgets()
             for i in range(len(self.options)):
-                for option in self.options[i]:
-                    self.ids.option_stack.add_widget(option)
-                if len(self.options) > i+1 and self.options[i+1]:
-                    self.ids.option_stack.add_widget(OptionDivider(height=0))
-        else:
 
+                if len(self.options[i]) < 12 or not self.show12[i]:
+                    for option in self.options[i]:
+                        self.ids.option_stack.add_widget(option)
+                    if len(self.options) > i+1 and self.options[i+1]:
+                        self.ids.option_stack.add_widget(OptionDivider(self, level=i))
+        
+                else: # hidden options
+                    for option in self.options[i][:12]:
+                        self.ids.option_stack.add_widget(option)
+                    if len(self.options) > i+1 and self.options[i+1]:
+                        self.ids.option_stack.add_widget(OptionDivider(self, level=i, height=0))
+                self.ids.btn_confirm.text = "Select"
+
+        else:   
             materials = self.fil_man.loaded_material['unloaded']
-            self.options[0] = [Option(self, guid=guid, selected=(self.selected_my==guid), amount=amount/1000,
-                ext=self.fil_man.get_material_info(guid=guid, tags=[])) for guid, amount in materials]
-
+            for guid, amount in materials:
+                option = Option(self, guid=guid, selected=(self.selected_my==guid), 
+                    amount=amount/1000, ext=self.fil_man.get_material_info(guid=guid, tags=[]))
+                self.options[0].append(option)
+                self.ids.option_stack.add_widget(option)
         tm.toc()
         logging.info("time to draw:{}".format(tm.elapsed))
 
@@ -269,12 +294,12 @@ class FilamentChooserPopup(BasePopup):
 
     def do_selection(self, option):
         if self.library_tab:
-            self.selection[option.level] = option.text or option.hex_color
-            for i in range(len(self.selection)):
+            self.sel[option.level] = option.text or option.hex_color
+            for i in range(len(self.sel)):
                 if i> option.level:
-                    self.selection[i] = None
+                    self.sel[i] = None
         else:
-            self.selection_my = option.guid
+            self.sel_my = option.guid
         self.draw_options()
 
 class Option(BaseButton):
@@ -301,8 +326,21 @@ class Option(BaseButton):
         self.filamentchooser.do_selection(self)
         self.selected = True
 
-class OptionDivider(Widget):
-    pass
+class OptionDivider(BaseButton):
+    def __init__(self, filamentchooser, level, **kwargs):
+        self.level = level
+        self.filamentchooser = filamentchooser
+        super(OptionDivider, self).__init__(**kwargs)
+
+    def on_touch_down(self, touch):
+        # Add selection on touch down
+        if touch.pos[1] > self.y and touch.pos[1] < self.y + self.actual_height:
+            self.filamentchooser.show12[self.level] = not self.filamentchooser.show12[self.level]
+            self.filamentchooser.draw_options()
+            return True
+        if super(OptionDivider, self).on_touch_down(touch):
+            return True
+        return False
 
 class BtnTriple(Widget):
     filament_color = ListProperty([1,0,0])
@@ -322,10 +360,12 @@ def calculate_filament_color(filament_color):
         maximum value."""
     l = 0.5*(max(filament_color) + min(filament_color))
     # darken if color is to bright
-    if l > 0.48:
-        return [c*0.48/l for c in filament_color]
-    else:
-        return filament_color
+    # if l > 0.48:
+    #     return [c*0.48/l for c in filament_color]
+    # else:
+    #     return filament_color
+    return [c*0.6 for c in filament_color]
+
 
 def hex_to_rgb(h):
     """"Converts hex color to rgba float format"""

@@ -807,8 +807,9 @@
 #             pos: root.center_x, root.y
 #             on_release: app.send_temp(slider.val, root.creator.tool_id); root.dismiss()
 
+ #: set o_padding 10
 <FilamentChooserPopup>:
-    size_hint: 0.95, 0.75
+    size_hint: 0.95, 0.8
     title: "Load Material"
     #TODO check if container id was already used
     FloatLayout:
@@ -847,57 +848,63 @@
                 id: option_stack
                 size_hint_y: None
                 height: self.minimum_height
-                spacing: [0]
-                padding: [p.padding - o_padding]
+                spacing: (2*o_padding,)
+                padding: (p.padding,)
         Btn_P_Cancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
         Btn_P_Confirm:
+            id: btn_confirm
             enabled: True
-            text: "Select" if root.selected_guid is not None else "Who cares"
+            text: "Who cares"
             width: root.width/2
             pos: root.center_x, root.y
             on_release: pass
 
 <Option>:
-    #: set o_padding 10
-    size: 123, 84
-    padding: o_padding, o_padding
-
+    size: 103, 62
     canvas.before:
         Color:
             rgba: self.option_color
         RoundedRectangle:
-            size: self.width - 2*o_padding, self.height - 2*o_padding
-            pos: self.x + o_padding, self.y + o_padding
+            size: self.width, self.height
+            pos: self.x, self.y
             radius: (p.icon_radius,)
         Color:
-            rgba: (1,1,1,0.3) if self.selected else p.btn_outline
+            rgba: (1,1,1,0.25) if self.selected else p.btn_outline
         Line:
             width: 1
-            rounded_rectangle: (self.x+o_padding, self.y+o_padding, self.width-2*o_padding, self.height-2*o_padding, p.icon_radius)
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.icon_radius)
         Color:
             rgba: p.translucent_white if self.selected else (0,0,0,0)
         RoundedRectangle:
-            size: self.size
-            pos: self.pos
+            size: self.width + 2*o_padding, self.height + 2*o_padding
+            pos: self.x - o_padding, self.y - o_padding
             radius: (p.radius,)
 
 <OptionDivider>:
     #: set od_h 10
     size_hint: 1, None
-    height: 50 - 2 * o_padding
-    actual_height: float(50 - 2 * o_padding)
+    height: p.padding # is redundantly set in many places, since height can be set to 0
+    actual_height: p.padding
     canvas.before:
         Color:
             rgba: p.popup
         Rectangle:
-            size: self.width, float(50 - 2 * o_padding)
-            pos: self.pos
+            size: self.width + 2*o_padding, p.padding
+            pos: self.x - o_padding, self.y
         Color:
             rgba: p.medium_light_gray
         Triangle:
-            points: self.center_x, self.center_y - od_h,    self.center_x - od_h*2, self.center_y + od_h,    self.center_x + od_h*2, self.center_y + od_h
-     
+            points: self.center_x, self.y + p.padding/2 - od_h,    self.center_x - od_h*2, self.y + p.padding/2 + od_h,    self.center_x + od_h*2, self.y + p.padding/2 + od_h
+    Label:
+        size: root.width, p.padding
+        pos: root.pos
+        color: p.medium_light_gray
+        text: "show more" if root.height == 0 else "show less" if root.filamentchooser.show12[root.level] == False else ""
+        text_size: self.size
+        font_size: p.normal_font
+        valign: 'middle'
+        halign: 'right'
