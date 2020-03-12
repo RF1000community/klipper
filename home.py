@@ -214,14 +214,13 @@ class FilamentChooserPopup(BasePopup):
 
         self.options = [[], [], []]
         super(FilamentChooserPopup, self).__init__(**kwargs)
-
         Clock.schedule_once(self.draw_options, 0)
 
 
     def draw_options(self, dt=None):
         tm = TicToc()
         tm.tic()
-
+        self.options = [[], [], []]
         self.selected_guid = None
         logging.info("draw options with selecttion {}".format(self.selection))
         # Calculate options to draw based on selection
@@ -231,8 +230,7 @@ class FilamentChooserPopup(BasePopup):
 
             # always show types
             self.options = [ [[t,None,1,None] for t in tmc.keys()], [], [] ] 
-            logging.info(type(self.selection))
-            logging.info(len(self.selection))
+
             if self.selection[0]:
                 # type is selected, show manufacturers
                 self.options[1] = [[m, None, 1, None] for m in tmc[self.selection[0]].keys()]
@@ -249,21 +247,24 @@ class FilamentChooserPopup(BasePopup):
             # sort manufacturers alphabetically
             self.options[1].sort(key = lambda option: option[0], reverse=True)
 
+            # now draw generated options
+            self.ids.option_stack.clear_widgets()
+            for i in range(len(self.options)):
+                for j in range(len(self.options[i])):
+                    # either text or hex_color is equal
+                    is_selected = bool( self.selection[i] and (self.options[i][j][0] == self.selection[i] or self.options[i][j][1] == self.selection[i]))
+                    self.options[i][j][3] = Option(self, is_selected, level=i, amount=self.options[i][j][2], text=self.options[i][j][0], hex_color=self.options[i][j][1])
+                    self.ids.option_stack.add_widget(self.options[i][j][3])
+                if len(self.options) > i+1 and self.options[i+1]:
+                    self.ids.option_stack.add_widget(OptionDivider(height=0))
         else:
-            self.options = [ [["jkfopjio",None,1,None] for t in range(4)], [], [] ]
-
-        # now draw generated options
-        self.ids.option_stack.clear_widgets()
-        for i in range(len(self.options)):
-            for j in range(len(self.options[i])):
-                # either text or hex_color is equal
-                is_selected = bool( self.selection[i] and (self.options[i][j][0] == self.selection[i] or self.options[i][j][1] == self.selection[i]))
-                self.options[i][j][3] = Option(self, is_selected, level=i, amount=self.options[i][j][2], text=self.options[i][j][0], hex_color=self.options[i][j][1])
-                self.ids.option_stack.add_widget(self.options[i][j][3])
-            if len(self.options) > i+1 and self.options[i+1]:
-                self.ids.option_stack.add_widget(OptionDivider(height=0))
+            materials = self.app.filament_manager.loaded_material['unloaded']
+            for guid, amount in materials:
+                option = Option(self, )
+                options[0].append()
         tm.toc()
         logging.info("time to draw:{}".format(tm.elapsed))
+
     def on_library_tab(self, instance, tab):
         self.draw_options()
 
