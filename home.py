@@ -205,9 +205,9 @@ from pytictoc import TicToc
 
 class FilamentChooserPopup(BasePopup):
     library_tab = BooleanProperty(True)
-    def __init__(self, tool_id, **kwargs):
+    def __init__(self, extruder_id, **kwargs):
         self.app = App.get_running_app()
-        self.tool_id = tool_id
+        self.extruder_id = extruder_id
         self.selection = [None, None, None]
         self.selection_my = None
         self.selected_guid = None
@@ -221,6 +221,7 @@ class FilamentChooserPopup(BasePopup):
     def draw_options(self, dt=None):
         tm = TicToc()
         tm.tic()
+
         self.selected_guid = None
         logging.info("draw options with selecttion {}".format(self.selection))
         # Calculate options to draw based on selection
@@ -249,7 +250,7 @@ class FilamentChooserPopup(BasePopup):
             self.options[1].sort(key = lambda option: option[0], reverse=True)
 
         else:
-            self.options = [ [["jkfopjio",None,1,None] for t in range(4)], [], [] ] 
+            self.options = [ [["jkfopjio",None,1,None] for t in range(4)], [], [] ]
 
         # now draw generated options
         self.ids.option_stack.clear_widgets()

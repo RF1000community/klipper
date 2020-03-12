@@ -85,7 +85,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.z_timer = None
         self.extrude_timer = None
         self.filament_manager = None
-        self.bed_mesh = True
+        self.bed_mesh = True #initialize as True so it shows up on load, maybe dissapears after handle_connect
         if not TESTING:
             self.clean()
             self.kgui_config = config
@@ -123,7 +123,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.pos_min = {'x':0, 'y':0}
             self.filament_diameter = 1.75
             self.xy_homing_controls = True
-            self.extruders = [None, None, None]
+            self.extruders = [None, None]
             self.extruder_count = 2
         self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell the app class where the root kv file is
         super(mainApp, self).__init__(**kwargs)
@@ -388,16 +388,16 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         def read_temp(e):
             if self.heater_manager is not None:
                 t = {}
-                for heater_id, sensor in self.heater_manager.get_gcode_sensors():
+                for tool_id, sensor in self.heater_manager.get_gcode_sensors():
                     current, target = sensor.get_temp(self.reactor.monotonic()) #get temp at current point in time
-                    self.temp[heater_id] = (target, current)
+                    self.temp[tool_id] = (target, current)
         self.reactor.register_async_callback(read_temp)
 
-    def send_temp(self, temp, heater_id):
+    def send_temp(self, temp, tool_id):
         def change_temp(e):
-            self.heaters[heater_id].set_temp(temp)
-            current = self.temp[heater_id]
-            self.temp[heater_id] = (temp, current[1])
+            self.heaters[tool_id].set_temp(temp)
+            current = self.temp[tool_id]
+            self.temp[tool_id] = (temp, current[1])
         self.reactor.register_async_callback(change_temp)
 
     def get_homing_state(self):
