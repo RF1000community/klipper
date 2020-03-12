@@ -399,13 +399,13 @@ class ToolHead:
         self.trapq_free_moves(self.trapq, self.reactor.NEVER)
         self.commanded_pos[:] = newpos
         self.kin.set_position(newpos, homing_axes)
-    def move(self, newpos, speed):
+    def move(self, newpos, speed, force=False):
         move = Move(self, self.commanded_pos, newpos, speed)
         if not move.move_d:
             return
-        if move.is_kinematic_move:
+        if move.is_kinematic_move and not force:
             self.kin.check_move(move)
-        if move.axes_d[3]:
+        if move.axes_d[3] and not force:
             self.extruder.check_move(move)
         self.commanded_pos[:] = move.end_pos
         self.move_queue.add_move(move)

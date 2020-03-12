@@ -22,29 +22,27 @@ class FilamentManager:
             self.min_path_len = self.filament_manager_config.getfloat('min_path_length')
             self.printer.register_event_handler("klippy:connect", self.handle_connect)
 
+        # xml files for each material
         self.material_dir = expanduser('~/materials')
-        self.loaded_material_path = join(self.material_dir, "loaded_material.json")
-
-        self.loaded_material = []
-        self.my_materials = []
         self.tmc_to_guid = {} # Type -> Manufacturer -> Color
         self.guid_to_path = {}
+        self.read_material_library_xml() 
 
-        self.read_xml_material_library()
+        # json list of loaded and unloaded material
+        self.loaded_material_path = join(self.material_dir, "loaded_material.json")
+        self.loaded_material = [] # { 'loaded': [None, (guid, amount)], 'unloaded': [(guid, amount), (guid, amount),(guid, amount), (guid, amount)]}
+        self.read_loaded_material_json() 
 
     def handle_connect(self):
-        #get Extruders from Printer
-        self.extruders = []
+        self.heater_manager = self.printer.lookup_object('heater', None)
+        self.toolhead = self.printer.lookup_object('toolhead')
+        self.extruders = {}
         for i in range(10):
-            ext = self.printer.lookup_object('extruder{}'.format('' if i==0 else i), None)
-            if ext: 
-                self.extruders.append(ext)
-            else:
-                break
-
+            extruder_id = 'extruder{}'.format('' if i==0 else i)
+            self.extruders[extruder_id] = self.printer.lookup_object(extruder_id, None)
 
     ######## manage cura-material xml files
-    def read_xml_material_library(self):
+    def read_material_library_xml(self):
         t = TicToc()
         t.tic()
         self.guid_to_path = {}
@@ -77,63 +75,114 @@ class FilamentManager:
         t.toc()
         logging.info("time to parse: {}".format(t.elapsed))
 
-    def get_text_from_path(self, path, tags):
+    def get_material_info(self, path=None, guid=None, tags=None, attribute=None): # tuple(attribute name, attribute value)
+        if guid:
+            path = self.guid_to_path[guid]
         try:
             current_tag = cElementTree.parse(path).getroot()
         except: 
             logging.info("Failed to parse {}".format(path))
             return ""
-        for tag in tags:
-            current_tag = current_tag.find('{http://www.ultimaker.com/material}'+tag)
-        return current_tag.text
+        
+        if not attribute:
+            for tag in tags:
+                current_tag = current_tag[0].find('{http://www.ultimaker.com/material}'+tag)
+            return current_tag.text
 
-    def get_text_from_tool(self, tool_id, tags):
-        pass
+        else:
+            current_tags = [current_tag]
+            for tag in tags:
+                current_tags = current_tags[0].findall('{http://www.ultimaker.com/material}'+tag)
+            for tag in current_tags:
+                if attribute[1] == tag.get(attribute[0]):
+                    return tag.text
 
-
-    ######## loading and unloading api
+    ######## loading and unloading api ONLY EXECUTE IN KLIPPER THREAD
     def get_status(self):
-        pass
+        return self.loaded_material
 
-    def load(self, tool_id, material_guid):
-        pass
+    def load(self, extruder_id, temp, amount=1000, unloaded_idx=None, material_guid=None):
 
-    def unload(self, tool_id):
-        pass
+        if unloaded_idx is not None:
+            material = self.loaded_material['unloaded'][unloaded_idx]
+            self.loaded_material['unloaded'].remove(material)
+            material_guid, amount = material
+        self.loaded_material['loaded'][idx(extruder_id)] = (material_guid, amount)
+        self.write_loaded_material_json()
+        if not temp:
+            temp = self.get_material_info(guid=material_guid, tags=('settings', 'setting'), attribute=('key', 'print temperature'))
 
-    def stop(self, tool_id):
-        pass
+        self.heater_manager.heaters[extruder_id].set_temp(temp) 
+        self.wait_for_temperature(self.heater_manager.heaters[extruder_id])
 
+        # move slowly to grab the material for grab_time in seconds
+        grab_length = self.grab_speed * self.grab_time
+        self.send_extrude(grab_length, self.grab_speed, extruder_id)
+        # move fast for as long as the hotent isnt reached for shure
+        load_length = self.min_path_len - grab_length
+        self.send_extrude(load_length, self.load_speed, extruder_id)
+        # move at max extrusion speed so that the maximum path length is covered even without grab_lenght
+        self.wait_for_temperature(self.heater_manager.heater[extruder_id])
+        extrude_length = self.max_path_len - load_length
+        self.send_extrude(extrude_length, self.extrude_speed, extruder_id)
 
+    def unload(self, extruder_id):
+        temp = 200
+
+        if len(self.loaded_material['loaded']) > self.idx(extruder_id) and self.loaded_material['loaded'][self.idx(extruder_id)]:
+            unloaded = self.loaded_material['loaded'][self.idx(extruder_id)]
+            self.loaded_material['unloaded'] = [unloaded] + self.loaded_material['unloaded'][:9]
+            self.loaded_material['loaded'][self.idx(extruder_id)] = None
+            temp = self.get_material_info(guid=unloaded[0],
+                tags=('settings', 'setting'), attribute=('key', 'print temperature')) or temp
+            self.write_loaded_material_json()
+
+        self.heater_manager.heaters[extruder_id].set_temp(temp)
+        self.wait_for_temperature(self.heater_manager.heaters[extruder_id])
+
+        self.send_extrude(self.max_path_len - self.min_path_len, self.extrude_speed, extruder_id)
+        self.heater_manager.heaters[extruder_id].set_temp(0)
+        self.send_extrude(self.min_path_len, self.load_speed, extruder_id)
+
+    def idx(self, extruder_id):
+        return 0 if extruder_id == 'extruder' else int(extruder_id[-1])
+
+    def send_extrude(self, e, speed, extruder_id):
+        # select current extruder if necessary
+        current_extruder = self.toolhead.get_extruder()
+        if current_extruder != self.extruders[extruder_id]:
+            self.toolhead.set_extruder(self.extruders[extruder_id], current_extruder.stepper.get_commanded_position())
+        cur_pos = self.toolhead.get_position()
+        cur_pos[3] += e
+        self.toolhead.move(cur_pos, speed, force=True)
+        
+    def wait_for_temperature(self, heater):
+        eventtime = self.reactor.monotonic()
+        while heater.check_busy(eventtime):
+            eventtime = self.reactor.pause(eventtime + 1.)
     
-    ######## store json for loaded and recently unloaded materials and their amount
-    def read_loaded_material(self):
+    ######## store json for loaded and recently unloaded material and their amount
+    def read_loaded_material_json(self):
         """Read the material file and return it as a list object"""
         try:
             with open(self.loaded_material_path, "r") as f:
-                material = json.load(f)
+                self.loaded_material = json.load(f)
         except (IOError, ValueError): # No file or incorrect JSON
             logging.info("Filament-Manager: Couldn't read loaded-material-file at " + self.loaded_material_path)
-            material = {'loaded':[], 'unloaded':[]}
-        return material
+            self.loaded_material = {'loaded':[], 'unloaded':[]}
 
-    def verify_json_materials(self, materials):
+    def verify_loaded_material_json(self, material):
         """Only return True when the entire file has a correct structure"""
         pass
 
-    def write(self, materials):
-        """Write the object to the history file"""
+    def write_loaded_material_json(self):
+        """Write the object to the material file"""
         try:
-            with open(p.history_file, "w") as f:
-                json.dump(materials, f, indent=True)
+            with open(self.loaded_material_path, "w") as f:
+                json.dump(self.loaded_material, f, indent=True)
         except IOError:
             return
 
-    def add(self, path, status):
-        """Add a new entry to the history with the path and status string specified"""
-        self.history.append([path, status, time.time()])
-        self.write(self.history)
-        
 def load_config(config):
     return FilamentManager(config)
 
