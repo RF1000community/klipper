@@ -18,7 +18,7 @@ icon_radius = 4
 popup_radius = 15
 status_bar_height = 26
 btn_height = 80
-btn_stop = 70
+btn_stop = 68
 progress_bar_height = 10
 tab_height = 100
 #generate even spacing based on all contents on homescreen

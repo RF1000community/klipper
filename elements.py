@@ -18,7 +18,7 @@ class Divider(Widget):
     pass
 
 class BaseButton(Label):
-
+    """ Lightweight adaptation of the kivy button class """
     pressed = BooleanProperty(False)
     enabled = BooleanProperty(True)
     def __init__(self, **kwargs):
@@ -108,7 +108,6 @@ class ErrorPopup(BasePopup):
     def __init(self, message, **kwargs):
         self.message = message
         super(ErrorPopup, self).__init__(**kwargs)
-
 
 class UltraSlider(Widget):
     """
@@ -245,23 +244,6 @@ class UltraSlider(Widget):
 class UltraOffsetSlider(UltraSlider):
     pass
 
-def get_id(inst, root_widget = None):#doesnt work :)
-    if root_widget is None: root_widget = App.get_running_app().root
-    q = deque(root_widget.ids.values())
-    while 1:
-        c = q.popleft()
-        if inst in list(c.ids.values()):
-            for k in c.ids.keys():
-                if c.ids[k] == inst: return k
-        q.extend(list(c.ids.values()))
-
-def get_instance(id, root_widget = None):#BFS => always gives the highest level instance with id
-    if root_widget is None: root_widget = App.get_running_app().root
-    q = list(root_widget.ids.values())
-    while 1:
-        c = q.popleft()
-        if id in c.ids: return c.ids[id]
-        q.extend(list(c.ids.values()))
 
 class UltraKeyboard(VKeyboard):
     # Copy of VKeyboard, only overwrite two methods

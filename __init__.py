@@ -572,7 +572,7 @@ def set_kivy_config():
 
 # Catch KGUI exceptions and display popup
 ExceptionManager.add_handler(PopupExceptionHandler())
-# Add parent directory to sys.path so main.kv (parser.py) can import from it
+# Add parent directory to sys.path so kv-files (kivy/../parser.py) can import from it
 site.addsitedir(p.kgui_dir)
 # Read custom Kivy config file, set rotation and load custom style.kv
 set_kivy_config()

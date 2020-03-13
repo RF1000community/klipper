@@ -63,7 +63,7 @@
     # Extra background color
     canvas.before:
         Color:
-            rgba: p.accent if self.status in {"printing", "paused"} else (0, 0, 0, 0)
+            rgba: p.flat_accent if self.status in {"printing", "paused"} else (0, 0, 0, 0)
         Rectangle:
             size: self.size
             pos: self.pos
@@ -77,28 +77,26 @@
     size_hint_y: None
     height: 40 if self.status == "header" else 110
     text: root.details
-    halign: 'center' if self.status == "header" else 'right'
+    halign: 'right'
     valign: 'middle'
     max_lines: 1
     padding_x: p.h_padding
     text_size: self.size
-    font_size: p.small_font if self.status == "header" else p.normal_font
-    color: p.medium_dark_gray if self.status in {"printing", "paused"} else p.medium_light_gray
-    italic: self.status == "header"
+    font_size: p.normal_font
+    color: p.medium_light_gray
     Label:
         text: root.name
         shorten: True
         shorten_from: 'right'
         halign: 'left'
         valign: 'middle'
-        padding_x: p.h_padding
+        padding_x: p.small_padding if root.status == "header" else p.h_padding 
         size_hint: None, None
         size: root.width - 120, root.height
         pos: root.pos
         text_size: self.size
         font_size: p.normal_font
-        color: p.green if root.status == "done" else p.red if root.status == "stopped" else (1,1,1,1)
-        bold: root.status == "header"
+        color: p.green if root.status == "done" else p.red if root.status == "stopped" else p.medium_gray if root.status == "header" else (1,1,1,1)
     Divider:
         y: root.top - 1
 

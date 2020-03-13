@@ -31,15 +31,15 @@ class Timeline(RecycleView):
         self.app.history.bind(history=self.load_all)
 
     def load_all(self, instance=None, value=None, in_background=True):
+
         queue = []
-        #TEST
-        testq = ["/path/{}.gco".format(i) for i in range(10)]
-        for i, e in enumerate(testq): #self.app.queued_files):
+        state = self.app.print_state
+        for i, e in enumerate(self.app.queued_files):
             new = {}
             new["name"] = basename(e)
-            new["details"] = (self.app.print_state.capitalize() if i == 0 else "{}.".format(i))
+            new["details"] = (state.capitalize() if i == 0 else "Queued {}.".format(i))
             new["path"] = e
-            new["status"] = "queued"
+            new["status"] = (state if state in ("printing", "paused") and i == 0 else "queued")
             queue.insert(0, new) # next queue item is displayed last
 
         history = []
@@ -51,7 +51,7 @@ class Timeline(RecycleView):
                 # This print happened on a later day than the previous
                 if new_date != prev_date:
                     # Format date like "25. Aug 1991"
-                    history.insert(0, {"details": prev_date.strftime("%d. %b %Y")})
+                    history.insert(0, {"name": prev_date.strftime("%d. %b %Y")})
                     prev_date = new_date
                 new = {}
                 new["path"], new["status"], new["timestamp"] = e
@@ -60,25 +60,15 @@ class Timeline(RecycleView):
                 history.insert(0, new) # history is sorted last file at end
             # Also show the newest date, but not if the last print happened today
             if new_date != date.today():
-                history.insert(0, {"details": new_date.strftime("%d. %b %Y")})
-
-        if self.app.print_state in {"printing", "paused"}:
-            queue[-1]["status"] = self.app.print_state
-        #TEST: Breaks status details a bit, but shows an example of printing files
-        queue.append({"name": "print.gco", "path": "/sdcard/print.gco", "status": "paused", "details": "Paused"})
-
-        if len(queue) > 1:
-            queue.insert(0, {"name": "Queue:"})
-        if len(history) >= 1:
-            history.insert(0, {"name": "History:"})
+                history.insert(0, {"name": new_date.strftime("%d. %b %Y")})
 
         if len(queue) + len(history) == 0: # Give message in case of empty list
             self.data = [{"details": "No printjobs scheduled or finished"}]
         else:
             self.data = queue + history
         self.refresh_from_data()
-        if not in_background and 'fc_box' in self.ids:
-            self.ids.fc_box.selected_nodes = []
+        if not in_background and 'tl_box' in self.ids:
+            self.ids.tl_box.selected_nodes = []
             self.scroll_y = 1
 
     def send_queue(self, queue):
@@ -94,33 +84,33 @@ class Timeline(RecycleView):
 
     def move_up(self):
         """Move the selected file up one step in the queue"""
-        i = self.ids.fc_box.selected_nodes[0]
+        i = self.ids.tl_box.selected_nodes[0]
         queue = self.app.queued_files
         if len(queue) > i:
             to_move = queue.pop(i)
             queue.insert(i - 1, to_move)
-            self.ids.fc_box.selected_nodes = [i - 1]
+            self.ids.tl_box.selected_nodes = [i - 1]
             self.send_queue(queue)
 
     def move_down(self):
         """Move the selected file down one step in the queue"""
-        i = self.ids.fc_box.selected_nodes[0]
+        i = self.ids.tl_box.selected_nodes[0]
         queue = self.app.queued_files
         if len(queue) > i:
             to_move = queue.pop(i)
             queue.insert(i + 1, to_move)
-            self.ids.fc_box.selected_nodes = [i + 1]
+            self.ids.tl_box.selected_nodes = [i + 1]
             self.send_queue(queue)
 
     def remove(self):
         """Remove the selcted file from the queue"""
-        i = self.ids.fc_box.selected_nodes[0]
+        i = self.ids.tl_box.selected_nodes[0]
         queue = self.app.queued_files
         if i == 0:
             StopPopup().open()
         elif len(queue) > i:
             to_remove = queue.pop(i)
-            self.ids.fc_box.selected_nodes = []
+            self.ids.tl_box.selected_nodes = []
             self.send_queue(queue)
 
 class TimelineBox(LayoutSelectionBehavior, RecycleBoxLayout):
