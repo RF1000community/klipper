@@ -1,21 +1,17 @@
 #!/usr/bin/env python2
 # coding: utf-8
+from datetime import datetime, timedelta
+import logging
 import os
-from sys import argv
-if '-t' in argv:
-    TESTING = True
-    argv.remove('-t')
-else:
-    TESTING = False
+from os.path import join, abspath, expanduser, basename, splitext
+import site
+from subprocess import Popen
+import threading
+
+TESTING = __name__ == "__main__"
 if not TESTING:
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'gl'
-from datetime import datetime, timedelta
-from os.path import join, abspath, expanduser, basename, splitext
-from subprocess import Popen
-import logging
-import site
-import threading
 
 from kivy import kivy_data_dir
 from kivy.app import App
@@ -583,5 +579,5 @@ def load_config(config):
     kgui_object.start()
     return kgui_object
 
-if __name__ == "__main__":
+if TESTING:
     mainApp().run()
