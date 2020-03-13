@@ -30,7 +30,8 @@ class FilamentManager:
 
         # json list of loaded and unloaded material
         self.loaded_material_path = join(self.material_dir, "loaded_material.json")
-        self.loaded_material = [] # { 'loaded': [None, (guid, amount)], 'unloaded': [(guid, amount), (guid, amount),(guid, amount), (guid, amount)]}
+        # { 'loaded': [None, (guid, amount in kg)], 'unloaded': [(guid, amount), (guid, amount),(guid, amount)]}
+        self.loaded_material = {}
         self.read_loaded_material_json() 
 
     def handle_connect(self):
@@ -42,7 +43,7 @@ class FilamentManager:
             self.extruders[extruder_id] = self.printer.lookup_object(extruder_id, None)
 
     ######## manage cura-material xml files
-    def read_material_library_xml(self):
+    def read_material_library_xml(self): # TODO call this when new files were downloaded
         t = TicToc()
         t.tic()
         self.guid_to_path = {}
@@ -68,10 +69,12 @@ class FilamentManager:
                 self.guid_to_path[f_guid] = f_path
 
                 if self.tmc_to_guid.get(f_type):
-                    if self.tmc_to_guid[f_type].get(f_brand):
-                        self.tmc_to_guid[f_type][f_brand][f_color] = f_guid #type dict and brand dict already there, add color entry
-                    else: self.tmc_to_guid[f_type][f_brand] = {f_color: f_guid} #type dict already there, add dict for this brand with color entry
-                else: self.tmc_to_guid[f_type] = {f_brand: {f_color: f_guid}} #add dict for this type ..
+                    if self.tmc_to_guid[f_type].get(f_brand):#type dict and brand dict already there, add color entry
+                        self.tmc_to_guid[f_type][f_brand][f_color] = f_guid
+                    else: #type dict already there, add dict for this brand with color entry
+                        self.tmc_to_guid[f_type][f_brand] = {f_color: f_guid}
+                else: #add dict for this type ..
+                    self.tmc_to_guid[f_type] = {f_brand: {f_color: f_guid}}
         t.toc()
         logging.info("time to parse: {}".format(t.elapsed))
 
@@ -88,7 +91,6 @@ class FilamentManager:
             for tag in tags:
                 current_tag = current_tag[0].find('{http://www.ultimaker.com/material}'+tag)
             return current_tag.text
-
         else:
             current_tags = [current_tag]
             for tag in tags:
@@ -101,8 +103,7 @@ class FilamentManager:
     def get_status(self):
         return self.loaded_material
 
-    def load(self, extruder_id, temp, amount=1000, unloaded_idx=None, material_guid=None):
-
+    def load(self, extruder_id, temp, amount=1, unloaded_idx=None, material_guid=None):
         if unloaded_idx is not None:
             material = self.loaded_material['unloaded'][unloaded_idx]
             self.loaded_material['unloaded'].remove(material)
@@ -110,7 +111,8 @@ class FilamentManager:
         self.loaded_material['loaded'][idx(extruder_id)] = (material_guid, amount)
         self.write_loaded_material_json()
         if not temp:
-            temp = self.get_material_info(guid=material_guid, tags=('settings', 'setting'), attribute=('key', 'print temperature'))
+            temp = self.get_material_info(
+                guid=material_guid, tags=('settings', 'setting'), attribute=('key', 'print temperature'))
 
         self.heater_manager.heaters[extruder_id].set_temp(temp) 
         self.wait_for_temperature(self.heater_manager.heaters[extruder_id])
@@ -118,7 +120,7 @@ class FilamentManager:
         # move slowly to grab the material for grab_time in seconds
         grab_length = self.grab_speed * self.grab_time
         self.send_extrude(grab_length, self.grab_speed, extruder_id)
-        # move fast for as long as the hotent isnt reached for shure
+        # move fast for as long as the hotend isn't reached for sure
         load_length = self.min_path_len - grab_length
         self.send_extrude(load_length, self.load_speed, extruder_id)
         # move at max extrusion speed so that the maximum path length is covered even without grab_lenght
@@ -129,7 +131,8 @@ class FilamentManager:
     def unload(self, extruder_id):
         temp = 200
 
-        if len(self.loaded_material['loaded']) > self.idx(extruder_id) and self.loaded_material['loaded'][self.idx(extruder_id)]:
+        if len(self.loaded_material['loaded']) > self.idx(extruder_id)\
+        and self.loaded_material['loaded'][self.idx(extruder_id)]:
             unloaded = self.loaded_material['loaded'][self.idx(extruder_id)]
             self.loaded_material['unloaded'] = [unloaded] + self.loaded_material['unloaded'][:9]
             self.loaded_material['loaded'][self.idx(extruder_id)] = None
@@ -155,12 +158,12 @@ class FilamentManager:
         cur_pos = self.toolhead.get_position()
         cur_pos[3] += e
         self.toolhead.move(cur_pos, speed, force=True)
-        
+
     def wait_for_temperature(self, heater):
         eventtime = self.reactor.monotonic()
         while heater.check_busy(eventtime):
             eventtime = self.reactor.pause(eventtime + 1.)
-    
+
     ######## store json for loaded and recently unloaded material and their amount
     def read_loaded_material_json(self):
         """Read the material file and return it as a list object"""
