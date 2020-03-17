@@ -31,13 +31,13 @@
             pos: 0, p.tab_height
         Btn_QX:
             id: q_x
-            right: p.screen_width - p.h_padding +10
-            y: p.tab_height + p.padding 
+            right: p.screen_width - p.h_padding + 10
+            y: p.tab_height + p.padding
             on_release: tl.remove()
             enabled: tl.selected is not None and tl.selected.status == "queued"
         Btn_QUp:
             id: q_up
-            right: q_x.x - p.h_padding  +10
+            right: q_x.x - p.h_padding  + 10
             y: p.tab_height + p.padding
             on_release: tl.move_up()
             enabled: tl.selected is not None and tl.selected.status == "queued"
@@ -60,13 +60,6 @@
 
 <TimelineItem>:
     size: p.screen_width, 777
-    # Extra background color
-    canvas.before:
-        Color:
-            rgba: p.flat_accent if self.status in {"printing", "paused"} else (0, 0, 0, 0)
-        Rectangle:
-            size: self.size
-            pos: self.pos
     canvas:
         Color:
             rgba: p.translucent_white if (self.selected or self.pressed) else (0,0,0,0)
@@ -83,7 +76,8 @@
     padding_x: p.h_padding
     text_size: self.size
     font_size: p.normal_font
-    color: p.medium_light_gray
+    bold: bool(root.status in ("printing", "paused"))
+    color: p.green if root.status == "done" else p.red if root.status == "stopped" else p.accent if root.status in ("printing", "paused") else p.medium_light_gray
     Label:
         text: root.name
         shorten: True
@@ -96,7 +90,7 @@
         pos: root.pos
         text_size: self.size
         font_size: p.normal_font
-        color: p.green if root.status == "done" else p.red if root.status == "stopped" else p.medium_gray if root.status == "header" else (1,1,1,1)
+        color: p.medium_gray if root.status == "header" else (1,1,1,1)
     Divider:
         y: root.top - 1
 

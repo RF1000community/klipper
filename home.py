@@ -112,9 +112,16 @@ class TempSlider(UltraSlider):
                         material_type = fil_man.get_material_info(
                             guid=loaded[0], tags=['metadata','name', 'material'])
                         bed_temp = fil_man.get_material_info(
-                            guid=loaded[0], tags=['settings','setting'], attribute=('key','heated bed temperature'))
+                            guid=loaded[0], tags=['settings','setting'], 
+                            attribute=('key','heated bed temperature'))
                         if bed_temp:
                             self.buttons.append([int(bed_temp), 0, material_type, None])
+            else: # show some generic temperatures
+                self.buttons = [
+                    [0,0,"Off",None],
+                    [60,0,"PLA",None],
+                    [90,0,"PETG",None],
+                    [110,0,"ABS",None]]
         else:
             self.val_min = 40
             self.val_max = 280
@@ -127,9 +134,18 @@ class TempSlider(UltraSlider):
                     material_type = fil_man.get_material_info(
                         guid=loaded[0], tags=['metadata','name', 'material'])
                     ext_temp = fil_man.get_material_info(
-                        guid=loaded[0], tags=['settings','setting'], attribute=('key','print temperature'))
+                        guid=loaded[0], tags=['settings','setting'], 
+                        attribute=('key','print temperature'))
                     if ext_temp:
                         self.buttons.append([int(ext_temp), 0, material_type, None])
+            else: 
+                self.buttons = [
+                    [0,14,"Off",None],
+                    [70,0,"PLA\ncold pull",None],
+                    [90,-68/2,"ABS/PETG\ncold pull",None],
+                    [210,68/2,"PLA",None],
+                    [230,0,"PETG",None],
+                    [250,-68/2,"ABS",None]]
         self.px_max = self.right - p.padding
         self.px_min = self.x + p.padding
         self.px_width = self.px_max - self.px_min
@@ -137,7 +153,7 @@ class TempSlider(UltraSlider):
         self.disp = self.get_disp_from_val(self.val)
         for b in self.buttons:
             b[3] = Btn_Slider(y=self.y, px=self.get_px_from_val(b[0]), 
-                              val=b[0], offset=b[1],  s_title=b[2])
+                              val=b[0], offset=b[1], s_title=b[2])
             b[3].bind(on_press=self.on_button)
             self.add_widget(b[3])
         self.highlight_button()
@@ -226,9 +242,7 @@ class FilamentChooserPopup(BasePopup):
             # tmc[option.text] is the dict of manufacturers for the selected type (e.g. for PLA)
             self.options[0].sort(key = lambda option: len(tmc[option.text]), reverse=True)
             # sort manufacturers alphabetically
-            logging.info("unsortet options {}".format(self.options[1]))
             self.options[1].sort(key = lambda option: option.text.lower() if option.text!='Generic' else '\t')
-            logging.info("sorted options {}".format(self.options[1]))
 
             # now draw generated options
             for i in range(len(self.options)):

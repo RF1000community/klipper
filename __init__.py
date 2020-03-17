@@ -31,8 +31,10 @@ from status import *
 from update import *
 from kconfig_ui import *
 import parameters as p
-site.addsitedir(dirname(dirname(p.kgui_dir)))
-from reactor import ReactorCompletion
+
+if not TESTING:
+    site.addsitedir(dirname(dirname(p.kgui_dir)))
+    from reactor import ReactorCompletion
 
 # inherit from threading.thread => inherits start() method to run() in new thread
 class mainApp(App, threading.Thread): #Handles Communication with Klipper
@@ -211,9 +213,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_printjob_state()
 
     def update_home(self, *args):
-        self.get_homing_state()
+        #self.get_homing_state()
         self.get_temp()
-        self.get_pos()
+        #self.get_pos()
 
     def update_printing(self, *args):
         self.get_pressure_advance()
@@ -445,7 +447,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             pos[2] = (self.pos_max['z'] if direction==1 else self.pos_min['z'])
             steppers = self.toolhead.get_kinematics().rails[2].get_steppers()
             self.z_move_completion = ReactorCompletion(self.reactor)
-            self.z_start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers] #todo get z axis steppers
+            self.z_start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers]
             self.reactor.register_async_callback(lambda e: self.toolhead.drip_move(pos, 1, self.z_move_completion))
         self.reactor.register_async_callback(start_z)
 
@@ -453,6 +455,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         def stop_z(e):
             self.z_move_completion.complete(True)
             # Determine stepper halt positions
+            self.reactor.register_async_callback(set_z_pos, 10)
+
+        def set_z_pos(e):
+            logging.info("set position")
             self.toolhead.flush_step_generation()
             #                   v--start_pos     v--end_pos
             end_mcu_pos = [(s, spos, s.get_mcu_position()) for s, spos in self.z_start_mcu_pos]
