@@ -91,43 +91,57 @@ class TempSlider(UltraSlider):
     tool_id = StringProperty()
 
     def __init__(self, **kwargs):
-        super(TempSlider, self).__init__(**kwargs)
+        self.btn_last_active = None
+        self.initialized = False
+        super(UltraSlider, self).__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
-    
+
     def init_drawing(self, dt=None):
         app = App.get_running_app()
         app.get_temp()
         fil_man = app.filament_manager
-        
-        self.buttons = [[0, 0, "Off", None]] #[value, pos_offset, text, instance]
 
+        self.buttons = [[0, 0, "Off", None]] #[value, pos_offset, text, instance]
         if self.tool_id == 'B':
             self.val_min = 30
             self.val_max = 140
-            loadeds = fil_man.loaded_material['loaded']
-            for loaded in loadeds:
-                if loaded:
-                    material_type = fil_man.get_material_info(
-                        guid=loaded[0], tags=['metadata','name', 'material'])
-                    bed_temp = fil_man.get_material_info(
-                        guid=loaded[0], tags=['settings','setting'], attribute=('key','heated bed temperature'))
-                    if bed_temp:
-                        self.buttons.append([int(bed_temp), 0, material_type, None])
-
+            if fil_man:
+                loadeds = fil_man.loaded_material['loaded']
+                for loaded in loadeds:
+                    if loaded:
+                        material_type = fil_man.get_material_info(
+                            guid=loaded[0], tags=['metadata','name', 'material'])
+                        bed_temp = fil_man.get_material_info(
+                            guid=loaded[0], tags=['settings','setting'], attribute=('key','heated bed temperature'))
+                        if bed_temp:
+                            self.buttons.append([int(bed_temp), 0, material_type, None])
         else:
             self.val_min = 40
             self.val_max = 280
-            extruder_idx = str(self.tool_id[-1])
-            loaded = None
-            if len(fil_man.loaded_material['loaded']) > extruder_idx:
-                loaded = fil_man.loaded_material['loaded'][extruder_idx]
-            if loaded:
-                material_type = fil_man.get_material_info(
-                    guid=loaded[0], tags=['metadata','name', 'material'])
-                ext_temp = fil_man.get_material_info(
-                    guid=loaded[0], tags=['settings','setting'], attribute=('key','print temperature'))
-                if ext_temp:
-                    self.buttons.append([int(ext_temp), 0, material_type, None])
+            if fil_man:
+                extruder_idx = str(self.tool_id[-1])
+                loaded = None
+                if len(fil_man.loaded_material['loaded']) > extruder_idx:
+                    loaded = fil_man.loaded_material['loaded'][extruder_idx]
+                if loaded:
+                    material_type = fil_man.get_material_info(
+                        guid=loaded[0], tags=['metadata','name', 'material'])
+                    ext_temp = fil_man.get_material_info(
+                        guid=loaded[0], tags=['settings','setting'], attribute=('key','print temperature'))
+                    if ext_temp:
+                        self.buttons.append([int(ext_temp), 0, material_type, None])
+        self.px_max = self.right - p.padding
+        self.px_min = self.x + p.padding
+        self.px_width = self.px_max - self.px_min
+        self.px = self.get_px_from_val(self.val)
+        self.disp = self.get_disp_from_val(self.val)
+        for b in self.buttons:
+            b[3] = Btn_Slider(y=self.y, px=self.get_px_from_val(b[0]), 
+                              val=b[0], offset=b[1],  s_title=b[2])
+            b[3].bind(on_press=self.on_button)
+            self.add_widget(b[3])
+        self.highlight_button()
+        self.initialized = True
 
     def get_val_from_px(self, x):
         v = int(((x-self.px_min)/self.px_width)*(self.val_max-self.val_min)+self.val_min)
@@ -147,6 +161,10 @@ class TempSlider(UltraSlider):
             s = "{}°C".format(self.val)
         return s
 
+    def get_px_from_val(self, val):
+        x = (float(val-self.val_min)/float(self.val_max-self.val_min))*self.px_width+self.px_min	
+        if x < self.px_min: x = self.px_min	
+        return x
 
 from pytictoc import TicToc
 
@@ -302,8 +320,12 @@ class BtnTriple(Widget):
         self.guid = None
         self.app.bind(printer_objects_available=self.update_material)
         super(BtnTriple, self).__init__(**kwargs)
-
+    
     def update_material(self, instance=None, value=None, dt=None):
+        if not self.tool_id: # kv ui not initialized yet
+            Clock.schedule_once(self.update_material, 0)
+            logging.info("printer objects available before UI")
+            return
         self.fil_man = self.app.filament_manager
         extruder_idx = int(self.tool_id[-1])
         loaded = None

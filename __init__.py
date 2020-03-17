@@ -1,12 +1,12 @@
 #!/usr/bin/env python2
 # coding: utf-8
-from datetime import datetime, timedelta
 import logging
-import os
-from os.path import join, abspath, expanduser, basename, splitext
 import site
-from subprocess import Popen
 import threading
+import os
+from os.path import join, abspath, expanduser, basename, splitext, dirname
+from datetime import datetime, timedelta
+from subprocess import Popen
 
 TESTING = __name__ == "__main__"
 if not TESTING:
@@ -31,7 +31,8 @@ from status import *
 from update import *
 from kconfig_ui import *
 import parameters as p
-
+site.addsitedir(dirname(dirname(p.kgui_dir)))
+from reactor import ReactorCompletion
 
 # inherit from threading.thread => inherits start() method to run() in new thread
 class mainApp(App, threading.Thread): #Handles Communication with Klipper
@@ -419,8 +420,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             homed_axes = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
             new_pos = [new_pos[i] if p in homed_axes else None for i, p in enumerate('xyze')] #check whether axes are still homed
             pos = [p if p is not None else pos[i] for i, p in enumerate(new_pos)] #replace coordinates not given with current pos
-            self.toolhead.drip_move(pos, speed)
+            self.toolhead.move(pos, speed)
         self.reactor.register_async_callback(set_pos)
+
 
     def send_rel_pos(self, x=0, y=0, z=0, e=0, speed=15): # only execute this in klipper thread  
         cur_pos = self.toolhead.get_position()
@@ -438,34 +440,35 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.toolhead.move(cur_pos, speed)
 
     def send_z_up(self, direction=1):
-        INTERVAL = 0.1
-        SPEED = 10.
-        STEP = INTERVAL * SPEED * direction
-        self.first = True
-        self.step_time = self.reactor.monotonic()
-        def z_step(eventtime):
-            self.send_rel_pos(z=(STEP + self.first*2), speed=SPEED)
-            self.step_time += INTERVAL
-            self.first = False
-            return self.step_time
-        self.z_timer = self.reactor.register_timer(z_step, self.reactor.NOW)
+        def start_z(e):
+            pos = self.toolhead.get_position()
+            pos[2] = (self.pos_max['z'] if direction==1 else self.pos_min['z'])
+            steppers = self.toolhead.get_kinematics().rails[2].get_steppers()
+            self.z_move_completion = ReactorCompletion(self.reactor)
+            self.z_start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers] #todo get z axis steppers
+            self.reactor.register_async_callback(lambda e: self.toolhead.drip_move(pos, 1, self.z_move_completion))
+        self.reactor.register_async_callback(start_z)
 
     def send_z_stop(self):
-        if self.z_timer: #is this thread safe?
-            self.reactor.unregister_timer(self.z_timer)
+        def stop_z(e):
+            self.z_move_completion.complete(True)
+            # Determine stepper halt positions
+            self.toolhead.flush_step_generation()
+            #                   v--start_pos     v--end_pos
+            end_mcu_pos = [(s, spos, s.get_mcu_position()) for s, spos in self.z_start_mcu_pos]
+            for s, spos, epos in end_mcu_pos:
+                md = (epos - spos) * s.get_step_dist()
+                s.set_tag_position(s.get_tag_position() + md)
 
+            self.toolhead.set_position(self.toolhead.get_kinematics().calc_tag_position())
+
+        self.reactor.register_async_callback(stop_z)
+        
     def send_extrude(self, tool_id, direction=1):
-        INTERVAL = 0.4
-        SPEED = 2
-        STEP = INTERVAL * SPEED
-        def extrude_step(eventtime):
-            self.send_rel_pos(e=direction*STEP, speed=SPEED)
-            return eventtime + INTERVAL
-        self.extrude_timer = self.reactor.register_timer(extrude_step, self.reactor.NOW)
+        pass
 
     def send_extrude_stop(self):
-        if self.extrude_timer: #is this thread safe?
-            self.reactor.unregister_timer(self.extrude_timer)
+        pass
 
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(None)))

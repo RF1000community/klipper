@@ -161,8 +161,9 @@ class UltraSlider(Widget):
         self.initialized = True
 
     def on_touch_down(self, touch):
-        if touch.pos[0] > self.px_min - 30 and touch.pos[0] < self.px_max + 30 and\
-           touch.pos[1] > self.y + 95 - 18 and touch.pos[1] < self.y + 95 + 18 and self.initialized:
+        if touch.pos[0] > self.px_min - 30 and touch.pos[0] < self.px_max + 30\
+        and touch.pos[1] > self.y + 95 - 18 and touch.pos[1] < self.y + 95 + 18\
+        and self.initialized:
             self.pressed = True
             touch.grab(self)
             x = self.apply_bounds(touch.pos[0])

@@ -170,6 +170,7 @@
         BtnTripleZ:
             id: btn_tr_Z
             height: xy_field.height
+            z_pos: xy_field.ids.z_pos
             h1: self.height/3
             h2: self.height/3
             h3: self.height/3
@@ -265,11 +266,11 @@
             width: 1
             rounded_rectangle: (self.x, self.y, self.width + p.btn_height, self.height, p.radius)
         Line:
-            points: self.right, self.top-6,   self.right, self.y+6
+            points: self.right, self.top-p.btn_divider_padding,   self.right, self.y+p.btn_divider_padding
         Line:
-            points: self.right + 6, self.y + 2*p.btn_height,   self.right + p.btn_height -6, self.y + 2*p.btn_height
+            points: self.right + p.btn_divider_padding, self.y + 2*p.btn_height,   self.right + p.btn_height -p.btn_divider_padding, self.y + 2*p.btn_height
         Line:
-            points: self.right + 6, self.y + p.btn_height,   self.right + p.btn_height -6, self.y + p.btn_height
+            points: self.right + p.btn_divider_padding, self.y + p.btn_height,   self.right + p.btn_height -p.btn_divider_padding, self.y + p.btn_height
         # Outline without xy homing buttons
         Color:
             rgba: (0,0,0,0) if app.xy_homing_controls else p.btn_outline
@@ -299,6 +300,7 @@
         font_size: p.normal_font
         color: (1,1,1,1) if root.pressed else p.nozzle
     Label:
+        id: z_pos
         text: "Z:{:.0f}".format(root.mm[2])
         size_hint: None, None
         size: self.texture_size
@@ -357,11 +359,11 @@
             width: 1
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
         Line:
-            points: self.x+self.w1, self.y+p.small_padding, self.x+self.w1, self.top-p.small_padding
+            points: self.x+self.w1, self.y+p.btn_divider_padding, self.x+self.w1, self.top-p.btn_divider_padding
         Line:
-            points: self.x+self.w1+1+self.w2, self.y+p.small_padding, self.x+self.w1+1+self.w2, self.top-p.small_padding
+            points: self.x+self.w1+1+self.w2, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2, self.top-p.btn_divider_padding
         Line:
-            points: self.x+self.w1+1+self.w2*root.filament_amount, self.y+p.small_padding, self.x+self.w1+1+self.w2*root.filament_amount, self.top-p.small_padding
+            points: self.x+self.w1+1+self.w2*root.filament_amount, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2*root.filament_amount, self.top-p.btn_divider_padding
     BaseButton:
         size: root.w1, root.height
         pos: root.pos
@@ -421,16 +423,16 @@
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
         Rectangle:
-            pos: self.x+6, self.y+self.h1
-            size: self.width-12,1
+            pos: self.x+p.btn_divider_padding, self.y+self.h1
+            size: self.width-2*p.btn_divider_padding, 1
         Rectangle:
-            pos: self.x+6, self.y+self.h1+self.h2
-            size: self.width-12,1
+            pos: self.x+p.btn_divider_padding, self.y+self.h1+self.h2
+            size: self.width-2*p.btn_divider_padding, 1
     #:set t 9.5
     #:set u 19 #Triangle has this size x2
     BaseButton:
-        on_press: app.send_z_up() if app.invert_z_controls else app.send_z_up(-1)
-        on_release: app.send_z_stop()
+        on_press: app.send_z_up(); root.z_pos.highlighted = True if app.invert_z_controls else app.send_z_up(-1); root.z_pos.highlighted = True
+        on_release: app.send_z_stop(); root.z_pos.highlighted = False
         enabled: app.homed['z']
         size: root.width, root.h1
         pos: root.x, root.y
@@ -457,8 +459,8 @@
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: app.send_z_up(-1) if app.invert_z_controls else app.send_z_up()
-        on_release: app.send_z_stop()
+        on_press: app.send_z_up(-1); root.z_pos.highlighted = True if app.invert_z_controls else app.send_z_up(); root.z_pos.highlighted = True
+        on_release: app.send_z_stop(); root.z_pos.highlighted = False
         enabled: app.homed['z']
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
