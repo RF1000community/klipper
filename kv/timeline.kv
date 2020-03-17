@@ -8,8 +8,8 @@
     canvas:
         Rectangle:
             source: p.kgui_dir+'/logos/timeline.png'
-            size: 60,60
-            pos: 225-30, 20
+            size: 60*p.disp_vertical_stretch, 65
+            pos: 225-30*p.disp_vertical_stretch, 17.5
     FloatLayout:
         pos: 0, p.tab_height
         canvas.before:
@@ -70,7 +70,7 @@
     size_hint_y: None
     height: 40 if self.status == "header" else 110
     text: root.details
-    halign: 'right'
+    halign: 'center' if root.status == "header" else 'right'
     valign: 'middle'
     max_lines: 1
     padding_x: p.h_padding
