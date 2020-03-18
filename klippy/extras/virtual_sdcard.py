@@ -46,8 +46,6 @@ class VirtualSD(object):
         if  len(self.queued_files) > 0 and self.state != 'printing' and self.state != 'paused':
             # start a printjob
             self.pause_work()
-            self.deb()
-            logging.warning("virtual_sdcard: has checked queue")
             try:
                 f = open(self.queued_files[0][0], 'rb')
                 f.seek(0, os.SEEK_END)
@@ -57,7 +55,7 @@ class VirtualSD(object):
             except:
                 logging.warning("virtual_sdcard: couldnt open file{}".format(self.queued_files[0]))
                 return False
-            logging.warning("virtual_sdcard: has opened file")
+            logging.warning("virtual_sdcard: has opened file from queue")
 
             self.file_position = 0
             self.start_stop_times = [[self.toolhead.get_last_move_time(), None]] # [[start, pause], [resume, pause] ...]
@@ -72,11 +70,7 @@ class VirtualSD(object):
                 self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
             return True
 
-    def deb(self, message=""):
-        logging.info("vvvvv  {}  vvvvvvv:\n work_timer: {} \n must_pause_work: {} \n state: {} \n queue: {}\n[^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^]".format(message, self.work_timer, self.must_pause_work, self.state, self.queued_files))
-
     def resume_printjob(self):
-        self.deb('resume_printjob')
         if self.state == 'paused':
             self.state = 'printing'
             self.must_pause_work = False
@@ -88,15 +82,12 @@ class VirtualSD(object):
                 self.saved_pause_state = False
 
     def pause_printjob(self):
-        self.deb('pause')
         if self.state == 'printing':
             self.state = 'paused'
             self.pause_work()
             self.start_stop_times[-1][1] = self.toolhead.get_last_move_time()
  
     def stop_printjob(self):
-        self.deb('stop')
-
         self.state = 'stopped'
         self.pause_work()
         self.start_stop_times[-1][1] = self.toolhead.get_last_move_time()
@@ -104,8 +95,6 @@ class VirtualSD(object):
         self.check_queue()
 
     def pause_work(self):
-        self.deb('pause_work')
-
         if self.work_timer is not None:
             self.must_pause_work = True
             while self.work_timer is not None and not self.cmd_from_sd:
@@ -184,8 +173,9 @@ class VirtualSD(object):
             self.check_queue()
         return self.reactor.NEVER
 
-    def get_printed_time(self):
-        now = self.toolhead.print_time #dont run get_last_move_time since this can be ran in UI thread
+    def get_printed_time(self, eventtime=None):
+        now = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())#self.reactor.monotonic() #dont run get_last_move_time since this can be ran in UI thread
+        # also dont use print time since it doesnt advance continuously
         printed_time = 0
         for time in self.start_stop_times:
             printed_time += - time[0] + (time[1] if time[1] else now)
@@ -239,7 +229,7 @@ class VirtualSD(object):
                 self.slicer_elapsed_times.append((self.get_printed_time(), get_seconds(match.group())))
                 return
 
-    def get_status(self, eventtime):
+    def get_status(self, eventtime=None):
         # time estimations in gcode: |....|....|....|........................|
         # actual print time      |......|.....|.....|.............................|
         #                        ^ start of print   ^ current point in time       ^ prediction

@@ -7,6 +7,7 @@
 import sys, os, optparse, logging, time, threading, collections, importlib
 import util, reactor, queuelogger, msgproto, homing
 import gcode, configfile, pins, heater, mcu, toolhead
+from subprocess import Popen
 
 message_ready = "Printer is ready"
 
@@ -291,6 +292,8 @@ def main():
         time.sleep(1.)
         logging.info("Restarting printer")
         start_args['start_reason'] = res
+        if res == "firmware_restart":
+            Popen(['sudo', 'systemctl', 'restart', 'klipper.service']).wait()
 
     if bglogger is not None:
         bglogger.stop()
