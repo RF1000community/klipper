@@ -82,11 +82,11 @@
         text: root.name
         shorten: True
         shorten_from: 'right'
-        halign: 'left'
+        halign: 'center' if root.status == "header" else 'left'
         valign: 'middle'
         padding_x: p.small_padding if root.status == "header" else p.h_padding 
         size_hint: None, None
-        size: root.width - 120, root.height
+        size: root.width - (0 if root.status == "header" else 120), root.height
         pos: root.pos
         text_size: self.size
         font_size: p.normal_font

@@ -9,6 +9,7 @@ KGUI:
     Klipper bugs
         see if timer to close error persists
         DripModeEndSignal during homing maybe due to add. gcode move command
+                                        also due to stop command
 
     See if progress bar shows wrong progress on homescreen as well
 

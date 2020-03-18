@@ -35,7 +35,7 @@ import parameters as p
 if not TESTING:
     site.addsitedir(dirname(dirname(p.kgui_dir)))
     from reactor import ReactorCompletion
-
+logging.info("import __init__ file")
 # inherit from threading.thread => inherits start() method to run() in new thread
 class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
@@ -213,9 +213,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_printjob_state()
 
     def update_home(self, *args):
-        #self.get_homing_state()
+        self.get_homing_state()
         self.get_temp()
-        #self.get_pos()
+        self.get_pos()
 
     def update_printing(self, *args):
         self.get_pressure_advance()
@@ -260,7 +260,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             elif s['state'] == 'done':
                 self.progress = 1
                 self.print_time = "done" 
-                self.print_done_time = "took " + format_time(self.sdcard.get_printed_time(self.reactor.monotonic()))
+                self.print_done_time = "took " + format_time(self.sdcard.get_printed_time())
                 self.history.add(self.sdcard.current_file.name, "done")
             elif s['state'] == 'stopped':
                 self.print_time = "stopped"
@@ -280,6 +280,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 tomorrow = datetime.now() + timedelta(days=1)
                 self.progress = s['progress']
                 self.print_time = format_time(remaining.total_seconds()) + " remaining"
+                logging.info("set progress to {}".format(s['progress']))
                 if done.day == datetime.now().day:
                     self.print_done_time = done.strftime("ca. %-H:%M")
                 elif done.day == tomorrow.day:
@@ -445,9 +446,17 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         def start_z(e):
             pos = self.toolhead.get_position()
             pos[2] = (self.pos_max['z'] if direction==1 else self.pos_min['z'])
-            steppers = self.toolhead.get_kinematics().rails[2].get_steppers()
-            self.z_move_completion = ReactorCompletion(self.reactor)
+
+            self.toolhead.flush_step_generation()
+            kin = self.toolhead.get_kinematics()
+            steppers = kin.get_steppers()
+
+            for s in steppers:
+                s.set_tag_position(s.get_commanded_position())
+
             self.z_start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers]
+
+            self.z_move_completion = ReactorCompletion(self.reactor)
             self.reactor.register_async_callback(lambda e: self.toolhead.drip_move(pos, 1, self.z_move_completion))
         self.reactor.register_async_callback(start_z)
 
@@ -463,9 +472,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             #                   v--start_pos     v--end_pos
             end_mcu_pos = [(s, spos, s.get_mcu_position()) for s, spos in self.z_start_mcu_pos]
             for s, spos, epos in end_mcu_pos:
+                logging.info("s{}, spos{}, epos {}".format(s, spos, epos))
                 md = (epos - spos) * s.get_step_dist()
                 s.set_tag_position(s.get_tag_position() + md)
-
+            logging.info("tag pos = {}".format(self.toolhead.get_kinematics().calc_tag_position()))
             self.toolhead.set_position(self.toolhead.get_kinematics().calc_tag_position())
 
         self.reactor.register_async_callback(stop_z)
@@ -510,23 +520,26 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def send_resume(self):
         def resume_print(e):
-            self.sdcard.resume_printjob()
+            self.sdcard.resume_printjob()  
             Clock.schedule_once(self.get_printjob_state, 0)
         self.reactor.register_async_callback(resume_print)
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
     def reboot(self):
-        Popen(['sudo','systemctl', 'reboot'])
+        Popen(['sudo','systemctl', 'reboot']) 
     def restart_klipper(self):
         """Quit and restart klipper and GUI"""
         logging.info("attempting a firmware restart")
-        try:
-            self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 10)
-        except:
-            logging.info("RESTART FAILED!!!!!!!!!!!!!:")
-            Popen(['sudo', 'systemctl', 'restart', 'klipper.service'])
-        self.stop()
+        #self.reactor.register_async_callback(lambda e: self.printer.invoke_shutdown("message"), 0)
+
+        #Clock.schedule_once(lambda dt: Popen(['sudo', 'systemctl', 'restart', 'klipper.service']), 10)
+        # try:
+        self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 0)
+        # except:
+        #     logging.info("RESTART FAILED!!!!!!!!!!!!!:")
+        #      
+        #self.stop()
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
         Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
