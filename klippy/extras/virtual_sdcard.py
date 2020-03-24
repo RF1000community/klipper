@@ -39,8 +39,7 @@ class VirtualSD(object):
 
     def clear_queue(self):
         # remove everything but the first element wich is currently being printed
-        if len(self.queued_files):
-            self.queued_files = self.queued_files[0]
+        self.queued_files = self.queued_files[:1]
 
     def check_queue(self):
         if  len(self.queued_files) > 0 and self.state != 'printing' and self.state != 'paused':
