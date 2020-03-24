@@ -191,11 +191,12 @@ class Printer:
         except:
             logging.exception("Unhandled exception during post run")
         return run_result
-    def invoke_shutdown(self, msg):
+    def invoke_shutdown(self, msg): # shut down all work, but dont exit
         if self.is_shutdown:
             return
         self.is_shutdown = True
         self._set_state("%s%s" % (msg, message_shutdown))
+        self.send_event("klippy:exception", msg)
         for cb in self.event_handlers.get("klippy:shutdown", []):
             try:
                 cb()
@@ -209,6 +210,7 @@ class Printer:
     def send_event(self, event, *params):
         return [cb(*params) for cb in self.event_handlers.get(event, [])]
     def request_exit(self, result):
+        logging.info("request exit")
         if self.run_result is None:
             self.run_result = result
         self.reactor.end()
@@ -281,25 +283,22 @@ def main():
                         " Severe timing issues may result!")
 
     # Start Printer() class
-    while 1:
-        if bglogger is not None:
-            bglogger.clear_rollover_info()
-            bglogger.set_rollover_info('versions', versions)
-        printer = Printer(input_fd, bglogger, start_args)
-        res = printer.run()
-        if res in ['exit', 'error_exit']:
-            break
-        time.sleep(1.)
-        logging.info("Restarting printer")
-        start_args['start_reason'] = res
-        if res == "firmware_restart":
-            Popen(['sudo', 'systemctl', 'restart', 'klipper.service']).wait()
+    if bglogger is not None:
+        bglogger.clear_rollover_info()
+        bglogger.set_rollover_info('versions', versions)
+
+    res = Printer(input_fd, bglogger, start_args).run()
 
     if bglogger is not None:
         bglogger.stop()
 
-    if res == 'error_exit':
-        sys.exit(-1)
+    if res in ('firmware_restart', 'restart'):
+        time.sleep(1.)
+        logging.info("Restarting printer")
+        Popen(['sudo', 'systemctl', 'restart', 'klipper.service'])
+    else:
+        logging.info("Stopping printer")
+        Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
 
 if __name__ == '__main__':
     main()
