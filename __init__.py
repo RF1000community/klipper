@@ -35,7 +35,8 @@ import parameters as p
 if not TESTING:
     site.addsitedir(dirname(dirname(p.kgui_dir)))
     from reactor import ReactorCompletion
-logging.info("import __init__ file")
+
+
 # inherit from threading.thread => inherits start() method to run() in new thread
 class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
@@ -158,9 +159,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def handle_ready(self):
         self.state = "ready"
 
-    def handle_shutdown(self): # is called when system shuts down
-        logging.info("handled shutdown ")
-        self.stop()
+    # is called when system shuts down all work, either
+    # to halt so the user can see what he did wrong
+    # or to fully exit afterwards
+    def handle_shutdown(self):
+        self.state = "error"
 
     def handle_exception(self, message):
         self.state = "error"
@@ -168,8 +171,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def handle_disconnect(self):
         self.state = "error disconnected"
-        logging.info("run handle_disconnect -> shutdown gui")
-        self.stop()
 
     def handle_homed(self, rails):
         for rail in rails:
@@ -177,7 +178,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
 ### KLIPPY THREAD ^
 ########################################################################################
-### KGUI    THREAD v
+### KGUI   THREAD v
 
     def run(self):
         logging.info("Kivy app.run")
@@ -481,7 +482,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(stop_z)
         
     def send_extrude(self, tool_id, direction=1):
-        pass
+        self.reactor.register_async_callback(lambda evt: self.send_rel_pos(e=10, speed=5))
 
     def send_extrude_stop(self):
         pass
@@ -530,24 +531,16 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         Popen(['sudo','systemctl', 'reboot']) 
     def restart_klipper(self):
         """Quit and restart klipper and GUI"""
-        logging.info("attempting a firmware restart")
-        #self.reactor.register_async_callback(lambda e: self.printer.invoke_shutdown("message"), 0)
-
-        #Clock.schedule_once(lambda dt: Popen(['sudo', 'systemctl', 'restart', 'klipper.service']), 10)
-        # try:
-        self.reactor.register_async_callback(self.gcode.cmd_FIRMWARE_RESTART, 0)
-        # except:
-        #     logging.info("RESTART FAILED!!!!!!!!!!!!!:")
-        #      
-        #self.stop()
+        self.reactor.register_async_callback(lambda e: self.printer.request_exit('firmware_restart') , 0)
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
-        Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
+        self.reactor.register_async_callback(lambda e: self.printer.request_exit("exit"), 0)
 
 ########################################################################################
 ### KLIPPY THREAD v
 
 class PopupExceptionHandler(ExceptionHandler):
+    logging.info("handle_exception")
     def handle_exception(self, exception):
         if not TESTING:
             App.get_running_app().handle_exception(repr(exception))
