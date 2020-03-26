@@ -7,6 +7,16 @@ PYTHONDIR="${SRCDIR}/klippy-environment"
 
 
 
+# Must be called before install_packages
+setup_port_redirection()
+{
+    sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-ports 8080
+    echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+    echo iptables-persistent iptables-persistent/autosave_v6 boolean false | sudo debconf-set-selections
+}
+
+
+
 install_packages()
 {
     # Packages for python cffi
@@ -39,6 +49,8 @@ install_packages()
     PKGLIST="${PKGLIST} network-manager"
     #Usb Stick Automounting
     PKGLIST="${PKGLIST} usbmount"
+    #Cura connection
+    PKGLIST="${PKGLIST} iptables-persistent"
 
     # Update system package info
     report_status "Running apt-get update..."
@@ -143,6 +155,7 @@ set -e
 
 # Run installation steps defined above
 verify_ready
+setup_port_redirection
 install_packages
 create_virtualenv
 install_klipper_service
