@@ -185,14 +185,14 @@ class TempSlider(UltraSlider):
 from pytictoc import TicToc
 
 class FilamentChooserPopup(BasePopup):
-    library_tab = BooleanProperty(True)
+    tab_2 = BooleanProperty(False)
     def __init__(self, extruder_id, **kwargs):
         self.app = App.get_running_app()
         self.fil_man = self.app.filament_manager
         self.extruder_id = extruder_id
         self.show_less = [True, True, True]
         self.sel = [None, None, None, None] # selected [type, manufacturer, color, guid]
-        self.sel_my = None # selected guid
+        self.sel_tab_2 = None # selected guid
 
         self.options = [[], [], []]
         super(FilamentChooserPopup, self).__init__(**kwargs)
@@ -204,9 +204,10 @@ class FilamentChooserPopup(BasePopup):
         self.options = [[], [], []]
         self.sel[3] = None
         self.ids.option_stack.clear_widgets()
-        self.ids.btn_confirm.text = "Who Cares"
+        self.ids.btn_confirm.text = "Select"
+        self.ids.btn_confirm.enabled = False
         # Calculate options to draw based on selection
-        if self.library_tab:
+        if not self.tab_2:
             # get material library from filament manager as type-manufacturer-color tree of dicts
             tmc = self.fil_man.tmc_to_guid
 
@@ -235,8 +236,9 @@ class FilamentChooserPopup(BasePopup):
                     if self.sel[2]:
                         # type and manufacturer and color is selected, we have a material guid
                         self.sel[3] = tmc[self.sel[0]][self.sel[1]][self.sel[2]]
-                        logging.info("material selected{}".format(self.sel[3]))
                         self.ids.btn_confirm.text = "Select {} {}".format(self.sel[1], self.sel[0])
+                        self.ids.btn_confirm.enabled = True
+                        logging.info("material selected{}".format(self.sel[3]))
 
             # sort types by how many manufactures make them
             # tmc[option.text] is the dict of manufacturers for the selected type (e.g. for PLA)
@@ -246,13 +248,14 @@ class FilamentChooserPopup(BasePopup):
 
             # now draw generated options
             for i in range(len(self.options)):
-                if len(self.options[i]) < 15 or not self.show_less[i]:
+                max_amount = (15 if i == 0 else 10)
+                if len(self.options[i]) < max_amount or not self.show_less[i]:
                     for option in self.options[i]:
                         self.ids.option_stack.add_widget(option)
-                    if len(self.options) > i+1 and self.options[i+1]:
+                    if len(self.options) > i+1:
                         self.ids.option_stack.add_widget(OptionDivider(self, level=i))
                 else: # hidden options
-                    for option in self.options[i][:15]:
+                    for option in self.options[i][:max_amount]:
                         self.ids.option_stack.add_widget(option)
                     if self.options[i]: #draw the show_more divider even if next group is empty
                         self.ids.option_stack.add_widget(OptionDivider(self, level=i, height=0))
@@ -261,25 +264,32 @@ class FilamentChooserPopup(BasePopup):
         else:   
             materials = self.fil_man.loaded_material['unloaded']
             for guid, amount in materials:
-                option = Option(self, guid=guid, selected=(self.selected_my==guid), 
+                option = Option(self, guid=guid, selected=(self.sel_tab_2==guid), 
                     amount=amount, ext=self.fil_man.get_material_info(guid=guid, tags=[]))
                 self.options[0].append(option)
                 self.ids.option_stack.add_widget(option)
+            if self.sel_tab_2:
+                self.ids.btn_confirm.text = "Select"
+                self.ids.btn_confirm.enabled = True
+        
         tm.toc()
         logging.info("time to draw:{}".format(tm.elapsed))
 
-    def on_library_tab(self, instance, tab):
+    def on_tab_2(self, instance, tab):
         self.draw_options()
 
     def do_selection(self, option):
-        if self.library_tab:
+        if self.tab_2:
+            self.sel_tab_2 = option.guid
+        else:
             self.sel[option.level] = option.text or option.hex_color
             for i in range(len(self.sel)):
                 if i> option.level:
                     self.sel[i] = None
-        else:
-            self.sel_my = option.guid
         self.draw_options()
+    
+    def confirm(self):
+        logging.info("CONFIRM")
 
 class Option(BaseButton):
     selected = BooleanProperty(False)
@@ -325,7 +335,7 @@ class OptionDivider(BaseButton):
 class BtnTriple(Widget):
     filament_color = ListProperty([0,0,0,0])
     filament_amount = NumericProperty(0)
-    title = StringProperty()
+    title = StringProperty("--")
     tool_id = StringProperty()
     extruder_id = StringProperty()
     is_loaded = BooleanProperty()

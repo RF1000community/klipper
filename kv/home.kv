@@ -794,25 +794,25 @@
     FloatLayout:
         id: container
         RectangleButton:
-            on_press: root.library_tab = True
+            on_press: root.tab_2 = False
             id: left_title
             text: "New Material"
             font_size: p.normal_font
             size_hint: None, None
             size: root.width/2, 70
             pos_hint: {'top':1, 'x':0}
-            color:  p.medium_light_gray if not root.library_tab else (1,1,1,1)
+            color:  p.medium_light_gray if root.tab_2 else (1,1,1,1)
             valign: 'middle'
             halign: 'center'
         RectangleButton:
-            on_press: root.library_tab = False
+            on_press: root.tab_2 = True
             id: right_title
             text: "Your Materials"
             font_size: p.normal_font
             size_hint: None, None
             size: root.width/2, 70
             pos_hint: {'top':1, 'right':1}
-            color: p.medium_light_gray if root.library_tab else (1,1,1,1)
+            color: (1,1,1,1) if root.tab_2 else p.medium_light_gray
             valign: 'middle'
             halign: 'center'
         Divider:
@@ -836,11 +836,11 @@
             on_release: root.dismiss()
         Btn_P_Confirm:
             id: btn_confirm
-            enabled: True
-            text: "Who cares"
+            enabled: False
+            text: "Select"
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: pass
+            on_release: root.confirm()
 
 <Option>:
     size: 86, 60
@@ -876,14 +876,13 @@
             pos: self.x - o_padding, self.y
         Color:
             rgba: p.medium_light_gray
-        Triangle:
-            points: self.center_x, self.y + p.padding/2 - od_h,    self.center_x - od_h*2, self.y + p.padding/2 + od_h,    self.center_x + od_h*2, self.y + p.padding/2 + od_h
     Label:
         size: root.width, p.padding
         pos: root.pos
         color: p.medium_light_gray
-        text: "show more" if root.height == 0 else "show less" if root.filamentchooser.show_less[root.level] == False else ""
+        text: "show more ..." if root.height == 0 else "show less" if root.filamentchooser.show_less[root.level] == False else ""
         text_size: self.size
         font_size: p.normal_font
-        valign: 'middle'
-        halign: 'right'
+        padding_y: 5
+        valign: 'top'
+        halign: 'center'

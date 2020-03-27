@@ -228,8 +228,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_fan()
 
     def update_setting(self, *args):
-        self.get_config('extruder', 'pressure_advance', 'default_pressure_advance')
-        self.get_config('printer', 'max_accel', 'default_acceleration', 'int')
+        self.get_config('extruder', 'pressure_advance', 'default_pressure_advance', 'float')
+        self.get_config('printer', 'max_accel', 'default_acceleration', 'float')
 
     def get_printjob_state(self, *args):
         def format_time(seconds):
@@ -362,8 +362,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             return
         def read_config(e):
             Section = self.klipper_config.getsection(section)
-            if ty == 'int':
+            if ty == 'int': # int option might be dangerous since a .0 brakes it, e.g. when overridding config
                 val = Section.getint(option)
+            elif ty == 'float':
+                val = Section.getfloat(option)
             else:
                 val = Section.get(option)
             setattr(self, property_name, val)
@@ -382,7 +384,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def write_pressure_advance(self, val):
         for i in range(self.extruder_count):
-            self.write_config('extruder{}'.format(i if i != '0' else ''), 'pressure_advance', val)
+            self.write_config('extruder{}'.format(i if i != 0 else ''), 'pressure_advance', val)
 
     def get_temp(self, dt=None):
         # schedule reading temp in klipper thread which schedules displaying the read value in kgui thread

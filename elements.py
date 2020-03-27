@@ -12,6 +12,7 @@ from kivy.uix.vkeyboard import VKeyboard
 from kivy.uix.widget import Widget
 
 import parameters as p
+import logging
 
 
 class Divider(Widget):
@@ -105,9 +106,6 @@ class BasePopup(Popup):
 
 class ErrorPopup(BasePopup):
     message = StringProperty()
-    def __init(self, message, **kwargs):
-        self.message = message
-        super(ErrorPopup, self).__init__(**kwargs)
 
 class UltraSlider(Widget):
     """
