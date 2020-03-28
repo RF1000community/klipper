@@ -150,6 +150,7 @@
             w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
             tool_id: 'T1'
+            extruder_id: 'extruder1'
             y: p.padding if app.extruder_count > 1 else p.mars
             right: p.screen_width - p.h_padding
         BtnTriple:
@@ -158,6 +159,7 @@
             w3: p.btn_height
             id: btn_tr_T0
             tool_id: 'T0'
+            extruder_id: 'extruder'
             y: p.padding*2 + p.btn_height
             right: p.screen_width - p.h_padding
         BtnOutline:
@@ -386,7 +388,9 @@
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
         enabled: bool(app.printer_objects_available and app.filament_manager)
-        on_release: Factory.FilamentChooserPopup(root.extruder_id).open()
+        on_release:
+            if root.guid is not None: Factory.FilamentPopup(root.extruder_id, False, root.guid).open()
+            else: Factory.FilamentChooserPopup(root.extruder_id).open()
         color: (1,1,1,1) if btn_load.enabled else p.btn_disabled
         text: root.title
         text_size: self.size
@@ -888,37 +892,38 @@
         halign: 'center'
 
 <FilamentPopup>:
-    size_hint: 0.96, 0.6
-    title: "Load {} {}".format(self.manufacturer, self.filament_type)
-    load: True
+    size_hint: 0.96, 0.5
+    title: "{} {}".format(self.manufacturer, self.filament_type)
     FloatLayout:
-        FilamentAmountSlider:
+        FilamentSlider:
+            active: root.do_load
             id: filament_slider
             center_x: root.center_x
-            y: btn_cancel.top + 100
-            amount: root.amount
+            y: btn_cancel.top + 90
+            val: root.amount * 1000
             filament_color: root.filament_color
         BtnPCancel:
             id: btn_cancel
-            text: "Back" if root.load else "Cancel"
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
         BtnPConfirm:
             id: btn_confirm
             enabled: True
-            text: "Load" if root.load else "Unload"
+            text: "Load" if root.do_load else "Unload"
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: root.confirm()
+            on_release:
+                if root.do_load: root.load()
+                else: root.unload()
 
-<-FilamentAmountSlider>:
-    size_hint: None,None
+<-FilamentSlider>:
+    size_hint: None, None
     size: p.screen_width - 2*p.small_padding - 2*p.padding, 100
     px: self.x + p.padding
     canvas:
         Color:
-            rgba: self.filament_color
+            rgba: p.medium_gray if self.pressed else self.filament_color
         RoundedRectangle:
             size: self.size
             pos: self.pos
@@ -926,16 +931,18 @@
         Color:
             rgba: (0,0,0,0) if self.pressed else p.popup
         Rectangle:
-            size: self.width * (1-self.amount), self.height
-            pos: sefl.x + self.amount * self.width, self.y
+            size: self.right - self.px, self.height
+            pos: self.px, self.y
         Color:
-            rgba: (1,1,1,1) if self.pressed else p.btn_outline
+            rgba: (1,1,1,0.3) if self.pressed else p.btn_outline
         Line:
             width: 1
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+        Color:
+            rgba: p.btn_outline if not self.active else (0,0,0,0) if self.pressed else (1,1,1,1)
         Line:
-            width: 3
-            points: self.x+self.w1+1+self.w2*self.amount, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2*self.amount, self.top-p.btn_divider_padding
+            width: 4 if self.active else 1
+            points: self.px, self.y, self.px, self.top
     Label:
         id: value_label
         text: root.disp
@@ -943,8 +950,8 @@
         size_hint: None,None
         pos_hint: None,None
         size: root.size
-        pos: root.x, root.top
-        font_size: p.large_font
+        pos: root.x, root.top + 50
+        font_size: p.large_font + 10
         color: (1,1,1,1)
         valign: 'middle'
         halign: 'center'
