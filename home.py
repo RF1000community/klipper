@@ -106,14 +106,13 @@ class TempSlider(UltraSlider):
             self.val_min = 30
             self.val_max = 140
             if fil_man:
-                loadeds = fil_man.loaded_material['loaded']
+                loadeds = fil_man.loaded_materials
                 for loaded in loadeds:
                     if loaded:
                         material_type = fil_man.get_material_info(
-                            guid=loaded[0], tags=['metadata','name', 'material'])
-                        bed_temp = fil_man.get_material_info(
-                            guid=loaded[0], tags=['settings','setting'], 
-                            attribute=('key','heated bed temperature'))
+                                loaded[0], "./m:metadata/m:name/m:material")
+                        bed_temp = fil_man.get_material_info(loaded[0],
+                                "./m:settings/m:setting[@key='heated bed temperature']")
                         if bed_temp:
                             self.buttons.append([int(bed_temp), 0, material_type, None])
             else: # show some generic temperatures
@@ -128,14 +127,13 @@ class TempSlider(UltraSlider):
             if fil_man:
                 extruder_idx = str(self.tool_id[-1])
                 loaded = None
-                if len(fil_man.loaded_material['loaded']) > extruder_idx:
-                    loaded = fil_man.loaded_material['loaded'][extruder_idx]
+                if len(fil_man.loaded_materials) > extruder_idx:
+                    loaded = fil_man.loaded_materials[extruder_idx]
                 if loaded:
                     material_type = fil_man.get_material_info(
-                        guid=loaded[0], tags=['metadata','name', 'material'])
-                    ext_temp = fil_man.get_material_info(
-                        guid=loaded[0], tags=['settings','setting'], 
-                        attribute=('key','print temperature'))
+                            loaded[0], "./m:metadata/m:name/m:material")
+                    ext_temp = fil_man.get_material_info(loaded[0],
+                            "./m:settings/m:setting[@key='print temperature']")
                     if ext_temp:
                         self.buttons.append([int(ext_temp), 0, material_type, None])
             else: 
@@ -259,10 +257,10 @@ class FilamentChooserPopup(BasePopup):
                 self.ids.btn_confirm.text = "Select"
 
         else:   
-            materials = self.fil_man.loaded_material['unloaded']
+            materials = self.fil_man.unloaded_materials
             for guid, amount in materials:
                 option = Option(self, guid=guid, selected=(self.selected_my==guid), 
-                    amount=amount, ext=self.fil_man.get_material_info(guid=guid, tags=[]))
+                    amount=amount, ext=self.fil_man.get_material_info(guid, "./"))
                 self.options[0].append(option)
                 self.ids.option_stack.add_widget(option)
         tm.toc()
@@ -343,13 +341,13 @@ class BtnTriple(Widget):
         self.fil_man = self.app.filament_manager
         extruder_idx = int(self.tool_id[-1])
         loaded = None
-        if len(self.fil_man.loaded_material['loaded']) > extruder_idx:
-            loaded = self.fil_man.loaded_material['loaded'][extruder_idx]
+        if len(self.fil_man.loaded_materials) > extruder_idx:
+            loaded = self.fil_man.loaded_materials[extruder_idx]
 
         if loaded:
-            material_type = self.fil_man.get_material_info(guid=loaded[0], tags=['metadata','name','material'])
-            brand = self.fil_man.get_material_info(guid=loaded[0], tags=['metadata', 'name', 'brand'])
-            hex_color = self.fil_man.get_material_info(guid=loaded[0], tags=['metadata','color_code'])
+            material_type = self.fil_man.get_material_info(loaded[0], "./m:metadata/m:name/m:material")
+            brand = self.fil_man.get_material_info(loaded[0], "./m:metadata/m:name/m:brand")
+            hex_color = self.fil_man.get_material_info(loaded[0], "./m:metadata/m:color_code")
             self.is_loaded = True
             self.title = "Unload {:3.0f}g\n{} {}".format(loaded[1]*1000, brand, material_type)
             self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
