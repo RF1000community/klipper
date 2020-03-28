@@ -210,7 +210,6 @@ class Printer:
     def send_event(self, event, *params):
         return [cb(*params) for cb in self.event_handlers.get(event, [])]
     def request_exit(self, result):
-        logging.info("request exit")
         if self.run_result is None:
             self.run_result = result
         self.reactor.end()
@@ -283,22 +282,28 @@ def main():
                         " Severe timing issues may result!")
 
     # Start Printer() class
-    if bglogger is not None:
-        bglogger.clear_rollover_info()
-        bglogger.set_rollover_info('versions', versions)
+    while 1:
+        if bglogger is not None:
+            bglogger.clear_rollover_info()
+            bglogger.set_rollover_info('versions', versions)
 
-    res = Printer(input_fd, bglogger, start_args).run()
+        res = Printer(input_fd, bglogger, start_args).run()
 
-    if bglogger is not None:
-        bglogger.stop()
+        if bglogger is not None:
+            bglogger.stop()
 
-    if res in ('firmware_restart', 'restart'):
-        time.sleep(1.)
-        logging.info("Restarting printer")
-        Popen(['sudo', 'systemctl', 'restart', 'klipper.service'])
-    else:
-        logging.info("Stopping printer")
-        Popen(['sudo', 'systemctl', 'stop', 'klipper.service'])
+        if res in ('restart', 'firmware_restart'):
+            time.sleep(1.)
+            logging.info("Restarting printer")
+            # Restart Systemd service if it exists otherwise restart with while loop
+            Popen(['sudo', 'systemctl', 'restart', 'klipper.service']).wait()
+        else:
+            logging.info("Stopping printer")
+            Popen(['sudo', 'systemctl', 'stop', 'klipper.service']).wait()
+            if res == 'error_exit':
+                sys.exit(-1)
+            break
+
 
 if __name__ == '__main__':
     main()
