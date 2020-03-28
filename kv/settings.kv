@@ -55,9 +55,9 @@
                 left_title: "Pressure Advance"
                 right_title: "{:4.3f}s".format(app.default_pressure_advance)
                 on_release: Factory.PressureAdvanceConfPopup(val=app.default_pressure_advance).open()
-            SI_Wifi:
+            SIWifi:
                 left_title: "Wifi"
-            SI_Timezone:
+            SITimezone:
                 id: si_timezone
             SetItem:
                 left_title: "Shutdown..."
@@ -147,7 +147,7 @@
         size: 85*p.disp_vertical_stretch, 85
         text: "Flash\nMCU"
 
-<Btn_Radio@BaseButton>:
+<BtnRadio@BaseButton>:
     selected: True
     size_hint: None, None
     size: 36, 35
@@ -163,7 +163,7 @@
             pos: self.x + 6, self.y + 6
             size: self.width - 12, self.height - 12
 
-<Btn_Tristate@BaseButton>:
+<BtnTristate@BaseButton>:
     state: 2 # 0=False, 1=True, 2=M (if available)
     states: 3
     size_hint: None, None
@@ -196,7 +196,7 @@
         valign: 'middle'
         halign: 'center'
        
-<CI_Tristate>:
+<CITristate>:
     size: p.screen_width, 80
     size_hint: None, None
     state: 0
@@ -208,14 +208,14 @@
     valign: 'middle'
     halign: 'left'
     padding_x: p.padding
-    Btn_Tristate:
+    BtnTristate:
         states: root.states
         state: root.state
         right: root.right - p.padding
         center_y: root.center_y
         on_release: root.on_release()
 
-<CI_Radio>:
+<CIRadio>:
     selected: False
     size: p.screen_width, 80
     size_hint: None, None
@@ -226,13 +226,13 @@
     valign: 'middle'
     halign: 'left'
     padding_x: p.padding
-    Btn_Radio:
+    BtnRadio:
         selected: root.selected
         right: root.right - p.padding
         center_y: root.center_y
         on_release: root.on_release()
 
-<CI_Value>:
+<CIValue>:
     size_hint: None, None
     size: p.screen_width, 80
     indent: 0
@@ -257,7 +257,7 @@
         x: p.padding
         center_y: root.center_y
 
-<CI_Text>:
+<CIText>:
     size_hint: None, None
     indent: 0
     text: "Text"
@@ -302,7 +302,7 @@
     Divider:
         y: root.top - 1
 
-<SI_Switch@SetItem>:
+<SISwitch@SetItem>:
     enabled: False
     Switch:
         id: knopf
@@ -310,11 +310,11 @@
         pos_hint: {'center_y': 0.5}
         right: p.screen_width-p.padding +p.small_padding #to increase touch area
 
-<SI_Timezone>:
+<SITimezone>:
     left_title: "Timezone"
     on_release: Factory.TimezonePopup().open()
 
-<SI_WifiNetwork>:
+<SIWifiNetwork>:
     Label:
         text: root.network['ssid']
         font_size: p.normal_font
@@ -337,7 +337,7 @@
         color: root.get_color()
         pos: root.pos
 
-<SI_Release>:
+<SIRelease>:
     on_release: Factory.UpdatePopup(self.left_title, self.url).open()
 
 # POPUPS
@@ -385,11 +385,11 @@
                 halign: 'center'
                 valign: 'middle'
                 color: p.light_gray
-        Btn_P_Cancel:
+        BtnPCancel:
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: len(pwd_input.text) > 3
             width: root.width/2
             pos: root.center_x, root.y
@@ -417,7 +417,7 @@
             x: btn_toggle_connect.x
             top: btn_toggle_connect.y
             on_release: root.delete()
-        Btn_P_Cancel:
+        BtnPCancel:
             single: True
             width: root.width
             pos: root.pos
@@ -465,7 +465,7 @@
         Divider:
             width: root.width
             pos: btn_quit.x, btn_quit.top
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             single: True
             width: root.width
@@ -492,12 +492,12 @@
                 orientation: 'vertical'
                 multiselect: False
                 touch_multiselect: False
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: bool(rv_box.selected_nodes)
             id: btn_confirm
             title: "Confirm"
@@ -536,12 +536,12 @@
             width: root.width
             pos_hint: {'center_x':0.5}
             y: btn_cancel.top+40
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             text: "Set and restart"
             enabled: slider.changed
             width: root.width/2
@@ -562,12 +562,12 @@
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             text: "Set and restart"
             enabled: slider.changed
             width: root.width/2
@@ -612,12 +612,12 @@
             font_size: p.normal_font
             color: p.light_gray
             text_size: self.size
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             id: confirm
             text: "Install"
             width: root.width/2

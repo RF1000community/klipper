@@ -18,7 +18,7 @@ import parameters as p
 
 from pytictoc import TicToc
 
-class GC(RecycleView):
+class Filechooser(RecycleView):
     path = StringProperty()
     btn_back_visible = BooleanProperty(False)
     def __init__(self, **kwargs):
@@ -29,7 +29,7 @@ class GC(RecycleView):
         else:
             self.path = "/"
 
-        super(GC, self).__init__(**kwargs)
+        super(Filechooser, self).__init__(**kwargs)
         Clock.schedule_once(self.bind_tab, 0)
         self.load_files()
 
@@ -134,11 +134,11 @@ class GC(RecycleView):
                         return "{:4.0f}g".format(weight)
         return ""
 
-class GCGrid(LayoutSelectionBehavior, RecycleGridLayout):
+class FilechooserGrid(LayoutSelectionBehavior, RecycleGridLayout):
     # Adds selection behaviour to the view
     pass
 
-class GCItem(RecycleDataViewBehavior, Label):
+class FilechooserItem(RecycleDataViewBehavior, Label):
     item_type = OptionProperty('file', options = ['file', 'folder', 'usb'])
     name = StringProperty()
     path = StringProperty()
@@ -149,11 +149,11 @@ class GCItem(RecycleDataViewBehavior, Label):
     def refresh_view_attrs(self, rv, index, data):
         # Catch and handle the view changes
         self.index = index
-        return super(GCItem, self).refresh_view_attrs(rv, index, data)
+        return super(FilechooserItem, self).refresh_view_attrs(rv, index, data)
 
     def on_touch_down(self, touch):
         # Add selection on touch down
-        if super(GCItem, self).on_touch_down(touch):
+        if super(FilechooserItem, self).on_touch_down(touch):
             return True
         if self.collide_point(*touch.pos):
             self.pressed = True
@@ -162,7 +162,7 @@ class GCItem(RecycleDataViewBehavior, Label):
     def on_touch_up(self, touch):
         was_pressed = self.pressed
         self.pressed = False
-        if super(GCItem, self).on_touch_up(touch):
+        if super(FilechooserItem, self).on_touch_up(touch):
             return True
         if self.collide_point(*touch.pos) and was_pressed:
             gc = self.parent.parent

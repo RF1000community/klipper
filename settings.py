@@ -257,7 +257,7 @@ class SetItem(FloatLayout, RectangleButton):
     right_title = StringProperty()
 
 
-class SI_Wifi(SetItem):
+class SIWifi(SetItem):
 
     # The string that is displayed by the label.
     # Holds the current wifi connection and possibly the signal strength as well.
@@ -265,7 +265,7 @@ class SI_Wifi(SetItem):
     display = ListProperty(['', False])
 
     def __init__(self, **kwargs):
-        super(SI_Wifi, self).__init__(**kwargs)
+        super(SIWifi, self).__init__(**kwargs)
         self.freq = 10
         # Assuming very much that the Setting Screen will NEVER be the default on load
         self.do_update = False
@@ -328,11 +328,11 @@ class SI_Wifi(SetItem):
             label.italic = True
 
 
-class SI_WifiNetwork(SetItem):
+class SIWifiNetwork(SetItem):
 
     def __init__(self, network, **kwargs):
         self.network = network
-        super(SI_WifiNetwork, self).__init__(**kwargs)
+        super(SIWifiNetwork, self).__init__(**kwargs)
 
     def on_release(self):
         #Present different options when wifi is stored by NM
@@ -391,7 +391,7 @@ class WifiScreen(Screen):
         box.clear_widgets()
         if value:
             for network in value:
-                entry = SI_WifiNetwork(network)
+                entry = SIWifiNetwork(network)
                 box.add_widget(entry)
         # In case no networks were found
         else:
@@ -457,10 +457,10 @@ class ConnectionPopup(BasePopup):
         wifi.delete(self.ssid)
         self.dismiss()
 
-class SI_Timezone(SetItem):
+class SITimezone(SetItem):
 
     def __init__(self, **kwargs):
-        super(SI_Timezone, self).__init__(**kwargs)
+        super(SITimezone, self).__init__(**kwargs)
         self.set_timezone()
 
     def set_timezone(self):

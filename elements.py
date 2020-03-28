@@ -79,7 +79,7 @@ class BaseButton(Label):
 class RoundButton(BaseButton):
     pass
 
-class Btn_Slider(BaseButton):
+class BtnSlider(BaseButton):
     val = NumericProperty()
     px = NumericProperty()
     s_title = StringProperty()
@@ -151,7 +151,7 @@ class UltraSlider(Widget):
         self.px = self.get_px_from_val(self.val)
         self.disp = self.get_disp_from_val(self.val)
         for b in self.buttons:
-            b[3] = Btn_Slider(y=self.y, px=self.get_px_from_val(b[0]), 
+            b[3] = BtnSlider(y=self.y, px=self.get_px_from_val(b[0]), 
                               val=b[0], offset=b[1],  s_title=b[2])
             b[3].bind(on_press=self.on_button)
             self.add_widget(b[3])
@@ -240,8 +240,8 @@ class UltraSlider(Widget):
         return "{:.{p}f}{}".format(val, self.unit, p = max(0, self.roundto))
 
 
-class UltraOffsetSlider(UltraSlider):
-    pass
+# class UltraOffsetSlider(UltraSlider):
+#     pass
 
 
 class UltraKeyboard(VKeyboard):

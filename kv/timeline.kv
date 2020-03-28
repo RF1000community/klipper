@@ -29,19 +29,19 @@
             size_hint: None, None
             size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
             pos: 0, p.tab_height
-        Btn_QX:
+        BtnQX:
             id: q_x
             right: p.screen_width - p.h_padding + 10
             y: p.tab_height + p.padding
             on_release: tl.remove()
             enabled: tl.selected is not None and tl.selected.status == "queued"
-        Btn_QUp:
+        BtnQUp:
             id: q_up
             right: q_x.x - p.h_padding  + 10
             y: p.tab_height + p.padding
             on_release: tl.move_up()
             enabled: tl.selected is not None and tl.selected.status == "queued"
-        Btn_QDown:
+        BtnQDown:
             right: q_up.x - p.h_padding  + 10
             y: p.tab_height + p.padding
             on_release: tl.move_down()
@@ -98,7 +98,7 @@
 # BUTTONS
 
 #:set pad 24
-<Btn_QUp@FloatingButton>:
+<BtnQUp@FloatingButton>:
     id: q_up
     btn_color: p.accent
     canvas:
@@ -107,7 +107,7 @@
         Triangle:
             points: self.x+pad-4, self.y+pad+4,  self.right-pad+4, self.y+pad+4,  self.center_x, self.top-pad
 
-<Btn_QDown@FloatingButton>:
+<BtnQDown@FloatingButton>:
     btn_color: p.accent
     canvas:
         Color:
@@ -115,7 +115,7 @@
         Triangle:
             points: self.x+pad-4, self.top-pad-4,  self.right-pad+4, self.top-pad-4,  self.center_x, self.y+pad
 
-<Btn_QX@FloatingButton>:
+<BtnQX@FloatingButton>:
     btn_color: p.accent
     canvas:
         Color:
