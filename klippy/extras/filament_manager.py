@@ -102,18 +102,21 @@ class FilamentManager:
     def get_status(self):
         return self.loaded_materials
 
-    def load(self, extruder_id, temp, amount=1, unloaded_idx=None, material_guid=None):
+    def load(self, extruder_id, temp=None, amount=1, unloaded_idx=None, guid=None):
         if unloaded_idx is not None:
             material = self.unloaded_materials[unloaded_idx]
             self.unloaded_materials.remove(material)
-            material_guid, amount = material
-        self.loaded_materials[idx(extruder_id)] = (material_guid, amount)
+            guid, amount = material
+        # make sure list is long enough
+        to_short_by = max(self.idx(extruder_id) + 1 - len(self.loaded_materials), 0)
+        self.loaded_materials.extend([None]*to_short_by)
+        self.loaded_materials[self.idx(extruder_id)] = (guid, amount)
         self.write_loaded_material_json()
         if not temp:
-            temp = self.get_material_info(material_guid,
+            temp = self.get_material_info(guid,
                     "./m:settings/m:setting[@key='print temperature']")
 
-        self.heater_manager.heaters[extruder_id].set_temp(temp) 
+        self.heater_manager.heaters[extruder_id].set_temp(float(temp))
         self.wait_for_temperature(self.heater_manager.heaters[extruder_id])
 
         # move slowly to grab the material for grab_time in seconds
@@ -123,7 +126,7 @@ class FilamentManager:
         load_length = self.min_path_len - grab_length
         self.send_extrude(load_length, self.load_speed, extruder_id)
         # move at max extrusion speed so that the maximum path length is covered even without grab_lenght
-        self.wait_for_temperature(self.heater_manager.heater[extruder_id])
+        self.wait_for_temperature(self.heater_manager.heaters[extruder_id])
         extrude_length = self.max_path_len - load_length
         self.send_extrude(extrude_length, self.extrude_speed, extruder_id)
 
@@ -136,10 +139,10 @@ class FilamentManager:
             self.unloaded_materials = [unloaded] + self.unloaded_materials[:9]
             self.loaded_materials[self.idx(extruder_id)] = None
             temp = self.get_material_info(unloaded[0],
-                    "./m:settings/m:setting[@key='print temperature']") or temp
+                   "./m:settings/m:setting[@key='print temperature']") or temp
             self.write_loaded_material_json()
 
-        self.heater_manager.heaters[extruder_id].set_temp(temp)
+        self.heater_manager.heaters[extruder_id].set_temp(float(temp))
         self.wait_for_temperature(self.heater_manager.heaters[extruder_id])
 
         self.send_extrude(self.max_path_len - self.min_path_len, self.extrude_speed, extruder_id)
@@ -159,9 +162,10 @@ class FilamentManager:
         self.toolhead.move(cur_pos, speed, force=True)
 
     def wait_for_temperature(self, heater):
-        eventtime = self.reactor.monotonic()
-        while heater.check_busy(eventtime):
-            eventtime = self.reactor.pause(eventtime + 1.)
+        pass
+        # eventtime = self.reactor.monotonic()
+        # while heater.check_busy(eventtime):
+        #     eventtime = self.reactor.pause(eventtime + 1.)
 
     ######## store json for loaded and recently unloaded material and their amount
     def read_loaded_material_json(self):
