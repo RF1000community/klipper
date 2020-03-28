@@ -3,7 +3,6 @@ import json
 import logging
 
 from xml.etree import cElementTree #just ElementTree for py3
-from os import walk
 from os.path import expanduser, join
 
 from pytictoc import TicToc
@@ -30,8 +29,9 @@ class FilamentManager:
 
         # json list of loaded and unloaded material
         self.loaded_material_path = join(self.material_dir, "loaded_material.json")
-        # { 'loaded': [None, (guid, amount in kg)], 'unloaded': [(guid, amount), (guid, amount),(guid, amount)]}
-        self.loaded_material = {}
+        # loaded and unloaded: [(guid, amount in kg), ...]
+        self.loaded_materials = []
+        self.unloaded_materials = []
         self.read_loaded_material_json() 
 
     def handle_connect(self):
@@ -43,76 +43,75 @@ class FilamentManager:
             self.extruders[extruder_id] = self.printer.lookup_object(extruder_id, None)
 
     ######## manage cura-material xml files
-    def read_material_library_xml(self): # TODO call this when new files were downloaded
+    def read_material_library_xml(self):
         t = TicToc()
         t.tic()
         self.guid_to_path = {}
         self.tmc_to_guid = {}
         if os.path.exists(self.material_dir):
-            root, dirs, files = next(walk(self.material_dir))
+            files = os.listdir(self.material_dir)
             for f in files:
-                f_path = os.path.join(self.material_dir, f)
-                try:
-                    f_root = cElementTree.parse(f_path).getroot()
-                except: 
-                    print("failed to parse xml-material-file {}".format(f_path))
+                if not f.endswith(".xml.fdm_material"):
                     continue
-                f_metadata = f_root.find('{http://www.ultimaker.com/material}metadata')
-                f_name = f_metadata.find('{http://www.ultimaker.com/material}name')
-
-                f_type = f_name.find('{http://www.ultimaker.com/material}material').text
-                f_brand = f_name.find('{http://www.ultimaker.com/material}brand').text
-                f_guid = f_metadata.find('{http://www.ultimaker.com/material}GUID').text
-                f_color = f_metadata.find('{http://www.ultimaker.com/material}color_code').text
-
-                # generate Data 
-                self.guid_to_path[f_guid] = f_path
-
-                if self.tmc_to_guid.get(f_type):
-                    if self.tmc_to_guid[f_type].get(f_brand):#type dict and brand dict already there, add color entry
-                        self.tmc_to_guid[f_type][f_brand][f_color] = f_guid
-                    else: #type dict already there, add dict for this brand with color entry
-                        self.tmc_to_guid[f_type][f_brand] = {f_color: f_guid}
-                else: #add dict for this type ..
-                    self.tmc_to_guid[f_type] = {f_brand: {f_color: f_guid}}
+                f_path = os.path.join(self.material_dir, f)
+                self.read_single_file(f_path)
         t.toc()
         logging.info("time to parse: {}".format(t.elapsed))
 
-    def get_material_info(self, path=None, guid=None, tags=None, attribute=None): # tuple(attribute name, attribute value)
-        if guid:
-            path = self.guid_to_path[guid]
+    def read_single_file(self, f_path):
         try:
-            current_tag = cElementTree.parse(path).getroot()
+            f_root = cElementTree.parse(f_path).getroot()
         except: 
-            logging.info("Failed to parse {}".format(path))
-            return ""
-        
-        if not attribute:
-            for tag in tags:
-                current_tag = current_tag[0].find('{http://www.ultimaker.com/material}'+tag)
-            return current_tag.text
+            logging.info("failed to parse xml-material-file {}".format(f_path))
+            return
+        ns = {'m': 'http://www.ultimaker.com/material'}
+        f_metadata = f_root.find('m:metadata', ns)
+        f_name = f_metadata.find('m:name', ns)
+
+        f_type = f_name.find('m:material', ns).text
+        f_brand = f_name.find('m:brand', ns).text
+        f_guid = f_metadata.find('m:GUID', ns).text
+        f_color = f_metadata.find('m:color_code', ns).text
+
+        # generate Data 
+        self.guid_to_path[f_guid] = f_path
+
+        if self.tmc_to_guid.get(f_type):
+            if self.tmc_to_guid[f_type].get(f_brand):#type dict and brand dict already there, add color entry
+                self.tmc_to_guid[f_type][f_brand][f_color] = f_guid
+            else: #type dict already there, add dict for this brand with color entry
+                self.tmc_to_guid[f_type][f_brand] = {f_color: f_guid}
+        else: #add dict for this type ..
+            self.tmc_to_guid[f_type] = {f_brand: {f_color: f_guid}}
+
+    def get_material_info(self, material, xpath):
+        """material can be either GUID or filepath"""
+        fpath = self.guid_to_path.get(material) or material
+        try:
+            root = cElementTree.parse(fpath).getroot()
+        except: 
+            logging.info("Failed to parse {}".format(fpath))
         else:
-            current_tags = [current_tag]
-            for tag in tags:
-                current_tags = current_tags[0].findall('{http://www.ultimaker.com/material}'+tag)
-            for tag in current_tags:
-                if attribute[1] == tag.get(attribute[0]):
-                    return tag.text
+            ns = {'m': 'http://www.ultimaker.com/material'}
+            node = root.find(xpath, ns)
+            if node is not None:
+                return node.text
+
 
     ######## loading and unloading api ONLY EXECUTE IN KLIPPER THREAD
     def get_status(self):
-        return self.loaded_material
+        return self.loaded_materials
 
     def load(self, extruder_id, temp, amount=1, unloaded_idx=None, material_guid=None):
         if unloaded_idx is not None:
-            material = self.loaded_material['unloaded'][unloaded_idx]
-            self.loaded_material['unloaded'].remove(material)
+            material = self.unloaded_materials[unloaded_idx]
+            self.unloaded_materials.remove(material)
             material_guid, amount = material
-        self.loaded_material['loaded'][idx(extruder_id)] = (material_guid, amount)
+        self.loaded_materials[idx(extruder_id)] = (material_guid, amount)
         self.write_loaded_material_json()
         if not temp:
-            temp = self.get_material_info(
-                guid=material_guid, tags=('settings', 'setting'), attribute=('key', 'print temperature'))
+            temp = self.get_material_info(material_guid,
+                    "./m:settings/m:setting[@key='print temperature']")
 
         self.heater_manager.heaters[extruder_id].set_temp(temp) 
         self.wait_for_temperature(self.heater_manager.heaters[extruder_id])
@@ -131,13 +130,13 @@ class FilamentManager:
     def unload(self, extruder_id):
         temp = 200
 
-        if len(self.loaded_material['loaded']) > self.idx(extruder_id)\
-        and self.loaded_material['loaded'][self.idx(extruder_id)]:
-            unloaded = self.loaded_material['loaded'][self.idx(extruder_id)]
-            self.loaded_material['unloaded'] = [unloaded] + self.loaded_material['unloaded'][:9]
-            self.loaded_material['loaded'][self.idx(extruder_id)] = None
-            temp = self.get_material_info(guid=unloaded[0],
-                tags=('settings', 'setting'), attribute=('key', 'print temperature')) or temp
+        if len(self.loaded_materials) > self.idx(extruder_id)\
+        and self.loaded_materials[self.idx(extruder_id)]:
+            unloaded = self.loaded_materials[self.idx(extruder_id)]
+            self.unloaded_materials = [unloaded] + self.unloaded_materials[:9]
+            self.loaded_materials[self.idx(extruder_id)] = None
+            temp = self.get_material_info(unloaded[0],
+                    "./m:settings/m:setting[@key='print temperature']") or temp
             self.write_loaded_material_json()
 
         self.heater_manager.heaters[extruder_id].set_temp(temp)
@@ -169,10 +168,11 @@ class FilamentManager:
         """Read the material file and return it as a list object"""
         try:
             with open(self.loaded_material_path, "r") as f:
-                self.loaded_material = json.load(f)
+                materials = json.load(f)
+                self.loaded_materials = materials["loaded"]
+                self.unloaded_materials = materials["unloaded"]
         except (IOError, ValueError): # No file or incorrect JSON
             logging.info("Filament-Manager: Couldn't read loaded-material-file at " + self.loaded_material_path)
-            self.loaded_material = {'loaded':[], 'unloaded':[]}
 
     def verify_loaded_material_json(self, material):
         """Only return True when the entire file has a correct structure"""
@@ -180,11 +180,13 @@ class FilamentManager:
 
     def write_loaded_material_json(self):
         """Write the object to the material file"""
+        materials = {"loaded": self.loaded_materials, "unloaded": self.unloaded_materials}
         try:
             with open(self.loaded_material_path, "w") as f:
-                json.dump(self.loaded_material, f, indent=True)
+                json.dump(materials, f, indent=True)
         except IOError:
-            return
+            logging.warning("Filament-Manager: Couldn't write loaded-material-file at "
+                    + self.loaded_material_path)
 
 def load_config(config):
     return FilamentManager(config)
