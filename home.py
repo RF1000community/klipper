@@ -225,7 +225,6 @@ class FilamentChooserPopup(BasePopup):
         self.show_less = [True, True, True]
         self.sel = [None, None, None, None] # selected [type, manufacturer, color, guid]
         self.sel_2 = None # selected (amount, idx, guid)
-
         self.options = [[], [], []]
         super(FilamentChooserPopup, self).__init__(**kwargs)
         Clock.schedule_once(self.draw_options, 0)
@@ -391,7 +390,6 @@ class FilamentPopup(BasePopup):
             #self.app.
         self.reactor.register_async_callback(do_load)
 
-
     def unload(self):
         def do_unload(e):
             self.fil_man.unload(self.extruder_id)
@@ -430,7 +428,6 @@ def calculate_filament_color(filament_color):
         maximum value."""
     #lightness = 0.5*(max(filament_color) + min(filament_color))
     return [c*0.6 for c in filament_color]
-
 
 def hex_to_rgb(h):
     """"Converts hex color to rgba float format"""

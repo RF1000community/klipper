@@ -13,10 +13,9 @@ from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.properties import BooleanProperty, OptionProperty, StringProperty
 
-from elements import BasePopup
+from elements import BasePopup, PrintPopup
 import parameters as p
 
-from pytictoc import TicToc
 
 class Filechooser(RecycleView):
     path = StringProperty()
@@ -28,7 +27,6 @@ class Filechooser(RecycleView):
             self.path = p.sdcard_path
         else:
             self.path = "/"
-
         super(Filechooser, self).__init__(**kwargs)
         Clock.schedule_once(self.bind_tab, 0)
         self.load_files()
@@ -46,7 +44,6 @@ class Filechooser(RecycleView):
         self.load_files(in_background=True)
 
     def load_files(self, in_background = False):
-
         content = os.listdir(self.path)
         # filter usb
         usb = []
@@ -90,7 +87,7 @@ class Filechooser(RecycleView):
     def back(self):
         self.path = dirname(self.path)
         self.load_files()
-    
+
     def get_details(self, path):
         # Pass the filepath. Returns the filament use of a gcode file 
         # Return value is shown below Name of each file
@@ -179,34 +176,6 @@ class FilechooserItem(RecycleDataViewBehavior, Label):
         # Respond to the selection of items in the view
         self.selected = is_selected
 
-
-class PrintPopup(BasePopup):
-
-    def __init__(self, path, filechooser, **kwargs):
-        self.path = path
-        self.filechooser = filechooser
-        super(PrintPopup, self).__init__(**kwargs)
-
-    def confirm(self):
-        app = App.get_running_app()
-        self.dismiss()
-        new_path = self.path
-        if 'USB Device' in self.path:
-            new_path = join(p.sdcard_path, basename(self.path))
-            app.notify.show("Copying {} to Printer...".format(basename(self.path)))
-            shutil.copy(self.path, new_path)
-
-        app.send_print(new_path)
-        tabs = app.root.ids.tabs
-        tabs.switch_to(tabs.ids.home_tab)
-
-    def delete(self):
-        """Open a confirmation dialog to delete the file"""
-        super(PrintPopup, self).dismiss()
-        self.confirm_del = DelPopup(path = self.path, filechooser=self.filechooser)
-        self.confirm_del.open()
-
-
 class DelPopup(BasePopup):
     """Popup to confirm file deletion"""
     def __init__(self, path, filechooser, **kwargs):
@@ -218,11 +187,9 @@ class DelPopup(BasePopup):
         """Deletes the file and closes the popup"""
         os.remove(self.path)
         # Update the files in the filechooser instance
-        self.filechooser.load_files(in_background=True)
+        if self.filechooser:
+            self.filechooser.load_files(in_background=True)
         self.dismiss()
 
         app = App.get_running_app()
         app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)
-
-class StopPopup(BasePopup):
-    pass

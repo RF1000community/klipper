@@ -29,23 +29,29 @@
             size_hint: None, None
             size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
             pos: 0, p.tab_height
+        BtnPrint:
+            id: btn_print
+            right: p.screen_width - p.h_padding + 10
+            y: p.tab_height + p.padding
+            on_release: Factory.PrintPopup(tl.selected.path).open()
+            enabled: tl.selected is not None and tl.selected.state in ('done', 'stopped')
         BtnQX:
             id: q_x
             right: p.screen_width - p.h_padding + 10
             y: p.tab_height + p.padding
             on_release: tl.remove()
-            enabled: tl.selected is not None and tl.selected.status == "queued"
+            enabled: tl.selected is not None and tl.selected.state == "queued"
         BtnQUp:
             id: q_up
             right: q_x.x - p.h_padding  + 10
             y: p.tab_height + p.padding
             on_release: tl.move_up()
-            enabled: tl.selected is not None and tl.selected.status == "queued"
+            enabled: tl.selected is not None and tl.selected.state == "queued"
         BtnQDown:
             right: q_up.x - p.h_padding  + 10
             y: p.tab_height + p.padding
             on_release: tl.move_down()
-            enabled: tl.selected is not None and tl.selected.status == "queued"
+            enabled: tl.selected is not None and tl.selected.state == "queued"
 
 <Timeline>:
     TimelineBox:
@@ -62,35 +68,40 @@
     size: p.screen_width, 777
     canvas:
         Color:
+            rgba: p.nozzle if self.state in ('printing', 'paused', 'pausing', 'stopping') else (0,0,0,0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+        Color:
             rgba: p.translucent_white if (self.selected or self.pressed) else (0,0,0,0)
         Rectangle:
             size: self.size
             pos: self.pos
     #Label
     size_hint_y: None
-    height: 40 if self.status == "header" else 110
-    text: root.details
-    halign: 'center' if root.status == "header" else 'right'
+    height: 40 if self.state == "header" else 110
+    text: "" if self.state == 'header' else self.state.capitalize()
+    halign: 'right'
     valign: 'middle'
     max_lines: 1
     padding_x: p.h_padding
     text_size: self.size
     font_size: p.normal_font
-    bold: bool(root.status in ("printing", "paused"))
-    color: p.green if root.status == "done" else p.red if root.status == "stopped" else p.accent if root.status in ("printing", "paused") else p.medium_light_gray
+    bold: bool(self.state in ('printing', 'paused', 'pausing'))
+    color: p.green if root.state == "done" else p.red if root.state in ("stopped", "stopping") else (1,1,1,1) if root.state in ("printing", "paused", "pausing") else p.medium_light_gray
     Label:
         text: root.name
         shorten: True
         shorten_from: 'right'
-        halign: 'center' if root.status == "header" else 'left'
+        halign: 'center' if root.state == "header" else 'left'
         valign: 'middle'
-        padding_x: p.small_padding if root.status == "header" else p.h_padding 
+        padding_x: p.small_padding if root.state == "header" else p.h_padding 
         size_hint: None, None
-        size: root.width - (0 if root.status == "header" else 120), root.height
+        size: root.width - (0 if root.state == "header" else 120), root.height
         pos: root.pos
         text_size: self.size
         font_size: p.normal_font
-        color: p.medium_gray if root.status == "header" else (1,1,1,1)
+        color: p.medium_gray if root.state == "header" else (1,1,1,1)
     Divider:
         y: root.top - 1
 
@@ -98,6 +109,20 @@
 # BUTTONS
 
 #:set pad 24
+<BtnPrint@FloatingButton>:
+    id: btn_print
+    btn_color: p.medium_gray
+    Label:
+        size: root.size
+        pos: root.pos
+        text: "Print"
+        bold: True
+        halign: 'center'
+        valign: 'middle'
+        text_size: self.size
+        font_size: p.normal_font
+        color: (1,1,1,1) if root.enabled else (0,0,0,0)
+
 <BtnQUp@FloatingButton>:
     id: q_up
     btn_color: p.accent

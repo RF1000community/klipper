@@ -107,6 +107,34 @@ class BasePopup(Popup):
 class ErrorPopup(BasePopup):
     message = StringProperty()
 
+class StopPopup(BasePopup):
+    pass
+
+class PrintPopup(BasePopup):
+    def __init__(self, path, filechooser=None, **kwargs):
+        self.path = path
+        self.filechooser = filechooser
+        super(PrintPopup, self).__init__(**kwargs)
+
+    def confirm(self):
+        app = App.get_running_app()
+        self.dismiss()
+        new_path = self.path
+        if 'USB Device' in self.path:
+            new_path = join(p.sdcard_path, basename(self.path))
+            app.notify.show("Copying {} to Printer...".format(basename(self.path)))
+            shutil.copy(self.path, new_path)
+
+        app.send_print(new_path)
+        tabs = app.root.ids.tabs
+        tabs.switch_to(tabs.ids.home_tab)
+
+    def delete(self):
+        """Open a confirmation dialog to delete the file"""
+        super(PrintPopup, self).dismiss()
+        self.confirm_del = DelPopup(path = self.path, filechooser=self.filechooser)
+        self.confirm_del.open()
+
 class UltraSlider(Widget):
     """
     Simple slider widget

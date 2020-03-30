@@ -50,8 +50,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         ])
     print_state = OptionProperty("no_printjob", options=[
         "no_printjob",
+        "queued",
         "printing",
+        "pausing",
         "paused",
+        "stopping",
         "stopped",
         "done",
         ])
@@ -78,7 +81,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def __init__(self, config = None, **kwargs):
         logging.info("Kivy app initializing...")
         self.notify = Notifications()
-        self.history = History()
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.scheduled_updating = None
@@ -86,6 +88,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.extrude_timer = None
         self.filament_manager = None
         self.bed_mesh = True #initialize as True so it shows up on load, maybe dissapears after handle_connect
+        self.sdcard = None
         if not TESTING:
             self.clean()
             self.kgui_config = config
@@ -130,7 +133,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def clean(self):
         ndel, freed = freedir(p.sdcard_path)
-        self.history.trim_history()
         if ndel:
             self.notify.show("Disk space freed", "Deleted {} files, freeing {} MiB".format(ndel, freed))
 
@@ -244,33 +246,33 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         # do not set print_state outside of this, there will be no reaction to state changes
         s = self.sdcard.get_status(self.reactor.monotonic())
 
-        # check if queue has changed
-        if len(s['queued_files']) > max(len(self.queued_files), 1):
-            self.notify.show("Added Printjob", "Added {} to print Queue".format(basename(s['queued_files'][-1])))
-        self.queued_files = s['queued_files']
+        # check if queue has increased
+        if len(s['printjobs']) > max(len(self.queued_files), 1):
+            self.notify.show("Added Printjob", "Added {} to print Queue".format(s['printjobs'][-1].name))
+        self.queued_files = s['printjobs']
 
-        # this also returns the last printed file if not printing
-        if self.sdcard.current_file:
-            self.print_title = splitext(basename(self.sdcard.current_file.name))[0]
-
+        # update print title
+        if len(self.queued_files):
+            self.print_title = self.queued_files[0].name
+            state = self.queued_files[0].state
+        else:
+            state = 'no_printjob'
         # react to state change
-        if s['state'] != self.print_state:
-            self.print_state = s['state']
-            if s['state'] == 'printing':
-                self.notify.show("Started printing", "Started printing {}".format(basename(s['queued_files'][0])), delay=4)
-            elif s['state'] == 'done':
+        if state != self.print_state:
+            self.print_state = state
+            if state == 'printing':
+                self.notify.show("Started printing", "Started printing {}".format(s['printjobs'][0].name), delay=4)
+            elif state == 'done':
                 self.progress = 1
                 self.print_time = "done" 
                 self.print_done_time = "took " + format_time(self.sdcard.get_printed_time())
-                self.history.add(self.sdcard.current_file.name, "done")
-            elif s['state'] == 'stopped':
+            elif state == 'stopped':
                 self.print_time = "stopped"
                 self.print_done_time = ""
-                self.history.add(self.sdcard.current_file.name, "stopped")
 
         # set printtime prediction if necessary
-        if s['state'] == 'printing'\
-        or s['state'] == 'paused':
+        if state == 'printing'\
+        or state == 'paused':
             if s['progress'] is None: # no prediction could be made yet
                 self.progress = 0
                 self.print_time = ""
