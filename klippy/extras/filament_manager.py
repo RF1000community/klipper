@@ -1,3 +1,9 @@
+# Filament manager compatible with Cura material files, tracking loaded
+# material and their use
+#
+# Copyright (C) 2020  Konstantin Vogel <konstantin.vogel@gmx.net>
+#
+# This file may be distributed under the terms of the GNU GPLv3 license.
 import os
 import json
 import logging
@@ -6,6 +12,7 @@ from xml.etree import cElementTree #just ElementTree for py3
 from os.path import expanduser, join
 
 from pytictoc import TicToc
+
 
 class FilamentManager:
     def __init__(self, config):
@@ -162,10 +169,9 @@ class FilamentManager:
         self.toolhead.move(cur_pos, speed, force=True)
 
     def wait_for_temperature(self, heater):
-        pass
-        # eventtime = self.reactor.monotonic()
-        # while heater.check_busy(eventtime):
-        #     eventtime = self.reactor.pause(eventtime + 1.)
+        eventtime = self.reactor.monotonic()
+        while heater.check_busy(eventtime):
+            eventtime = self.reactor.pause(eventtime + 1.)
 
     ######## store json for loaded and recently unloaded material and their amount
     def read_loaded_material_json(self):
@@ -191,6 +197,7 @@ class FilamentManager:
         except IOError:
             logging.warning("Filament-Manager: Couldn't write loaded-material-file at "
                     + self.loaded_material_path)
+        self.printer.send_event("filament_manager:material_changed")
 
 def load_config(config):
     return FilamentManager(config)

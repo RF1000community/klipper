@@ -167,7 +167,6 @@ class Printer:
                 cb()
         except Exception as e:
             logging.exception("Unhandled exception during ready callback")
-            self.send_event("klippy:exception", "Unhandled exception during ready callback")
             self.invoke_shutdown("Internal error during ready callback: %s" % (str(e),))
     def run(self):
         systime = time.time()
@@ -178,9 +177,8 @@ class Printer:
         try:
             self.reactor.run()
         except Exception as e:
-            logging.exception("Unhandled exception during run")
-            self.send_event("klippy:exception", repr(e))
-            return "error_exit"
+            logging.exception(e)
+            self.invoke_shutdown(repr(e))
         # Check restart flags
         run_result = self.run_result
         try:
@@ -294,15 +292,11 @@ def main():
 
         if res in ('restart', 'firmware_restart'):
             time.sleep(1.)
-            logging.info("Restarting printer")
             # Restart Systemd service if it exists otherwise restart with while loop
             Popen(['sudo', 'systemctl', 'restart', 'klipper.service']).wait()
-        else:
-            logging.info("Stopping printer")
+        elif res == 'exit':
             Popen(['sudo', 'systemctl', 'stop', 'klipper.service']).wait()
-            if res == 'error_exit':
-                sys.exit(-1)
-            break
+
 
 
 if __name__ == '__main__':

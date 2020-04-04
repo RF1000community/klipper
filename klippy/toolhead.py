@@ -181,7 +181,7 @@ class MoveQueue:
             # Enough moves have been queued to reach the target flush time.
             self.flush(lazy=True)
 
-MIN_KIN_TIME = 0.100
+MIN_KIN_TIME = 0.200
 MOVE_BATCH_TIME = 0.500
 
 DRIP_SEGMENT_TIME = 0.100 #need to be higher with kgui... maybe cpu load is to high or some locks are held
