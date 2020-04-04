@@ -189,11 +189,12 @@ class BtnTriple(Widget):
     def __init__(self, **kwargs):
         self.app = App.get_running_app()
         self.guid = None
+        self.app.printer.register_event_handler("filament_manager:material_changed", self.update_material)
         self.app.bind(printer_objects_available=self.update_material)
         super(BtnTriple, self).__init__(**kwargs)
 
     def update_material(self, instance=None, value=None, dt=None):
-        if not self.tool_id: # kv ui not initialized yet
+        if not self.tool_id:
             Clock.schedule_once(self.update_material, 0)
             logging.info("printer objects available before UI")
             return
@@ -384,16 +385,14 @@ class FilamentPopup(BasePopup):
         self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
         super(FilamentPopup, self).__init__(**kwargs)
 
-    def load(self):
+    def confirm(self):
         def do_load(e):
             self.fil_man.load(self.extruder_id, amount=self.amount, guid=self.guid, unloaded_idx=self.unloaded_idx)
-            #self.app.
-        self.reactor.register_async_callback(do_load)
-
-    def unload(self):
         def do_unload(e):
             self.fil_man.unload(self.extruder_id)
-        self.reactor.register_async_callback(do_unload)
+            #self.app.update_material()
+        self.reactor.register_async_callback((do_load if self.do_load else do_unload))
+        self.dismiss()
 
 class FilamentSlider(UltraSlider):
     filament_color = ListProperty([0,0,0,0])

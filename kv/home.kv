@@ -18,7 +18,7 @@
             pos_hint: {'x':0,'y':0}
             size_hint: 1,1
         ProgressBar:
-            enabled: app.print_state != 'no_printjob'
+            enabled: app.print_state != 'no printjob'
             id: progress_bar
             max: 1
             value: app.progress
@@ -52,20 +52,20 @@
             size: 118,118
             center_y: progress_bar.top + p.padding + p.btn_stop/2
             center_x: p.screen_width - p.btn_stop/2 - p.h_padding
-        BtnReprint:
-            on_release: app.send_reprint_last()
-            size: 118, 118
-            pos: btn_stop.pos
         BtnPlay:
-            on_release:
-                if self.paused: app.send_resume()
-                else:           app.send_pause()
+            on_release: app.send_resume()
+            size: btn_stop.size
+            y: btn_stop.y
+            right: btn_stop.x
+        BtnPause:
+            on_release: app.send_pause()
             size: btn_stop.size
             y: btn_stop.y
             right: btn_stop.x
         Label:
             id: l_filename
             text: app.print_title
+            color: p.btn_disabled if app.print_state == 'no printjob' else (1,1,1,1)
             size_hint: None, None
             size: 280,134
             text_size: self.size
@@ -546,7 +546,7 @@
         halign: 'right'
 
 <BtnStop@RoundButton>:
-    enabled: app.print_state == 'printing' or app.print_state == 'paused'
+    enabled: app.print_state in ('printing', 'pausing', 'paused')
     canvas.before:
         Color:
             rgba: p.red if self.enabled else (0,0,0,0)
@@ -555,28 +555,25 @@
             size: p.btn_stop, p.btn_stop
             radius: (p.icon_radius,)
 
-<BtnReprint@RoundButton>:
-    enabled: app.print_state == 'done' or app.print_state == 'stopped'
-    canvas.before:
-        Color:
-            rgba: p.nozzle if self.enabled else (0,0,0,0)
-        Line:
-            #:set rw p.progress_bar_height/2 -0.3
-            #:set r_arr 17
-            #:set r_rad 23
-            width: rw
-            ellipse: (self.center_x - r_rad*p.disp_vertical_stretch, self.center_y - r_rad + 1, r_rad*2*p.disp_vertical_stretch, r_rad*2, 0, 270)
-        Triangle:
-            points: (self.center_x - r_arr, self.center_y + r_rad,    self.center_x, self.center_y + r_rad + r_arr,    self.center_x, self.center_y + r_rad - r_arr)
-
 <BtnPlay@RoundButton>:
     #:set pw (p.btn_stop-2*p.icon_radius)/2
     #:set ph pw*1.155
-    paused: app.print_state == 'paused'
-    enabled: app.print_state == 'printing' or app.print_state == 'paused'
-    canvas.before:
+    enabled: app.print_state in ('pausing', 'paused')
+    canvas:
         Color:
-            rgba: 1,1,1,1 if self.enabled and not self.paused else 0
+            rgba: 1,1,1,1 if self.enabled else 0
+        Triangle:
+            points: self.center_x-pw, self.center_y- ph,   self.center_x-pw, self.center_y+ ph,   self.center_x+pw, self.center_y
+        Line:
+            width: p.icon_radius
+            points: self.center_x-pw, self.center_y- ph,   self.center_x-pw, self.center_y+ ph,   self.center_x+pw, self.center_y
+            close: True
+
+<BtnPause@RoundButton>:
+    enabled: app.print_state == 'printing'
+    canvas:
+        Color:
+            rgba: 1,1,1,1 if self.enabled else 0
         RoundedRectangle:
             pos: self.center_x-p.btn_stop/2, self.center_y-p.btn_stop/2
             size: 0.39*p.btn_stop,p.btn_stop
@@ -585,15 +582,6 @@
             pos: self.center_x+p.btn_stop/2-0.4*p.btn_stop, self.center_y-p.btn_stop/2
             size: 0.39*p.btn_stop, p.btn_stop
             radius: (p.icon_radius,)
-    canvas:
-        Color:
-            rgba: 1,1,1,1 if self.enabled and self.paused else 0
-        Triangle:
-            points: self.center_x-pw, self.center_y- ph,   self.center_x-pw, self.center_y+ ph,   self.center_x+pw, self.center_y
-        Line:
-            width: p.icon_radius
-            points: self.center_x-pw, self.center_y- ph,   self.center_x-pw, self.center_y+ ph,   self.center_x+pw, self.center_y
-            close: True
 
 # POPUPS
 
@@ -913,9 +901,7 @@
             text: "Load" if root.do_load else "Unload"
             width: root.width/2
             pos: root.center_x, root.y
-            on_release:
-                if root.do_load: root.load()
-                else: root.unload()
+            on_release: root.confirm()
 
 <-FilamentSlider>:
     size_hint: None, None

@@ -25,19 +25,19 @@ class Timeline(RecycleView):
         super(Timeline, self).__init__(**kwargs)
         self.app = App.get_running_app()
         self.load_all(in_background=False)
-        self.app.bind(queued_files=self.load_all)
+        self.app.bind(jobs=self.load_all)
         self.app.bind(print_state=self.load_all)
 
     def load_all(self, instance=None, value=None, in_background=True):
 
         queue = [{'name': job.name, 'path': job.path, 'state': job.state} 
-            for job in reversed(self.app.queued_files)]
+            for job in reversed(self.app.jobs)]
 
         history = []
-        if self.app.sdcard and self.app.sdcard.history.history != []:
+        if self.app.history and self.app.history.history != []:
             # latest date in history
-            prev_date = date.fromtimestamp(self.app.sdcard.history.history[0][2])
-            for job in self.app.sdcard.history.history: #TODO use reversed instead of insert for speed
+            prev_date = date.fromtimestamp(self.app.history.history[0][2])
+            for job in self.app.history.history: #TODO use reversed instead of insert for speed
                 new_date = date.fromtimestamp(job[2])
                 # This print happened on a later day than the previous
                 if new_date != prev_date:
@@ -68,16 +68,14 @@ class Timeline(RecycleView):
         Send the updated queue back to the virtual sdcard
         Will fail in testing
         """
-        sdcard = self.app.sdcard
-        sdcard.clear_queue() # Clears everything except for the first entry
-        self.app.queued_files = queue
-        for path in self.app.queued_files[1:]:
-            sdcard.add_printjob(path)
+        self.app.sdcard.clear_queue() # Clears everything except for the first entry
+        for path in queue[1:]:
+            self.app.sdcard.add_printjob(path)
 
     def move_up(self):
         """Move the selected file up one step in the queue"""
         i = self.ids.tl_box.selected_nodes[0]
-        queue = self.app.queued_files
+        queue = self.app.jobs
         if len(queue) > i:
             to_move = queue.pop(i)
             queue.insert(i - 1, to_move)
@@ -87,7 +85,7 @@ class Timeline(RecycleView):
     def move_down(self):
         """Move the selected file down one step in the queue"""
         i = self.ids.tl_box.selected_nodes[0]
-        queue = self.app.queued_files
+        queue = self.app.jobs
         if len(queue) > i:
             to_move = queue.pop(i)
             queue.insert(i + 1, to_move)
@@ -97,11 +95,11 @@ class Timeline(RecycleView):
     def remove(self):
         """Remove the selcted file from the queue"""
         i = self.ids.tl_box.selected_nodes[0]
-        queue = self.app.queued_files
+        queue = self.app.jobs
         if i == 0:
             StopPopup().open()
         elif len(queue) > i:
-            to_remove = queue.pop(i)
+            queue.pop(i)
             self.ids.tl_box.selected_nodes = []
             self.send_queue(queue)
 
@@ -114,9 +112,10 @@ class TimelineItem(RecycleDataViewBehavior, Label):
     path = StringProperty()
     state = OptionProperty("header", options=["header", "queued", "printing", "pausing", "paused", "stopping", "stopped", "done"])
     timestamp = NumericProperty(0)
-    index = None
+    index = None # TODO ?
     selected = BooleanProperty(False)
     pressed = BooleanProperty(False)
+    thumbnail = StringProperty("")
 
     def refresh_view_attrs(self, rv, index, data):
         # Catch and handle the view changes

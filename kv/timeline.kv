@@ -87,8 +87,7 @@
     padding_x: p.h_padding
     text_size: self.size
     font_size: p.normal_font
-    bold: bool(self.state in ('printing', 'paused', 'pausing'))
-    color: p.green if root.state == "done" else p.red if root.state in ("stopped", "stopping") else (1,1,1,1) if root.state in ("printing", "paused", "pausing") else p.medium_light_gray
+    #color: {'done':p.green, 'stopped':p.red, 'stopping':p.red, 'printing': (1,1,1,1), 'paused':(1,1,1,1), 'pausing':(1,1,1,1), 'queued':p.medium_light_gray}[self.state]
     Label:
         text: root.name
         shorten: True

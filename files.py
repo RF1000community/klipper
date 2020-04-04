@@ -1,8 +1,9 @@
 import logging
-import os
-from os.path import getmtime, basename, dirname, exists, abspath, join
 import re
 import shutil
+import os
+from os.path import getmtime, basename, dirname, exists, abspath, join
+from zipfile import ZipFile
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -65,11 +66,19 @@ class Filechooser(RecycleView):
                 dict_["item_type"] = "folder"
                 dict_["details"] = ""
                 folders.append(dict_)
-            # Filter only gcode files
-            elif os.path.isfile(path) and os.path.splitext(base)[1].startswith(".gco"):
+            # Filter only gcode and compressed gcode (ufp) files
+            elif os.path.isfile(path):
+                ext = os.path.splitext(base)[1]
                 dict_["item_type"] = "file"
-                dict_["details"] = self.get_details(path) or "--"
-                files.append(dict_)
+                if ext in (".gco", ".gcode"):
+                    dict_["details"] = self.get_details(path) or "--"
+                    files.append(dict_)
+                elif ext == ".ufp":
+                    logging.info("file with ufp ext, {}".format(path))
+                    dict_["details"] = self.get_ufp_details(path)
+                    dict_["thumbnail"] = self.get_ufp_thumbnail(path)
+                    files.append(dict_)
+
         # Sort files by modification time (last modified first)
         files.sort(key=lambda d: os.path.getmtime(d["path"]), reverse=True)
         # Sort folders alphabetically
@@ -131,6 +140,18 @@ class Filechooser(RecycleView):
                         return "{:4.0f}g".format(weight)
         return ""
 
+    def get_ufp_details(self, path):
+        return "ufp file"
+        # TODO
+
+    def get_ufp_thumbnail(self, path):
+        zip_obj = ZipFile(path)
+        thumbnail_path = path.replace('.ufp', '.png')
+        with open(thumbnail_path, 'wb') as thumbnail:
+            thumbnail.write(zip_obj.read("/Metadata/thumbnail.png"))
+            logging.info("wrote to file {} from ufp file {}".format(thumbnail_path, path))
+        return thumbnail_path
+
 class FilechooserGrid(LayoutSelectionBehavior, RecycleGridLayout):
     # Adds selection behaviour to the view
     pass
@@ -141,6 +162,7 @@ class FilechooserItem(RecycleDataViewBehavior, Label):
     path = StringProperty()
     details = StringProperty()
     index = None
+    thumbnail = StringProperty("")
     pressed = BooleanProperty(False)
 
     def refresh_view_attrs(self, rv, index, data):

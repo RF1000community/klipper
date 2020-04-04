@@ -48,8 +48,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         "error",
         "error disconnected"
         ])
-    print_state = OptionProperty("no_printjob", options=[
-        "no_printjob",
+    print_state = OptionProperty("no printjob", options=[
+        "no printjob",
         "queued",
         "printing",
         "pausing",
@@ -61,8 +61,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     homed = DictProperty({}) #updated by handle_homed event handler
     temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
-    queued_files = ListProperty()
-    print_time = StringProperty() #updated by get_printjob_state
+    jobs = ListProperty()
+    print_time = StringProperty() #updated by get_printjob_progress
     print_done_time = StringProperty()
     print_title = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
@@ -89,6 +89,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.filament_manager = None
         self.bed_mesh = True #initialize as True so it shows up on load, maybe dissapears after handle_connect
         self.sdcard = None
+        self.history = None
+        self.printjob_progress = None
         if not TESTING:
             self.clean()
             self.kgui_config = config
@@ -117,11 +119,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
             self.printer.register_event_handler("klippy:exception", self.handle_exception)
             self.printer.register_event_handler("homing:home_rails_end", self.handle_homed)
+            self.printer.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
         else:
             site.addsitedir(dirname(p.kgui_dir))
             import filament_manager
             self.filament_manager = filament_manager.load_config(None)
-
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
             self.filament_diameter = 1.75
@@ -139,7 +141,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def handle_connect(self): #runs in klippy thread
         self.fan = self.printer.lookup_object('fan', None)
         self.gcode = self.printer.lookup_object('gcode')
-        self.sdcard = self.printer.lookup_object('virtual_sdcard', None)
+        self.sdcard = self.printer.lookup_object('virtual_sdcard')
+        self.history = self.printer.lookup_object('printjob_history')
+        self.printjob_progress = self.printer.lookup_object('printjob_progress')
         self.toolhead = self.printer.lookup_object('toolhead')
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
         self.filament_manager = self.printer.lookup_object('filament_manager', None)
@@ -156,7 +160,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.printer_objects_available = True
         Clock.schedule_once(self.bind_updating, 0)
         Clock.schedule_once(self.control_updating, 0)
-        Clock.schedule_interval(self.update_always, 0.8)
 
     def handle_ready(self):
         self.state = "ready"
@@ -177,6 +180,41 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def handle_homed(self, rails):
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
+
+    def handle_printjob_change(self, path, state):
+        jobs = self.sdcard.jobs
+
+        # check if queue has increased
+        if len(jobs) > max(len(self.jobs), 1):
+            self.notify.show("Added Printjob", "Added {} to print Queue".format(jobs[-1].name))
+
+        self.jobs = jobs
+
+        if len(self.jobs):
+            self.print_title = self.jobs[0].name
+            state = self.jobs[0].state
+        else:
+            state = "no printjob"
+
+        # react to state change
+        if self.print_state != state:
+            self.print_state = state
+            if state == 'no printjob':
+                Clock.schedule_once(lambda dt: self.hide_printjob(jobs[0].name), 3600) # show old printjob for 1h then throw it out
+            else:
+                if state == 'printing':
+                    self.notify.show("Started printing", "Started printing {}".format(self.jobs[0].name), delay=4)
+                elif state == 'done':
+                    self.progress = 1
+                    self.print_done_time = "done" 
+                    self.print_time = ""
+                elif state == 'stopped':
+                    self.print_done_time = "stopped"
+                    self.print_time = ""
+
+    def hide_printjob(self, name):
+        if self.print_state in ('done', 'stopped') and self.print_title == name:
+            self.print_title = ""
 
 ### KLIPPY THREAD ^
 ########################################################################################
@@ -212,15 +250,13 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.update_setting()
             self.scheduled_updating = Clock.schedule_interval(self.update_setting, 2.2)
 
-    def update_always(self, *args):
-        self.get_printjob_state()
-
     def update_home(self, *args):
         self.get_homing_state()
         self.get_temp()
         self.get_pos()
 
     def update_printing(self, *args):
+        self.get_printjob_progress()
         self.get_pressure_advance()
         self.get_acceleration()
         self.get_z_adjust()
@@ -233,7 +269,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_config('extruder', 'pressure_advance', 'default_pressure_advance', 'float')
         self.get_config('printer', 'max_accel', 'default_acceleration', 'float')
 
-    def get_printjob_state(self, *args):
+    def get_printjob_progress(self, *args):
         def format_time(seconds):
             minutes = int((seconds % 3600) // 60)
             hours  =  int(seconds // 3600)
@@ -242,54 +278,24 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             else:
                 return "{minutes} minutes".format(**locals())
 
-        # get status from virtual_sdcard
-        # do not set print_state outside of this, there will be no reaction to state changes
-        s = self.sdcard.get_status(self.reactor.monotonic())
-
-        # check if queue has increased
-        if len(s['printjobs']) > max(len(self.queued_files), 1):
-            self.notify.show("Added Printjob", "Added {} to print Queue".format(s['printjobs'][-1].name))
-        self.queued_files = s['printjobs']
-
-        # update print title
-        if len(self.queued_files):
-            self.print_title = self.queued_files[0].name
-            state = self.queued_files[0].state
+        est_remaining, progress = self.printjob_progress.get_print_time_prediction()
+        if progress is None: # no prediction could be made yet
+            logging.info("progresss is none")
+            self.progress = 0
+            self.print_time = ""
+            self.print_done_time = ""
         else:
-            state = 'no_printjob'
-        # react to state change
-        if state != self.print_state:
-            self.print_state = state
-            if state == 'printing':
-                self.notify.show("Started printing", "Started printing {}".format(s['printjobs'][0].name), delay=4)
-            elif state == 'done':
-                self.progress = 1
-                self.print_time = "done" 
-                self.print_done_time = "took " + format_time(self.sdcard.get_printed_time())
-            elif state == 'stopped':
-                self.print_time = "stopped"
-                self.print_done_time = ""
-
-        # set printtime prediction if necessary
-        if state == 'printing'\
-        or state == 'paused':
-            if s['progress'] is None: # no prediction could be made yet
-                self.progress = 0
-                self.print_time = ""
-                self.print_done_time = ""
+            remaining = timedelta(seconds = est_remaining)
+            done = datetime.now() + remaining
+            tomorrow = datetime.now() + timedelta(days=1)
+            self.progress = progress
+            self.print_time = format_time(remaining.total_seconds()) + " remaining"
+            if done.day == datetime.now().day:
+                self.print_done_time = done.strftime("ca. %-H:%M")
+            elif done.day == tomorrow.day:
+                self.print_done_time = done.strftime("tomorrow %-H:%M") # "ca. doesnt fit on screen
             else:
-                remaining = timedelta(seconds = s['estimated_remaining_time'])
-                done = datetime.now() + remaining
-                tomorrow = datetime.now() + timedelta(days=1)
-                self.progress = s['progress']
-                self.print_time = format_time(remaining.total_seconds()) + " remaining"
-                logging.info("set progress to {}".format(s['progress']))
-                if done.day == datetime.now().day:
-                    self.print_done_time = done.strftime("ca. %-H:%M")
-                elif done.day == tomorrow.day:
-                    self.print_done_time = done.strftime("tomorrow %-H:%M") # "ca. doesnt fit on screen
-                else:
-                    self.print_done_time = done.strftime("ca. %a %-H:%M")
+                self.print_done_time = done.strftime("ca. %a %-H:%M")
 
 ##################################################################
 ### TUNING
@@ -495,39 +501,16 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(None)))
 
     def send_print(self, filepath):
-        def start_print(e):
-            self.sdcard.add_printjob(filepath)
-            Clock.schedule_once(self.get_printjob_state, 0)
-        self.reactor.register_async_callback(start_print)
-
-    def send_reprint_last(self):
-        def start_reprint(e):
-            if self.sdcard.current_file: # reprint the last file
-                filepath = self.sdcard.current_file.name
-                logging.info("trying to reprint {} with path {}".format(self.sdcard.current_file, self.sdcard.current_file.name))
-                self.sdcard.add_printjob(filepath)
-                Clock.schedule_once(self.get_printjob_state, 0)
-            else:
-                return
-        self.reactor.register_async_callback(start_reprint)
+        self.reactor.register_async_callback(lambda e: self.sdcard.add_printjob(filepath))
 
     def send_stop(self):
-        def stop_print(e):
-            self.sdcard.stop_printjob()
-            Clock.schedule_once(self.get_printjob_state, 0)
-        self.reactor.register_async_callback(stop_print)
+        self.reactor.register_async_callback(lambda e: self.sdcard.stop_printjob())
 
     def send_pause(self):
-        def pause_print(e):
-            self.sdcard.pause_printjob()
-            Clock.schedule_once(self.get_printjob_state, 0)
-        self.reactor.register_async_callback(pause_print)
+        self.reactor.register_async_callback(lambda e: self.sdcard.pause_printjob())
 
     def send_resume(self):
-        def resume_print(e):
-            self.sdcard.resume_printjob()  
-            Clock.schedule_once(self.get_printjob_state, 0)
-        self.reactor.register_async_callback(resume_print)
+        self.reactor.register_async_callback(lambda e: self.sdcard.resume_printjob())
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
