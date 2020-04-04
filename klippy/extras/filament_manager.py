@@ -179,14 +179,25 @@ class FilamentManager:
         try:
             with open(self.loaded_material_path, "r") as f:
                 materials = json.load(f)
-                self.loaded_materials = materials["loaded"]
-                self.unloaded_materials = materials["unloaded"]
+                if not self.verify_loaded_material_json(materials):
+                    logging.info("Filament-Manager: Malformed material file at " + self.loaded_material_path)
+                else:
+                    self.loaded_materials = materials["loaded"]
+                    self.unloaded_materials = materials["unloaded"]
         except (IOError, ValueError): # No file or incorrect JSON
             logging.info("Filament-Manager: Couldn't read loaded-material-file at " + self.loaded_material_path)
 
-    def verify_loaded_material_json(self, material):
+    def verify_loaded_material_json(self, materials):
         """Only return True when the entire file has a correct structure"""
-        pass
+        try:
+            for mat in materials["loaded"] + materials["unloaded"]:
+                if not (mat is None or (
+                        isinstance(mat[0], (unicode, str)) and # UUID
+                        isinstance(mat[1], (float, int)))):    # amount
+                    return False
+            return True
+        except:
+            return False
 
     def write_loaded_material_json(self):
         """Write the object to the material file"""
