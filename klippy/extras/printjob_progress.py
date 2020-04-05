@@ -15,7 +15,7 @@ class PrintjobProgress:
         self.printer.register_event_handler("gcode:read_metadata", self.handle_gcode_metadata)
         self.printer.register_event_handler("virtual_sdcard:printjob_ended", self.initialize_printjob)
 
-    def initialize_printjob(self):
+    def initialize_printjob(self, *args):
         self.slicer_idx = None
         self.slicer_elapsed_times = [] # [[time actually printed, elapsed time put by slicer], ...]
         self.slicer_estimated_time = None

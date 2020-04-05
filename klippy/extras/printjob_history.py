@@ -3,8 +3,8 @@
 # Copyright (C) 2020  Gabriel Vogel
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import logging, time
-from os.path import expanduser
+import logging, time, json
+from os.path import expanduser, exists
 
 
 class PrintjobHistory:

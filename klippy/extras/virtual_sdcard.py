@@ -34,18 +34,19 @@ class Printjob:
                 logging.warning("printjob_manager: couldn't open file {}".format(self.path))
                 self.set_state('stopped')
         elif ext == '.ufp':
-            try:
-                zip_obj = ZipFile(path)
-                self.thumbnail_path = path.replace('.ufp', '.png')
-                with open(self.thumbnail_path, 'wb') as thumbnail:
-                    thumbnail.write(zip_obj.read("/Metadata/thumbnail.png"))
-                self.file_obj = zip_obj.open("/3D/model.gcode", 'r')
-                self.file_obj.seek(0, os.SEEK_END)
-                self.file_size = self.file_obj.tell()
-                self.file_obj.seek(0)
-            except Exception as e:
-                logging.warning("printjob_manager: couldn't open compressed file {}, exception {}".format(self.path, e))
-                self.set_state('stopped')
+            # try:
+            zip_obj = ZipFile(path)
+            self.thumbnail_path = path.replace('.ufp', '.png')
+            with open(self.thumbnail_path, 'wb') as thumbnail:
+                thumbnail.write(zip_obj.read("/Metadata/thumbnail.png"))
+            from io import BytesIO
+            self.file_obj = BytesIO(zip_obj.open("/3D/model.gcode", 'r')) # Stringio wrapper to fix python 2
+            self.file_obj.seek(0, os.SEEK_END)
+            self.file_size = self.file_obj.tell()
+            self.file_obj.seek(0)
+            # except Exception as e:
+            #     logging.warning("printjob_manager: couldn't open compressed file {}, exception {}".format(self.path, e))
+            #     self.set_state('stopped')
     
     def set_state(self, state):
         if self.state != state:
