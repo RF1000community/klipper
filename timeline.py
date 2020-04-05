@@ -55,7 +55,7 @@ class Timeline(RecycleView):
                 history.insert(0, {"name": new_date.strftime("%d. %b %Y")})
 
         if len(queue) + len(history) == 0: # Give message in case of empty list
-            self.data = [{"name": "No printjobs scheduled or finished"}]
+            self.data = [{"name": "No printjobs scheduled or finished", "state": 'message'}]
         else:
             self.data = queue + history
         self.refresh_from_data()
@@ -110,7 +110,7 @@ class TimelineBox(LayoutSelectionBehavior, RecycleBoxLayout):
 class TimelineItem(RecycleDataViewBehavior, Label):
     name = StringProperty()
     path = StringProperty()
-    state = OptionProperty("header", options=["header", "queued", "printing", "pausing", "paused", "stopping", "stopped", "done"])
+    state = OptionProperty("header", options=["header", "message", "queued", "printing", "pausing", "paused", "stopping", "stopped", "done"])
     timestamp = NumericProperty(0)
     index = None # TODO ?
     selected = BooleanProperty(False)

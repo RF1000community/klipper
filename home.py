@@ -194,9 +194,8 @@ class BtnTriple(Widget):
         super(BtnTriple, self).__init__(**kwargs)
 
     def update_material(self, instance=None, value=None, dt=None):
-        if not self.tool_id:
+        if not self.tool_id: # kv ui not initialized yet
             Clock.schedule_once(self.update_material, 0)
-            logging.info("printer objects available before UI")
             return
         self.fil_man = self.app.filament_manager
         extruder_idx = int(self.tool_id[-1])
