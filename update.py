@@ -1,11 +1,7 @@
 import os
 import json
-try:
-    import urllib2 as urllib
-    import StringIO
-except ImportError:
-    import urllib
-    from io import StringIO
+import urllib
+from io import StringIO
 import threading
 import logging
 import tarfile

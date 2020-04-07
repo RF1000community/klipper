@@ -1,10 +1,10 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # coding: utf-8
 import logging
 import site
 import threading
 import os
-from os.path import join, abspath, expanduser, basename, splitext, dirname
+from os.path import join, dirname
 from datetime import datetime, timedelta
 from subprocess import Popen
 

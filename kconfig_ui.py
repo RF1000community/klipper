@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 import os
 
@@ -21,7 +20,6 @@ import parameters as p
 from settings import SetItem
 from elements import *
 
-from pytictoc import TicToc
 
 class FlashScreen(Screen):
     def __init__(self, **kwargs):
@@ -33,8 +31,7 @@ class FlashScreen(Screen):
         Clock.schedule_once(self.draw_nodes, 0)
 
     def draw_nodes(self, dt=None):
-        t = TicToc()
-        t.tic()
+
         self.ids.box.clear_widgets()
         self.ids.box.add_widget(Divider(pos_hint = {'center_x':0.5}))
         self.ids.box.add_widget(CI_Text(None, text = "Configure Firmware to flash to your Printer Mainboard. This usually needs to be done once when installing the Klipper Firmware"))
@@ -81,7 +78,6 @@ class FlashScreen(Screen):
             nod.text = text
             self.ids.box.add_widget(nod)
         self.ids.box.add_widget(Divider(pos_hint = {'center_x': 0.5}))         
-        t.toc()
 
 class CI_Tristate(Label):
     state = NumericProperty(0)

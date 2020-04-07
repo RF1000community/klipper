@@ -10,17 +10,18 @@ Installation Guide
 
 ```bash
 sudo apt update
-sudo raspi-config 
+sudo apt install git
+sudo raspi-config
 """set memory split to 256,
    GL Driver to OpenGL FKMS, 
    Desktop/CLI to Console Autologin """ 
-sudo apt install git python-pip virtualenv  
 ```
 
 ### Install Octoprint from source
 - This is optional, Klipper can be used just with KGUI
 
 ```bash
+sudo apt install virtualenv  
 cd
 git clone https://github.com/foosel/OctoPrint.git
 cd Octoprint/
