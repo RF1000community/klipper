@@ -189,7 +189,7 @@ class BtnTriple(Widget):
     def __init__(self, **kwargs):
         self.app = App.get_running_app()
         self.guid = None
-        self.app.printer.register_event_handler("filament_manager:material_changed", self.update_material)
+        #self.app.printer.register_event_handler("filament_manager:material_changed", self.update_material)
         self.app.bind(printer_objects_available=self.update_material)
         super(BtnTriple, self).__init__(**kwargs)
 

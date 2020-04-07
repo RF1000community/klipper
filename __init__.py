@@ -9,9 +9,9 @@ from datetime import datetime, timedelta
 from subprocess import Popen
 
 TESTING = __name__ == "__main__"
-if not TESTING:
-    os.environ['KIVY_WINDOW'] = 'sdl2'
-    os.environ['KIVY_GL_BACKEND'] = 'gl'
+# if not TESTING:
+os.environ['KIVY_WINDOW'] = 'sdl2'
+os.environ['KIVY_GL_BACKEND'] = 'sdl2'
 
 from kivy import kivy_data_dir
 from kivy.app import App
@@ -33,7 +33,6 @@ from kconfig_ui import *
 import parameters as p
 
 if not TESTING:
-    site.addsitedir(dirname(dirname(p.kgui_dir)))
     from reactor import ReactorCompletion
 
 
@@ -537,27 +536,26 @@ class PopupExceptionHandler(ExceptionHandler):
 def set_kivy_config():
     # This needs an absolute path otherwise config will only be loaded when
     # working directory is the parent directory
-    if TESTING:
-        Config.read(join(p.kgui_dir, "config_test.ini"))
+    site.addsitedir(dirname(dirname(p.kgui_dir)))
+    Config.read(join(p.kgui_dir, "config.ini"))
+
+    # Read the display rotation value
+    try:
+        with open("/boot/config.txt", "r") as file_:
+            lines = file_.read().splitlines()
+    except IOError:
+        # Assume 90 degree rotation (config default) in case
+        # /boot/config.txt isn't found
+        rotation = 1
     else:
-        Config.read(join(p.kgui_dir, "config.ini"))
-        # Read the display rotation value
-        try:
-            with open("/boot/config.txt", "r") as file_:
-                lines = file_.read().splitlines()
-        except IOError:
-            # Assume 90 degree rotation (config default) in case
-            # /boot/config.txt isn't found
-            rotation = 1
-        else:
-            rotation_string = [i for i in lines if i.startswith("display_hdmi_rotate")][0]
-            # The number should always be at index 20
-            rotation = int(rotation_string[20])
-        # rotation should only be 1 for 90deg or 3 for 270deg
-        # Set the input config option to rotate the touchinput explicitly for kivy
-        if rotation == 3:
-            Config.set("input", "device_%(name)s",
-                "probesysfs,provider=mtdev,param=rotation=270,param=invert_y=1")
+        rotation_string = [i for i in lines if i.startswith("display_hdmi_rotate")][0]
+        # The number should always be at index 20
+        rotation = int(rotation_string[20])
+    # rotation should only be 1 for 90deg or 3 for 270deg
+    # Set the input config option to rotate the touchinput explicitly for kivy
+    if rotation == 3:
+        Config.set("input", "device_%(name)s",
+            "probesysfs,provider=mtdev,param=rotation=270,param=invert_y=1")
 
     #load a custom style.kv with changes to filechooser and more
     Builder.unload_file(join(kivy_data_dir, "style.kv"))

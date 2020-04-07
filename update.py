@@ -48,14 +48,14 @@ class UpdateScreen(Screen):
             ver, err = process.communicate()
             retcode = process.wait()
             if retcode == 0:
-                return ver.strip()
+                return ver.strip().decode()
             else:
                 logging.debug("Error getting git version: %s", err)
         except OSError:
             logging.debug("Exception on run: %s", traceback.format_exc())
 
         with open(os.path.join(klippy_dir, '.version')) as h:
-            return h.read().rstrip()
+            return h.read().rstrip().decode()
         return ""
 
 class FileDownload(threading.Thread):
