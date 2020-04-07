@@ -9,7 +9,7 @@ Jinja2==2.10.1
 
 #KGUI
 Cython==0.29.10
-kivy==1.11.0
+#kivy==1.11.1 # for now we install a newer version of kivy manually
 
 #Cura connection
 zeroconf==0.19.1

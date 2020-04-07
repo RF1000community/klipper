@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script installs Klipperui on a Raspberry Pi machine running Octopi, with git installed
+# This script installs Klipperui on a Raspberry Pi 4
 
 # Find SRCDIR from the pathname of this script
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
@@ -31,25 +31,76 @@ install_packages()
     PKGLIST="${PKGLIST} stm32flash dfu-util libnewlib-arm-none-eabi"
     PKGLIST="${PKGLIST} gcc-arm-none-eabi binutils-arm-none-eabi"
 
-    # KGUI                   v venv, the new more better virtualenv
-    PKGLIST="${PKGLIST} python3-venv \
-    libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
-    libsdl2-ttf-dev pkg-config libgl1-mesa-dev libgles2-mesa-dev \
-    python3-setuptools libgstreamer1.0-dev \
+    # Kivy https://github.com/kivy/kivy/doc/sources/installation/installation-rpi.rst
+    PKGLIST="${PKGLIST} \
+    pkg-config \
+    libgl1-mesa-dev \
+    libgles2-mesa-dev \
+    libgstreamer1.0-dev \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
     gstreamer1.0-plugins-good \
     gstreamer1.0-plugins-ugly \
     gstreamer1.0-omx \
     gstreamer1.0-alsa \
-    python3-dev libmtdev-dev \
-    xclip xsel libjpeg-dev mtdev-tools xorg python3-pil \
-    xserver-xorg-video-fbturbo git python3-pip"
-    #Wifi
+    libmtdev-dev \
+    libjpeg-dev \
+    xclip \
+    xsel \
+    mtdev-tools xorg  \
+    xserver-xorg-video-fbturbo \
+    git \
+    git-core \
+    python3-dev \
+    python-pil \
+    python3-venv \
+    python3-setuptools \
+    python3-pip"
+
+    # Kivy Raspberry 4 specifics
+    PKGLIST="${PKGLIST} \
+    libfreetype6-dev \
+    libgl1-mesa-dev \
+    libgles2-mesa-dev \
+    libdrm-dev \
+    libgbm-dev \
+    libudev-dev \
+    libasound2-dev \
+    liblzma-dev \
+    libjpeg-dev \
+    libtiff-dev \
+    libwebp-dev \
+    build-essential \
+    gir1.2-ibus-1.0 \
+    libdbus-1-dev \
+    libegl1-mesa-dev \
+    libibus-1.0-5 \
+    libibus-1.0-dev \
+    libice-dev \
+    libsm-dev \
+    libsndio-dev \
+    libwayland-bin \
+    libwayland-dev \
+    libxi-dev \
+    libxinerama-dev \
+    libxkbcommon-dev \
+    libxrandr-dev \
+    libxss-dev \
+    libxt-dev \
+    libxv-dev \
+    x11proto-randr-dev \
+    x11proto-scrnsaver-dev \
+    x11proto-video-dev \
+    x11proto-xinerama-dev"
+
+    # Kivy SDL2
+    PKGLIST="${PKGLIST} libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev"
+
+    # Wifi
     PKGLIST="${PKGLIST} network-manager"
-    #Usb Stick Automounting
+    # Usb Stick Automounting
     PKGLIST="${PKGLIST} usbmount"
-    #Cura connection
+    # Cura connection
     PKGLIST="${PKGLIST} iptables-persistent"
 
     # Update system package info
@@ -89,16 +140,14 @@ install_klipper_service()
 [Unit]
 Description="Klipper with GUI running in Xorg"
 Requires=multi-user.target
-
 [Service]
 Type=simple
 User=$USER
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/bin/bash -c "/usr/bin/startx ${PYTHONDIR}/bin/python3 ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
+ExecStart=/bin/bash -c "/usr/bin/startx ${PYTHONDIR}/bin/python3 ${SRCDIR}/klippy/extras/kgui/__init__.py"
 Nice=-4
 Restart=always
 RestartSec=10
-
 [Install]
 WantedBy=default.target
 EOF
@@ -115,10 +164,10 @@ install_usb_automounting()
     report_status "Install usbmount.conf..."
     mkdir -p ~/sdcard/USB-Device
     sudo cp ${SRCDIR}/klippy/extras/kgui/usbmount.conf /etc/usbmount/usbmount.conf
-    #https://raspberrypi.stackexchange.com/questions/100312/raspberry-4-usbmount-not-working
-    #https://www.oguska.com/blog.php?p=Using_usbmount_with_ntfs_and_exfat_filesystems
+    # https://raspberrypi.stackexchange.com/questions/100312/raspberry-4-usbmount-not-working
+    # https://www.oguska.com/blog.php?p=Using_usbmount_with_ntfs_and_exfat_filesystems
     
-    #maybe needed TODO test this
+    # maybe needed
     sudo sed -i 's/PrivateMounts=yes/PrivateMounts=no/' /lib/systemd/system/systemd-udevd.service
 }
 
@@ -128,6 +177,10 @@ install_usb_automounting()
 # Use custom install script in kgui directory
 install_lcd_driver()
 {
+    # Kivy: Add user to render group to give permission for hardware rendering
+    sudo adduser "$USER" render
+
+
     report_status "Installing LCD Driver..."
     sudo ${SRCDIR}/klippy/extras/kgui/LCDC7-better.sh -r 90
     # Copy the dpms configuration
