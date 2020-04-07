@@ -154,9 +154,9 @@ class Filechooser(RecycleView):
         return "--"
 
     def get_ufp_thumbnail(self, path):
-        zip_obj = ZipFile(path)
         thumbnail_path = path.replace('.ufp', '.png')
         if not exists(thumbnail_path):
+            zip_obj = ZipFile(path)
             with open(thumbnail_path, 'wb') as thumbnail:
                 thumbnail.write(zip_obj.read("/Metadata/thumbnail.png"))
         return thumbnail_path
