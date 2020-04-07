@@ -20,7 +20,7 @@ setup_port_redirection()
 install_packages()
 {
     # Packages for python cffi
-    PKGLIST="python-virtualenv virtualenv python-dev libffi-dev build-essential"
+    PKGLIST="python3-virtualenv virtualenv python3-dev libffi-dev build-essential"
     # kconfig requirements
     PKGLIST="${PKGLIST} libncurses-dev"
     # hub-ctrl
@@ -31,19 +31,20 @@ install_packages()
     PKGLIST="${PKGLIST} stm32flash dfu-util libnewlib-arm-none-eabi"
     PKGLIST="${PKGLIST} gcc-arm-none-eabi binutils-arm-none-eabi"
 
-    # KGUI
-    PKGLIST="${PKGLIST} libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
+    # KGUI                   v venv, the new more better virtualenv
+    PKGLIST="${PKGLIST} python3-venv \
+    libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
     libsdl2-ttf-dev pkg-config libgl1-mesa-dev libgles2-mesa-dev \
-    python-setuptools libgstreamer1.0-dev \
+    python3-setuptools libgstreamer1.0-dev \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
     gstreamer1.0-plugins-good \
     gstreamer1.0-plugins-ugly \
     gstreamer1.0-omx \
     gstreamer1.0-alsa \
-    python-dev libmtdev-dev \
-    xclip xsel libjpeg-dev mtdev-tools xorg python-pil \
-    xserver-xorg-video-fbturbo git python-pip"
+    python3-dev libmtdev-dev \
+    xclip xsel libjpeg-dev mtdev-tools xorg python3-pil \
+    xserver-xorg-video-fbturbo git python3-pip"
     #Wifi
     PKGLIST="${PKGLIST} network-manager"
     #Usb Stick Automounting
@@ -73,10 +74,10 @@ create_virtualenv()
 {
     report_status "Updating python virtual environment..."
     # Create virtualenv if it doesn't already exist
-    [ ! -d ${PYTHONDIR} ] && virtualenv ${PYTHONDIR}
+    [ ! -d ${PYTHONDIR} ] && python3 -m venv ${PYTHONDIR}
     report_status "install pip packages..."
     # Install/update dependencies                             v  custom KGUI list of pip packages
-    ${PYTHONDIR}/bin/pip install -r ${SRCDIR}/scripts/klippy-kgui-requirements.txt
+    ${PYTHONDIR}/bin/pip3 install -r ${SRCDIR}/scripts/klippy-kgui-requirements.txt
 }
 
 
@@ -93,7 +94,7 @@ Requires=multi-user.target
 Type=simple
 User=$USER
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/bin/bash -c "/usr/bin/startx ${PYTHONDIR}/bin/python ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
+ExecStart=/bin/bash -c "/usr/bin/startx ${PYTHONDIR}/bin/python3 ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
 Nice=-4
 Restart=always
 RestartSec=10
