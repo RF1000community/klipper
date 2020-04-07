@@ -11,7 +11,6 @@ import logging
 from xml.etree import cElementTree #just ElementTree for py3
 from os.path import expanduser, join
 
-from pytictoc import TicToc
 
 
 class FilamentManager:
@@ -51,8 +50,6 @@ class FilamentManager:
 
     ######## manage cura-material xml files
     def read_material_library_xml(self):
-        t = TicToc()
-        t.tic()
         self.guid_to_path = {}
         self.tmc_to_guid = {}
         if os.path.exists(self.material_dir):
@@ -62,8 +59,6 @@ class FilamentManager:
                     continue
                 f_path = os.path.join(self.material_dir, f)
                 self.read_single_file(f_path)
-        t.toc()
-        logging.info("time to parse: {}".format(t.elapsed))
 
     def read_single_file(self, f_path):
         try:
