@@ -4,8 +4,8 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import bus
 import logging
+from . import bus
 
 REPORT_TIME = .8
 BME280_CHIP_ADDR = 0x76

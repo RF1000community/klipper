@@ -7,8 +7,8 @@
 import logging
 import math
 import json
-import probe
 import collections
+from . import probe
 
 PROFILE_VERSION = 1
 PROFILE_OPTIONS = {

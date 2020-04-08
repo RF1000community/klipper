@@ -103,7 +103,7 @@ class PrinterConfig:
             msg = "Unable to open config file %s" % (filename,)
             logging.exception(msg)
             raise error(msg)
-        return data.replace('\r\n', '\n')
+        return data.decode().replace('\r\n', '\n')
     def _find_autosave_data(self, data):
         regular_data = data
         autosave_data = ""
@@ -189,7 +189,7 @@ class PrinterConfig:
             if pos >= 0:
                 line = line[:pos]
             # Process include or buffer line
-            mo = configparser.Rawconfigparser.SECTCRE.match(line)
+            mo = configparser.RawConfigParser.SECTCRE.match(line)
             header = mo and mo.group('header')
             if header and header.startswith('include '):
                 self._parse_config_buffer(buffer, filename, fileconfig)
@@ -201,7 +201,7 @@ class PrinterConfig:
         self._parse_config_buffer(buffer, filename, fileconfig)
         visited.remove(path)
     def _build_config_wrapper(self, data, filename):
-        fileconfig = configparser.Rawconfigparser()
+        fileconfig = configparser.RawConfigParser()
         self._parse_config(data, filename, fileconfig, set())
         return ConfigWrapper(self.printer, fileconfig, {}, 'printer')
     def _build_config_string(self, config):

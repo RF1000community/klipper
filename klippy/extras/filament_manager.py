@@ -8,7 +8,7 @@ import os
 import json
 import logging
 
-from xml.etree import cElementTree #just ElementTree for py3
+from xml.etree import ElementTree
 from os.path import expanduser, join
 
 
@@ -62,7 +62,7 @@ class FilamentManager:
 
     def read_single_file(self, f_path):
         try:
-            f_root = cElementTree.parse(f_path).getroot()
+            f_root = ElementTree.parse(f_path).getroot()
         except: 
             logging.info("failed to parse xml-material-file {}".format(f_path))
             return
@@ -90,7 +90,7 @@ class FilamentManager:
         """material can be either GUID or filepath"""
         fpath = self.guid_to_path.get(material) or material
         try:
-            root = cElementTree.parse(fpath).getroot()
+            root = ElementTree.parse(fpath).getroot()
         except: 
             logging.info("Failed to parse {}".format(fpath))
         else:

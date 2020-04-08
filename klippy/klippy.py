@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 # Main code for host side printer firmware
 #
 # Copyright (C) 2016-2018  Kevin O'Connor <kevin@koconnor.net>
@@ -272,7 +272,7 @@ def main():
         versions = "\n".join([
             "Args: %s" % (sys.argv,),
             "Git version: %s" % (repr(start_args['software_version']),),
-            "CPU: %s" % (util.get_cpu_info(),),
+            #"CPU: %s" % (util.get_cpu_info().decode(),),TODO
             "Python: %s" % (repr(sys.version),)])
         logging.info(versions)
     elif not options.debugoutput:
