@@ -1,31 +1,20 @@
 KGUI:
-
     fix ethernet icon not showing up
-
-    https://wiki.archlinux.org/index.php/Display_Power_Management_Signaling
-
     OTA Updates of klipperui + dependencies
+    microcontroller flashing
 
-    Klipper bugs
+Klipper 
+    PY3 port
+        configparser overwrite config causing duplicate section error
+        initial logging statement versions
+    bugs to monitor
         see if timer to close error persists
         DripModeEndSignal during homing maybe due to add. gcode move command
                                         also due to stop command
 
-    See if progress bar shows wrong progress on homescreen as well
-
-    microcontroller flashing
-
-    Schedule Full sdcard handling e.g. with, add deletion when more than 100 elements except for the USB stick, notification
-
-    Material Database, with popups, unload load
 
 CURA COONNECTION
-    Klipper Module
-        h264 streaming:
-            raspivid
-            mjpegstreamer
 
-    Cura Plugin
 
 HIGH SPEED ODRIVE COONNECTION
 
