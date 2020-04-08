@@ -33,7 +33,7 @@ class SerialRxPin(pysimulavr.PySimulationMember, pysimulavr.Pin):
         if self.pos == 1:
             return int(self.delay * 1.5)
         if self.pos >= SERIALBITS:
-            data = chr((self.current >> 1) & 0xff)
+            data = chr((self.current >> 1) & 0xff).encode()
             self.terminal.write(data)
             self.pos = -1
             self.current = 0

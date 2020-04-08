@@ -38,7 +38,7 @@ class ForceMove:
         self.trapq_append = ffi_lib.trapq_append
         self.trapq_free_moves = ffi_lib.trapq_free_moves
         self.stepper_kinematics = ffi_main.gc(
-            ffi_lib.cartesian_stepper_alloc('x'), ffi_lib.free)
+            ffi_lib.cartesian_stepper_alloc('x'.encode()), ffi_lib.free)
         ffi_lib.itersolve_set_trapq(self.stepper_kinematics, self.trapq)
         # Register commands
         self.gcode = self.printer.lookup_object('gcode')

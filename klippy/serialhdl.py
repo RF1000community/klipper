@@ -155,7 +155,8 @@ class SerialReader:
     def register_response(self, callback, name, oid=None):
         with self.lock:
             if callback is None:
-                del self.handlers[name, oid]
+                if (name, oid) in self.handlers.keys(): #maybe the if is unnecessary
+                    del self.handlers[name, oid]
             else:
                 self.handlers[name, oid] = callback
     # Command sending
@@ -167,12 +168,22 @@ class SerialReader:
         nid = self.last_notify_id
         completion = self.reactor.completion()
         self.pending_notifications[nid] = completion
-        self.ffi_lib.serialqueue_send(self.serialqueue, cmd_queue,
-                                      cmd, len(cmd), minclock, reqclock, nid)
-        params = completion.wait()
-        if params is None:
-            raise error("Serial connection closed")
-        return params
+        """
+        # TODO actually fix this (the if statement is not supposed to be there, we get 
+        
+            File "/home/pi/klipperui/klippy/serialhdl.py", line 175, in raw_send_wait_ack
+            cmd, len(cmd), minclock, reqclock, nid)
+        TypeError: initializer for ctype 'struct serialqueue *' must be a cdata pointer, not NoneType
+
+        and self.serialqueue is NoneType instead of <cdata 'struct serialqueue *' 0x131a858>
+        """
+        if self.serialqueue is not None: 
+            self.ffi_lib.serialqueue_send(self.serialqueue, cmd_queue,
+                                        cmd, len(cmd), minclock, reqclock, nid)
+            params = completion.wait()
+            if params is None:
+                raise error("Serial connection closed")
+            return params
     def send(self, msg, minclock=0, reqclock=0):
         cmd = self.msgparser.create_command(msg)
         self.raw_send(cmd, minclock, reqclock, self.default_cmd_queue)
@@ -260,7 +271,7 @@ def stk500v2_leave(ser, reactor):
     ser.baudrate = 115200
     reactor.pause(reactor.monotonic() + 0.100)
     ser.read(4096)
-    ser.write('\x1b\x01\x00\x01\x0e\x11\x04')
+    ser.write('\x1b\x01\x00\x01\x0e\x11\x04'.encode())
     reactor.pause(reactor.monotonic() + 0.050)
     res = ser.read(4096)
     logging.debug("Got %s from stk500v2", repr(res))

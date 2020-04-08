@@ -315,9 +315,9 @@ class GCodeParser:
             return
         try:
             if msg:
-                os.write(self.fd, "ok %s\n" % (msg,))
+                os.write(self.fd, "ok {}\n".format(msg).encode())
             else:
-                os.write(self.fd, "ok\n")
+                os.write(self.fd, "ok\n".encode())
         except os.error:
             logging.exception("Write g-code ack")
         self.need_ack = False
@@ -325,7 +325,7 @@ class GCodeParser:
         if self.is_fileinput:
             return
         try:
-            os.write(self.fd, msg+"\n")
+            os.write(self.fd, "{}\n".format(msg).encode())
         except os.error:
             logging.exception("Write g-code response")
     def respond_info(self, msg, log=True):
