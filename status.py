@@ -11,8 +11,8 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
-import parameters as p
-from settings import wifi
+from . import parameters as p
+from .settings import wifi
 
 
 class StatusBar(BoxLayout):

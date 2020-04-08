@@ -1,7 +1,7 @@
 # coding: utf-8
-from datetime import date
 import json
 import logging
+from datetime import date
 from os.path import splitext, basename, exists
 
 from kivy.app import App
@@ -14,7 +14,7 @@ from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 
-import parameters as p
+from . import parameters as p
 
 
 class Timeline(RecycleView):

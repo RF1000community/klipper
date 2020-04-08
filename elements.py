@@ -11,7 +11,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.vkeyboard import VKeyboard
 from kivy.uix.widget import Widget
 
-import parameters as p
+from . import parameters as p
 import logging
 
 

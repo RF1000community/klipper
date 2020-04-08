@@ -6,8 +6,8 @@ from kivy.clock import Clock
 from kivy.properties import ListProperty, NumericProperty, StringProperty
 from kivy.uix.widget import Widget
 
-from elements import *
-import parameters as p
+from .elements import *
+from . import parameters as p
 
 
 class XyField(Widget):

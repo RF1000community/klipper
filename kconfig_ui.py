@@ -1,7 +1,9 @@
 import sys
 import os
+import logging
+from os.path import dirname
 
-from kconfiglib import Kconfig, \
+from .kconfiglib import Kconfig, \
                        Symbol, MENU, COMMENT, \
                        BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
                        expr_value, \
@@ -10,15 +12,13 @@ from kconfiglib import Kconfig, \
                        expr_str, split_expr, \
                        standard_sc_expr_str, TYPE_TO_STR, \
                        standard_kconfig, standard_config_filename
-import logging
-from os.path import dirname
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
 from kivy.properties import NumericProperty, BooleanProperty, StringProperty
 
-import parameters as p
-from settings import SetItem
-from elements import *
+from . import parameters as p
+from .settings import SetItem
+from .elements import *
 
 
 class FlashScreen(Screen):

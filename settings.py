@@ -18,8 +18,8 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 
-from elements import *
-import parameters as p
+from .elements import *
+from . import parameters as p
 
 
 class Wifi(EventDispatcher):

@@ -21,16 +21,16 @@ from kivy.config import Config
 from kivy.lang import Builder
 from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
 
-from elements import UltraKeyboard
-from files import *
-from freedir import freedir
-from timeline import *
-from home import *
-from settings import *
-from status import *
-from update import *
-from kconfig_ui import *
-import parameters as p
+from .elements import UltraKeyboard
+from .files import *
+from .freedir import freedir
+from .timeline import *
+from .home import *
+from .settings import *
+from .status import *
+from .update import *
+from .kconfig_ui import *
+from . import parameters as p
 
 if not TESTING:
     from reactor import ReactorCompletion

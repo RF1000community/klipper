@@ -14,8 +14,8 @@ from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.properties import BooleanProperty, OptionProperty, StringProperty
 
-from elements import BasePopup, PrintPopup
-import parameters as p
+from .elements import BasePopup, PrintPopup
+from . import parameters as p
 
 
 class Filechooser(RecycleView):

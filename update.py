@@ -1,7 +1,7 @@
 import os
 import json
 import urllib
-from io import StringIO
+import io
 import threading
 import logging
 import tarfile
@@ -11,11 +11,10 @@ import traceback
 from kivy.clock import Clock
 from kivy.uix.screenmanager import Screen
 from kivy.properties import NumericProperty
-from io import BytesIO
 
-import parameters as p
-from settings import SetItem
-from elements import *
+from . import parameters as p
+from .settings import SetItem
+from .elements import *
 
 
 class UpdateScreen(Screen):
@@ -84,7 +83,7 @@ class FileDownload(threading.Thread):
         total_size = int(total_size)
         self.comm_list[1] = total_size
         bytes_so_far = 0
-        data = StringIO.StringIO()
+        data = io.StringIO()
 
         # download chunks
         while not self.comm_list[2]:
