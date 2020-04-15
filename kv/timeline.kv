@@ -68,7 +68,7 @@
     size: p.screen_width, 777
     canvas:
         Color:
-            rgba: p.nozzle if self.state in ('printing', 'paused', 'pausing', 'stopping') else (0,0,0,0)
+            rgba: (1,1,1,0.06) if self.state in ('printing', 'paused', 'pausing', 'stopping') else (0,0,0,0)
         Rectangle:
             size: self.size
             pos: self.pos

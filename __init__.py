@@ -181,7 +181,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
-    def handle_printjob_change(self, path, state):
+    def handle_printjob_change(self):
         jobs = self.sdcard.jobs
 
         # check if queue has increased
@@ -190,6 +190,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
         self.jobs = jobs
 
+        # get current print_state
         if len(self.jobs):
             self.print_title = self.jobs[0].name
             state = self.jobs[0].state
@@ -198,22 +199,21 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
         # react to state change
         if self.print_state != state:
-            self.print_state = state
             if state == 'no printjob':
                 Clock.schedule_once(lambda dt: self.hide_printjob(jobs[0].name), 3600) # show old printjob for 1h then throw it out
-            else:
-                if state == 'printing':
-                    self.notify.show("Started printing", "Started printing {}".format(self.jobs[0].name), delay=4)
-                elif state == 'done':
-                    self.progress = 1
-                    self.print_done_time = "done" 
-                    self.print_time = ""
-                elif state == 'stopped':
-                    self.print_done_time = "stopped"
-                    self.print_time = ""
+            elif state == 'printing' and self.print_state not in ('paused', 'pausing'):
+                self.notify.show("Started printing", "Started printing {}".format(self.jobs[0].name), delay=4)
+            elif state == 'done':
+                self.progress = 1
+                self.print_done_time = "done" 
+                self.print_time = ""
+            elif state == 'stopped':
+                self.print_done_time = "stopped"
+                self.print_time = ""
+            self.print_state = state
 
     def hide_printjob(self, name):
-        if self.print_state in ('done', 'stopped') and self.print_title == name:
+        if self.print_state == 'no printjob' and self.print_title == name:
             self.print_title = ""
 
 ### KLIPPY THREAD ^

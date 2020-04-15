@@ -26,10 +26,10 @@ class Timeline(RecycleView):
         self.app = App.get_running_app()
         self.load_all(in_background=False)
         self.app.bind(jobs=self.load_all)
+        self.app.bind(state=self.load_all)
         self.app.bind(print_state=self.load_all)
 
     def load_all(self, instance=None, value=None, in_background=True):
-
         queue = [{'name': job.name, 'path': job.path, 'state': job.state} 
             for job in reversed(self.app.jobs)]
 
