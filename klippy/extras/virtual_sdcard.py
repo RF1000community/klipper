@@ -31,7 +31,7 @@ class Printjob:
                 self.file_size = self.file_obj.tell()
                 self.file_obj.seek(0)
             except:
-                logging.warning("printjob_manager: couldn't open file {}".format(self.path))
+                logging.debug("printjob_manager: couldn't open file {}".format(self.path))
                 self.set_state('stopped')
         elif ext == '.ufp':
             # try:
@@ -45,13 +45,13 @@ class Printjob:
             self.file_size = self.file_obj.tell()
             self.file_obj.seek(0)
             # except Exception as e:
-            #     logging.warning("printjob_manager: couldn't open compressed file {}, exception {}".format(self.path, e))
+            #     logging.debug("printjob_manager: couldn't open compressed file {}, exception {}".format(self.path, e))
             #     self.set_state('stopped')
     
     def set_state(self, state):
         if self.state != state:
             self.state = state
-            self.printer.send_event("virtual_sdcard:printjob_change", self.path, self.state)
+            self.printer.send_event("virtual_sdcard:printjob_change")
 
     def start(self):
         logging.info("start from job")
@@ -64,7 +64,9 @@ class Printjob:
                 self.set_state('paused')
 
     def resume(self):
-        if self.state == 'paused':
+        if self.state == 'pausing':
+            self.set_state('printing')
+        elif self.state == 'paused':
             self.set_state('printing')
             self.start_stop_times.append([self.toolhead.get_last_move_time(), None])
             if self.saved_pause_state:
@@ -82,7 +84,7 @@ class Printjob:
             self.set_state('stopped')
 
     def work_handler(self, eventtime):
-        logging.warning("entering work handler (position %d)", self.file_position)
+        logging.debug("entering work handler (position %d)", self.file_position)
         self.reactor.unregister_timer(self.work_timer)
         try:
             self.file_obj.seek(self.file_position)
@@ -93,7 +95,7 @@ class Printjob:
         gcode_mutex = self.gcode.get_mutex()
         partial_input = ""
         lines = []
-        logging.warning("entering while loop now, state {}".format(self.state))
+        logging.debug("entering while loop now, state {}".format(self.state))
 
         while self.state == 'printing':
             # Read more lines if necessary
@@ -118,7 +120,7 @@ class Printjob:
                 continue
             # Pause if any other request is pending in the gcode class
             if gcode_mutex.test():
-                logging.warning("didnt get mutex")
+                logging.debug("didnt get mutex")
                 self.reactor.pause(self.reactor.monotonic() + 0.100)
                 continue
             # Dispatch command
@@ -132,7 +134,7 @@ class Printjob:
             self.file_position += len(lines.pop()) + 1
 
         # Post print
-        logging.warning("Exiting SD card print (position %d)", self.file_position)
+        logging.debug("Exiting SD card print (position %d)", self.file_position)
         self.start_stop_times[-1][1] = self.toolhead.get_last_move_time()
         if self.state == 'pausing':
             self.set_state('paused')
@@ -193,6 +195,7 @@ class PrintjobManager(object):
     def check_queue(self):
         if len(self.jobs) and self.jobs[0].state in ('done', 'stopped'):
             self.printer.send_event("virtual_sdcard:printjob_ended", self.jobs[0].path, self.jobs[0].state)
+            self.printer.send_event("virtual_sdcard:printjob_change")
             self.jobs.pop(0)
         if len(self.jobs) and self.jobs[0].state in ('queued'):
             self.jobs[0].start()

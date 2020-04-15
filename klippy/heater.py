@@ -170,8 +170,8 @@ class ControlBangBang:
 # Proportional Integral Derivative (PID) control algo
 ######################################################################
 
-PID_SETTLE_DELTA = 1.
-PID_SETTLE_SLOPE = .1
+PID_SETTLE_DELTA = 2.
+PID_SETTLE_SLOPE = .2
 
 class ControlPID:
     def __init__(self, heater, config):
