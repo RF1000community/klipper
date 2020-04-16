@@ -106,7 +106,7 @@ class TempSlider(UltraSlider):
             self.val_min = 30
             self.val_max = 140
             if fil_man:
-                loadeds = fil_man.loaded_materials
+                loadeds = fil_man.get_status()['loaded']
                 for loaded in loadeds:
                     if loaded:
                         material_type = fil_man.get_material_info(
@@ -126,9 +126,10 @@ class TempSlider(UltraSlider):
             self.val_max = 280
             if fil_man:
                 extruder_idx = int(self.tool_id[-1])
+                loadeds = fil_man.get_status()['loaded']
                 loaded = None
-                if len(fil_man.loaded_materials) > extruder_idx:
-                    loaded = fil_man.loaded_materials[extruder_idx]
+                if len(loadeds) > extruder_idx:
+                    loaded = loadeds[extruder_idx]
                 if loaded:
                     material_type = fil_man.get_material_info(
                             loaded[0], "./m:metadata/m:name/m:material")
@@ -202,9 +203,10 @@ class BtnTriple(Widget):
             self.title = "filament_manager\nnot configured"
             return
         extruder_idx = int(self.tool_id[-1])
+        loaded_material = fil_man.get_status()['loaded']
         self.material = None
-        if len(self.fil_man.loaded_materials) > extruder_idx:
-            self.material = self.fil_man.loaded_materials[extruder_idx]
+        if len(loaded_material) > extruder_idx:
+            self.material = loaded_material[extruder_idx]
 
         if self.material:
             material_type = self.fil_man.get_material_info(self.material[0], "./m:metadata/m:name/m:material")
@@ -303,8 +305,8 @@ class FilamentChooserPopup(BasePopup):
                 self.ids.btn_confirm.text = "Select"
 
         else:   
-            materials = self.fil_man.unloaded_materials
-            for i, (guid, amount) in enumerate(materials):
+            materials = self.fil_man.get_status()['unloaded']
+            for i, (guid, amount, _) in enumerate(materials):
                 option = Option(
                     self, guid=guid, selected=(self.sel_2[1]==i),
                     amount=amount, unloaded_idx=i, font_size=p.small_font,
@@ -415,7 +417,7 @@ class FilamentSlider(UltraSlider):
         self.val_min = 0
         self.val_max = 1000
         self.unit = "g"
-        self.roundto = 0
+        self.round_to = 0
         super(FilamentSlider, self).__init__(**kwargs)
 
     def on_touch_down(self, touch):

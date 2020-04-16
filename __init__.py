@@ -205,16 +205,19 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 self.notify.show("Started printing", "Started printing {}".format(self.jobs[0].name), delay=4)
             elif state == 'done':
                 self.progress = 1
-                self.print_done_time = "done" 
+                self.print_done_time = "done"
                 self.print_time = ""
             elif state == 'stopped':
-                self.print_done_time = "stopped"
+                self.print_title = ""
+                self.print_done_time = ""
                 self.print_time = ""
             self.print_state = state
 
     def hide_printjob(self, name):
         if self.print_state == 'no printjob' and self.print_title == name:
             self.print_title = ""
+            self.print_time = ""
+            self.print_done_time = ""
 
 ### KLIPPY THREAD ^
 ########################################################################################
@@ -251,6 +254,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.scheduled_updating = Clock.schedule_interval(self.update_setting, 2.2)
 
     def update_home(self, *args):
+        self.get_printjob_progress()
         self.get_homing_state()
         self.get_temp()
         self.get_pos()

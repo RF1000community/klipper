@@ -6,11 +6,11 @@ KGUI:
 
     OTA Updates of klipperui + dependencies
 
-    Update material amount when extruding
+    live move
 
     py3 port
 
-    microcontroller flashing (maybe dead)
+        microcontroller flashing (maybe dead)
 
 Klipper bugs
     see if timer to close error persists

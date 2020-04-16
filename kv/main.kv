@@ -35,7 +35,7 @@ FloatLayout:
     orientation: 'horizontal'
     canvas:
         Color:
-            rgba: p.red if 'error' in app.state else p.green if 'done' == app.print_state else p.accent if app.print_state == 'printing' else p.flat_accent
+            rgba: p.red if 'error' in app.state else p.accent if app.print_state == 'printing' else p.flat_accent
         Rectangle:
             size: self.size
             pos: self.pos

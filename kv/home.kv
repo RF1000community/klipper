@@ -18,7 +18,7 @@
             pos_hint: {'x':0,'y':0}
             size_hint: 1,1
         ProgressBar:
-            enabled: app.print_state != 'no printjob'
+            enabled: app.print_title != ""
             id: progress_bar
             max: 1
             value: app.progress
@@ -595,7 +595,8 @@
             val_min: -0.5
             val_max: 0.5
             unit: "mm"
-            roundto: 2
+            round_to: 1
+            round_style: 0.5
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -620,7 +621,7 @@
             val_min: 0
             val_max: 0.05
             unit: "mm/mm/s"
-            roundto: 3
+            round_to: 3
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -644,7 +645,7 @@
             val_min: 2000
             val_max: 50000
             unit: "mm/s²"
-            roundto: -2
+            round_to: -2
             buttons: [[36000,0,"default",None],]
             id: slider
             width: root.width
@@ -671,7 +672,7 @@
             val_min: 10
             val_max: 500
             unit: "%"
-            roundto: 0
+            round_to: 0
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -696,7 +697,7 @@
             val_min: 90
             val_max: 110
             unit: "%"
-            roundto: 1
+            round_to: 1
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -721,7 +722,7 @@
             val_min: 0
             val_max: 100
             unit: "%"
-            roundto: 0
+            round_to: 0
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}

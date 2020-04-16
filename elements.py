@@ -145,7 +145,8 @@ class UltraSlider(Widget):
                         Defaults to 0 and 100
     unit                Unit string, appended to display value.
                         Defaults to "" (no unit)
-    roundto             How many decimals to round val to.
+    round_to            How many decimals to round val to
+    round_style         0.5 rounds decimal place to multiples of 0.5... normally 1
                         Is passed to round().
 
     attributes:
@@ -160,7 +161,8 @@ class UltraSlider(Widget):
     val_min = NumericProperty()
     val_max = NumericProperty()
     unit = StringProperty()
-    roundto = NumericProperty()
+    round_to = NumericProperty()
+    round_style = NumericProperty(1)
     px = NumericProperty() #absolute position of dot in px
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
@@ -261,11 +263,11 @@ class UltraSlider(Widget):
         """
         m = float(self.val_max - self.val_min)/(self.px_max - self.px_min)
         val = self.val_min + m*(px - self.px_min)
-        return round(val, self.roundto)
+        return round(val/self.round_style, self.round_to)*self.round_style
 
     def get_disp_from_val(self, val):
         """Returns string of the value and the given unit string"""
-        return "{:.{p}f}{}".format(val, self.unit, p = max(0, self.roundto))
+        return "{:.{p}f}{}".format(val, self.unit, p = max(0, self.round_to))
 
 
 # class UltraOffsetSlider(UltraSlider):
