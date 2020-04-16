@@ -125,7 +125,7 @@ class TempSlider(UltraSlider):
             self.val_min = 40
             self.val_max = 280
             if fil_man:
-                extruder_idx = str(self.tool_id[-1])
+                extruder_idx = int(self.tool_id[-1])
                 loaded = None
                 if len(fil_man.loaded_materials) > extruder_idx:
                     loaded = fil_man.loaded_materials[extruder_idx]
@@ -136,7 +136,7 @@ class TempSlider(UltraSlider):
                             "./m:settings/m:setting[@key='print temperature']")
                     if ext_temp:
                         self.buttons.append([int(ext_temp), 0, material_type, None])
-            else: 
+            else:
                 self.buttons = [
                     [0,14,"Off",None],
                     [70,0,"PLA\ncold pull",None],
@@ -188,7 +188,7 @@ class BtnTriple(Widget):
     extruder_id = StringProperty()
     def __init__(self, **kwargs):
         self.app = App.get_running_app()
-        self.guid = None
+        self.material = None
         self.app.printer.register_event_handler("filament_manager:material_changed", self.update_material)
         self.app.bind(printer_objects_available=self.update_material)
         super(BtnTriple, self).__init__(**kwargs)
@@ -202,27 +202,32 @@ class BtnTriple(Widget):
             self.title = "filament_manager\nnot configured"
             return
         extruder_idx = int(self.tool_id[-1])
-        loaded = None
+        self.material = None
         if len(self.fil_man.loaded_materials) > extruder_idx:
-            loaded = self.fil_man.loaded_materials[extruder_idx]
+            self.material = self.fil_man.loaded_materials[extruder_idx]
 
-        if loaded:
-            material_type = self.fil_man.get_material_info(loaded[0], "./m:metadata/m:name/m:material")
-            brand = self.fil_man.get_material_info(loaded[0], "./m:metadata/m:name/m:brand")
-            hex_color = self.fil_man.get_material_info(loaded[0], "./m:metadata/m:color_code")
+        if self.material:
+            material_type = self.fil_man.get_material_info(self.material[0], "./m:metadata/m:name/m:material")
+            brand = self.fil_man.get_material_info(self.material[0], "./m:metadata/m:name/m:brand")
+            hex_color = self.fil_man.get_material_info(self.material[0], "./m:metadata/m:color_code")
             self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
-            self.filament_amount = loaded[1]
-            self.guid = loaded[0]
-            if loaded[2] == 'loading':
+            self.filament_amount = self.material[1]
+            if self.material[2] == 'loading':
                 self.title = "Loading..."
-            elif loaded[2] == 'unloading':
+            elif self.material[2] == 'unloading':
                 self.title = "Unloading..."
             else:
-                self.title = "{:3.0f}g\n{} {}".format(loaded[1]*1000, brand, material_type)
+                self.title = "{:3.0f}g\n{} {}".format(self.material[1]*1000, brand, material_type)
         else:
             self.title = "Load Material"
             self.filament_color = (0,0,0,0)
-            self.guid = None
+        
+    def load_unload(self):
+        if not self.material:
+            FilamentChooserPopup(self.extruder_id).open()
+        elif self.material[2] == 'loaded':
+            FilamentPopup(self.extruder_id, False, self.material[0], amount=self.material[1]).open()
+
 
 class FilamentChooserPopup(BasePopup):
     tab_2 = BooleanProperty(False)
@@ -232,7 +237,7 @@ class FilamentChooserPopup(BasePopup):
         self.extruder_id = extruder_id
         self.show_less = [True, True, True]
         self.sel = [None, None, None, None] # selected [type, manufacturer, color, guid]
-        self.sel_2 = [None, None, None] # selected (amount, idx, guid)
+        self.sel_2 = (None, None, None) # selected (amount, idx, guid)
         self.options = [[], [], []]
         super(FilamentChooserPopup, self).__init__(**kwargs)
         Clock.schedule_once(self.draw_options, 0)
@@ -275,7 +280,6 @@ class FilamentChooserPopup(BasePopup):
                         self.sel[3] = tmc[self.sel[0]][self.sel[1]][self.sel[2]]
                         self.ids.btn_confirm.text = "Select {} {}".format(self.sel[1], self.sel[0])
                         self.ids.btn_confirm.enabled = True
-                        logging.info("material selected{}".format(self.sel[3]))
 
             # sort types by how many manufactures make them
             # tmc[option.text] is the dict of manufacturers for the selected type (e.g. for PLA)
@@ -300,7 +304,6 @@ class FilamentChooserPopup(BasePopup):
 
         else:   
             materials = self.fil_man.unloaded_materials
-            logging.info(materials)
             for i, (guid, amount) in enumerate(materials):
                 option = Option(
                     self, guid=guid, selected=(self.sel_2[1]==i),
@@ -329,7 +332,7 @@ class FilamentChooserPopup(BasePopup):
 
     def confirm(self):
         if self.tab_2:
-            FilamentPopup(self.extruder_id, True, self.sel_2[2], unloaded_idx=self.sel_2[1], amount=sel[0]).open()
+            FilamentPopup(self.extruder_id, True, self.sel_2[2], unloaded_idx=self.sel_2[1], amount=self.sel_2[0]).open()
         else:
             FilamentPopup(self.extruder_id, True, self.sel[3]).open()
         self.dismiss()
@@ -376,20 +379,20 @@ class OptionDivider(BaseButton):
         return False
 
 class FilamentPopup(BasePopup): 
-    """ this shows info either on a new material (by guid), a unloaded material (amount, idx, guid)
-        or if none given the currently loaded material (by extruder_id) """
+    """ this shows info, and an amount slider on a material coming from one of 3 sources:
+        - chosen from library       (extruder_id, new=True, guid)
+        - from unloaded materials   (extruder_id, new=True, guid, amount, unloaded_idx)
+        - currently loaded material (extruder_id, new=False, guid, amount) """
     amount = NumericProperty(1)
     def __init__(self, extruder_id, new, guid, amount=1, unloaded_idx=None, **kwargs):
         self.app = App.get_running_app()
         self.fil_man = self.app.filament_manager
         self.reactor = self.app.reactor
         self.extruder_id = extruder_id
-        self.new = new # set wether the popup is for unloading or loading a new material
-        self.amount = amount
-        if not new:
-            self.amount = self.fil_man.loaded_materials[int(extruder_id[-1]) if extruder_id != 'extruder' else 0][1]
-        self.unloaded_idx = unloaded_idx
+        self.new = new # set wether the popup is for loading a new material or unloading
         self.guid = guid
+        self.amount = amount
+        self.unloaded_idx = unloaded_idx
         self.manufacturer = self.fil_man.get_material_info(guid, "./m:metadata/m:name/m:brand")
         self.filament_type = self.fil_man.get_material_info(guid, "./m:metadata/m:name/m:material")
         hex_color = self.fil_man.get_material_info(guid, "./m:metadata/m:color_code")

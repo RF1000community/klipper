@@ -42,8 +42,7 @@ FloatLayout:
         Color:
             rgba: (1,1,1,1)
         Rectangle:
-            source: p.kgui_dir + '/logos/status_animation_gradient.png'
-            size: 300, self.height
+            size: 300, 3
             pos: self.animation_pos - 300, self.y
     StackLayout:
         id: left
@@ -55,7 +54,7 @@ FloatLayout:
             text: app.state + ", " + app.print_state
             size_hint_x: None
             size: self.texture_size
-            font_size: root.height - 5
+            font_size: p.normal_font
             padding: 7, 0
     StackLayout:
         id: right
@@ -72,5 +71,5 @@ FloatLayout:
             text: self.time
             size_hint_x: None
             size: self.texture_size
-            font_size: root.height - 4
+            font_size: p.normal_font
             padding: 7, 0

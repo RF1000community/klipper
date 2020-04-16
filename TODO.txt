@@ -6,36 +6,14 @@ KGUI:
 
     OTA Updates of klipperui + dependencies
 
-    Klipper bugs
-        see if timer to close error persists
-        DripModeEndSignal during homing maybe due to add. gcode move command
-                                        also due to stop command
+    Update material amount when extruding
 
-    See if progress bar shows wrong progress on homescreen as well
+    py3 port
 
-    microcontroller flashing
+    microcontroller flashing (maybe dead)
 
-    Schedule Full sdcard handling e.g. with, add deletion when more than 100 elements except for the USB stick, notification
+Klipper bugs
+    see if timer to close error persists
+    DripModeEndSignal during homing maybe due to add. gcode move command
+                                    also due to stop command
 
-    Material Database, with popups, unload load
-
-CURA COONNECTION
-    Klipper Module
-        h264 streaming:
-            raspivid
-            mjpegstreamer
-
-    Cura Plugin
-
-HIGH SPEED ODRIVE COONNECTION
-
-ODrive:
-    clock sync command
-
-    add to pos_queue command with optional time
-    get_interval
-
-Replacement for Stepper:
-    handle no homing
-    send positions based 
-    maybe kinematics class

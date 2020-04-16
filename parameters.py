@@ -16,7 +16,7 @@ mars = 1.1 * screen_height
 radius = 10
 icon_radius = 4
 popup_radius = 15
-status_bar_height = 26
+status_bar_height = 29
 btn_height = 80
 btn_stop = 65
 progress_bar_height = 10
@@ -50,7 +50,7 @@ nozzle_selected = (0.3, 0.3, 0.3, 1)
 
 translucent_white = (1,1,1,0.1)
 accent = (0.15,0.4,0.45,1)
-flat_accent = (0.24,0.34,0.36,1)
+flat_accent = (0.24,0.34,0.36,0.8)
 red = (0.83,0.05,0,1)
 green = (0,1,0.25,1)
 medium_dark_gray = (0.15, 0.15, 0.15, 1)

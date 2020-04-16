@@ -185,7 +185,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         jobs = self.sdcard.jobs
 
         # check if queue has increased
-        if len(jobs) > max(len(self.jobs), 1):
+        if len(jobs) > len(self.jobs):
             self.notify.show("Added Printjob", "Added {} to print Queue".format(jobs[-1].name))
 
         self.jobs = jobs

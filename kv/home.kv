@@ -341,7 +341,7 @@
     w2: 0
     w3: 0
     size_hint: None, None
-    size: self.w1+self.w2+self.w3, p.btn_height
+    size: self.w1 + self.w2 + self.w3, p.btn_height
     #:set w 19
     canvas:
         Color:
@@ -365,7 +365,7 @@
         Line:
             points: self.x+self.w1+1+self.w2, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2, self.top-p.btn_divider_padding
         Color:
-            rgba: p.btn_outline if root.guid else (0,0,0,0)
+            rgba: p.btn_outline if root.material else (0,0,0,0)
         Line:
             points: self.x+self.w1+1+self.w2*root.filament_amount, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2*root.filament_amount, self.top-p.btn_divider_padding
     BaseButton:
@@ -390,10 +390,8 @@
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
         enabled: bool(app.printer_objects_available and app.filament_manager)
-        on_release:
-            if root.guid is not None: Factory.FilamentPopup(root.extruder_id, False, root.guid).open()
-            else: Factory.FilamentChooserPopup(root.extruder_id).open()
-        color: (1,1,1,1) if btn_load.enabled else p.btn_disabled
+        on_release: root.load_unload()
+        color: (1,1,1,1) if self.enabled else p.btn_disabled
         text: root.title
         text_size: self.size
         font_size: p.normal_font
