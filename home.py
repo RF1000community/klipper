@@ -192,6 +192,7 @@ class BtnTriple(Widget):
         self.material = None
         self.app.printer.register_event_handler("filament_manager:material_changed", self.update_material)
         self.app.bind(printer_objects_available=self.update_material)
+        self.app.bind(print_state=self.update_material)
         super(BtnTriple, self).__init__(**kwargs)
 
     def update_material(self, *_):
@@ -203,7 +204,7 @@ class BtnTriple(Widget):
             self.title = "filament_manager\nnot configured"
             return
         extruder_idx = int(self.tool_id[-1])
-        loaded_material = fil_man.get_status()['loaded']
+        loaded_material = self.fil_man.get_status()['loaded']
         self.material = None
         if len(loaded_material) > extruder_idx:
             self.material = loaded_material[extruder_idx]
@@ -404,7 +405,8 @@ class FilamentPopup(BasePopup):
     def confirm(self):
         if self.new:
             self.reactor.register_async_callback(
-                lambda e: self.fil_man.load(self.extruder_id, amount=self.ids.filament_slider.val/1000., guid=self.guid, unloaded_idx=self.unloaded_idx))
+                lambda e: self.fil_man.load(self.extruder_id, amount=self.ids.filament_slider.val/1000., 
+                                            guid=self.guid, unloaded_idx=self.unloaded_idx))
         else:
             self.reactor.register_async_callback(
                 lambda e: self.fil_man.unload(self.extruder_id))

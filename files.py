@@ -102,7 +102,7 @@ class Filechooser(RecycleView):
             filament = float(match2.group())
             if slicer_idx == 4:
                 filament *= 1000 # Cura gives meters -> convert to mm
-            weight = self.filament_crossection*filament*0.0011 #density in g/mm^3
+            weight = self.filament_crossection*filament*0.00124 #density in g/mm^3
             return "{:4.0f}g".format(weight)
         return "---"
 
