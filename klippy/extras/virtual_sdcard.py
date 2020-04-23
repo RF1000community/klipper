@@ -15,6 +15,7 @@ class Printjob:
         self.toolhead = manager.toolhead
         self.gcode = manager.gcode
         self.printer = manager.printer
+        self.heater_manager = manager.heater_manager
         self.path = path
         self.state = None
         self.production_line_mode = production_line_mode # if True dont pause when starting the next job from q
@@ -80,6 +81,9 @@ class Printjob:
     def stop(self):
         if self.state in ('printing', 'pausing'):
             self.set_state('stopping')
+            # turn off heaters so stopping doesn't wait for temperature requests
+            self.reactor.pause(self.reactor.monotonic() + 0.100)
+            self.heater_manager.cmd_TURN_OFF_HEATERS({})
         else:
             self.set_state('stopped')
 
@@ -142,14 +146,9 @@ class Printjob:
             if self.state == 'stopping':
                 self.set_state('stopped')
             self.file_obj.close()
-            self.turn_off_heaters()
+            self.heater_manager.cmd_TURN_OFF_HEATERS({})
             self.manager.check_queue()
         return self.reactor.NEVER
-
-    def turn_off_heaters(self):
-        heater_manager = self.manager.printer.lookup_object('heater')
-        for heater in heater_manager.heaters.values():
-            heater.set_temp(0)
 
     def get_printed_time(self, eventtime=None):
         # doesnt use get_last_move_time since this can be ran in UI thread
@@ -167,6 +166,7 @@ class PrintjobManager(object):
         self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object('gcode')
+        self.heater_manager = self.printer.lookup_object('heater')
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
         self.jobs = [] # Printjobs, first is current
