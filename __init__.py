@@ -149,14 +149,12 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.filament_manager = self.printer.lookup_object('filament_manager', None)
         self.heater_manager = self.printer.lookup_object('heater', None)
         self.heaters = {}
+        self.extruders = []
         if 'heater_bed' in self.heater_manager.heaters: 
             self.heaters['B'] = self.heater_manager.heaters['heater_bed']
         for i in range(self.extruder_count):
             self.heaters['T{}'.format(i)] = self.heater_manager.heaters['extruder{}'.format('' if i==0 else i)]
-        self.extruders = []
-        for i in range(self.extruder_count):
             self.extruders.append(self.printer.lookup_object('extruder{}'.format('' if i==0 else i)))
-
         self.printer_objects_available = True
         Clock.schedule_once(self.bind_updating, 0)
         Clock.schedule_once(self.control_updating, 0)
@@ -188,21 +186,21 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         if len(jobs) > len(self.jobs):
             self.notify.show("Added Printjob", "Added {} to print Queue".format(jobs[-1].name))
 
-        self.jobs = jobs
-
         # get current print_state
-        if len(self.jobs):
-            self.print_title = self.jobs[0].name
-            state = self.jobs[0].state
+        if len(jobs):
+            self.print_title = jobs[0].name
+            state = jobs[0].state
         else:
             state = "no printjob"
 
         # react to state change
         if self.print_state != state:
             if state == 'no printjob':
-                Clock.schedule_once(lambda dt: self.hide_printjob(jobs[0].name), 3600) # show old printjob for 1h then throw it out
+                self.reset_tuning() # tuning values are only reset once print_queue has ran out
+                Clock.schedule_once(lambda dt: self.hide_printjob(self.jobs[0].name), 3600) # show old printjob for 1h then throw it out
             elif state == 'printing' and self.print_state not in ('paused', 'pausing'):
-                self.notify.show("Started printing", "Started printing {}".format(self.jobs[0].name), delay=4)
+                self.notify.show("Started printing", "Started printing {}".format(jobs[0].name), delay=4)
+                self.get_printjob_progress()
             elif state == 'done':
                 self.progress = 1
                 self.print_done_time = "done"
@@ -212,6 +210,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 self.print_done_time = ""
                 self.print_time = ""
             self.print_state = state
+
+        self.jobs = jobs
 
     def hide_printjob(self, name):
         if self.print_state == 'no printjob' and self.print_title == name:
@@ -254,7 +254,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.scheduled_updating = Clock.schedule_interval(self.update_setting, 2.2)
 
     def update_home(self, *args):
-        self.get_printjob_progress()
+        self.get_printjob_progress() # also update estimated end time when paused
         self.get_homing_state()
         self.get_temp()
         self.get_pos()
@@ -284,7 +284,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
         est_remaining, progress = self.printjob_progress.get_print_time_prediction()
         if progress is None: # no prediction could be made yet
-            logging.info("progresss is none")
             self.progress = 0
             self.print_time = ""
             self.print_done_time = ""
@@ -297,12 +296,14 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             if done.day == datetime.now().day:
                 self.print_done_time = done.strftime("ca. %-H:%M")
             elif done.day == tomorrow.day:
-                self.print_done_time = done.strftime("tomorrow %-H:%M") # "ca. doesnt fit on screen
+                self.print_done_time = done.strftime("tomorrow %-H:%M") # ca. doesnt fit on screen
             else:
                 self.print_done_time = done.strftime("ca. %a %-H:%M")
 
 ##################################################################
 ### TUNING
+    def reset_tuning(self):
+        self.send_flow(100)
 
     def get_z_adjust(self):
         self.z_adjust = self.gcode.homing_position[2]
@@ -368,7 +369,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 #####################################################################
 
     def get_config(self, section, option, property_name, ty=None):
-        logging.info("wrote {} from section {} to {}".format(option, section, property_name))
         if TESTING:
             setattr(self, property_name, 77)
             return
@@ -384,11 +384,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(read_config)
 
     def set_config(self, section, option, value):
-        logging.info("trying to set config section {} option {} to value {}".format(section, option, value))
+        logging.info("trying to set config section {} option {}, value {}".format(section, option, value))
         self.reactor.register_async_callback(lambda e: self.klipper_config_manager.set(section, option, value))
 
     def write_config(self, section, option, value):
-        logging.info( 'trying to write section: {} option: {}, value: {} to config'.format(section, option, value))
+        logging.info( 'trying to write config section: {} option: {}, value: {}'.format(section, option, value))
         def write_conf(e):
             self.klipper_config_manager.set(section, option, value)
             self.klipper_config_manager.cmd_SAVE_CONFIG(None)
@@ -404,7 +404,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             if self.heater_manager is not None:
                 t = {}
                 for tool_id, sensor in self.heater_manager.get_gcode_sensors():
-                    current, target = sensor.get_temp(self.reactor.monotonic()) #get temp at current point in time
+                    current, target = sensor.get_temp(self.reactor.monotonic())
                     self.temp[tool_id] = (target, current)
         self.reactor.register_async_callback(read_temp)
 

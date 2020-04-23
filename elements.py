@@ -19,7 +19,7 @@ class Divider(Widget):
     pass
 
 class BaseButton(Label):
-    """ Lightweight adaptation of the kivy button class """
+    """ Lightweight adaptation of the kivy button class, with disable functionality """
     pressed = BooleanProperty(False)
     enabled = BooleanProperty(True)
     def __init__(self, **kwargs):
@@ -87,7 +87,7 @@ class BtnSlider(BaseButton):
 
 class BasePopup(Popup):
 
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         # makes this Popup recieve the instance of the calling button to
         # access its methods and e.g. heater_id
         self.creator = kwargs.get('creator', None)
@@ -111,9 +111,10 @@ class StopPopup(BasePopup):
     pass
 
 class PrintPopup(BasePopup):
-    def __init__(self, path, filechooser=None, **kwargs):
+    def __init__(self, path, filechooser=None, timeline=None, **kwargs):
         self.path = path
         self.filechooser = filechooser
+        self.timeline = timeline
         super(PrintPopup, self).__init__(**kwargs)
 
     def confirm(self):
@@ -128,12 +129,6 @@ class PrintPopup(BasePopup):
         app.send_print(new_path)
         tabs = app.root.ids.tabs
         tabs.switch_to(tabs.ids.home_tab)
-
-    def delete(self):
-        """Open a confirmation dialog to delete the file"""
-        super(PrintPopup, self).dismiss()
-        self.confirm_del = DelPopup(path = self.path, filechooser=self.filechooser)
-        self.confirm_del.open()
 
 class UltraSlider(Widget):
     """

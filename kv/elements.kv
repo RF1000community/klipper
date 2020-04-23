@@ -356,7 +356,7 @@
             text: 'Delete'
             size: root.width/3, 70
             pos: btn_cancel.right, root.y
-            on_release: root.delete()
+            on_release: Factory.DeletePopup(path = self.path, filechooser=self.filechooser, timeline=self.timeline).open(); root.dismiss()
         BtnPConfirm:
             text: 'Print'
             enabled: app.printer_objects_available

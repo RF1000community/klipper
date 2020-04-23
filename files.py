@@ -145,7 +145,7 @@ class Filechooser(RecycleView):
 
     def get_ufp_details(self, path):
         with ZipFile(path).open("/3D/model.gcode", 'r') as gcode_file:
-            # search in the first 100 lines
+            # search in the first 100 lines, we expect cura gcode
             for i in range(100):
                 line = gcode_file.readline()
                 match = re.search(self.filament[4], line)
@@ -193,13 +193,13 @@ class FilechooserItem(RecycleDataViewBehavior, Label):
         if super(FilechooserItem, self).on_touch_up(touch):
             return True
         if self.collide_point(*touch.pos) and was_pressed:
-            gc = self.parent.parent
+            fc = self.parent.parent
             if self.item_type == 'file':
-                self.popup = PrintPopup(self.path, filechooser=gc)
+                self.popup = PrintPopup(self.path, filechooser=fc)
                 self.popup.open()
             elif self.item_type == 'folder' or self.item_type == 'usb':
-                gc.path = self.path
-                gc.load_files()
+                fc.path = self.path
+                fc.load_files()
             return True
         return False
 
@@ -207,20 +207,25 @@ class FilechooserItem(RecycleDataViewBehavior, Label):
         # Respond to the selection of items in the view
         self.selected = is_selected
 
-class DelPopup(BasePopup):
+class DeletePopup(BasePopup):
     """Popup to confirm file deletion"""
-    def __init__(self, path, filechooser, **kwargs):
+    def __init__(self, path, filechooser=None, timeline=None, **kwargs):
         self.path = path
         self.filechooser = filechooser
-        super(DelPopup, self).__init__(**kwargs)
+        self.timeline = timeline
+        super(DeletePopup, self).__init__(**kwargs)
 
     def confirm(self):
         """Deletes the file and closes the popup"""
         os.remove(self.path)
+        app = App.get_running_app()
+
         # Update the files in the filechooser instance
-        if self.filechooser:
+        if app.history:
+            app.history.trim_history()
+        if self.timeline:
+            self.timeline.load_all(in_background=False)
+        elif self.filechooser:
             self.filechooser.load_files(in_background=True)
         self.dismiss()
-
-        app = App.get_running_app()
         app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)

@@ -6,6 +6,8 @@ KGUI:
 
     OTA Updates of klipperui + dependencies
 
+    fix pause_resume
+
     live move
 
     py3 port
