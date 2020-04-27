@@ -307,7 +307,7 @@ class FilamentChooserPopup(BasePopup):
 
         else:   
             materials = self.fil_man.get_status()['unloaded']
-            for i, (guid, amount, _) in enumerate(materials):
+            for i, (guid, amount) in enumerate(materials):
                 option = Option(
                     self, guid=guid, selected=(self.sel_2[1]==i),
                     amount=amount, unloaded_idx=i, font_size=p.small_font,

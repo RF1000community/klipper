@@ -556,8 +556,8 @@
             radius: (p.icon_radius,)
 
 <BtnPlay@RoundButton>:
-    #:set pw (p.btn_stop-2*p.icon_radius)/2
-    #:set ph pw*1.155
+    #:set ph (p.btn_stop-2*p.icon_radius)/2
+    #:set pw ph/1.155
     enabled: app.print_state in ('pausing', 'paused')
     canvas:
         Color:
@@ -595,8 +595,8 @@
             val_min: -0.5
             val_max: 0.5
             unit: "mm"
-            round_to: 1
-            round_style: 0.5
+            round_to: 2
+            round_style: 5
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}

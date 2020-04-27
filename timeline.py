@@ -121,7 +121,7 @@ class TimelineItem(RecycleDataViewBehavior, Label):
         # Catch and handle the view changes
         self.index = index
         # Default has to be explicitly set for some reason
-        default_data = {"name": "", "path": "",
+        default_data = {"name": "", "path": "", "selected": False,
                 "state": "header", "timestamp": 0}
         default_data.update(data)
         return super(TimelineItem, self).refresh_view_attrs(rv, index, default_data)

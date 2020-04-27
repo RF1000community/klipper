@@ -140,10 +140,8 @@ class UltraSlider(Widget):
                         Defaults to 0 and 100
     unit                Unit string, appended to display value.
                         Defaults to "" (no unit)
-    round_to            How many decimals to round val to
-    round_style         0.5 rounds decimal place to multiples of 0.5... normally 1
-                        Is passed to round().
-
+    round_to            How many decimals to round val to, is passed to round().
+    round_style         5 rounds lowest decimal place to multiples of 5... normally 1
     attributes:
     buttons     list of lists: e.g. [[val,offset,"name",the instance]]
     val         value, passed to printer, not in px

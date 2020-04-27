@@ -83,6 +83,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.notify = Notifications()
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
+        self.ongoing_live_move = False
         self.scheduled_updating = None
         self.z_timer = None
         self.extrude_timer = None
@@ -99,6 +100,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.klipper_config_manager = self.printer.objects['configfile']
             self.klipper_config = self.klipper_config_manager.read_main_config()
             #read config
+            self.z_speed = self.kgui_config.getfloat('manual_z_speed', 3)
+            self.ext_speed = self.kgui_config.getfloat('manual_extrusion_speed', 1)
             self.invert_z_controls = self.kgui_config.getboolean('invert_z_controls', False)
             self.xy_homing_controls = self.kgui_config.getboolean('xy_homing_controls', True)
             stepper_config = {'x': self.klipper_config.getsection('stepper_x'),
@@ -147,7 +150,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.toolhead = self.printer.lookup_object('toolhead')
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
         self.filament_manager = self.printer.lookup_object('filament_manager', None)
-        self.heater_manager = self.printer.lookup_object('heater', None)
+        self.heater_manager = self.printer.lookup_object('heaters', None)
         self.heaters = {}
         self.extruders = []
         if 'heater_bed' in self.heater_manager.heaters: 
@@ -278,9 +281,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             minutes = int((seconds % 3600) // 60)
             hours  =  int(seconds // 3600)
             if hours:
-                return "{hours} hours, {minutes} minutes".format(**locals())
+                return "{hours} hr, {minutes} min".format(**locals())
             else:
-                return "{minutes} minutes".format(**locals())
+                return "{minutes} min".format(**locals())
 
         est_remaining, progress = self.printjob_progress.get_print_time_prediction()
         if progress is None: # no prediction could be made yet
@@ -294,16 +297,23 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.progress = progress
             self.print_time = format_time(remaining.total_seconds()) + " remaining"
             if done.day == datetime.now().day:
-                self.print_done_time = done.strftime("ca. %-H:%M")
+                self.print_done_time = done.strftime("%-H:%M")
             elif done.day == tomorrow.day:
-                self.print_done_time = done.strftime("tomorrow %-H:%M") # ca. doesnt fit on screen
+                self.print_done_time = done.strftime("tomorrow %-H:%M")
             else:
-                self.print_done_time = done.strftime("ca. %a %-H:%M")
+                self.print_done_time = done.strftime("%a %-H:%M")
 
 ##################################################################
 ### TUNING
     def reset_tuning(self):
         self.send_flow(100)
+        self.send_speed(100)
+        self.send_z_adjust(0)
+        self.send_fan(0)
+        self.send_acceleration(self.klipper_config.getsection('printer').getfloat('max_accel', above=0.))
+        for extruder in self.extruders:
+            pa = self.klipper_config.getsection(extruder.name).getfloat('pressure_advance', 0., minval=0.)
+            extruder._set_pressure_advance(pa, extruder.pressure_advance_smooth_time)
 
     def get_z_adjust(self):
         self.z_adjust = self.gcode.homing_position[2]
@@ -318,7 +328,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.gcode.homing_position[2] = offset
             #Move to offset
             self.gcode.last_position[2] += delta
-            self.gcode.move_with_transform(self.gcode.last_position, 5) #sets speed for adjustment move
+            if 'z' in self.toolhead.get_status(self.reactor.monotonic())['homed_axes']:
+                self.gcode.move_with_transform(self.gcode.last_position, 5) #sets speed for adjustment move
         self.reactor.register_async_callback(set_z_offset)
 
     def get_speed(self):
@@ -403,7 +414,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         def read_temp(e):
             if self.heater_manager is not None:
                 t = {}
-                for tool_id, sensor in self.heater_manager.get_gcode_sensors():
+                for tool_id, sensor in self.heater_manager.gcode_id_to_sensor.items():
                     current, target = sensor.get_temp(self.reactor.monotonic())
                     self.temp[tool_id] = (target, current)
         self.reactor.register_async_callback(read_temp)
@@ -416,7 +427,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(change_temp)
 
     def get_homing_state(self):
-        homed_axes_string = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
+        homed_axes_string = self.toolhead.kin.get_status(self.reactor.monotonic())['homed_axes']
         for axis in self.homed.keys():
             self.homed[axis] = axis in homed_axes_string
 
@@ -433,74 +444,88 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def send_pos(self, x=None, y=None, z=None, e=None, speed=15):  
         def set_pos(e):
-            pos = self.toolhead.get_position()
             new_pos = [x,y,z,e]
             homed_axes = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
-            new_pos = [new_pos[i] if p in homed_axes else None for i, p in enumerate('xyze')] #check whether axes are still homed
-            pos = [p if p is not None else pos[i] for i, p in enumerate(new_pos)] #replace coordinates not given with current pos
-            self.toolhead.move(pos, speed)
+            new_pos = [new if name in homed_axes else None for new, name in zip(new_pos, 'xyze')] #check whether axes are still homed
+            new_pos = self._fill_coord(new_pos)
+            self.toolhead.move(new_pos, speed)
         self.reactor.register_async_callback(set_pos)
 
+    # def send_rel_pos(self, x=0, y=0, z=0, e=0, speed=15): # only execute this in klipper thread  
+    #     cur_pos = self.toolhead.get_position()
+    #     new_pos = [x,y,z,e]
+    #     homed_axes = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
+    #     for i, (new, name) in enumerate(zip(new_pos, "xyze")):
+    #         if name == "e":
+    #             cur_pos[i] += new
+    #         elif name in homed_axes:
+    #             cur_pos[i] += new
+    #             if cur_pos[i] > self.pos_max[name]: # don't exceed physical limits
+    #                 cur_pos[i] = self.pos_max[name]
+    #             if cur_pos[i] < self.pos_min[name]:
+    #                 cur_pos[i] = self.pos_min[name]
+    #     self.toolhead.move(cur_pos, speed)
 
-    def send_rel_pos(self, x=0, y=0, z=0, e=0, speed=15): # only execute this in klipper thread  
-        cur_pos = self.toolhead.get_position()
-        new_pos = [x,y,z,e]
-        homed_axes = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
-        for i, (new, name) in enumerate(zip(new_pos, "xyze")):
-            if name == "e":
-                cur_pos[i] += new
-            elif name in homed_axes:
-                cur_pos[i] += new
-                if cur_pos[i] > self.pos_max[name]: # don't exceed physical limits
-                    cur_pos[i] = self.pos_max[name]
-                if cur_pos[i] < self.pos_min[name]:
-                    cur_pos[i] = self.pos_min[name]
-        self.toolhead.move(cur_pos, speed)
+    def _fill_coord(self, new_pos):
+        """ Fill in any None entries in 'pos' with current toolhead position """
+        pos = list(self.toolhead.get_position())
+        for i, new in enumerate(new_pos):
+            if new is not None:
+                pos[i] = new
+        return pos
 
     def send_z_up(self, direction=1):
-        def start_z(e):
-            pos = self.toolhead.get_position()
-            pos[2] = (self.pos_max['z'] if direction==1 else self.pos_min['z'])
+        if not self.ongoing_live_move:
+            self.ongoing_live_move = True
+            def start_z(e):
+                pos = self.toolhead.get_position()
+                pos[2] = (self.pos_max['z'] if direction==1 else self.pos_min['z'])
 
-            self.toolhead.flush_step_generation()
-            kin = self.toolhead.get_kinematics()
-            steppers = kin.get_steppers()
+                self.toolhead.flush_step_generation()
+                kin = self.toolhead.get_kinematics()
+                steppers = kin.get_steppers()
 
-            for s in steppers:
-                s.set_tag_position(s.get_commanded_position())
+                for s in steppers:
+                    s.set_tag_position(s.get_commanded_position())
 
-            self.z_start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers]
-
-            self.z_move_completion = ReactorCompletion(self.reactor)
-            self.reactor.register_async_callback(lambda e: self.toolhead.drip_move(pos, 1, self.z_move_completion))
-        self.reactor.register_async_callback(start_z)
+                self.z_start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers]
+                self.z_move_completion = ReactorCompletion(self.reactor)
+                self.toolhead.drip_move(pos, self.z_speed, self.z_move_completion)
+            self.reactor.register_async_callback(start_z)
 
     def send_z_stop(self):
         def stop_z(e):
+            # this works similar to homing.py
             self.z_move_completion.complete(True)
-            # Determine stepper halt positions
-            self.reactor.register_async_callback(set_z_pos, 10)
-
-        def set_z_pos(e):
-            logging.info("set position")
+            self.reactor.pause(self.reactor.monotonic() + 0.200)
+            #self.reactor.pause(self.reactor.NOW)
             self.toolhead.flush_step_generation()
             #                   v--start_pos     v--end_pos
             end_mcu_pos = [(s, spos, s.get_mcu_position()) for s, spos in self.z_start_mcu_pos]
             for s, spos, epos in end_mcu_pos:
-                logging.info("s{}, spos{}, epos {}".format(s, spos, epos))
                 md = (epos - spos) * s.get_step_dist()
                 s.set_tag_position(s.get_tag_position() + md)
-            logging.info("tag pos = {}".format(self.toolhead.get_kinematics().calc_tag_position()))
-            self.toolhead.set_position(self.toolhead.get_kinematics().calc_tag_position())
-
+            self.toolhead.set_position(self._fill_coord(self.toolhead.get_kinematics().calc_tag_position()))
+            self.get_pos()
+            self.ongoing_live_move = False
         self.reactor.register_async_callback(stop_z)
-        
+
     def send_extrude(self, tool_id, direction=1):
-        self.reactor.register_async_callback(lambda evt: self.send_rel_pos(e=10, speed=5))
+        if not self.ongoing_live_move:
+            self.ongoing_live_move = True
+            def start_e(e):
+                pos = self.toolhead.get_position()
+                pos[3] += 49 * direction
+                self.ext_move_completion = ReactorCompletion(self.reactor)
+                self.toolhead.drip_move(pos, self.z_speed, self.ext_move_completion)
+            self.reactor.register_async_callback(start_e)
 
     def send_extrude_stop(self):
-        pass
-
+        def stop_ext(e):
+            self.ext_move_completion.complete(True)
+            self.ongoing_live_move = False
+        self.reactor.register_async_callback(stop_ext)
+        
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(None)))
 
