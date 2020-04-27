@@ -34,6 +34,8 @@ class Printjob:
             except:
                 logging.info("printjob_manager: couldn't open file {}".format(self.path))
                 self.set_state('stopped')
+                self.file_obj.close()
+                self.manager.check_queue()
         elif ext == '.ufp':
             # try:
             zip_obj = ZipFile(path)
@@ -62,6 +64,7 @@ class Printjob:
                 self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
             else:
                 self.set_state('paused')
+            self.printer.send_event("virtual_sdcard:printjob_started", self.path, self.state)
 
     def resume(self):
         if self.state == 'pausing':
@@ -84,8 +87,11 @@ class Printjob:
             # turn off heaters so stopping doesn't wait for temperature requests
             self.reactor.pause(self.reactor.monotonic() + 0.100)
             self.heater_manager.cmd_TURN_OFF_HEATERS({})
-        else:
+        else: # in case it is paused we need to do all stopping actions here
             self.set_state('stopped')
+            self.file_obj.close()
+            self.heater_manager.cmd_TURN_OFF_HEATERS({})
+            self.manager.check_queue()
 
     def work_handler(self, eventtime):
         logging.info("Printjob entering work handler (position %d)", self.file_position)
@@ -135,7 +141,7 @@ class Printjob:
                 break
             self.file_position += len(lines.pop()) + 1
 
-        # Post print
+        # Post print, finish pause() or stop() actions
         logging.info("Exiting SD card print (position %d)", self.file_position)
         self.start_stop_times[-1][1] = self.toolhead.get_last_move_time()
         if self.state == 'pausing':
@@ -166,7 +172,7 @@ class PrintjobManager(object):
         self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object('gcode')
-        self.heater_manager = self.printer.lookup_object('heater')
+        self.heater_manager = self.printer.lookup_object('heaters')
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
         self.jobs = [] # Printjobs, first is current
@@ -255,13 +261,13 @@ class VirtualSD(PrintjobManager):
     def cmd_M20(self, params):
         # List SD card
         files = self.get_file_list()
-        self.gcode.respond("Begin file list")
+        self.gcode.respond_raw("Begin file list")
         for fname, fsize in files:
-            self.gcode.respond("%s %d" % (fname, fsize))
-        self.gcode.respond("End file list")
+            self.gcode.respond_raw("%s %d" % (fname, fsize))
+        self.gcode.respond_raw("End file list")
     def cmd_M21(self, params):
         # Initialize SD card
-        self.gcode.respond("SD card ok")
+        self.gcode.respond_raw("SD card ok")
     def cmd_M23(self, params):
         # Select SD file
         # parses filename

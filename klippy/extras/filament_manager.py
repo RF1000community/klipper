@@ -33,6 +33,7 @@ class FilamentManager:
             self.filament_area = pi * (filament_diameter/2.)**2
             self.extruders = {}
             self.printer.register_event_handler("klippy:ready", self.handle_ready)
+            self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
         # xml files for each material
         self.material_dir = expanduser('~/materials')
         self.tmc_to_guid = {} # [Type][Manufacturer][Color] = guid, a dict tree for filamentchooser
@@ -48,7 +49,7 @@ class FilamentManager:
             if material: material[2] = 'loaded'
 
     def handle_ready(self):
-        self.heater_manager = self.printer.lookup_object('heater', None)
+        self.heater_manager = self.printer.lookup_object('heaters')
         self.toolhead = self.printer.lookup_object('toolhead')
         for i in range(10):
             extruder_id = 'extruder{}'.format('' if i==0 else i)
@@ -218,8 +219,8 @@ class FilamentManager:
                 if not (mat is None or (
                     isinstance(mat[0], (unicode, str)) and # UUID
                     isinstance(mat[1], (float, int)) and   # amount
-                    isinstance(mat[0], (unicode, str)) and # status
-                    isinstance(mat[0], (float, int)) )):   # base ext. len
+                    isinstance(mat[2], (unicode, str)) and # status
+                    isinstance(mat[3], (float, int)) )):   # base ext. len
                     return False
             for mat in material['unloaded']:
                 if not (mat is None or (

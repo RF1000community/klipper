@@ -12,12 +12,12 @@ class PrinterExtruder:
         self.name = config.get_name()
         self.extruded_length = 0
         shared_heater = config.get('shared_heater', None)
-        pheater = self.printer.lookup_object('heater')
+        pheaters = self.printer.try_load_module(config, 'heaters')
         gcode_id = 'T%d' % (extruder_num,)
         if shared_heater is None:
-            self.heater = pheater.setup_heater(config, gcode_id)
+            self.heater = pheaters.setup_heater(config, gcode_id)
         else:
-            self.heater = pheater.lookup_heater(shared_heater)
+            self.heater = pheaters.lookup_heater(shared_heater)
         self.stepper = stepper.PrinterStepper(config)
         self.nozzle_diameter = config.getfloat('nozzle_diameter', above=0.)
         filament_diameter = config.getfloat(
@@ -73,6 +73,9 @@ class PrinterExtruder:
         gcode.register_mux_command("ACTIVATE_EXTRUDER", "EXTRUDER",
                                    self.name, self.cmd_ACTIVATE_EXTRUDER,
                                    desc=self.cmd_ACTIVATE_EXTRUDER_help)
+        gcode.register_mux_command("SET_EXTRUDER_STEP_DISTANCE", "EXTRUDER",
+                                   self.name, self.cmd_SET_E_STEP_DISTANCE,
+                                   desc=self.cmd_SET_E_STEP_DISTANCE_help)
     def update_move_time(self, flush_time):
         self.trapq_free_moves(self.trapq, flush_time)
     def _set_pressure_advance(self, pressure_advance, smooth_time):
@@ -167,7 +170,7 @@ class PrinterExtruder:
         heater = extruder.get_heater()
         heater.set_temp(temp)
         if wait and temp:
-            gcode.wait_for_temperature(heater)
+            self.printer.lookup_object('heaters').wait_for_temperature(heater)
     def cmd_M109(self, params):
         # Set Extruder Temperature and Wait
         self.cmd_M104(params, wait=True)
@@ -188,6 +191,20 @@ class PrinterExtruder:
                    pressure_advance, smooth_time))
         self.printer.set_rollover_info(self.name, "%s: %s" % (self.name, msg))
         gcode.respond_info(msg, log=False)
+    cmd_SET_E_STEP_DISTANCE_help = "Set extruder step distance"
+    def cmd_SET_E_STEP_DISTANCE(self, params):
+        gcode = self.printer.lookup_object('gcode')
+        toolhead = self.printer.lookup_object('toolhead')
+        if 'DISTANCE' not in params:
+            step_dist = self.stepper.get_step_dist()
+            gcode.respond_info("Extruder '%s' step distance is %0.6f"
+                               % (self.name, step_dist))
+            return
+        dist = gcode.get_float('DISTANCE', params, above=0.)
+        toolhead.flush_step_generation()
+        self.stepper.set_step_dist(dist)
+        gcode.respond_info("Extruder '%s' step distance set to %0.6f"
+                           % (self.name, dist))
     cmd_ACTIVATE_EXTRUDER_help = "Change the active extruder"
     def cmd_ACTIVATE_EXTRUDER(self, params):
         gcode = self.printer.lookup_object('gcode')
