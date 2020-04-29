@@ -14,24 +14,18 @@ class PrintjobProgress:
         self.initialize_printjob()
         self.printer.register_event_handler("gcode:read_metadata", self.handle_gcode_metadata)
         self.printer.register_event_handler("virtual_sdcard:printjob_ended", self.initialize_printjob)
+        self.printer.register_event_handler("klippy:connect", self.handle_connect)
+
+    def handle_connect(self):
+        self.printjob_manager = self.printer.lookup_object('virtual_sdcard')
 
     def initialize_printjob(self, *args):
-        self.slicer_idx = None
         self.slicer_elapsed_times = [] # [[time actually printed, elapsed time put by slicer], ...]
         self.slicer_estimated_time = None
 
     def handle_gcode_metadata(self, eventtime, params):
         line = params['#original']
         # recieves all gcode-comment-lines as they are printed, and searches for print-time estimations
-        slicers = [ 
-            r'KISSlicer' ,
-            r'^Slic3r$' ,
-            r'Simplify3D\(R\).*' ,
-            r'Slic3r Prusa Edition\s.*\so',
-            r'Cura_SteamEngine.*' ,
-            r'ideaMaker\s([0-9]*\..*,)',
-            r'PrusaSlicer'
-            ]
         slicer_estimated_time = [
             r'\s\s\d*\.\d*\sminutes' ,                        # Kisslicer
             r'; estimated printing time' ,                    # Slic3r
@@ -42,13 +36,13 @@ class PrintjobProgress:
             r'\d+h?\s?\d+m\s\d+s'                             # PrusaSlicer
             ]
         slicer_elapsed_time = [
-            r'',                                               # Kisslicer
-            r'',                                               # Slic3r
-            r'',                                               # S3d
-            r'',                                               # Slic3r PE
+            # r'',                                               # Kisslicer
+            # r'',                                               # Slic3r
+            # r'',                                               # S3d
+            # r'',                                               # Slic3r PE
             r';TIME_ELAPSED:\d+',                              # Cura
-            r'',                                               # ideamaker
-            r'',                                               # PrusaSlicer
+            # r'',                                               # ideamaker
+            # r'',                                               # PrusaSlicer
             ]
         def get_seconds(in_):
             if in_ == -1: return in_
@@ -66,19 +60,16 @@ class PrintjobProgress:
                 dursecs = float(max(re.findall('([0-9]*\.?[0-9]+)', in_)))
             return dursecs
 
-        if self.slicer_idx is None: # if slicer isn't determined yet we dont make predictions
-            for i, slicer in enumerate(slicers):
-                if re.search(slicer, line):
-                    self.slicer_idx = i
-                    logging.info("found slicer idx {}".format(i))
-        else:
-            estimated = re.search(slicer_estimated_time[self.slicer_idx], line)
-            if estimated:
-                self.slicer_estimated_time = get_seconds(estimated.group())
+        for regex in slicer_estimated_time:
+            match = re.search(regex, line)
+            if match:
+                self.slicer_estimated_time = get_seconds(match.group())
                 return
-            elapsed = re.search(slicer_elapsed_time[self.slicer_idx], line)
-            if elapsed:
-                self.slicer_elapsed_times.append((self.get_printed_time(), get_seconds(elapsed.group())))
+        for regex in slicer_elapsed_time:
+            match = re.search(regex, line)
+            if match:
+                self.slicer_elapsed_times.append((self.printjob_manager.jobs[0].get_printed_time(), get_seconds(match.group())))
+                return
 
     def get_print_time_prediction(self):
         # time estimations in gcode: |....|....|....|........................|

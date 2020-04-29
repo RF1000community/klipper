@@ -6,7 +6,7 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import sys, os, optparse, logging, time, threading, collections, importlib
 import util, reactor, queuelogger, msgproto, homing
-import gcode, configfile, pins, heater, mcu, toolhead
+import gcode, configfile, pins, mcu, toolhead
 from subprocess import Popen
 
 message_ready = "Printer is ready"
@@ -55,7 +55,7 @@ class Printer:
         self.reactor = reactor.Reactor()
         self.reactor.register_callback(self._connect)
         self.state_message = message_startup
-        self.is_shutdown = False
+        self.in_shutdown_state = False
         self.run_result = None
         self.event_handlers = {}
         gc = gcode.GCodeParser(self, input_fd)
@@ -66,6 +66,8 @@ class Printer:
         return self.reactor
     def get_state_message(self):
         return self.state_message
+    def is_shutdown(self):
+        return self.in_shutdown_state
     def _set_state(self, msg):
         if self.state_message in (message_ready, message_startup):
             self.state_message = msg
@@ -122,7 +124,7 @@ class Printer:
         if self.bglogger is not None:
             pconfig.log_config(config)
         # Create printer components
-        for m in [pins, heater, mcu]:
+        for m in [pins, mcu]:
             m.add_printer_objects(config)
         for section_config in config.get_prefix_sections(''):
             self.try_load_module(config, section_config.get_name())
@@ -147,11 +149,13 @@ class Printer:
             logging.exception("Protocol error")
             self.send_event("klippy:exception", "Protocol error")
             self._set_state("%s%s" % (str(e), message_protocol_error))
+            util.dump_mcu_build()
             return
         except mcu.error as e:
             logging.exception("MCU error during connect")
             self.send_event("klippy:exception", "MCU error during connect")
             self._set_state("%s%s" % (str(e), message_mcu_connect_error))
+            util.dump_mcu_build()
             return
         except Exception as e:
             logging.exception("Unhandled exception during connect")
@@ -190,9 +194,10 @@ class Printer:
             logging.exception("Unhandled exception during post run")
         return run_result
     def invoke_shutdown(self, msg): # shut down all work, but dont exit
-        if self.is_shutdown:
+        if self.in_shutdown_state:
             return
-        self.is_shutdown = True
+        logging.error("Transition to shutdown state: %s", msg)
+        self.in_shutdown_state = True
         self._set_state("%s%s" % (msg, message_shutdown))
         self.send_event("klippy:exception", msg)
         for cb in self.event_handlers.get("klippy:shutdown", []):
