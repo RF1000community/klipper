@@ -33,8 +33,19 @@ class UpdateScreen(Screen):
         self.ids.box.clear_widgets()
 
         for release in releases:
-            entry = SI_Release(release['tarball_url'], left_title = release['tag_name'], right_title = release['published_at'].split("T")[0])
-            self.ids.box.add_widget(entry)
+            self.ids.box.add_widget(SIRelease(release))
+
+    def run_command(command, output_property):
+        process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            elif output:
+                current = getattr(self, output_property)
+                setattr(self, output_property, current + output)
+        rc = process.poll()
+        return rc
 
     def get_git_version(self):
         klippy_dir = os.path.dirname(os.path.dirname(p.kgui_dir))
@@ -73,7 +84,6 @@ class FileDownload(threading.Thread):
                 total_size = response.info().getheader('Content-Length')
                 total_size.strip()
                 break
-
             except Exception:
                 pass
             logging.warning("Downlaod Retry")
@@ -97,31 +107,27 @@ class FileDownload(threading.Thread):
         Clock.schedule_once(lambda dt: self.result_handler(data))
 
 class UpdatePopup(BasePopup):
-    comm_list = ListProperty([0, 1, False]) # Lists allow passing a reference, whereas ints are copied
-    def __init__(self, version_tag, url, **kwargs):
-        self.version = version_tag
+    message = StringProperty()
+    def __init__(self, release, **kwargs):
         super(UpdatePopup, self).__init__(**kwargs)
-        FileDownload(url, self.comm_list, self.download_finished).start()
-
-    def download_finished(self, data):
-        self.data = data
-        self.ids.confirm.enabled = True
-
-    def install(self):
+        self.release = release
+    def update(self):
+        pass
+    def full_install(self):
         # as a convention klipper is always installed in HOME directory
         install_dir = os.path.expanduser('~')
-        tar = tarfile.open(fileobj = self.data, mode = 'r|gz')
-        logging.info("extraxting {}".format(tar))
-        tar.extractall(install_dir)
-        tar.close()
+      
 
     def dismiss(self, **kwargs):
         super(UpdatePopup, self).dismiss(**kwargs)
-        self.comm_list[2] = True #stop signal for download thread (doesnt get garbage collected, downloader has reference)
 
+class SIRelease(SetItem):
+    def __init__(self, release, **kwargs):
+        self.release = release
+        self.left_title = release['tag_name']
+        self.right_title = release['published_at'].split("T")[0]
+        super(SIRelease, self).__init__(**kwargs)
 
-
-class SI_Release(SetItem):
-    def __init__(self, url, **kwargs):
-        super(SI_Release, self).__init__(**kwargs)
-        self.url = url
+    def on_release(self, **kwargs):
+        super(SIRelease, self).on_release(**kwargs)
+        UpdatePopup(self.release).open()

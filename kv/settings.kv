@@ -337,8 +337,6 @@
         color: root.get_color()
         pos: root.pos
 
-<SIRelease>:
-    on_release: Factory.UpdatePopup(self.left_title, self.url).open()
 
 # POPUPS
 
@@ -530,7 +528,7 @@
             val_min: 2000
             val_max: 50000
             unit: "mm/s²"
-            roundto: -2
+            round_to: -2
             buttons: [[36000,0,"default",None],]
             id: slider
             width: root.width
@@ -558,7 +556,7 @@
             val_min: 0
             val_max: 0.05
             unit: "mm/mm/s"
-            roundto: 3
+            round_to: 3
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -579,47 +577,41 @@
     title: "Downloading"
     FloatLayout:
         id: f_layout
-        canvas:
-            Color:
-                rgba: p.medium_gray
-            RoundedRectangle:
-                size: self.width - 2*p.padding, 10
-                pos: self.x + p.padding, self.center_y
-                radius: (4,)
-            Color:
-                rgba: p.light_gray
-            RoundedRectangle:
-                size: (self.width - 2*p.padding)*root.comm_list[0]/float(root.comm_list[1]), 10
-                pos: self.x + p.padding, self.center_y
-                radius: (5,)
         Label:
-            text: root.version
+            text: root.release['version_tag']
             halign: 'center'
             valign: 'middle'
-            max_lines: 5
             size_hint: 0.8, None
             pos_hint: {'center_x': 0.5, 'center_y': 0.8}
             text_size: self.size
             font_size: p.large_font
             color: p.light_gray
         Label:
-            text: "{}/{}kb".format(root.comm_list[0]/1024,root.comm_list[1]/1024)
+            text: root.message
             size_hint: None, None
             size: root.width, p.normal_font
             top: f_layout.center_y - 5
-            x: root.x + p.padding
+            center_x: root.center_x
             valign: 'top'
             font_size: p.normal_font
             color: p.light_gray
             text_size: self.size
         BtnPCancel:
             id: btn_cancel
-            width: root.width/2
+            width: root.width/3
             pos: root.pos
             on_release: root.dismiss()
         BtnPConfirm:
-            id: confirm
-            text: "Install"
-            width: root.width/2
+            id: btn_update
+            text: 'Update'
+            enabled: True
+            width: root.width/3
+            pos: btn_cancel.right, root.y
+            on_release: rood.update(), root.dismiss()
+        BtnPConfirm:
+            id: btn_full_install
+            text: "Full Reinstall"
+            enabled: True
+            width: root.width/3
             pos: root.center_x, root.y
-            on_release: root.install(), root.dismiss()
+            on_release: root.full_install(), root.dismiss()

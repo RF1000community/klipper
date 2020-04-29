@@ -16,7 +16,7 @@ from .settings import wifi
 
 
 class StatusBar(BoxLayout):
-    
+
     animation_pos = NumericProperty(0)
 
     def __init__(self, **kwargs):
@@ -26,19 +26,19 @@ class StatusBar(BoxLayout):
         self.scheduled_updating = None
         self.update_animation(None, app.state)
         super(StatusBar, self).__init__(**kwargs)
-    
+
     def update_animation(self, instance, value):
         if value in ('initializing', 'pausing', 'stopping'):
             self.animation_pos = 0
-            self.scheduled_updating = Clock.schedule_interval(self.update_animation_pos, 0.08)
+            self.scheduled_updating = Clock.schedule_interval(self.update_animation_pos, 0.065)
         else:
             self.animation_pos = 0
             if self.scheduled_updating:
                 Clock.unschedule(self.scheduled_updating)
                 self.scheduled_updating = None
-    
+
     def update_animation_pos(self, dt):
-        self.animation_pos += 10
+        self.animation_pos += 3
         self.animation_pos = self.animation_pos % (p.screen_width + 300)
 
 

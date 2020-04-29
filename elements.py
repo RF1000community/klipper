@@ -19,7 +19,7 @@ class Divider(Widget):
     pass
 
 class BaseButton(Label):
-    """ Lightweight adaptation of the kivy button class """
+    """ Lightweight adaptation of the kivy button class, with disable functionality """
     pressed = BooleanProperty(False)
     enabled = BooleanProperty(True)
     def __init__(self, **kwargs):
@@ -87,7 +87,7 @@ class BtnSlider(BaseButton):
 
 class BasePopup(Popup):
 
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         # makes this Popup recieve the instance of the calling button to
         # access its methods and e.g. heater_id
         self.creator = kwargs.get('creator', None)
@@ -111,9 +111,10 @@ class StopPopup(BasePopup):
     pass
 
 class PrintPopup(BasePopup):
-    def __init__(self, path, filechooser=None, **kwargs):
+    def __init__(self, path, filechooser=None, timeline=None, **kwargs):
         self.path = path
         self.filechooser = filechooser
+        self.timeline = timeline
         super(PrintPopup, self).__init__(**kwargs)
 
     def confirm(self):
@@ -129,12 +130,6 @@ class PrintPopup(BasePopup):
         tabs = app.root.ids.tabs
         tabs.switch_to(tabs.ids.home_tab)
 
-    def delete(self):
-        """Open a confirmation dialog to delete the file"""
-        super(PrintPopup, self).dismiss()
-        self.confirm_del = DelPopup(path = self.path, filechooser=self.filechooser)
-        self.confirm_del.open()
-
 class UltraSlider(Widget):
     """
     Simple slider widget
@@ -145,9 +140,8 @@ class UltraSlider(Widget):
                         Defaults to 0 and 100
     unit                Unit string, appended to display value.
                         Defaults to "" (no unit)
-    roundto             How many decimals to round val to.
-                        Is passed to round().
-
+    round_to            How many decimals to round val to, is passed to round().
+    round_style         5 rounds lowest decimal place to multiples of 5... normally 1
     attributes:
     buttons     list of lists: e.g. [[val,offset,"name",the instance]]
     val         value, passed to printer, not in px
@@ -160,7 +154,8 @@ class UltraSlider(Widget):
     val_min = NumericProperty()
     val_max = NumericProperty()
     unit = StringProperty()
-    roundto = NumericProperty()
+    round_to = NumericProperty()
+    round_style = NumericProperty(1)
     px = NumericProperty() #absolute position of dot in px
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
@@ -261,11 +256,11 @@ class UltraSlider(Widget):
         """
         m = float(self.val_max - self.val_min)/(self.px_max - self.px_min)
         val = self.val_min + m*(px - self.px_min)
-        return round(val, self.roundto)
+        return round(val/self.round_style, self.round_to)*self.round_style
 
     def get_disp_from_val(self, val):
         """Returns string of the value and the given unit string"""
-        return "{:.{p}f}{}".format(val, self.unit, p = max(0, self.roundto))
+        return "{:.{p}f}{}".format(val, self.unit, p = max(0, self.round_to))
 
 
 # class UltraOffsetSlider(UltraSlider):

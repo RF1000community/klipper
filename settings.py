@@ -236,7 +236,7 @@ class Wifi(EventDispatcher):
             elif i.endswith("ethernet"):
                 eth = True
         self.connection_types['wifi'] = wifi
-        self.connection_types['eth'] = wifi
+        self.connection_types['eth'] = eth
 
 
     def on_networks(self, value):

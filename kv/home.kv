@@ -18,7 +18,7 @@
             pos_hint: {'x':0,'y':0}
             size_hint: 1,1
         ProgressBar:
-            enabled: app.print_state != 'no printjob'
+            enabled: app.print_title != ""
             id: progress_bar
             max: 1
             value: app.progress
@@ -341,7 +341,7 @@
     w2: 0
     w3: 0
     size_hint: None, None
-    size: self.w1+self.w2+self.w3, p.btn_height
+    size: self.w1 + self.w2 + self.w3, p.btn_height
     #:set w 19
     canvas:
         Color:
@@ -364,6 +364,8 @@
             points: self.x+self.w1, self.y+p.btn_divider_padding, self.x+self.w1, self.top-p.btn_divider_padding
         Line:
             points: self.x+self.w1+1+self.w2, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2, self.top-p.btn_divider_padding
+        Color:
+            rgba: p.btn_outline if root.material else (0,0,0,0)
         Line:
             points: self.x+self.w1+1+self.w2*root.filament_amount, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2*root.filament_amount, self.top-p.btn_divider_padding
     BaseButton:
@@ -388,10 +390,8 @@
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
         enabled: bool(app.printer_objects_available and app.filament_manager)
-        on_release:
-            if root.guid is not None: Factory.FilamentPopup(root.extruder_id, False, root.guid).open()
-            else: Factory.FilamentChooserPopup(root.extruder_id).open()
-        color: (1,1,1,1) if btn_load.enabled else p.btn_disabled
+        on_release: root.load_unload()
+        color: (1,1,1,1) if self.enabled else p.btn_disabled
         text: root.title
         text_size: self.size
         font_size: p.normal_font
@@ -556,8 +556,8 @@
             radius: (p.icon_radius,)
 
 <BtnPlay@RoundButton>:
-    #:set pw (p.btn_stop-2*p.icon_radius)/2
-    #:set ph pw*1.155
+    #:set ph (p.btn_stop-2*p.icon_radius)/2
+    #:set pw ph/1.155
     enabled: app.print_state in ('pausing', 'paused')
     canvas:
         Color:
@@ -595,7 +595,8 @@
             val_min: -0.5
             val_max: 0.5
             unit: "mm"
-            roundto: 2
+            round_to: 2
+            round_style: 5
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -620,7 +621,7 @@
             val_min: 0
             val_max: 0.05
             unit: "mm/mm/s"
-            roundto: 3
+            round_to: 3
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -644,7 +645,7 @@
             val_min: 2000
             val_max: 50000
             unit: "mm/s²"
-            roundto: -2
+            round_to: -2
             buttons: [[36000,0,"default",None],]
             id: slider
             width: root.width
@@ -671,7 +672,7 @@
             val_min: 10
             val_max: 500
             unit: "%"
-            roundto: 0
+            round_to: 0
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -696,7 +697,7 @@
             val_min: 90
             val_max: 110
             unit: "%"
-            roundto: 1
+            round_to: 1
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -721,7 +722,7 @@
             val_min: 0
             val_max: 100
             unit: "%"
-            roundto: 0
+            round_to: 0
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
@@ -884,7 +885,7 @@
     title: "{} {}".format(self.manufacturer, self.filament_type)
     FloatLayout:
         FilamentSlider:
-            active: root.do_load
+            active: root.new
             id: filament_slider
             center_x: root.center_x
             y: btn_cancel.top + 90
@@ -898,32 +899,32 @@
         BtnPConfirm:
             id: btn_confirm
             enabled: True
-            text: "Load" if root.do_load else "Unload"
+            text: "Load" if root.new else "Unload"
             width: root.width/2
             pos: root.center_x, root.y
             on_release: root.confirm()
 
 <-FilamentSlider>:
     size_hint: None, None
-    size: p.screen_width - 2*p.small_padding - 2*p.padding, 100
+    size: p.screen_width - 2*p.small_padding, 100
     px: self.x + p.padding
     canvas:
         Color:
             rgba: p.medium_gray if self.pressed else self.filament_color
         RoundedRectangle:
-            size: self.size
-            pos: self.pos
+            size: self.width - 2*p.padding, self.height
+            pos: self.x + p.padding, self.y
             radius: (p.radius,)
         Color:
             rgba: (0,0,0,0) if self.pressed else p.popup
         Rectangle:
-            size: self.right - self.px, self.height
+            size: self.right - p.padding - self.px, self.height
             pos: self.px, self.y
         Color:
             rgba: (1,1,1,0.3) if self.pressed else p.btn_outline
         Line:
             width: 1
-            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+            rounded_rectangle: (self.x + p.padding, self.y, self.width - 2*p.padding, self.height, p.radius)
         Color:
             rgba: p.btn_outline if not self.active else (0,0,0,0) if self.pressed else (1,1,1,1)
         Line:

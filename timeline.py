@@ -26,10 +26,10 @@ class Timeline(RecycleView):
         self.app = App.get_running_app()
         self.load_all(in_background=False)
         self.app.bind(jobs=self.load_all)
+        self.app.bind(state=self.load_all)
         self.app.bind(print_state=self.load_all)
 
     def load_all(self, instance=None, value=None, in_background=True):
-
         queue = [{'name': job.name, 'path': job.path, 'state': job.state} 
             for job in reversed(self.app.jobs)]
 
@@ -121,7 +121,7 @@ class TimelineItem(RecycleDataViewBehavior, Label):
         # Catch and handle the view changes
         self.index = index
         # Default has to be explicitly set for some reason
-        default_data = {"name": "", "path": "",
+        default_data = {"name": "", "path": "", "selected": False,
                 "state": "header", "timestamp": 0}
         default_data.update(data)
         return super(TimelineItem, self).refresh_view_attrs(rv, index, default_data)

@@ -3,28 +3,14 @@ KGUI:
     OTA Updates of klipperui + dependencies
     microcontroller flashing
 
-Klipper 
-    PY3 port
-        configparser overwrite config causing duplicate section error
-        initial logging statement versions
-    bugs to monitor
-        see if timer to close error persists
-        DripModeEndSignal during homing maybe due to add. gcode move command
-                                        also due to stop command
+    fix pause_resume extrusion
 
+    py3 port
 
-CURA COONNECTION
+        microcontroller flashing (maybe dead)
 
-
-HIGH SPEED ODRIVE COONNECTION
-
-ODrive:
-    clock sync command
-
-    add to pos_queue command with optional time
-    get_interval
-
-Replacement for Stepper:
-    handle no homing
-    send positions based 
-    maybe kinematics class
+bugs
+    see if timer to close error persists
+        especially on live move
+    DripModeEndSignal during homing maybe due to add. gcode move command
+                                    also due to stop command

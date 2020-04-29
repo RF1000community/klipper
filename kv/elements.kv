@@ -346,17 +346,13 @@
             width: root.width/3
             pos: root.pos
             on_release: root.dismiss()
-        RectangleButton:
+        BtnPConfirm:
             id: btn_del
-            canvas:
-                Color:
-                    rgba: p.divider
-                Line:
-                    points: self.x, self.y, self.x, self.top, self.right, self.top
             text: 'Delete'
-            size: root.width/3, 70
+            enabled: app.printer_objects_available
+            width: root.width/3
             pos: btn_cancel.right, root.y
-            on_release: root.delete()
+            on_release: Factory.DeletePopup(path = self.path, filechooser=self.filechooser, timeline=self.timeline).open(); root.dismiss()
         BtnPConfirm:
             text: 'Print'
             enabled: app.printer_objects_available
