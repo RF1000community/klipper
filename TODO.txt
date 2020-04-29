@@ -6,16 +6,15 @@ KGUI:
 
     OTA Updates of klipperui + dependencies
 
-    fix pause_resume
-
-    live move
+    fix pause_resume extrusion
 
     py3 port
 
         microcontroller flashing (maybe dead)
 
-Klipper bugs
+bugs
     see if timer to close error persists
+        especially on live move
     DripModeEndSignal during homing maybe due to add. gcode move command
                                     also due to stop command
 
