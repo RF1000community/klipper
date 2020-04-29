@@ -34,7 +34,6 @@ class Printjob:
             except:
                 logging.info("printjob_manager: couldn't open file {}".format(self.path))
                 self.set_state('stopped')
-                self.file_obj.close()
                 self.manager.check_queue()
         elif ext == '.ufp':
             # try:

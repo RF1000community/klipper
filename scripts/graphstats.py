@@ -25,7 +25,6 @@ def parse_log(logname, mcu):
     apply_prefix = { p: 1 for p in APPLY_PREFIX }
     f = open(logname, 'rb')
     out = []
-    print(logname)
     for line in f:
         parts = line.split()
         # remove brackets that are added to the log file for unknown reasons
@@ -35,7 +34,6 @@ def parse_log(logname, mcu):
         if not parts or 'Stats' not in parts[0]:
             #if parts and parts[0] == 'INFO:root:shutdown:':
             #    break
-            print(parts[:1])
             continue
         prefix = ""
         keyparts = {}
@@ -53,7 +51,6 @@ def parse_log(logname, mcu):
             continue
         keyparts['#sampletime'] = float(parts[1][:-1])
         out.append(keyparts)
-    print(f.tell())
 
     f.close()
     return out
