@@ -36,20 +36,19 @@ class Printjob:
                 self.set_state('stopped')
                 self.manager.check_queue()
         elif ext == '.ufp':
-            # try:
-            zip_obj = ZipFile(path)
-            self.thumbnail_path = path.replace('.ufp', '.png')
-            with open(self.thumbnail_path, 'wb') as thumbnail:
-                thumbnail.write(zip_obj.read("/Metadata/thumbnail.png"))
-            from io import BytesIO
-            self.file_obj = BytesIO(zip_obj.open("/3D/model.gcode", 'r')) # Stringio wrapper to fix python 2
-            self.file_obj.seek(0, os.SEEK_END)
-            self.file_size = self.file_obj.tell()
-            self.file_obj.seek(0)
-            # except Exception as e:
-            #     logging.debug("printjob_manager: couldn't open compressed file {}, exception {}".format(self.path, e))
-            #     self.set_state('stopped')
-    
+            try:
+                zip_obj = ZipFile(path)
+                self.thumbnail_path = path.replace('.ufp', '.png')
+                with open(self.thumbnail_path, 'wb') as thumbnail:
+                    thumbnail.write(zip_obj.read("/Metadata/thumbnail.png"))
+                    self.file_obj = zip_obj.open("/3D/model.gcode", 'r')
+                    self.file_obj.seek(0, os.SEEK_END)
+                    self.file_size = self.file_obj.tell()
+                    self.file_obj.seek(0)
+            except Exception as e:
+                logging.debug("printjob_manager: couldn't open compressed file {}, exception {}".format(self.path, e))
+                self.set_state('stopped')
+
     def set_state(self, state):
         if self.state != state:
             self.state = state
@@ -109,7 +108,7 @@ class Printjob:
             # Read more lines if necessary
             if not lines:
                 try:
-                    data = self.file_obj.read(8192)
+                    data = self.file_obj.read(8192).decode()
                 except:
                     self.set_state('stopping')
                     logging.exception("virtual_sdcard read")
@@ -121,6 +120,7 @@ class Printjob:
                     self.gcode.respond("Done printing file")
                     break
                 lines = data.split('\n')
+                logging.info(f"part {partial_input}  lines {lines[0]} data {data}")
                 lines[0] = partial_input + lines[0]
                 partial_input = lines.pop()
                 lines.reverse()

@@ -24,7 +24,7 @@ class PrintjobProgress:
         self.slicer_estimated_time = None
 
     def handle_gcode_metadata(self, eventtime, params):
-        line = params['#original'].decode()
+        line = params['#original']
         # recieves all gcode-comment-lines as they are printed, and searches for print-time estimations
         slicer_estimated_time = [
             r'\s\s\d*\.\d*\sminutes' ,                        # Kisslicer

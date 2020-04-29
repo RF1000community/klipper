@@ -183,7 +183,7 @@ class MoveQueue:
 
 MIN_KIN_TIME = 0.300
 MOVE_BATCH_TIME = 0.500
-SDS_CHECK_TIME = 0.001 # step+dir+step filter in stepcompress.c
+SDS_CHECK_TIME = 0.002 # step+dir+step filter in stepcompress.c
 
 DRIP_SEGMENT_TIME = 0.100
 DRIP_TIME = 0.300
