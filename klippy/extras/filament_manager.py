@@ -13,7 +13,6 @@ from os.path import expanduser, join
 from math import pi
 
 
-
 class FilamentManager:
     def __init__(self, config):
         if config:

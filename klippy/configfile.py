@@ -158,7 +158,7 @@ class PrinterConfig:
         data = '\n'.join(buffer)
         del buffer[:]
         sbuffer = io.StringIO(data)
-        fileconfig.readfp(sbuffer, filename)
+        fileconfig.read_file(sbuffer, filename)
     def _resolve_include(self, source_filename, include_spec, fileconfig,
                          visited):
         dirname = os.path.dirname(source_filename)
@@ -201,7 +201,7 @@ class PrinterConfig:
         self._parse_config_buffer(buffer, filename, fileconfig)
         visited.remove(path)
     def _build_config_wrapper(self, data, filename):
-        fileconfig = configparser.RawConfigParser()
+        fileconfig = configparser.RawConfigParser(strict=False)
         self._parse_config(data, filename, fileconfig, set())
         return ConfigWrapper(self.printer, fileconfig, {}, 'printer')
     def _build_config_string(self, config):
@@ -309,7 +309,7 @@ class PrinterConfig:
                      cfgname, backup_name)
         try:
             f = open(temp_name, 'wb')
-            f.write(data)
+            f.write(data.encode())
             f.close()
             os.rename(cfgname, backup_name)
             os.rename(temp_name, cfgname)
