@@ -25,10 +25,10 @@ class BaseButton(Label):
     def __init__(self, **kwargs):
         self.register_event_type('on_press')
         self.register_event_type('on_release')
-        super(BaseButton, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def on_touch_down(self, touch):
-        if super(BaseButton, self).on_touch_down(touch):
+        if super().on_touch_down(touch):
             return True
         if touch.is_mouse_scrolling:
             return False
@@ -50,14 +50,14 @@ class BaseButton(Label):
     def on_touch_move(self, touch):
         if touch.grab_current is self:
             return True
-        if super(BaseButton, self).on_touch_move(touch):
+        if super().on_touch_move(touch):
             return True
         return self in touch.ud
 
     def on_touch_up(self, touch):
         res = False
         if touch.grab_current is not self:
-            return super(BaseButton, self).on_touch_up(touch)
+            return super().on_touch_up(touch)
         assert(self in touch.ud)
         touch.ungrab(self)
         if self.collide_point(*touch.pos) or not self.enabled:
@@ -87,22 +87,22 @@ class BtnSlider(BaseButton):
 
 class BasePopup(Popup):
 
-    def __init__(self, **kwargs):
+    def __init__(self, creator=None, val=None, **kwargs):
         # makes this Popup recieve the instance of the calling button to
         # access its methods and e.g. heater_id
-        self.creator = kwargs.get('creator', None)
+        self.creator = creator
         # a popup holds a value that can be passed to a slider, this
         # avoids the value being updated, and the slider reseting
-        self.val = kwargs.get('val', None)
-        super(BasePopup,self).__init__(**kwargs)
+        self.val = val
+        super().__init__(**kwargs)
 
     def open(self, animation=False, **kwargs):
-        super(BasePopup, self).open(animation=animation, **kwargs)
+        super().open(animation=animation, **kwargs)
         app = App.get_running_app()
         app.notify.redraw()
 
     def dismiss(self, animation=False, **kwargs):
-        super(BasePopup, self).dismiss(animation=animation, **kwargs)
+        super().dismiss(animation=animation, **kwargs)
 
 class ErrorPopup(BasePopup):
     message = StringProperty()
@@ -115,7 +115,7 @@ class PrintPopup(BasePopup):
         self.path = path
         self.filechooser = filechooser
         self.timeline = timeline
-        super(PrintPopup, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def confirm(self):
         app = App.get_running_app()
@@ -164,7 +164,7 @@ class UltraSlider(Widget):
     def __init__(self, **kwargs):
         self.btn_last_active = None
         self.initialized = False
-        super(UltraSlider, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
@@ -193,7 +193,7 @@ class UltraSlider(Widget):
             if self.btn_last_active is not None: self.btn_last_active[3].active = False
             self.changed = True
             return True
-        return super(UltraSlider, self).on_touch_down(touch)
+        return super().on_touch_down(touch)
 
     def on_touch_move(self, touch):
         if touch.grab_current is self:
@@ -212,7 +212,7 @@ class UltraSlider(Widget):
             self.highlight_button()
             touch.ungrab(self)
             return True
-        return super(UltraSlider, self).on_touch_up(touch)
+        return super().on_touch_up(touch)
 
     def apply_bounds(self, x):
         if x > self.px_max: x = self.px_max

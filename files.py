@@ -122,7 +122,7 @@ class Filechooser(RecycleView):
         with open(path, 'rb') as gcode_file:
             # search in the first 100 lines
             for i in range(100):
-                line = gcode_file.readline()
+                line = gcode_file.readline().decode()
                 for i, regex in enumerate(self.filament):
                     match = re.search(regex, line)
                     if match:
@@ -134,7 +134,7 @@ class Filechooser(RecycleView):
             except:
                 return "--"
             while True:
-                line = gcode_file.readline()
+                line = gcode_file.readline().decode()
                 if not line:
                     return "--"
                 for i, regex in enumerate(self.filament):

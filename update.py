@@ -86,9 +86,9 @@ class FileDownload(threading.Thread):
                 break
             except Exception:
                 pass
-            logging.warning("Downlaod Retry")
+            #logging.warning("Downlaod Retry")
         else:
-            logging.warning("Download Failure: with url: {}".format(self.url))
+            #logging.warning("Download Failure: with url: {}".format(self.url))
             return
         total_size = int(total_size)
         self.comm_list[1] = total_size

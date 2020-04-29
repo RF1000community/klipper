@@ -279,20 +279,20 @@
             size: self.size
 
 <ErrorPopup>:
-    size_hint: 0.8, 0.5
+    size_hint: 0.9, 0.68
     error: True
     message: "--"
     title: "Error - Firmware stopped"
     FloatLayout:
         Label:
             text: root.message
-            halign: 'center'
+            halign: 'left'
             valign: 'middle'
-            max_lines: 7
+            max_lines: 20
             size_hint: 0.9, 1
             pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.1}
             text_size: self.size
-            font_size: p.large_font
+            font_size: p.normal_font - 4
             color: p.light_gray
         BtnPCancel:
             id: btn_cancel

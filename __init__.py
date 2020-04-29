@@ -4,6 +4,7 @@ import logging
 import site
 import threading
 import os
+import traceback
 from os.path import join, dirname
 from datetime import datetime, timedelta
 from subprocess import Popen
@@ -558,14 +559,14 @@ class PopupExceptionHandler(ExceptionHandler):
     logging.info("handle_exception")
     def handle_exception(self, exception):
         if not TESTING:
-            App.get_running_app().handle_exception(repr(exception))
+            tr = ''.join(traceback.format_tb(exception.__traceback__))
+            App.get_running_app().handle_exception(tr + "\n\n" + repr(exception))
             logging.exception(exception)
             return ExceptionManager.PASS
 
 def set_kivy_config():
     # This needs an absolute path otherwise config will only be loaded when
     # working directory is the parent directory
-
     if TESTING:
         Config.read(join(p.kgui_dir, "config_test.ini"))
     else:
