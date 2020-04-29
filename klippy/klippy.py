@@ -6,7 +6,7 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import sys, os, optparse, logging, time, threading, collections, importlib
 import util, reactor, queuelogger, msgproto, homing
-import gcode, configfile, pins, mcu, toolhead
+import gcode, configfile, pins, mcu, toolhead, traceback
 from subprocess import Popen
 
 message_ready = "Printer is ready"
@@ -182,7 +182,8 @@ class Printer:
             self.reactor.run()
         except Exception as e:
             logging.exception(e)
-            self.invoke_shutdown(repr(e))
+            tr = ''.join(traceback.format_tb(e.__traceback__))
+            self.invoke_shutdown(tr + "\n\n" + repr(e))
         # Check restart flags
         run_result = self.run_result
         try:

@@ -77,11 +77,11 @@ class PT_string:
     max_length = 64
     def encode(self, out, v):
         out.append(len(v))
-        logging.info(f"    PT_STRING encode, v {v}, bytearray {bytearray(v)}")
+        #logging.info(f"    PT_STRING encode, v {v}, bytearray {bytearray(v)}")
         out.extend(bytearray(v))
     def parse(self, s, pos):
         l = s[pos]
-        logging.info(f"    PT_STRING parse, s {s}, bytearray {bytearray(s[pos+1:pos+l+1])} string_return {bytearray(s[pos+1:pos+l+1]).decode('ISO-8859-1', 'strict')} with type {type(bytearray(s[pos+1:pos+l+1]))} ")
+        #logging.info(f"    PT_STRING parse, s {s}, bytearray {bytearray(s[pos+1:pos+l+1])} string_return {bytearray(s[pos+1:pos+l+1]).decode('ISO-8859-1', 'strict')} with type {type(bytearray(s[pos+1:pos+l+1]))} ")
         return bytearray(s[pos+1:pos+l+1]).decode('ISO-8859-1', 'strict'), pos+l+1
 
 class PT_progmem_buffer(PT_string):
@@ -213,7 +213,7 @@ class UnknownFormat:
     def parse(self, s, pos):
         msgid = s[pos]
         msg = bytearray(s).decode('ISO-8859-1', 'strict')
-        logging.info(f"    UNKNOWN FORMAT parse s {s} bytearray {bytearray(s)}, string_return {msg}")
+        #logging.info(f"    UNKNOWN FORMAT parse s {s} bytearray {bytearray(s)}, string_return {msg}")
         return {'#msgid': msgid, '#msg': msg}, len(s)-MESSAGE_TRAILER_SIZE
     def format_params(self, params):
         return "#unknown %s" % (repr(params['#msg']),)

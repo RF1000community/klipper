@@ -60,7 +60,7 @@ class SerialReader:
             except:
                 logging.exception("Exception in serial callback")
     def _get_identify_data(self, eventtime):
-        logging.info("GET IDENTIFY DATA")
+        #logging.info("GET IDENTIFY DATA")
         # Query the "data dictionary" from the micro-controller
         identify_data = ""
         while 1:
@@ -72,21 +72,22 @@ class SerialReader:
                 return None
             if params['offset'] == len(identify_data):
                 msgdata = params['data']
-                logging.info(f"msgdata  {params['data']} with len {len(msgdata)}, type  {type(msgdata)}")
+                #logging.info(f"msgdata  {params['data']} with len {len(msgdata)}, type  {type(msgdata)}")
                 if len(msgdata) == 0:
 
                     # Done
-                    logging.info("got identify data \n \n \n \n \n")
+                    #logging.info("got identify data \n \n \n \n \n")
                     return identify_data
                 identify_data += msgdata
-        logging.info("got identify data \n \n \n \n \n")
+                #logging.info(f"identify_data is now {identify_data} \n\n")
+        #logging.info("got identify data \n \n \n \n \n")
 
     def connect(self):
         # Initial connection
-        logging.info("Starting serial connect")
+        #logging.info("Starting serial connect")
         start_time = self.reactor.monotonic()
         while 1:
-            logging.info("New connect L@@@@@P")
+            #logging.info("New connect L@@@@@P")
             connect_time = self.reactor.monotonic()
             if connect_time > start_time + 90.:
                 raise error("Unable to connect")
@@ -103,26 +104,31 @@ class SerialReader:
                 logging.warn("Unable to open port: %s", e)
                 self.reactor.pause(connect_time + 5.)
                 continue
-            logging.info(f"baud is {self.baud}")
+            #logging.info(f"baud is {self.baud}")
             import time
             time.sleep(1)
-            logging.info("woke up")
+            #logging.info("woke up")
             if self.baud:
-                logging.info("stk leave")
+                #logging.info("stk leave")
                 stk500v2_leave(self.ser, self.reactor)
-            logging.info("create new serialqueue")
+            #logging.info("create new serialqueue")
             self.serialqueue = self.ffi_lib.serialqueue_alloc(
                 self.ser.fileno(), 0)
-            logging.info("serialqueue alloc done")
+            #logging.info("serialqueue alloc done")
             self.background_thread = threading.Thread(target=self._bg_thread)
             self.background_thread.start()
             # Obtain and load the data dictionary from the firmware
             completion = self.reactor.register_callback(self._get_identify_data)
-            identify_data = completion.wait(connect_time + 5.)
+            start = self.reactor.monotonic()
+            identify_data = completion.wait(connect_time + 15.)
+            delta = self.reactor.monotonic() - start
+            #logging.info(f"took {delta}  seeekkuuunds")
+            #logging.info(f"identify data is {identify_data}")
             if identify_data is not None:
+                #logging.info("broke out of connect loop CONNECTED")
                 break
-            logging.info(self.dump_debug())
-            logging.info("DISCONNECT")
+            #logging.info(self.dump_debug())
+            #logging.info("DISCONNECT")
             self.disconnect()
         msgparser = msgproto.MessageParser()
         msgparser.process_identify(identify_data)
@@ -146,13 +152,13 @@ class SerialReader:
         self.ffi_lib.serialqueue_set_clock_est(
             self.serialqueue, freq, last_time, last_clock)
     def disconnect(self):
-        logging.info("DISCONNECT")
+        #logging.info("DISCONNECT")
         if self.serialqueue is not None:
             self.ffi_lib.serialqueue_exit(self.serialqueue)
             if self.background_thread is not None:
                 self.background_thread.join()
             self.ffi_lib.serialqueue_free(self.serialqueue)
-            logging.info("serialqueue Free")
+            #logging.info("serialqueue Free")
             self.background_thread = self.serialqueue = None
         if self.ser is not None:
             self.ser.close()
@@ -165,7 +171,7 @@ class SerialReader:
             return ""
         self.ffi_lib.serialqueue_get_stats(
             self.serialqueue, self.stats_buf, len(self.stats_buf))
-        return self.ffi_main.string(self.stats_buf)
+        return self.ffi_main.string(self.stats_buf).decode()
     def get_reactor(self):
         return self.reactor
     def get_msgparser(self):
@@ -174,7 +180,7 @@ class SerialReader:
         return self.default_cmd_queue
     # Serial response callbacks
     def register_response(self, callback, name, oid=None):
-        logging.info(f"register_response, callback {callback} name {name} type {type(name)}, oid {oid}")
+        #logging.info(f"register_response, callback {callback} name {name} type {type(name)}, oid {oid}")
         with self.lock:
             if callback is None:
                 del self.handlers[name, oid]
@@ -183,7 +189,7 @@ class SerialReader:
     # Command sending
     def raw_send(self, cmd, minclock, reqclock, cmd_queue):
         tp = type(cmd)
-        logging.info(f"raw send with {cmd}, of type {tp}")
+        #logging.info(f"raw send with {cmd}, of type {tp}")
         self.ffi_lib.serialqueue_send(self.serialqueue, cmd_queue,
                                       cmd, len(cmd), minclock, reqclock, 0)
     def raw_send_wait_ack(self, cmd, minclock, reqclock, cmd_queue):
@@ -244,7 +250,7 @@ class SerialReader:
     def handle_default(self, params):
         logging.warn("got %s", params)
     def __del__(self):
-        logging.info("disconnect by __del__")
+        #logging.info("disconnect by __del__")
         self.disconnect()
 
 # Class to send a query command and return the received response
@@ -255,18 +261,18 @@ class SerialRetryCommand:
         self.oid = oid
         self.last_params = None
         self.serial.register_response(self.handle_callback, name, oid)
-        logging.info("new SRC")
+        #logging.info("new SRC")
     def handle_callback(self, params):
         self.last_params = params
     def get_response(self, cmd, cmd_queue, minclock=0):
         retries = 5
         retry_delay = .010
         while 1:
-            logging.info(f"while get_response {self.name}")
+            #logging.info(f"while get_response {self.name}")
             self.serial.raw_send_wait_ack(cmd, minclock, minclock, cmd_queue)
             params = self.last_params
             if params is not None:
-                logging.info(f"maybe got response params {params}")
+                #logging.info(f"maybe got response params {params}")
                 self.serial.register_response(None, self.name, self.oid)
                 return params
             if retries <= 0:
@@ -275,12 +281,12 @@ class SerialRetryCommand:
             reactor = self.serial.reactor
             reactor.pause(reactor.monotonic() + retry_delay)
             retries -= 1
-            logging.info("retry")
+            #logging.info("retry")
             retry_delay *= 2.
 
 # Attempt to place an AVR stk500v2 style programmer into normal mode
 def stk500v2_leave(ser, reactor):
-    logging.info("Starting stk500v2 leave programmer sequence")
+    #logging.info("Starting stk500v2 leave programmer sequence")
     util.clear_hupcl(ser.fileno())
     origbaud = ser.baudrate
     # Request a dummy speed first as this seems to help reset the port
@@ -293,7 +299,7 @@ def stk500v2_leave(ser, reactor):
     ser.write('\x1b\x01\x00\x01\x0e\x11\x04'.encode())
     reactor.pause(reactor.monotonic() + 0.050)
     res = ser.read(4096)
-    logging.info("Got %s from stk500v2", repr(res))
+    #logging.info("Got %s from stk500v2", repr(res))
     ser.baudrate = origbaud
 
 def cheetah_reset(serialport, reactor):
