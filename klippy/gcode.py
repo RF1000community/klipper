@@ -317,7 +317,7 @@ class GCodeParser:
             if msg:
                 os.write(self.fd, "ok {}\n".format(msg).encode())
             else:
-                os.write(self.fd, "ok\n".encode())
+                os.write(self.fd, b"ok\n")
         except os.error:
             logging.exception("Write g-code ack")
         self.need_ack = False

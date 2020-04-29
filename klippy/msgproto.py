@@ -77,10 +77,13 @@ class PT_string:
     max_length = 64
     def encode(self, out, v):
         out.append(len(v))
+        logging.info(f"    PT_STRING encode, v {v}, bytearray {bytearray(v)}")
         out.extend(bytearray(v))
     def parse(self, s, pos):
         l = s[pos]
-        return str(bytearray(s[pos+1:pos+l+1])), pos+l+1
+        logging.info(f"    PT_STRING parse, s {s}, bytearray {bytearray(s[pos+1:pos+l+1])} string_return {bytearray(s[pos+1:pos+l+1]).decode('ISO-8859-1', 'strict')} with type {type(bytearray(s[pos+1:pos+l+1]))} ")
+        return bytearray(s[pos+1:pos+l+1]).decode('ISO-8859-1', 'strict'), pos+l+1
+
 class PT_progmem_buffer(PT_string):
     pass
 class PT_buffer(PT_string):
@@ -209,7 +212,8 @@ class UnknownFormat:
     name = '#unknown'
     def parse(self, s, pos):
         msgid = s[pos]
-        msg = str(bytearray(s))
+        msg = bytearray(s).decode('ISO-8859-1', 'strict')
+        logging.info(f"    UNKNOWN FORMAT parse s {s} bytearray {bytearray(s)}, string_return {msg}")
         return {'#msgid': msgid, '#msg': msg}, len(s)-MESSAGE_TRAILER_SIZE
     def format_params(self, params):
         return "#unknown %s" % (repr(params['#msg']),)
@@ -364,9 +368,9 @@ class MessageParser:
     def process_identify(self, data, decompress=True):
         try:
             if decompress:
-                data = zlib.decompress(data)
+                data = zlib.decompress(data.encode('ISO-8859-1', 'strict'))
             self.raw_identify_data = data
-            data = json.loads(data.decode())
+            data = json.loads(data.decode('ISO-8859-1', 'strict'))
             self._fill_enumerations(data.get('enumerations', {}))
             commands = data.get('commands')
             responses = data.get('responses')
