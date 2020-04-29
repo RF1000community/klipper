@@ -120,7 +120,6 @@ class Printjob:
                     self.gcode.respond("Done printing file")
                     break
                 lines = data.split('\n')
-                logging.info(f"part {partial_input}  lines {lines[0]} data {data}")
                 lines[0] = partial_input + lines[0]
                 partial_input = lines.pop()
                 lines.reverse()
@@ -155,13 +154,14 @@ class Printjob:
             self.manager.check_queue()
         return self.reactor.NEVER
 
-    def get_printed_time(self, eventtime=None):
+    def get_printed_time(self, print_time=None):
         # doesnt use get_last_move_time since this can be ran in UI thread
         # also doesnt use print time since it doesnt advance continuously
-        now = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
+        if not print_time:
+            print_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
         printed_time = 0
         for time in self.start_stop_times:
-            printed_time += - time[0] + (time[1] if time[1] else now)
+            printed_time += - time[0] + (time[1] if time[1] else print_time)
         return printed_time
 
 

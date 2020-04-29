@@ -23,8 +23,7 @@ class PrintjobProgress:
         self.slicer_elapsed_times = [] # [[time actually printed, elapsed time put by slicer], ...]
         self.slicer_estimated_time = None
 
-    def handle_gcode_metadata(self, eventtime, params):
-        line = params['#original']
+    def handle_gcode_metadata(self, print_time, line):
         # recieves all gcode-comment-lines as they are printed, and searches for print-time estimations
         slicer_estimated_time = [
             r'\s\s\d*\.\d*\sminutes' ,                        # Kisslicer
@@ -72,6 +71,8 @@ class PrintjobProgress:
                 return
 
     def get_print_time_prediction(self):
+        # we try to consider everything 'printed' that ran through gcode processing, 
+        # time are measured using print_time
         # time estimations in gcode: |....|....|....|........................|
         # actual print time      |......|.....|.....|.............................|
         #                        ^ start of print   ^ current point in time       ^ prediction
