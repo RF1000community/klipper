@@ -240,7 +240,7 @@ class Wifi(EventDispatcher):
 
 
     def on_networks(self, value):
-        Logger.debug('Wifi: Wifi scan complete returning {} networks'.format(len(value)))
+        Logger.debug(f"Wifi: Wifi scan complete returning {len(value)} networks")
 
     def on_wrong_pw(self, value):
         pass
@@ -488,7 +488,7 @@ class TimezonePopup(BasePopup):
             self.title = "Choose Timezone"
         else: # 2. selection (timezone) just done
             os.system("sudo unlink /etc/localtime")
-            os.system("sudo ln -s /usr/share/zoneinfo/{}/{} /etc/localtime".format(self.region_selection, selection['text']))
+            os.system(f"sudo ln -s /usr/share/zoneinfo/{self.region_selection}/{selection['text']} /etc/localtime")
             # update Timezone shown in Settings and Time in Statusbar
             root_ids = App.get_running_app().root.ids
             root_ids.tabs.ids.set_tab.ids.setting_screen.ids.si_timezone.set_timezone()
@@ -506,7 +506,7 @@ class TimezoneRV(RecycleView):
             if folder in region_folders:
                 region_folders.remove(folder)
             else:
-                logging.warning("Pleas Update Timezones: {} could not be removed from list".format(folder))
+                logging.warning(f"Please update Timezones: {folder} could not be removed from list")
         self.data = [{'text': region} for region in region_folders]
 
 class TimezoneRVBox(LayoutSelectionBehavior, RecycleBoxLayout):

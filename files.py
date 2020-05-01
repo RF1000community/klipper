@@ -103,7 +103,7 @@ class Filechooser(RecycleView):
             if slicer_idx == 4:
                 filament *= 1000 # Cura gives meters -> convert to mm
             weight = self.filament_crossection*filament*0.00124 #density in g/mm^3
-            return "{:4.0f}g".format(weight)
+            return f"{weight:4.0f}g"
         return "---"
 
     filament = [
@@ -147,7 +147,7 @@ class Filechooser(RecycleView):
         with ZipFile(path).open("/3D/model.gcode", 'r') as gcode_file:
             # search in the first 100 lines, we expect cura gcode
             for i in range(100):
-                line = gcode_file.readline()
+                line = gcode_file.readline().decode()
                 match = re.search(self.filament[4], line)
                 if match:
                     return self.parse_filament_use(match, 4)

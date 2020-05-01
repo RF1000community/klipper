@@ -104,6 +104,9 @@ class BasePopup(Popup):
     def dismiss(self, animation=False, **kwargs):
         super().dismiss(animation=animation, **kwargs)
 
+class CriticalErrorPopup(BasePopup):
+    message = StringProperty()
+
 class ErrorPopup(BasePopup):
     message = StringProperty()
 
@@ -123,7 +126,7 @@ class PrintPopup(BasePopup):
         new_path = self.path
         if 'USB Device' in self.path:
             new_path = join(p.sdcard_path, basename(self.path))
-            app.notify.show("Copying {} to Printer...".format(basename(self.path)))
+            app.notify.show(f"Copying {basename(self.path)} to Printer...")
             shutil.copy(self.path, new_path)
 
         app.send_print(new_path)
@@ -260,7 +263,8 @@ class UltraSlider(Widget):
 
     def get_disp_from_val(self, val):
         """Returns string of the value and the given unit string"""
-        return "{:.{p}f}{}".format(val, self.unit, p = max(0, self.round_to))
+        dec = max(0, self.round_to)
+        return f"{val:.{dec}f}{self.unit}"
 
 
 # class UltraOffsetSlider(UltraSlider):

@@ -278,7 +278,7 @@
             pos: self.pos
             size: self.size
 
-<ErrorPopup>:
+<CriticalErrorPopup>:
     size_hint: 0.9, 0.68
     error: True
     message: "--"
@@ -287,12 +287,13 @@
         Label:
             text: root.message
             halign: 'left'
-            valign: 'middle'
+            valign: 'top'
+            padding_y: p.large_font * 2
             max_lines: 20
             size_hint: 0.9, 1
             pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.1}
             text_size: self.size
-            font_size: p.normal_font - 4
+            font_size: p.normal_font -2
             color: p.light_gray
         BtnPCancel:
             id: btn_cancel
@@ -300,6 +301,29 @@
             width: root.width
             pos: root.pos
             on_release: app.restart_klipper()
+
+<ErrorPopup>:
+    size_hint: 0.7, 0.5
+    error: True
+    message: "--"
+    title: "Error"
+    FloatLayout:
+        Label:
+            text: root.message
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 20
+            size_hint: 0.9, 1
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.1}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        BtnPCancel:
+            id: btn_cancel
+            title: "Ok"
+            width: root.width
+            pos: root.pos
+            on_release: root.dismiss
 
 <StopPopup>:
     title: 'Stop'

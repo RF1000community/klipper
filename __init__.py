@@ -108,19 +108,20 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                               'y': self.klipper_config.getsection('stepper_y'),
                               'z': self.klipper_config.getsection('stepper_z')}
             self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
-            self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}#maybe use position_min, position_max = rail.get_range()
+            self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}# maybe use position_min, position_max = rail.get_range()
             self.filament_diameter = self.klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
-            self.min_extrude_temp = self.klipper_config.getsection("extruder").getint("min_extrude_temp", 170) # mantain this by keeping default the same as klipper            
-            #count how many extruders exist before drawing homescreen
+            self.min_extrude_temp = self.klipper_config.getsection("extruder").getint("min_extrude_temp", 170) # maintain this by keeping default the same as klipper            
+            # count how many extruders exist before drawing homescreen
             for i in range(1, 10):
-                try: klipper_config.getsection('extruder{i}'.format(**locals()))
+                try: klipper_config.getsection(f"extruder{i}")
                 except: self.extruder_count = i; break
-            #register event handlers
-            self.printer.register_event_handler("klippy:connect", self.handle_connect) #printer_objects are available
-            self.printer.register_event_handler("klippy:ready", self.handle_ready) #connect handlers have run
+            # register event handlers
+            self.printer.register_event_handler("klippy:connect", self.handle_connect) # printer_objects are available
+            self.printer.register_event_handler("klippy:ready", self.handle_ready) # connect handlers have run
             self.printer.register_event_handler("klippy:disconnect", self.handle_disconnect)
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
-            self.printer.register_event_handler("klippy:exception", self.handle_exception)
+            self.printer.register_event_handler("klippy:critical_error", self.handle_critical_error)
+            self.printer.register_event_handler("klippy:error", self.handle_error)
             self.printer.register_event_handler("homing:home_rails_end", self.handle_homed)
             self.printer.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
         else:
@@ -134,14 +135,14 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.extruders = [None, None]
             self.extruder_count = 2
         self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell the app class where the root kv file is
-        super(mainApp, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def clean(self):
         ndel, freed = freedir(p.sdcard_path)
         if ndel:
-            self.notify.show("Disk space freed", "Deleted {} files, freeing {} MiB".format(ndel, freed))
+            self.notify.show(f"Disk space freed", "Deleted {ndel} files, freeing {freed} MiB")
 
-    def handle_connect(self): #runs in klippy thread
+    def handle_connect(self): # runs in klippy thread
         self.fan = self.printer.lookup_object('fan', None)
         self.gcode = self.printer.lookup_object('gcode')
         self.sdcard = self.printer.lookup_object('virtual_sdcard')
@@ -156,8 +157,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         if 'heater_bed' in self.heater_manager.heaters: 
             self.heaters['B'] = self.heater_manager.heaters['heater_bed']
         for i in range(self.extruder_count):
-            self.heaters['T{}'.format(i)] = self.heater_manager.heaters['extruder{}'.format('' if i==0 else i)]
-            self.extruders.append(self.printer.lookup_object('extruder{}'.format('' if i==0 else i)))
+            self.heaters[f"T{i}"] = self.heater_manager.heaters[f"extruder{'' if i==0 else i}"]
+            self.extruders.append(self.printer.lookup_object(f"extruder{'' if i==0 else i}"))
         self.printer_objects_available = True
         Clock.schedule_once(self.bind_updating, 0)
         Clock.schedule_once(self.control_updating, 0)
@@ -171,8 +172,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def handle_shutdown(self):
         self.state = "error"
 
-    def handle_exception(self, message):
+    def handle_critical_error(self, message):
         self.state = "error"
+        CriticalErrorPopup(message = message).open()
+
+    def handle_error(self, message):
         ErrorPopup(message = message).open()
 
     def handle_disconnect(self):
@@ -187,7 +191,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
         # check if queue has increased
         if len(jobs) > len(self.jobs):
-            self.notify.show("Added Printjob", "Added {} to print Queue".format(jobs[-1].name))
+            self.notify.show("Added Printjob", f"Added {jobs[-1].name} to print Queue")
 
         # get current print_state
         if len(jobs):
@@ -202,13 +206,13 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 self.reset_tuning() # tuning values are only reset once print_queue has ran out
                 Clock.schedule_once(lambda dt: self.hide_printjob(self.jobs[0].name), 3600) # show old printjob for 1h then throw it out
             elif state == 'printing' and self.print_state not in ('paused', 'pausing'):
-                self.notify.show("Started printing", "Started printing {}".format(jobs[0].name), delay=4)
+                self.notify.show("Started printing", f"Started printing {jobs[0].name}", delay=4)
                 self.get_printjob_progress()
             elif state == 'done':
                 self.progress = 1
-                self.print_done_time = "done"
-                self.print_time = ""
-            elif state == 'stopped':
+                self.print_done_time = ""
+                self.print_time = "finished in " + self.format_time(self.sdcard.jobs[0].get_printed_time())
+            elif state == 'stopping':
                 self.print_title = ""
                 self.print_done_time = ""
                 self.print_time = ""
@@ -222,14 +226,14 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.print_time = ""
             self.print_done_time = ""
 
-### KLIPPY THREAD ^
+# KLIPPY THREAD ^
 ########################################################################################
-### KGUI   THREAD v
+# KGUI   THREAD v
 
     def run(self):
         logging.info("Kivy app.run")
         Clock.schedule_once(self.setup_after_run, 1)
-        super(mainApp, self).run()
+        super().run()
 
     def setup_after_run(self, dt):
         try:
@@ -276,35 +280,37 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_config('extruder', 'pressure_advance', 'default_pressure_advance', 'float')
         self.get_config('printer', 'max_accel', 'default_acceleration', 'float')
 
-    def get_printjob_progress(self, *args):
-        def format_time(seconds):
-            minutes = int((seconds % 3600) // 60)
-            hours  =  int(seconds // 3600)
-            if hours:
-                return "{hours} hr, {minutes} min".format(**locals())
-            else:
-                return "{minutes} min".format(**locals())
-
-        est_remaining, progress = self.printjob_progress.get_print_time_prediction()
-        if progress is None: # no prediction could be made yet
-            self.progress = 0
-            self.print_time = ""
-            self.print_done_time = ""
+    def format_time(self, seconds):
+        minutes = int((seconds % 3600) // 60)
+        hours  =  int(seconds // 3600)
+        if hours:
+            return f"{hours} hr, {minutes} min"
         else:
-            remaining = timedelta(seconds = est_remaining)
-            done = datetime.now() + remaining
-            tomorrow = datetime.now() + timedelta(days=1)
-            self.progress = progress
-            self.print_time = format_time(remaining.total_seconds()) + " remaining"
-            if done.day == datetime.now().day:
-                self.print_done_time = done.strftime("%-H:%M")
-            elif done.day == tomorrow.day:
-                self.print_done_time = done.strftime("tomorrow %-H:%M")
-            else:
-                self.print_done_time = done.strftime("%a %-H:%M")
+            return f"{minutes} min"
 
-##################################################################
-### TUNING
+    def get_printjob_progress(self, *args):
+        if self.print_state in ('printing', 'pausing', 'paused'):
+            est_remaining, progress = self.printjob_progress.get_print_time_prediction()
+            if progress is None: # no prediction could be made yet
+                self.progress = 0
+                self.print_time = ""
+                self.print_done_time = ""
+            else:
+                remaining = timedelta(seconds = est_remaining)
+                done = datetime.now() + remaining
+                tomorrow = datetime.now() + timedelta(days=1)
+                self.progress = progress
+                self.print_time = self.format_time(remaining.total_seconds()) + " remaining"
+                if done.day == datetime.now().day:
+                    self.print_done_time = done.strftime("%-H:%M")
+                elif done.day == tomorrow.day:
+                    self.print_done_time = done.strftime("tomorrow %-H:%M")
+                else:
+                    self.print_done_time = done.strftime("%a %-H:%M")
+
+########################################################################################
+# TUNING
+
     def reset_tuning(self):
         self.send_flow(100)
         self.send_speed(100)
@@ -376,8 +382,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.toolhead.max_accel = val
         self.reactor.register_async_callback(lambda e: self.toolhead._calc_junction_deviation())
 
-### TUNING
-#####################################################################
+# TUNING
+########################################################################################
 
     def get_config(self, section, option, property_name, ty=None):
         if TESTING:
@@ -395,11 +401,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(read_config)
 
     def set_config(self, section, option, value):
-        logging.info("trying to set config section {} option {}, value {}".format(section, option, value))
+        logging.info(f"trying to set config section {section} option {option}, value {value}")
         self.reactor.register_async_callback(lambda e: self.klipper_config_manager.set(section, option, value))
 
     def write_config(self, section, option, value):
-        logging.info( 'trying to write config section: {} option: {}, value: {}'.format(section, option, value))
+        logging.info(f"trying to write config section: {section} option: {option}, value: {value}")
         def write_conf(e):
             self.klipper_config_manager.set(section, option, value)
             self.klipper_config_manager.cmd_SAVE_CONFIG(None)
@@ -407,7 +413,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def write_pressure_advance(self, val):
         for i in range(self.extruder_count):
-            self.write_config('extruder{}'.format(i if i != 0 else ''), 'pressure_advance', val)
+            self.write_config(f"extruder{'' if i==0 else i}", "pressure_advance", val)
 
     def get_temp(self, dt=None):
         # schedule reading temp in klipper thread which schedules displaying the read value in kgui thread
@@ -553,14 +559,14 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(lambda e: self.printer.request_exit("exit"), 0)
 
 ########################################################################################
-### KLIPPY THREAD v
+# KLIPPY THREAD v
 
 class PopupExceptionHandler(ExceptionHandler):
     logging.info("handle_exception")
     def handle_exception(self, exception):
         if not TESTING:
             tr = ''.join(traceback.format_tb(exception.__traceback__))
-            App.get_running_app().handle_exception(tr + "\n\n" + repr(exception))
+            App.get_running_app().handle_critical_error(tr + "\n\n" + repr(exception))
             logging.exception(exception)
             return ExceptionManager.PASS
 

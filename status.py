@@ -32,10 +32,10 @@ class StatusBar(BoxLayout):
             self.animation_pos = 0
             self.scheduled_updating = Clock.schedule_interval(self.update_animation_pos, 0.065)
         else:
-            self.animation_pos = 0
             if self.scheduled_updating:
                 Clock.unschedule(self.scheduled_updating)
                 self.scheduled_updating = None
+            self.animation_pos = 0
 
     def update_animation_pos(self, dt):
         self.animation_pos += 3

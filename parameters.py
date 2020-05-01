@@ -80,6 +80,7 @@ in canvas: e.g. self.*** acceses the 'parent' widget of the canvas, unlike in ot
 pos: coordinates are always relative to the innermost Layout, not Widget you are in
 Widgets: always define size first then pos at least when using top or right.. x:
 Never Put comments after canvas: Instruction
+f-strings in kv are not reevaluated if properties change, format() is
 How to access Instances or their methods:
     in kv to on_propertychange: id.method() id can be bound within root widget
     in py someinstance.bind(someinstances on_propertychange = self.method_to_bind) passes instance and every property
