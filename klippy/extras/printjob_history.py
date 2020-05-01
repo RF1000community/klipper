@@ -59,9 +59,9 @@ class PrintjobHistory:
         """Only return True when the entire history has a correct structure"""
         try:
             for e in history:
-                if not (isinstance(e[0], (unicode, str))        # path
-                and (e[1] == "done" or e[1] == "stopped")       # state
-                and isinstance(e[2], (float, int))):            # timestamp
+                if not (isinstance(e[0], str)              # path
+                and (e[1] in ("done", "stopped"))          # state
+                and isinstance(e[2], (float, int))):       # timestamp
                     return False
         except:
             return False

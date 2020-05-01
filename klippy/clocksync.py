@@ -5,9 +5,9 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import logging, math
 
-RTT_AGE = .000050 / (60. * 60.)
+RTT_AGE = .000050 / (60. * 60.) #didnt help
 DECAY = 1. / 30.
-TRANSMIT_EXTRA = .005
+TRANSMIT_EXTRA = .005 # didint help
 
 class ClockSync:
     def __init__(self, reactor):

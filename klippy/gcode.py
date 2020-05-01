@@ -9,7 +9,7 @@ import homing
 # Parse and handle G-Code commands
 class GCodeParser:
     error = homing.CommandError
-    RETRY_TIME = 0.100
+    RETRY_TIME = 0.200
     def __init__(self, printer, fd):
         self.printer = printer
         self.fd = fd
@@ -213,7 +213,6 @@ class GCodeParser:
             cpos = line.find(';')
             if cpos == 0: 
                 # the whole line is a comment send event for modules to read it
-                params = { '#original': origline, '#command': line[1:] }
                 print_time = self.toolhead.get_last_move_time()
                 self.printer.send_event("gcode:read_metadata", print_time, line)
                 continue

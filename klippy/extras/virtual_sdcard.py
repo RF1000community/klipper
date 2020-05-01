@@ -132,16 +132,16 @@ class Printjob:
             # Dispatch command
             try:
                 self.gcode.run_script(lines[-1])
-            except self.gcode.error:
-                break
-            except:
-                logging.exception("virtual_sdcard dispatch")
+            except Exception as e:
+                self.printer.send_event("klippy:error", repr(e))
+                self.set_state('stopping')
+                logging.exception("Virtual sdcard error dispaching command: " + repr(e))
                 break
             self.file_position += len(lines.pop()) + 1
 
-        # Post print, finish pause() or stop() actions
-        logging.info("Exiting SD card print (position %d)", self.file_position)
+        logging.info(f"Exiting SD card print in state {self.state} position {self.file_position}")
         self.start_stop_times[-1][1] = self.toolhead.get_last_move_time()
+        # Finish stopping or pausing actions
         if self.state == 'pausing':
             self.set_state('paused')
             self.gcode.cmd_SAVE_GCODE_STATE({'NAME': "PAUSE_STATE"})
