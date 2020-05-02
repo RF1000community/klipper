@@ -12,7 +12,7 @@ from subprocess import Popen
 TESTING = __name__ == "__main__"
 if not TESTING:
     os.environ['KIVY_WINDOW'] = 'sdl2'
-    os.environ['KIVY_GL_BACKEND'] = 'gl'
+    os.environ['KIVY_GL_BACKEND'] = 'sdl2'
 
 from kivy import kivy_data_dir
 from kivy.app import App
@@ -34,6 +34,7 @@ from .kconfig_ui import *
 from . import parameters as p
 
 if not TESTING:
+    site.addsitedir(dirname(dirname(p.kgui_dir)))
     from reactor import ReactorCompletion
 
 
@@ -561,6 +562,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 ########################################################################################
 # KLIPPY THREAD v
 
+# Catch KGUI exceptions and display popups
 class PopupExceptionHandler(ExceptionHandler):
     logging.info("handle_exception")
     def handle_exception(self, exception):
@@ -570,47 +572,25 @@ class PopupExceptionHandler(ExceptionHandler):
             logging.exception(exception)
             return ExceptionManager.PASS
 
-def set_kivy_config():
-    # This needs an absolute path otherwise config will only be loaded when
-    # working directory is the parent directory
-    if TESTING:
-        Config.read(join(p.kgui_dir, "config_test.ini"))
-    else:
-        site.addsitedir(dirname(dirname(p.kgui_dir)))
-        Config.read(join(p.kgui_dir, "config.ini"))
-        # Read the display rotation value
-        try:
-            with open("/boot/config.txt", "r") as file_:
-                lines = file_.read().splitlines()
-        except IOError:
-            # Assume 90 degree rotation (config default) in case
-            # /boot/config.txt isn't found
-            rotation = 1
-        else:
-            rotation_string = [i for i in lines if i.startswith("display_hdmi_rotate")][0]
-            # The number should always be at index 20
-            rotation = int(rotation_string[20])
-        # rotation should only be 1 for 90deg or 3 for 270deg
-        # Set the input config option to rotate the touchinput explicitly for kivy
-        if rotation == 3:
-            Config.set("input", "device_%(name)s",
-                "probesysfs,provider=mtdev,param=rotation=270,param=invert_y=1")
-
-    #load a custom style.kv with changes to filechooser and more
-    Builder.unload_file(join(kivy_data_dir, "style.kv"))
-
-    # All files to read (order is important)
-    # main.kv is read automatically
-    kv_files = ("style.kv", "overwrites.kv", "elements.kv", "home.kv", "timeline.kv", "files.kv", "settings.kv")
-    for fname in kv_files:
-        Builder.load_file(join(p.kgui_dir, "kv", fname))
-
-# Catch KGUI exceptions and display popup
 ExceptionManager.add_handler(PopupExceptionHandler())
+
+# Read custom Kivy config. This needs an absolute path otherwise
+# config will only be loaded when working directory is the parent directory
+if TESTING:
+    Config.read(join(p.kgui_dir, "config_test.ini"))
+else:
+    Config.read(join(p.kgui_dir, "config.ini"))
+
+# Load kv-files:
 # Add parent directory to sys.path so kv-files (kivy/../parser.py) can import from it
 site.addsitedir(p.kgui_dir)
-# Read custom Kivy config file, set rotation and load custom style.kv
-set_kivy_config()
+# load a custom style.kv with changes to popup and more
+Builder.unload_file(join(kivy_data_dir, "style.kv"))
+# All files to read (order is important), main.kv is read first, automatically
+kv_files = ("style.kv", "overwrites.kv", "elements.kv", "home.kv", "timeline.kv", "files.kv", "settings.kv")
+for fname in kv_files:
+    Builder.load_file(join(p.kgui_dir, "kv", fname))
+
 
 # Entry point, order of execution: __init__()  run()  main.kv  setup_after_run()  handle_connect()  handle_ready()
 def load_config(config):
