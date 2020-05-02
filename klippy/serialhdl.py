@@ -71,7 +71,7 @@ class SerialReader:
                 return None
             if params['offset'] == len(identify_data):
                 msgdata = params['data']
-                if len(msgdata) == 0:
+                if not msgdata:
                     # Done
                     return identify_data
                 identify_data += msgdata
@@ -96,8 +96,6 @@ class SerialReader:
                 logging.warn("Unable to open port: %s", e)
                 self.reactor.pause(connect_time + 5.)
                 continue
-            import time
-            time.sleep(1)
             if self.baud:
                 stk500v2_leave(self.ser, self.reactor)
             self.serialqueue = self.ffi_lib.serialqueue_alloc(
@@ -166,7 +164,6 @@ class SerialReader:
                 self.handlers[name, oid] = callback
     # Command sending
     def raw_send(self, cmd, minclock, reqclock, cmd_queue):
-        tp = type(cmd)
         self.ffi_lib.serialqueue_send(self.serialqueue, cmd_queue,
                                       cmd, len(cmd), minclock, reqclock, 0)
     def raw_send_wait_ack(self, cmd, minclock, reqclock, cmd_queue):
@@ -268,7 +265,7 @@ def stk500v2_leave(ser, reactor):
     ser.baudrate = 115200
     reactor.pause(reactor.monotonic() + 0.100)
     ser.read(4096)
-    ser.write('\x1b\x01\x00\x01\x0e\x11\x04'.encode())
+    ser.write(b'\x1b\x01\x00\x01\x0e\x11\x04')
     reactor.pause(reactor.monotonic() + 0.050)
     res = ser.read(4096)
     logging.debug("Got %s from stk500v2", repr(res))

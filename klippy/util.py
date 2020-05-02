@@ -68,7 +68,7 @@ def dump_mcu_build():
     dump_file_stats(build_dir, '.config')
     try:
         f = open(os.path.join(build_dir, '.config'), 'rb')
-        data = f.read(32*1024)
+        data = f.read(32*1024).decode()
         f.close()
         logging.info("========= Last MCU build config =========\n%s"
                      "=======================", data)
@@ -78,7 +78,7 @@ def dump_mcu_build():
     dump_file_stats(build_dir, 'out/klipper.dict')
     try:
         f = open(os.path.join(build_dir, 'out/klipper.dict'), 'rb')
-        data = f.read(32*1024)
+        data = f.read(32*1024).decode()
         f.close()
         data = json.loads(data)
         logging.info("Last MCU build version: %s", data.get('version', ''))
@@ -97,11 +97,10 @@ def dump_mcu_build():
 def get_cpu_info():
     try:
         f = open('/proc/cpuinfo', 'rb')
-        data = f.read()
+        data = f.read().decode()
         f.close()
     except (IOError, OSError):
-        logging.debug("Exception on read /proc/cpuinfo: %s",
-                      traceback.format_exc())
+        logging.debug("Exception on read /proc/cpuinfo: %s", traceback.format_exc())
         return "?"
     lines = [l.split(':', 1) for l in data.split('\n')]
     lines = [(l[0].strip(), l[1].strip()) for l in lines if len(l) == 2]
@@ -112,7 +111,7 @@ def get_cpu_info():
 def get_version_from_file(klippy_src):
     try:
         with open(os.path.join(klippy_src, '.version')) as h:
-            return h.read().rstrip()
+            return h.read().decode().rstrip()
     except IOError:
         pass
     return "?"

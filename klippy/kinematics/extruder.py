@@ -10,7 +10,7 @@ class PrinterExtruder:
     def __init__(self, config, extruder_num):
         self.printer = config.get_printer()
         self.name = config.get_name()
-        self.extruded_length = 0
+        self.untracked_extruded_length = 0
         shared_heater = config.get('shared_heater', None)
         pheaters = self.printer.try_load_module(config, 'heaters')
         gcode_id = 'T%d' % (extruder_num,)
@@ -94,8 +94,7 @@ class PrinterExtruder:
     def get_status(self, eventtime):
         return dict(self.heater.get_status(eventtime),
                     pressure_advance=self.pressure_advance,
-                    smooth_time=self.pressure_advance_smooth_time,
-                    extruded_length=self.extruded_length)
+                    smooth_time=self.pressure_advance_smooth_time)
     def get_name(self):
         return self.name
     def get_heater(self):
@@ -131,7 +130,6 @@ class PrinterExtruder:
                 "Move exceeds maximum extrusion (%.3fmm^2 vs %.3fmm^2)\n"
                 "See the 'max_extrude_cross_section' config option for details"
                 % (area, self.max_extrude_ratio * self.filament_area))
-        self.extruded_length += move.axes_d[3]
     def calc_junction(self, prev_move, move):
         diff_r = move.axes_r[3] - prev_move.axes_r[3]
         if diff_r:
@@ -151,6 +149,7 @@ class PrinterExtruder:
                           move.start_pos[3], 0., 0.,
                           1., pressure_advance, 0.,
                           start_v, cruise_v, accel)
+        self.untracked_extruded_length += move.axes_d[3]
     def cmd_M104(self, params, wait=False):
         # Set Extruder Temperature
         gcode = self.printer.lookup_object('gcode')

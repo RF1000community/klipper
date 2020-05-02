@@ -278,7 +278,7 @@ def main():
         versions = "\n".join([
             "Args: %s" % (sys.argv,),
             "Git version: %s" % (repr(start_args['software_version']),),
-            #"CPU: %s" % (util.get_cpu_info().decode(),),TODO
+            "CPU: %s" % (util.get_cpu_info(),),
             "Python: %s" % (repr(sys.version),)])
         logging.info(versions)
     elif not options.debugoutput:

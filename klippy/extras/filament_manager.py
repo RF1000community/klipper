@@ -39,7 +39,7 @@ class FilamentManager:
         self.read_material_library_xml()
         # json list of loaded and unloaded material
         self.loaded_material_path = join(self.material_dir, "loaded_material.json")
-        # {'loaded': [{'guid': None if nothing is loaded, 'amount': amount in kg, 'state': loading | loaded | unloading, 'base_extruded_length': mm, 'all_time_extruded_length': mm], ...], 
+        # {'loaded': [{'guid': None if nothing is loaded, 'amount': amount in kg, 'state': loading | loaded | unloading, 'all_time_extruded_length': mm], ...], 
         # 'unloaded': [{'guid': None if nothing is loaded, 'amount': amount in kg}, ...]}
         self.material = {'loaded':[], 'unloaded':[]}
         self.read_loaded_material_json()
@@ -53,7 +53,6 @@ class FilamentManager:
         for i in range(10):
             extruder_id = f"extruder{'' if i==0 else i}"
             self.extruders[extruder_id] = self.printer.lookup_object(extruder_id, None)
-            self.set_base_extruded_length(extruder_id)
 
     def handle_shutdown(self):
         self.update_loaded_material_amount()
@@ -71,8 +70,7 @@ class FilamentManager:
             for f in files:
                 if not f.endswith(".xml.fdm_material"):
                     continue
-                f_path = os.path.join(self.material_dir, f)
-                self.read_single_file(f_path)
+                self.read_single_file(os.path.join(self.material_dir, f))
 
     def read_single_file(self, f_path):
         try:
@@ -119,6 +117,7 @@ class FilamentManager:
         return self.material
 
     def load(self, extruder_id, temp=None, amount=1., unloaded_idx=None, guid=None):
+        self.extruders[extruder_id].untracked_extruded_length = 0
         if unloaded_idx is not None:
             guid, _ = self.material['unloaded'].pop(unloaded_idx)
         # make sure list is long enough
@@ -126,7 +125,6 @@ class FilamentManager:
         self.material['loaded'].extend([None, 0, 0, 0]*to_short_by)
         self.material['loaded'][self.idx(extruder_id)]['guid'] = guid
         self.material['loaded'][self.idx(extruder_id)]['amount'] = amount
-        self.set_base_extruded_length(extruder_id)
         self.write_loaded_material_json()
 
         if not temp:
@@ -152,6 +150,7 @@ class FilamentManager:
         self.write_loaded_material_json()
 
     def unload(self, extruder_id):
+        self.update_loaded_material_amount()
         temp = 200 # Default value
         idx = self.idx(extruder_id)
         if len(self.material['loaded']) > idx and self.material['loaded'][idx]['guid']:
@@ -172,7 +171,7 @@ class FilamentManager:
         self.send_extrude(-self.min_path_len, self.load_speed, extruder_id)
         self.wait_for_position()
 
-        self.material['unloaded'] = [self.material['loaded'][idx]['guid'], self.material['loaded'][idx]['guid']] + self.material['unloaded'][:9]
+        self.material['unloaded'] = [self.material['loaded'][idx]['guid'], self.material['loaded'][idx]['amount']] + self.material['unloaded'][:9]
         self.material['loaded'][idx]['guid'] = None
         self.material['loaded'][idx]['amount'] = 0
         self.write_loaded_material_json()
@@ -212,8 +211,6 @@ class FilamentManager:
                     logging.info("Filament-Manager: Malformed material file at " + self.loaded_material_path)
                 else:
                     self.material = material
-                    for extruder_id in self.extruders:
-                        self.set_base_extruded_length(extruder_id)
         except (IOError, ValueError): # No file or incorrect JSON
             logging.info("Filament-Manager: Couldn't read loaded-material-file at " + self.loaded_material_path)
 
@@ -225,7 +222,6 @@ class FilamentManager:
                     isinstance(mat['state'], str) and
                     isinstance(mat['guid'], (str, type(None))) and
                     isinstance(mat['amount'], (float, int)) and
-                    isinstance(mat['base_extruded_length'], (float, int)) and
                     isinstance(mat['all_time_extruded_length'], (float, int))):
                     return False
             for mat in material['unloaded']:
@@ -247,22 +243,18 @@ class FilamentManager:
                     + self.loaded_material_path)
         self.printer.send_event("filament_manager:material_changed")
 
+    # only call in klipper thread else extruded_length += x can cause additional extruded_length
     def update_loaded_material_amount(self):
         for extruder_id in self.extruders:
             idx = self.idx(extruder_id)
             if len(self.material['loaded']) > idx:
-                extruded_length = self.extruders[extruder_id].extruded_length
-                length_delta = extruded_length - self.material['loaded'][idx]['base_extruded_length']
+                extruded_length = self.extruders[extruder_id].untracked_extruded_length
+                self.extruders[extruder_id].untracked_extruded_length = 0
                 density = 1.24
-                kg_delta = length_delta*self.filament_area*density/1000000. # convert from mm^2 to m^2
-                self.material['loaded'][idx]['amount'] -= kg_delta
-                self.material['loaded'][idx]['base_extruded_length'] = extruded_length
-                self.material['loaded'][idx]['all_time_extruded_length'] += length_delta
+                extruded_weight = extruded_length*self.filament_area*density/1000000. # convert from mm^2 to m^2
+                self.material['loaded'][idx]['amount'] -= extruded_weight
+                self.material['loaded'][idx]['all_time_extruded_length'] += extruded_length
 
-    def set_base_extruded_length(self, extruder_id):
-        idx = self.idx(extruder_id)
-        if len(self.material['loaded']) > idx:
-            self.material['loaded'][idx]['base_extruded_length'] = self.extruders[extruder_id].extruded_length
 
 def load_config(config):
     return FilamentManager(config)
