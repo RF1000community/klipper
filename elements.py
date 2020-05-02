@@ -1,6 +1,7 @@
 # coding: utf-8
 from collections import deque
 from time import time
+from os.path import join, basename
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -13,6 +14,7 @@ from kivy.uix.widget import Widget
 
 from . import parameters as p
 import logging
+import shutil
 
 
 class Divider(Widget):

@@ -15,7 +15,7 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 
 from . import parameters as p
-
+from .elements import StopPopup
 
 class Timeline(RecycleView):
     path = StringProperty()
