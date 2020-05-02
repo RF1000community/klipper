@@ -2,13 +2,13 @@
 # the Klipper host software (Klippy).  These package requirements are
 # typically installed via the command:
 #   pip install -r klippy-requirements.txt
-cffi==1.12.2
+cffi==1.14
 pyserial==3.4
 greenlet==0.4.15
 Jinja2==2.10.1
 
 #KGUI
-Cython==0.29.10
+Cython==0.29.17
 #kivy==1.11.1 # for now we install a newer version of kivy manually
 
 #Cura connection
