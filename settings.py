@@ -390,6 +390,7 @@ class WifiScreen(Screen):
         box = self.ids.wifi_box
         box.clear_widgets()
         if value:
+            box.add_widget(Divider(pos_hint={'center_x':0.5}))
             for network in value:
                 entry = SIWifiNetwork(network)
                 box.add_widget(entry)

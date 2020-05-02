@@ -47,6 +47,8 @@
             height: self.minimum_height
             pos: 0, root.height - self.height
             size_hint_y: None
+            Divider:
+                pos_hint: {'center_x':0.5}
             SetItem:
                 left_title: "Max. printhead Acceleration"
                 right_title: str(app.default_acceleration)+"mm/s²"
@@ -65,11 +67,9 @@
             SetItem:
                 left_title: "Update"
                 on_release: root.manager.current = "UpdateScreen"
-            SetItem:
-                left_title: "Flash Klipper Firmware to Printer"
-                on_release: root.manager.current = "FlashScreen"
-            Divider:
-                pos_hint: {'center_x':0.5}
+            # SetItem:
+            #     left_title: "Flash Klipper Firmware to Printer"
+            #     on_release: root.manager.current = "FlashScreen"
 
 <WifiScreen>:
     name: 'WifiScreen'
@@ -300,7 +300,7 @@
         right: p.screen_width
         padding_x: p.padding
     Divider:
-        y: root.top - 1
+        y: root.y
 
 <SISwitch@SetItem>:
     enabled: False

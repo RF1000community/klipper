@@ -57,7 +57,7 @@ class Timeline(RecycleView):
         if len(queue) + len(history) == 0: # Give message in case of empty list
             self.data = [{"name": "No printjobs scheduled or finished", "state": 'message'}]
         else:
-            self.data = queue + history
+            self.data = queue + history + [{}] # for a dividing line afer last element
         self.refresh_from_data()
         if not in_background and 'tl_box' in self.ids:
             self.ids.tl_box.selected_nodes = []
