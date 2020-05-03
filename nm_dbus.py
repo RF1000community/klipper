@@ -27,7 +27,7 @@ class NetworkManager(EventDispatcher, Thread):
     connection_type = OptionProperty("none", options=["none", "ethernet", "wireless"])
 
     def __init__(self, **kwargs):
-        super(NetworkManager, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.loop = GLib.MainLoop()
         self.bus = SystemBus()
@@ -159,7 +159,7 @@ class NetworkManager(EventDispatcher, Thread):
         access_points.sort(key=lambda x: x.in_use, reverse=True)
 
         # Filter out access points with duplicate ssids
-        unique_ssids = []
+        unique_ssids = set()
         to_remove = [] # Avoid removing while iterating
         for ap in access_points:
             if ap.ssid in unique_ssids:
@@ -178,7 +178,7 @@ class NetworkManager(EventDispatcher, Thread):
                 else:
                     to_remove.append(ap)
             else:
-                unique_ssids.append(ap.ssid)
+                unique_ssids.add(ap.ssid)
         for rm in to_remove:
             access_points.remove(rm)
         self.access_points = access_points # update the property
@@ -370,9 +370,12 @@ class AccessPoint(object):
 
 def _bytes_to_string(b):
     """Helper function to transform a bytearray to a string"""
-    #PYTHON3: self.ssid = str(bytes(self.b_ssid).decode('utf-8'))
-    # Will generate stupid things (e.g. '\xc8') for unicode chars
-    s = ""
-    for c in b:
-        s += chr(c)
-    return s
+    return bytearray(b).decode('utf-8')
+
+def cmp(x, y):
+    """
+    Return negative if x<y, zero if x==y, positive if x>y
+
+    This got removed from builtin functions in python3
+    """
+    return (x > y) - (x < y)

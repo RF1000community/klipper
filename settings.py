@@ -228,7 +228,7 @@ class ConnectionPopup(BasePopup):
 class SITimezone(SetItem):
 
     def __init__(self, **kwargs):
-        super(SITimezone, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.set_timezone()
 
     def set_timezone(self):
@@ -240,7 +240,7 @@ class SITimezone(SetItem):
 class TimezonePopup(BasePopup):
 
     def __init__(self, **kwargs):
-        super(TimezonePopup, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.region_selection = None
 
     def confirm(self):
@@ -265,7 +265,7 @@ class TimezonePopup(BasePopup):
 
 class TimezoneRV(RecycleView):
     def __init__(self, **kwargs):
-        super(TimezoneRV, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         # initally filled with all regions/continents
         region_folders = next(os.walk("/usr/share/zoneinfo/"))[1]
         region_folders.sort()
@@ -289,11 +289,11 @@ class TimezoneRVItem(RecycleDataViewBehavior, Label):
     def refresh_view_attrs(self, rv, index, data):
         # Catch and handle the view changes
         self.index = index
-        return super(TimezoneRVItem, self).refresh_view_attrs(rv, index, data)
+        return super().refresh_view_attrs(rv, index, data)
 
     def on_touch_down(self, touch):
         # Add selection on touch down
-        if super(TimezoneRVItem, self).on_touch_down(touch):
+        if super().on_touch_down(touch):
             return True
         if self.collide_point(*touch.pos):
             return self.parent.select_with_touch(self.index, touch)
