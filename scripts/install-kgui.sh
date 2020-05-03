@@ -110,6 +110,10 @@ install_packages()
 
     # Wifi 
     sudo apt purge dhcpcd5 --yes
+    # Needed to allow scanning to non-root users. Not needed with later NM updates
+    if [ $(grep -c auth-polkit= /etc/NetworkManager/NetworkManager.conf) -eq 0 ]; then
+        sudo sed -i '/\[main\]/a auth-polkit=false' /etc/NetworkManager/NetworkManager.conf
+    fi
     # change line in Xwrapper.config so xorg feels inclined to start when asked by systemd
     report_status "Xwrapper config mod..."
     sudo sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
