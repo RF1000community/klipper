@@ -402,7 +402,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(read_config)
 
     def set_config(self, section, option, value):
-        logging.info(f"trying to set config section {section} option {option}, value {value}")
+        logging.info(f"trying to set config section: {section} option: {option}, value: {value}")
         self.reactor.register_async_callback(lambda e: self.klipper_config_manager.set(section, option, value))
 
     def write_config(self, section, option, value):
@@ -497,6 +497,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
                 self.z_start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers]
                 self.z_move_completion = ReactorCompletion(self.reactor)
+                self.toolhead.dwell(0.010)
                 self.toolhead.drip_move(pos, self.z_speed, self.z_move_completion)
             self.reactor.register_async_callback(start_z)
 
@@ -524,6 +525,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 pos = self.toolhead.get_position()
                 pos[3] += 49 * direction
                 self.ext_move_completion = ReactorCompletion(self.reactor)
+                self.toolhead.dwell(0.010)
                 self.toolhead.drip_move(pos, self.z_speed, self.ext_move_completion)
             self.reactor.register_async_callback(start_e)
 
@@ -532,7 +534,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.ext_move_completion.complete(True)
             self.ongoing_live_move = False
         self.reactor.register_async_callback(stop_ext)
-        
+
     def send_calibrate(self):
         self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(None)))
 

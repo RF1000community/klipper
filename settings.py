@@ -161,6 +161,9 @@ class Wifi(EventDispatcher):
             for wifi in self.scan_output.splitlines():
                 # Only allow two splits in case some doofus puts ':' in the wifi name
                 f = wifi.split(':', 2)
+                # dont show networks with empty ssid
+                if f[2] == '':
+                    continue
                 in_use = '*' in f[1]
                 # create a dictionary for each network containing the fields
                 entry = {'signal': int(f[0]), 'in-use': in_use, 'ssid': f[2]}
