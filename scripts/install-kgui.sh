@@ -10,7 +10,7 @@ PYTHONDIR="${SRCDIR}/klippy-environment"
 # Must be called before install_packages
 setup_port_redirection()
 {
-    sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-ports 8080
+    sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-ports 8008
     echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
     echo iptables-persistent iptables-persistent/autosave_v6 boolean false | sudo debconf-set-selections
 }
@@ -60,8 +60,6 @@ install_packages()
     # Kivy Raspberry 4 specifics
     PKGLIST="${PKGLIST} \
     libfreetype6-dev \
-    libgl1-mesa-dev \
-    libgles2-mesa-dev \
     libdrm-dev \
     libgbm-dev \
     libudev-dev \
@@ -97,7 +95,7 @@ install_packages()
     PKGLIST="${PKGLIST} libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev"
 
     # Wifi
-    PKGLIST="${PKGLIST} network-manager"
+    PKGLIST="${PKGLIST} network-manager python3-gi"
     # Usb Stick Automounting
     PKGLIST="${PKGLIST} usbmount"
     # Cura connection
@@ -129,6 +127,8 @@ create_virtualenv()
     report_status "install pip packages..."
     # Install/update dependencies                             v  custom KGUI list of pip packages
     ${PYTHONDIR}/bin/pip3 install -r ${SRCDIR}/scripts/klippy-kgui-requirements.txt
+    # Use the gi package from the system installation
+    ln -sf /usr/lib/python3/dist-packages/gi ${PYTHONDIR}/lib/python3.?/site-packages/
 }
 
 
