@@ -18,7 +18,7 @@
             pos_hint: {'x':0,'y':0}
             size_hint: 1,1
         ProgressBar:
-            enabled: app.print_state != 'no_printjob'
+            enabled: app.print_title != ""
             id: progress_bar
             max: 1
             value: app.progress
@@ -46,26 +46,26 @@
             color: p.btn_disabled
             halign: 'right'
             valign: 'bottom'
-        Btn_Stop:
+        BtnStop:
             on_release: Factory.StopPopup().open()
             id: btn_stop
             size: 118,118
             center_y: progress_bar.top + p.padding + p.btn_stop/2
             center_x: p.screen_width - p.btn_stop/2 - p.h_padding
-        Btn_Reprint:
-            on_release: app.send_reprint_last()
-            size: 118, 118
-            pos: btn_stop.pos
-        Btn_Play:
-            on_release:
-                if self.paused: app.send_resume()
-                else:           app.send_pause()
+        BtnPlay:
+            on_release: app.send_resume()
+            size: btn_stop.size
+            y: btn_stop.y
+            right: btn_stop.x
+        BtnPause:
+            on_release: app.send_pause()
             size: btn_stop.size
             y: btn_stop.y
             right: btn_stop.x
         Label:
             id: l_filename
             text: app.print_title
+            color: p.btn_disabled if app.print_state == 'no printjob' else (1,1,1,1)
             size_hint: None, None
             size: 280,134
             text_size: self.size
@@ -84,35 +84,35 @@
             pos: root.x, btn_stop.center_y+p.btn_stop/2
             HomeScreen:
             PrintingScreen:
-        Btn_Temp:
+        BtnTemp:
             id: temp_T1
-            heater_id: "T1"
+            tool_id: "T1"
             on_release: Factory.ExtTempPopup(creator=self, val=app.temp).open()
-            large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
-            small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
-            red: app.temp[self.heater_id][1] > 50
+            large_value: "{:3.0f}°C".format(app.temp[self.tool_id][1])
+            small_value: "{:3.0f}".format(app.temp[self.tool_id][0]) if app.temp[self.tool_id][0] != 0 else "Off"
+            red: app.temp[self.tool_id][1] > 50
             width: 80
             right: temp_bed.right if app.extruder_count > 1 else p.mars
             y: p.tab_height + p.padding*3 + p.progress_bar_height + p.btn_stop
-        Btn_Extruder:
-            heater_id: 'T1'
-            x: p.h_padding if app.extruder_count > 1 else p.mars
+        BtnExtruder:
+            tool_id: 'T1'
+            center_x: p.h_padding + icon_center if app.extruder_count > 1 else p.mars
             y: p.tab_height + p.padding*3 + p.progress_bar_height + p.btn_stop
-        Btn_Temp:
+        BtnTemp:
             id: temp_T0
-            heater_id: "T0"
+            tool_id: "T0"
             on_release: Factory.ExtTempPopup(creator=self, val=app.temp).open()
-            large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
-            small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
-            red: app.temp[self.heater_id][1] > 50
+            large_value: "{:3.0f}°C".format(app.temp[self.tool_id][1])
+            small_value: "{:3.0f}".format(app.temp[self.tool_id][0]) if app.temp[self.tool_id][0] != 0 else "Off"
+            red: app.temp[self.tool_id][1] > 50
             width: 80
             right: temp_bed.right
             y: p.tab_height + p.progress_bar_height + 4*p.padding + p.btn_height + p.btn_stop
-        Btn_Extruder:
-            heater_id: 'T0'
-            x: p.h_padding
+        BtnExtruder:
+            tool_id: 'T0'
+            center_x: p.h_padding + icon_center
             y: p.tab_height + p.padding*4 + p.progress_bar_height + p.btn_height + p.btn_stop
-        Btn_Temp:
+        BtnTemp:
             on_release: Factory.BedTempPopup(creator=self, val=app.temp).open()
             id: temp_bed
             large_value: "{:3.0f}°C".format(app.temp['B'][1])
@@ -128,7 +128,7 @@
                 #:set bx2 +19
                 #:set bh 40
                 #:set bo 16
-                #:set icon_center 26
+                #:set icon_center 25 #25 so its above tab icons
                 Line:
                     width: p.icon_radius
                     points: self.x + icon_center - bw/2, self.center_y - p.btn_height/2 + p.icon_radius,   self.x + icon_center + bw/2, self.center_y - p.btn_height/2 + p.icon_radius
@@ -149,7 +149,9 @@
             w1: p.btn_height
             w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
-            id: btn_tr_T1
+            tool_id: 'T1'
+            tool_idx: 1
+            extruder_id: 'extruder1'
             y: p.padding if app.extruder_count > 1 else p.mars
             right: p.screen_width - p.h_padding
         BtnTriple:
@@ -157,18 +159,22 @@
             w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
             id: btn_tr_T0
+            tool_id: 'T0'
+            tool_idx: 0
+            extruder_id: 'extruder'
             y: p.padding*2 + p.btn_height
             right: p.screen_width - p.h_padding
-        Btn_Outline:
+        BtnOutline:
             id: btn_calibrate
             on_release: app.send_calibrate()
             enabled: app.printer_objects_available
             text: "Mesh Bed Leveling"
-            size: btn_tr_T1.size
-            pos: btn_tr_T0.x, 3*p.padding+2*p.btn_height
+            size: btn_tr_T0.size
+            pos: btn_tr_T0.x, 3*p.padding+2*p.btn_height if app.bed_mesh else p.mars
         BtnTripleZ:
             id: btn_tr_Z
             height: xy_field.height
+            z_pos: xy_field.ids.z_pos
             h1: self.height/3
             h2: self.height/3
             h3: self.height/3
@@ -183,12 +189,12 @@
             x: p.h_padding
             top: root.height-p.padding-p.status_bar_height
             enabled: app.printer_objects_available and app.homed['x'] and app.homed['y']
-        Btn_Home:
+        BtnHome:
             axis_id: 'X'
             size: p.btn_height, p.btn_height
             x: xy_field.right if app.xy_homing_controls else p.mars
             y: xy_field.y
-        Btn_Home:
+        BtnHome:
             axis_id: 'Y'
             size: p.btn_height, p.btn_height
             x: xy_field.right if app.xy_homing_controls else p.mars
@@ -210,42 +216,42 @@
 <PrintingScreen@Screen>:
     name: "printingscreen"
     FloatLayout:
-        Btn_Temp:
+        BtnTemp:
             id: fan
             on_release: Factory.FanPopup(val=app.fan_speed).open()
             large_value: "{:3.0f}%".format(app.fan_speed)
             small_value: "Print Cooling"
             right: p.screen_width - p.h_padding
             center_y: p.padding + p.btn_height/2 + p.btn_spacing
-        Btn_Temp:
+        BtnTemp:
             id: z_adjust
             on_release: Factory.ZAdjustPopup(val=app.z_adjust).open()
             large_value: "{:3.2f}mm".format(app.z_adjust)
             small_value: "Z Calibration"
             right: p.screen_width - p.h_padding
             center_y: fan.center_y + p.btn_spacing
-        Btn_Temp:
+        BtnTemp:
             id: pressure_advance
             on_release: Factory.PressureAdvancePopup(val=app.pressure_advance).open()
             large_value: "{:4.3f}s".format(app.pressure_advance)
             small_value: "Pressure Advance"
             right: p.screen_width - p.h_padding
             center_y: z_adjust.center_y + p.btn_spacing
-        Btn_Temp:
+        BtnTemp:
             id: acceleration
             on_release: Factory.AccPopup(val=app.acceleration).open()
             large_value: "{:5.0f}mm/s²".format(app.acceleration)
             small_value: "Acceleration"
             right: p.screen_width - p.h_padding
             center_y: pressure_advance.center_y + p.btn_spacing
-        Btn_Temp:
+        BtnTemp:
             id: speed
             on_release: Factory.SpeedPopup(val=app.speed).open()
             large_value: "{:3.0f}%".format(app.speed)
             small_value: "Print Speed"
             x: p.h_padding
             center_y: acceleration.center_y
-        Btn_Temp:
+        BtnTemp:
             id: flow
             on_release: Factory.FlowPopup(val=app.flow).open()
             large_value: "{:3.0f}%".format(app.flow)
@@ -264,11 +270,11 @@
             width: 1
             rounded_rectangle: (self.x, self.y, self.width + p.btn_height, self.height, p.radius)
         Line:
-            points: self.right, self.top-6,   self.right, self.y+6
+            points: self.right, self.top-p.btn_divider_padding,   self.right, self.y+p.btn_divider_padding
         Line:
-            points: self.right + 6, self.y + 2*p.btn_height,   self.right + p.btn_height -6, self.y + 2*p.btn_height
+            points: self.right + p.btn_divider_padding, self.y + 2*p.btn_height,   self.right + p.btn_height -p.btn_divider_padding, self.y + 2*p.btn_height
         Line:
-            points: self.right + 6, self.y + p.btn_height,   self.right + p.btn_height -6, self.y + p.btn_height
+            points: self.right + p.btn_divider_padding, self.y + p.btn_height,   self.right + p.btn_height -p.btn_divider_padding, self.y + p.btn_height
         # Outline without xy homing buttons
         Color:
             rgba: (0,0,0,0) if app.xy_homing_controls else p.btn_outline
@@ -298,6 +304,7 @@
         font_size: p.normal_font
         color: (1,1,1,1) if root.pressed else p.nozzle
     Label:
+        id: z_pos
         text: "Z:{:.0f}".format(root.mm[2])
         size_hint: None, None
         size: self.texture_size
@@ -308,50 +315,45 @@
 
 # BUTTONS
 
-<Btn_Extruder@BaseButton>:
+<BtnExtruder@BaseButton>:
     #:set esh 17
-    size: icon_center*2, p.btn_height
-    heater_id: 'T0'
+    size: icon_center*2 + 10, p.btn_height
+    tool_id: 'T0'
     selected: False
     canvas:
         Color:
             rgba: p.nozzle_selected if self.selected else p.nozzle
-        Rectangle:
-            size: self.width - 2*p.icon_radius, self.height - esh - p.icon_radius
-            pos: self.x + p.icon_radius, self.y + esh
+        RoundedRectangle:
+            size: self.width, self.height - esh
+            pos: self.x, self.y + esh
+            radius: (p.icon_radius,)
         Triangle:
-            points: self.x + p.icon_radius, self.y + esh,   self.center_x, self.y + p.icon_radius - 2,   self.right - p.icon_radius, self.y + esh
-        Line:
-            width: p.icon_radius
-            points: self.x + p.icon_radius, self.y + esh,   self.center_x, self.y + p.icon_radius - 2,   self.right - p.icon_radius, self.y + esh,   self.right - p.icon_radius, self.top - p.icon_radius,   self.x + p.icon_radius, self.top - p.icon_radius
-            close: True
+            points: self.center_x - esh, self.y + esh,   self.center_x, self.y,   self.center_x + esh, self.y + esh
     # this needs a new label instance since the properties set in BaseButton cannot be overwritten in rule definition (only in instance)
     Label:
-        text: root.heater_id
+        text: str(int(root.tool_id[1]) + 1)
         bold: True
         color: p.background
         center_x: root.center_x
-        center_y: root.center_y + 2      
-        font_size: p.large_font
+        center_y: root.center_y + esh/2
+        font_size: p.large_font + 4
 
 <BtnTriple>:
-    title: "Unload\n 700g PET-G"
-    tool_id: "T0"
     w1: 0
     w2: 0
     w3: 0
     size_hint: None, None
-    size: self.w1+self.w2+self.w3, p.btn_height
+    size: self.w1 + self.w2 + self.w3, p.btn_height
     #:set w 19
     canvas:
         Color:
-            rgb: root.filament_color_adjusted
+            rgba: root.filament_color
         RoundedRectangle:
             size: root.size
             pos: root.pos
             radius: (p.radius,)
         Color:
-            rgb: p.background
+            rgba: p.background
         Rectangle:
             size: root.width * (1-root.filament_amount), root.height
             pos: root.x + root.filament_amount * root.width, root.y
@@ -360,17 +362,14 @@
         Line:
             width: 1
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
-        Color:
-            rgba: p.btn_outline
         Line:
-            points: self.x+self.w1, self.y+6, self.x+self.w1, self.top-6
+            points: self.x+self.w1, self.y+p.btn_divider_padding, self.x+self.w1, self.top-p.btn_divider_padding
         Line:
-            points: self.x+self.w1+1+self.w2, self.y+6, self.x+self.w1+1+self.w2, self.top-6
+            points: self.x+self.w1+1+self.w2, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2, self.top-p.btn_divider_padding
         Color:
-            rgba: root.divider_color
-        Rectangle:
-            size: 3, root.height
-            pos: root.x + root.filament_amount * root.width - 3, root.y
+            rgba: p.btn_outline if root.material else (0,0,0,0)
+        Line:
+            points: self.x+self.w1+1+self.w2*root.filament_amount, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2*root.filament_amount, self.top-p.btn_divider_padding
     BaseButton:
         size: root.w1, root.height
         pos: root.pos
@@ -382,12 +381,6 @@
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points: (self.x+self.width/2+w/2, self.center_y- w, self.x+self.width/2+w/2, self.center_y+ w, self.x+self.width/2-w/2, self.center_y)
-            # Color:
-            #     rgba: p.background[:3] + [0.3]
-            # Line:
-            #     points: (self.x+self.width/2+w/2, self.center_y- w, self.x+self.width/2+w/2, self.center_y+ w, self.x+self.width/2-w/2, self.center_y)
-            #     width: 1
-            #     close: True
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
@@ -398,18 +391,15 @@
         id: btn_load
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
-        enabled: app.printer_objects_available
-        on_release: Factory.FilamentChooserPopup().open()
-        color: (1,1,1,1) if btn_load.enabled else p.btn_disabled
-        #outline_color: p.background[:3]
-        #outline_width: 1
+        enabled: bool(app.printer_objects_available and app.filament_manager)
+        on_release: root.load_unload()
+        color: (1,1,1,1) if self.enabled else p.btn_disabled
         text: root.title
         text_size: self.size
         font_size: p.normal_font
         halign: 'center'
         valign: 'middle'
         padding_y: 8
-       
     BaseButton:
         size: root.w3, root.height
         pos: root.x + root.w1+root.w2,root.y
@@ -421,12 +411,6 @@
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points: (self.x+self.width/2-w/2, self.center_y- w, self.x+self.width/2-w/2, self.center_y+ w, self.x+self.width/2+w/2, self.center_y)
-            # Color:
-            #     rgba: p.background[:3] + [0.3]
-            # Line:
-            #     points: (self.x+self.width/2-w/2, self.center_y- w, self.x+self.width/2-w/2, self.center_y+ w, self.x+self.width/2+w/2, self.center_y)
-            #     width: 1
-            #     close: True
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
@@ -445,16 +429,16 @@
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
         Rectangle:
-            pos: self.x+6, self.y+self.h1
-            size: self.width-12,1
+            pos: self.x+p.btn_divider_padding, self.y+self.h1
+            size: self.width-2*p.btn_divider_padding, 1
         Rectangle:
-            pos: self.x+6, self.y+self.h1+self.h2
-            size: self.width-12,1
+            pos: self.x+p.btn_divider_padding, self.y+self.h1+self.h2
+            size: self.width-2*p.btn_divider_padding, 1
     #:set t 9.5
     #:set u 19 #Triangle has this size x2
     BaseButton:
-        on_press: app.send_z_up() if app.invert_z_controls else app.send_z_up(-1)
-        on_release: app.send_z_stop()
+        on_press: app.send_z_up(); root.z_pos.highlighted = True if app.invert_z_controls else app.send_z_up(-1); root.z_pos.highlighted = True
+        on_release: app.send_z_stop(); root.z_pos.highlighted = False
         enabled: app.homed['z']
         size: root.width, root.h1
         pos: root.x, root.y
@@ -469,7 +453,7 @@
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points: self.center_x-u,self.center_y+t,   self.center_x+u,self.center_y+t,   self.center_x,self.center_y-t
-    Btn_Home:
+    BtnHome:
         axis_id: 'Z'
         size: root.width, root.h2
         pos: root.x, root.h1 + root.y
@@ -481,8 +465,8 @@
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: app.send_z_up(-1) if app.invert_z_controls else app.send_z_up()
-        on_release: app.send_z_stop()
+        on_press: app.send_z_up(-1); root.z_pos.highlighted = True if app.invert_z_controls else app.send_z_up(); root.z_pos.highlighted = True
+        on_release: app.send_z_stop(); root.z_pos.highlighted = False
         enabled: app.homed['z']
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
@@ -498,7 +482,7 @@
             Triangle:
                 points: self.center_x-u,self.center_y-t,   self.center_x+u,self.center_y-t,   self.center_x,self.center_y+t
 
-<Btn_Home@RoundButton>:
+<BtnHome@RoundButton>:
     axis_id: 'Z'
     on_release: app.send_home(self.axis_id)
     enabled: app.printer_objects_available
@@ -527,7 +511,7 @@
         halign: 'center'
         valign: 'middle'
 
-<Btn_Temp@BaseButton>:
+<BtnTemp@BaseButton>:
     red: False
     enabled: app.printer_objects_available
     large_value: "-"
@@ -563,8 +547,8 @@
         valign: 'bottom'
         halign: 'right'
 
-<Btn_Stop@RoundButton>:
-    enabled: app.print_state == 'printing' or app.print_state == 'paused'
+<BtnStop@RoundButton>:
+    enabled: app.print_state in ('printing', 'pausing', 'paused')
     canvas.before:
         Color:
             rgba: p.red if self.enabled else (0,0,0,0)
@@ -573,28 +557,25 @@
             size: p.btn_stop, p.btn_stop
             radius: (p.icon_radius,)
 
-<Btn_Reprint@RoundButton>:
-    enabled: app.print_state == 'done' or app.print_state == 'stopped'
-    canvas.before:
+<BtnPlay@RoundButton>:
+    #:set ph (p.btn_stop-2*p.icon_radius)/2
+    #:set pw ph/1.155
+    enabled: app.print_state in ('pausing', 'paused')
+    canvas:
         Color:
-            rgba: p.nozzle if self.enabled else (0,0,0,0)
-        Line:
-            #:set rw p.progress_bar_height/2 -0.3
-            #:set r_arr 17
-            #:set r_rad 23
-            width: rw
-            ellipse: (self.center_x - r_rad*p.disp_vertical_stretch, self.center_y - r_rad + 1, r_rad*2*p.disp_vertical_stretch, r_rad*2, 0, 270)
+            rgba: 1,1,1,1 if self.enabled else 0
         Triangle:
-            points: (self.center_x - r_arr, self.center_y + r_rad,    self.center_x, self.center_y + r_rad + r_arr,    self.center_x, self.center_y + r_rad - r_arr)
+            points: self.center_x-pw, self.center_y- ph,   self.center_x-pw, self.center_y+ ph,   self.center_x+pw, self.center_y
+        Line:
+            width: p.icon_radius
+            points: self.center_x-pw, self.center_y- ph,   self.center_x-pw, self.center_y+ ph,   self.center_x+pw, self.center_y
+            close: True
 
-<Btn_Play@RoundButton>:
-    #:set pw (p.btn_stop-2*p.icon_radius)/2
-    #:set ph pw*1.155
-    paused: app.print_state == 'paused'
-    enabled: app.print_state == 'printing' or app.print_state == 'paused'
-    canvas.before:
+<BtnPause@RoundButton>:
+    enabled: app.print_state == 'printing'
+    canvas:
         Color:
-            rgba: 1,1,1,1 if self.enabled and not self.paused else 0
+            rgba: 1,1,1,1 if self.enabled else 0
         RoundedRectangle:
             pos: self.center_x-p.btn_stop/2, self.center_y-p.btn_stop/2
             size: 0.39*p.btn_stop,p.btn_stop
@@ -603,16 +584,6 @@
             pos: self.center_x+p.btn_stop/2-0.4*p.btn_stop, self.center_y-p.btn_stop/2
             size: 0.39*p.btn_stop, p.btn_stop
             radius: (p.icon_radius,)
-    canvas:
-        Color:
-            rgba: 1,1,1,1 if self.enabled and self.paused else 0
-        Triangle:
-            points: self.center_x-pw, self.center_y- ph,   self.center_x-pw, self.center_y+ ph,   self.center_x+pw, self.center_y
-        Line:
-            width: p.icon_radius
-            points: self.center_x-pw, self.center_y- ph,   self.center_x-pw, self.center_y+ ph,   self.center_x+pw, self.center_y
-            close: True
-
 
 # POPUPS
 
@@ -626,16 +597,17 @@
             val_min: -0.5
             val_max: 0.5
             unit: "mm"
-            roundto: 2
+            round_to: 2
+            round_style: 5
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
@@ -651,16 +623,16 @@
             val_min: 0
             val_max: 0.05
             unit: "mm/mm/s"
-            roundto: 3
+            round_to: 3
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
@@ -675,18 +647,18 @@
             val_min: 2000
             val_max: 50000
             unit: "mm/s²"
-            roundto: -2
+            round_to: -2
             buttons: [[36000,0,"default",None],]
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5}
             y: btn_cancel.top+40
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
@@ -702,16 +674,16 @@
             val_min: 10
             val_max: 500
             unit: "%"
-            roundto: 0
+            round_to: 0
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
@@ -727,16 +699,16 @@
             val_min: 90
             val_max: 110
             unit: "%"
-            roundto: 1
+            round_to: 1
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
@@ -752,16 +724,16 @@
             val_min: 0
             val_max: 100
             unit: "%"
-            roundto: 0
+            round_to: 0
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
@@ -771,17 +743,18 @@
     size_hint: 0.95, 0.4
     title: "Set Buildplate Temperature"
     FloatLayout:
-        BedTempSlider:
+        TempSlider:
             id: slider
+            tool_id: 'B'
             val: root.val['B'][0]
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
@@ -789,118 +762,185 @@
 
 <ExtTempPopup@BasePopup>:
     size_hint: 0.95, 0.4
-    title: "Set "+root.creator.heater_id+" Temperature"
+    title: "Set Extruder {} Temperature".format(int(self.creator.tool_id[1]) + 1)
     FloatLayout:
-        ExtTempSlider:
-            val: root.val[root.creator.heater_id][0]
+        TempSlider:
+            val: root.val[root.creator.tool_id][0]
             id: slider
+            tool_id: root.creator.tool_id
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
+            on_release: app.send_temp(slider.val, root.creator.tool_id); root.dismiss()
 
-# Not used, this is for when klipper gets temperature offsets
-# <ExtTempOffsetPopup@BasePopup>:
-#     size_hint: 0.95, 0.4
-#     title: "Set "+root.creator.heater_id+" Temperature"
-#     FloatLayout:
-#         ExtTempOffsetSlider:
-#             val: root.val[root.creator.heater_id][0]
-#             id: slider
-#             width: root.width
-#             pos_hint: {'center_x':0.5, 'y':0.35}
-#         Btn_P_Cancel:
-#             id: btn_cancel
-#             width: root.width/2
-#             pos: root.pos
-#             on_release: root.dismiss()
-#         Btn_P_Confirm:
-#             text: "Set Offset" if slider.offset != 0 else "Set Temperature"
-#             width: root.width/2
-#             pos: root.center_x, root.y
-#             on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
-
-<FilamentChooserPopup@BasePopup>:
-    size_hint: 0.95, 0.55
-    title: "Choose a Material"
+ #: set o_padding 10
+<FilamentChooserPopup>:
+    size_hint: 0.96, 0.865
+    title: "Load Material"
     #TODO check if container id was already used
     FloatLayout:
         id: container
-        FloatLayout:
+        RectangleButton:
+            on_press: root.tab_2 = False
+            id: left_title
+            text: "New Material"
+            font_size: p.normal_font
             size_hint: None, None
-            size: root.width, container.height-btn_cancel.height
+            size: root.width/2, 70
+            pos_hint: {'top':1, 'x':0}
+            color:  p.medium_light_gray if root.tab_2 else (1,1,1,1)
+            valign: 'middle'
+            halign: 'center'
+        RectangleButton:
+            on_press: root.tab_2 = True
+            id: right_title
+            text: "Your Materials"
+            font_size: p.normal_font
+            size_hint: None, None
+            size: root.width/2, 70
+            pos_hint: {'top':1, 'right':1}
+            color: (1,1,1,1) if root.tab_2 else p.medium_light_gray
+            valign: 'middle'
+            halign: 'center'
+        Divider:
+            width: root.width 
+            pos: root.x, left_title.y
+        ScrollView:
+            id: scroll_view
+            size_hint: None, None
+            size: root.width, container.height-btn_cancel.height-left_title.height
             pos: root.x, btn_cancel.top
-            OptionBox:
-                id: recent_materials
-                title: "Recently unloaded"
-                size_hint: 0.87, 0.3
-                pos_hint: {'center_x':0.5, 'top':1}
-
-        Btn_P_Cancel:
+            StackLayout:
+                id: option_stack
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: (2*o_padding,)
+                padding: (30,)
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
-            enabled: True
-            text: "Start Loading"
+        BtnPConfirm:
+            id: btn_confirm
+            enabled: False
+            text: "Select"
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.send_temp(slider.val, root.creator.heater_id); root.dismiss()
-
-<OptionBox>:
-    title: " "
-    # canvas:
-    #     Color:
-    #         rgba:(0,0,0,0.1)
-    #     Rectangle:
-    #         size: self.size
-    #         pos: self.pos
-    Label:
-        id: box_title
-        text: root.title
-        font_size: p.normal_font
-        size: self.texture_size
-        pos_hint: {'top':1, 'x':0}
-        size_hint: None, None
-        color: p.light_gray
-        valign: 'middle'
-        halign: 'left'
-        padding_y: 6
-        padding_x: 2 * o_padding
-    Divider:
-        width: root.width 
-        pos: root.x, box_title.y
-    StackLayout:
-        size: root.width, root.height - box_title.height
-        size_hint: None, None
-        pos: root.pos
-        id: stack
-        spacing: [0]
-        padding: [o_padding]
+            on_release: root.confirm()
 
 <Option>:
-    selected: False
-    size: 90, 60
-    #: set o_padding 8
+    size: 86, 60
     canvas.before:
-        Color:
-            rgba: p.btn if self.selected else (0,0,0,0)
-        RoundedRectangle:
-            size: self.size
-            pos: self.pos
-            radius: (p.radius,)
         Color:
             rgba: self.option_color
         RoundedRectangle:
-            size: self.width - 2*o_padding, self.height - 2*o_padding
-            pos: self.x + o_padding, self.y + o_padding
+            size: self.width * self.amount, self.height
+            pos: self.x, self.y
             radius: (p.icon_radius,)
+        Color:
+            rgba: (1,1,1,0.25) if self.selected else p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.icon_radius)
+        Color:
+            rgba: p.translucent_white if self.selected else (0,0,0,0)
+        RoundedRectangle:
+            size: self.width + 2*o_padding, self.height + 2*o_padding
+            pos: self.x - o_padding, self.y - o_padding
+            radius: (p.radius,)
+
+<OptionDivider>:
+    #: set od_h 10
+    size_hint: 1, None
+    height: p.padding # is redundantly set in many places, since height can be set to 0
+    actual_height: p.padding
+    canvas.before:
+        Color:
+            rgba: p.popup
+        Rectangle:
+            size: self.width + 2*o_padding, p.padding
+            pos: self.x - o_padding, self.y
+        Color:
+            rgba: p.medium_light_gray
+    Label:
+        size: root.width, p.padding
+        pos: root.pos
+        color: p.medium_light_gray
+        text: "show more ..." if root.height == 0 else "show less" if root.filamentchooser.show_less[root.level] == False else ""
+        text_size: self.size
+        font_size: p.normal_font
+        padding_y: 5
+        valign: 'top'
+        halign: 'center'
+
+<FilamentPopup>:
+    size_hint: 0.96, 0.5
+    title: "{} {}".format(self.manufacturer, self.filament_type)
+    FloatLayout:
+        FilamentSlider:
+            active: root.new
+            id: filament_slider
+            center_x: root.center_x
+            y: btn_cancel.top + 90
+            val: root.amount * 1000
+            filament_color: root.filament_color
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            id: btn_confirm
+            enabled: True
+            text: "Load" if root.new else "Unload"
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.confirm()
+
+<-FilamentSlider>:
+    size_hint: None, None
+    size: p.screen_width - 2*p.small_padding, 100
+    px: self.x + p.padding
+    canvas:
+        Color:
+            rgba: p.medium_gray if self.pressed else self.filament_color
+        RoundedRectangle:
+            size: self.width - 2*p.padding, self.height
+            pos: self.x + p.padding, self.y
+            radius: (p.radius,)
+        Color:
+            rgba: (0,0,0,0) if self.pressed else p.popup
+        Rectangle:
+            size: self.right - p.padding - self.px, self.height
+            pos: self.px, self.y
+        Color:
+            rgba: (1,1,1,0.3) if self.pressed else p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x + p.padding, self.y, self.width - 2*p.padding, self.height, p.radius)
+        Color:
+            rgba: p.btn_outline if not self.active else (0,0,0,0) if self.pressed else (1,1,1,1)
+        Line:
+            width: 4 if self.active else 1
+            points: self.px, self.y, self.px, self.top
+    Label:
+        id: value_label
+        text: root.disp
+        max_lines: 1
+        size_hint: None,None
+        pos_hint: None,None
+        size: root.size
+        pos: root.x, root.top + 50
+        font_size: p.large_font + 10
+        color: (1,1,1,1)
+        valign: 'middle'
+        halign: 'center'

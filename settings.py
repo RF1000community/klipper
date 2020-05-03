@@ -16,8 +16,8 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 
-from elements import *
-import parameters as p
+from .elements import *
+from . import parameters as p
 
 
 class RectangleButton(BaseButton):
@@ -28,7 +28,7 @@ class SetItem(FloatLayout, RectangleButton):
     right_title = StringProperty()
 
 
-class SI_Wifi(SetItem):
+class SIWifi(SetItem):
 
     # The string that is displayed by the label.
     # Holds the current wifi connection and possibly the signal strength as well.
@@ -36,7 +36,7 @@ class SI_Wifi(SetItem):
     display = ListProperty(['', False])
 
     def __init__(self, **kwargs):
-        super(SI_Wifi, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.network_manager = App.get_running_app().network_manager
         self.network_manager.bind(connected_ssid=self.update)
         # Set default messages after everything is set up and running
@@ -77,11 +77,11 @@ class SI_Wifi(SetItem):
             label.italic = True
 
 
-class SI_WifiAccessPoint(SetItem):
+class SIWifiAccessPoint(SetItem):
 
     def __init__(self, ap, **kwargs):
         self.ap = ap
-        super(SI_WifiAccessPoint, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def on_release(self):
         # Present different options when wifi is stored by NM
@@ -105,7 +105,7 @@ class SI_WifiAccessPoint(SetItem):
 class WifiScreen(Screen):
 
     def __init__(self, **kwargs):
-        super(WifiScreen, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.network_manager = App.get_running_app().network_manager
         self.message = '...'
         Clock.schedule_once(self.set_message, 0)
@@ -141,8 +141,9 @@ class WifiScreen(Screen):
         box = self.ids.wifi_box
         box.clear_widgets()
         if value:
+            box.add_widget(Divider(pos_hint={'center_x':0.5}))
             for ap in value:
-                entry = SI_WifiAccessPoint(ap)
+                entry = SIWifiAccessPoint(ap)
                 box.add_widget(entry)
         # In case no networks were found
         else:
@@ -157,7 +158,7 @@ class PasswordPopup(BasePopup):
         self.app = App.get_running_app()
         self.ap = ap
         self.title = self.ap.ssid
-        super(PasswordPopup, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.network_manager = App.get_running_app().network_manager
         self.txt_input.bind(on_text_validate=self.confirm)
         self.network_manager.bind(on_connect_failed=self.connect_failed)
@@ -192,7 +193,7 @@ class ConnectionPopup(BasePopup):
         self.app = App.get_running_app()
         self.network_manager = self.app.network_manager
         self.ap = ap
-        super(ConnectionPopup, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def toggle_connected(self):
         if self.ap.in_use:
@@ -224,10 +225,10 @@ class ConnectionPopup(BasePopup):
                     "Please try again later", delay=6, level="warning")
         self.dismiss()
 
-class SI_Timezone(SetItem):
+class SITimezone(SetItem):
 
     def __init__(self, **kwargs):
-        super(SI_Timezone, self).__init__(**kwargs)
+        super(SITimezone, self).__init__(**kwargs)
         self.set_timezone()
 
     def set_timezone(self):
@@ -255,7 +256,7 @@ class TimezonePopup(BasePopup):
             self.title = "Choose Timezone"
         else: # 2. selection (timezone) just done
             os.system("sudo unlink /etc/localtime")
-            os.system("sudo ln -s /usr/share/zoneinfo/{}/{} /etc/localtime".format(self.region_selection, selection['text']))
+            os.system(f"sudo ln -s /usr/share/zoneinfo/{self.region_selection}/{selection['text']} /etc/localtime")
             # update Timezone shown in Settings and Time in Statusbar
             root_ids = App.get_running_app().root.ids
             root_ids.tabs.ids.set_tab.ids.setting_screen.ids.si_timezone.set_timezone()
@@ -273,7 +274,7 @@ class TimezoneRV(RecycleView):
             if folder in region_folders:
                 region_folders.remove(folder)
             else:
-                logging.warning("Pleas Update Timezones: {} could not be removed from list".format(folder))
+                logging.warning(f"Please update Timezones: {folder} could not be removed from list")
         self.data = [{'text': region} for region in region_folders]
 
 class TimezoneRVBox(LayoutSelectionBehavior, RecycleBoxLayout):

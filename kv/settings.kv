@@ -15,7 +15,8 @@
     BoxLayout:
         orientation: 'vertical'
         TitleBar:
-            title: "Wifi" if screen_man.current=='WifiScreen'  else  "Update" if screen_man.current=='UpdateScreen'  else  "Settings"
+            titles: {'SettingScreen': "Settings", 'WifiScreen': "Wifi", 'UpdateScreen': "System Update", 'FlashScreen': "Flash Klipper Firmware"}
+            title: self.titles[screen_man.current]
             enabled: screen_man.current != 'SettingScreen'
             on_release: screen_man.current = 'SettingScreen'
             pos_hint: {'x':0, 'top':1}
@@ -46,6 +47,8 @@
             height: self.minimum_height
             pos: 0, root.height - self.height
             size_hint_y: None
+            Divider:
+                pos_hint: {'center_x':0.5}
             SetItem:
                 left_title: "Max. printhead Acceleration"
                 right_title: str(app.default_acceleration)+"mm/s²"
@@ -54,9 +57,9 @@
                 left_title: "Pressure Advance"
                 right_title: "{:4.3f}s".format(app.default_pressure_advance)
                 on_release: Factory.PressureAdvanceConfPopup(val=app.default_pressure_advance).open()
-            SI_Wifi:
+            SIWifi:
                 left_title: "Wifi"
-            SI_Timezone:
+            SITimezone:
                 id: si_timezone
             SetItem:
                 left_title: "Shutdown..."
@@ -64,11 +67,9 @@
             SetItem:
                 left_title: "Update"
                 on_release: root.manager.current = "UpdateScreen"
-            SetItem:
-                left_title: "Flash Microcontroller Firmware"
-                on_release: root.manager.current = "FlashScreen"
-            Divider:
-                pos_hint: {'center_x':0.5}
+            # SetItem:
+            #     left_title: "Flash Klipper Firmware to Printer"
+            #     on_release: root.manager.current = "FlashScreen"
 
 <WifiScreen>:
     name: 'WifiScreen'
@@ -101,7 +102,7 @@
     Label:
         id: message
         text: "Choose a Version to install"
-        font_size: p.large_font
+        font_size: p.normal_font
         text_size: self.size
         size_hint: 1, 0.2
         valign: 'top'
@@ -128,63 +129,53 @@
         Rectangle:
             pos: 0,0
             size: self.size
-    Divider:
-        pos_hint: {'center_x':0.5, 'top':1}
-    Label:
-        id: message
-        text: "Configure Firmware to flash to Printer Controlboard"
-        font_size: p.large_font
-        text_size: self.size
-        size_hint: 1, 0.2
-        valign: 'top'
-        halign: 'left'
-        padding_x: p.padding
-        padding_y: p.padding - 10
-        pos_hint: {'x':0, 'top':1}
-        color: p.medium_light_gray
-    Divider:
-        y: message.y
     ScrollView:
-        size_hint: 1, 0.8
+        size_hint: 1, 1
         pos_hint: {'x':0, 'y':0}
         do_scroll_x: False
         BoxLayout:
             id: box
             orientation: 'vertical'
             height: self.minimum_height
+            padding: (0, 0, 0, 300)  #add some blank space so keyboard or FloatingButton cant block items
             size_hint_y: None
+    FloatingButton:
+        id: btn_flash
+        btn_color: p.red
+        y: p.padding
+        right: root.right - p.padding
+        size: 85*p.disp_vertical_stretch, 85
+        text: "Flash\nMCU"
 
-<Btn_Radio@BaseButton>:
+<BtnRadio@BaseButton>:
     selected: True
     size_hint: None, None
-    size: 35, 34
+    size: 36, 35
     canvas:
         Color:
-            rgba: p.medium_gray
-        Ellipse:
-            size: self.size
-            pos: self.pos
+            rgba: p.btn_outline
+        Line:
+            width: 1
+            ellipse: self.x, self.y,     self.width, self.height
         Color:
-            rgba: (1,1,1,1) if self.selected else (0,0,0,0)
+            rgba: p.medium_light_gray if self.selected else (0,0,0,0)
         Ellipse:
             pos: self.x + 6, self.y + 6
             size: self.width - 12, self.height - 12
 
-<Btn_Tristate@BaseButton>:
+<BtnTristate@BaseButton>:
     state: 2 # 0=False, 1=True, 2=M (if available)
     states: 3
     size_hint: None, None
-    size: 38, 37
-    on_release: self.state = (self.state + 1) % self.states #cycle through states
+    size: 36, 35
     canvas.before:
         Color:
-            rgba: p.medium_gray
-        RoundedRectangle:
-            radius: (p.icon_radius,)
-            size: self.size
-            pos: self.pos
+            rgba: p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.icon_radius)
         Color:
-            rgba: (1,1,1,1) if self.state else (0,0,0,0)
+            rgba: p.medium_light_gray if self.state else (0,0,0,0)
         RoundedRectangle:
             radius: (p.icon_radius/2,)
             pos: self.x + 5, self.y + 5
@@ -193,19 +184,19 @@
             rgba: (0,0,0,0.3) if self.state == 1 else (0,0,0,0)
         Line:
             width: 2
-            points: self.center_x -10, self.center_y,     self.center_x-2.5, self.center_y -9,     self.center_x + 10, self.center_y + 7
+            points: self.center_x -9, self.center_y,     self.center_x-2.5, self.center_y -7,     self.center_x + 9, self.center_y + 6
     Label:
         text: "M" if root.state == 2 else ""
         bold: True
         font_size: p.normal_font
-        color: p.medium_gray
+        color: (0,0,0,0.3)
         size: root.size
         pos: root.pos
         text_size: self.size
         valign: 'middle'
         halign: 'center'
        
-<CI_Tristate>:
+<CITristate>:
     size: p.screen_width, 80
     size_hint: None, None
     state: 0
@@ -215,15 +206,16 @@
     font_size: p.normal_font
     text_size: self.size
     valign: 'middle'
-    halign: 'right'
+    halign: 'left'
     padding_x: p.padding
-    Btn_Tristate:
+    BtnTristate:
         states: root.states
         state: root.state
-        x: p.padding + root.indent*p.padding
+        right: root.right - p.padding
         center_y: root.center_y
+        on_release: root.on_release()
 
-<CI_Radio>:
+<CIRadio>:
     selected: False
     size: p.screen_width, 80
     size_hint: None, None
@@ -232,15 +224,15 @@
     font_size: p.normal_font
     text_size: self.size
     valign: 'middle'
-    halign: 'right'
+    halign: 'left'
     padding_x: p.padding
-    Btn_Radio:
+    BtnRadio:
         selected: root.selected
-        x: p.padding + root.indent*p.padding
+        right: root.right - p.padding
         center_y: root.center_y
+        on_release: root.on_release()
 
-<CI_Value>:
-    value: ""
+<CIValue>:
     size_hint: None, None
     size: p.screen_width, 80
     indent: 0
@@ -265,18 +257,19 @@
         x: p.padding
         center_y: root.center_y
 
-<CI_Text>:
+<CIText>:
     size_hint: None, None
-    size: p.screen_width, 80
     indent: 0
     text: "Text"
-    font_size: p.large_font
-    text_size: self.size
+    font_size: p.normal_font
+    text_size: p.screen_width, None
+    size: self.texture_size
+    line_height: 1.25
     valign: 'middle'
     color: p.medium_light_gray
     halign: 'left'
     padding_x: p.padding * (self.indent + 1)
-  
+    padding_y: p.padding - p.small_padding
 
 # SETITEMS
 
@@ -307,9 +300,9 @@
         right: p.screen_width
         padding_x: p.padding
     Divider:
-        y: root.top - 1
+        y: root.y
 
-<SI_Switch@SetItem>:
+<SISwitch@SetItem>:
     enabled: False
     Switch:
         id: knopf
@@ -317,11 +310,11 @@
         pos_hint: {'center_y': 0.5}
         right: p.screen_width-p.padding +p.small_padding #to increase touch area
 
-<SI_Timezone>:
+<SITimezone>:
     left_title: "Timezone"
     on_release: Factory.TimezonePopup().open()
 
-<SI_WifiAccessPoint>:
+<SIWifiAccessPoint>:
     Label:
         text: root.ap.ssid
         font_size: p.normal_font
@@ -344,8 +337,6 @@
         color: root.get_color()
         pos: root.pos
 
-<SI_Release>:
-    on_release: Factory.UpdatePopup(self.left_title, self.url).open()
 
 # POPUPS
 
@@ -392,11 +383,11 @@
                 halign: 'center'
                 valign: 'middle'
                 color: p.light_gray
-        Btn_P_Cancel:
+        BtnPCancel:
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: len(pwd_input.text) >= 8
             width: root.width/2
             pos: root.center_x, root.y
@@ -424,7 +415,7 @@
             x: btn_toggle_connect.x
             top: btn_toggle_connect.y
             on_release: root.delete()
-        Btn_P_Cancel:
+        BtnPCancel:
             single: True
             width: root.width
             pos: root.pos
@@ -472,7 +463,7 @@
         Divider:
             width: root.width
             pos: btn_quit.x, btn_quit.top
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             single: True
             width: root.width
@@ -499,13 +490,13 @@
                 orientation: 'vertical'
                 multiselect: False
                 touch_multiselect: False
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
-            enabled: True if rv_box.selected_nodes else False
+        BtnPConfirm:
+            enabled: bool(rv_box.selected_nodes)
             id: btn_confirm
             title: "Confirm"
             width: root.width/2
@@ -537,18 +528,18 @@
             val_min: 2000
             val_max: 50000
             unit: "mm/s²"
-            roundto: -2
+            round_to: -2
             buttons: [[36000,0,"default",None],]
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5}
             y: btn_cancel.top+40
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             text: "Set and restart"
             enabled: slider.changed
             width: root.width/2
@@ -565,16 +556,16 @@
             val_min: 0
             val_max: 0.05
             unit: "mm/mm/s"
-            roundto: 3
+            round_to: 3
             id: slider
             width: root.width
             pos_hint: {'center_x':0.5, 'y':0.35}
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             text: "Set and restart"
             enabled: slider.changed
             width: root.width/2
@@ -586,47 +577,41 @@
     title: "Downloading"
     FloatLayout:
         id: f_layout
-        canvas:
-            Color:
-                rgba: p.medium_gray
-            RoundedRectangle:
-                size: self.width - 2*p.padding, 10
-                pos: self.x + p.padding, self.center_y
-                radius: (4,)
-            Color:
-                rgba: p.light_gray
-            RoundedRectangle:
-                size: (self.width - 2*p.padding)*root.comm_list[0]/float(root.comm_list[1]), 10
-                pos: self.x + p.padding, self.center_y
-                radius: (5,)
         Label:
-            text: root.version
+            text: root.release['version_tag']
             halign: 'center'
             valign: 'middle'
-            max_lines: 5
             size_hint: 0.8, None
             pos_hint: {'center_x': 0.5, 'center_y': 0.8}
             text_size: self.size
             font_size: p.large_font
             color: p.light_gray
         Label:
-            text: "{}/{}kb".format(root.comm_list[0]/1024,root.comm_list[1]/1024)
+            text: root.message
             size_hint: None, None
             size: root.width, p.normal_font
             top: f_layout.center_y - 5
-            x: root.x + p.padding
+            center_x: root.center_x
             valign: 'top'
             font_size: p.normal_font
             color: p.light_gray
             text_size: self.size
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
-            width: root.width/2
+            width: root.width/3
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
-            id: confirm
-            text: "Install"
-            width: root.width/2
+        BtnPConfirm:
+            id: btn_update
+            text: 'Update'
+            enabled: True
+            width: root.width/3
+            pos: btn_cancel.right, root.y
+            on_release: rood.update(), root.dismiss()
+        BtnPConfirm:
+            id: btn_full_install
+            text: "Full Reinstall"
+            enabled: True
+            width: root.width/3
             pos: root.center_x, root.y
-            on_release: root.install(), root.dismiss()
+            on_release: root.full_install(), root.dismiss()

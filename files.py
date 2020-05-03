@@ -1,8 +1,9 @@
 import logging
-import os
-from os.path import getmtime, basename, dirname, exists, abspath, join
 import re
 import shutil
+import os
+from os.path import getmtime, basename, dirname, exists, abspath, join
+from zipfile import ZipFile
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -13,11 +14,11 @@ from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.properties import BooleanProperty, OptionProperty, StringProperty
 
-from elements import BasePopup
-import parameters as p
+from .elements import BasePopup, PrintPopup
+from . import parameters as p
 
 
-class GC(RecycleView):
+class Filechooser(RecycleView):
     path = StringProperty()
     btn_back_visible = BooleanProperty(False)
     def __init__(self, **kwargs):
@@ -27,7 +28,7 @@ class GC(RecycleView):
             self.path = p.sdcard_path
         else:
             self.path = "/"
-        super(GC, self).__init__(**kwargs)
+        super(Filechooser, self).__init__(**kwargs)
         Clock.schedule_once(self.bind_tab, 0)
         self.load_files()
 
@@ -51,8 +52,8 @@ class GC(RecycleView):
             content.remove("USB-Device")
             # Check if folder is not empty -> a usb stick is plugged in
             if len(os.listdir(join(self.path, "USB-Device"))) > 0:
-                logging.info("USB folders:".format(os.listdir(join(self.path, "USB-Device"))))
-                usb = [{'name': "USB-Device", 'item_type': 'usb', 'path': (join(self.path, "USB-Device")), 'details':""}]
+                usb = [{'name': "USB-Device", 'item_type': 'usb', 'details':"",
+                        'path': (join(self.path, "USB-Device"))}]
         files = []
         folders = []
         for base in content:
@@ -60,16 +61,23 @@ class GC(RecycleView):
             if base.startswith("."):
                 continue
             path = os.path.join(self.path, base)
-            dict_ = {"name": base, "path": path}
+            dict_ = {"name": base, "path": path, "thumbnail": ""}
             if os.path.isdir(path):
                 dict_["item_type"] = "folder"
                 dict_["details"] = ""
                 folders.append(dict_)
-            # Filter only gcode files
-            elif os.path.isfile(path) and os.path.splitext(base)[1].startswith(".gco"):
+            # Filter only gcode and compressed gcode (ufp) files
+            elif os.path.isfile(path):
+                ext = os.path.splitext(base)[1]
                 dict_["item_type"] = "file"
-                dict_["details"] = self.get_details(path) or "--"
-                files.append(dict_)
+                if ext in (".gco", ".gcode"):
+                    dict_["details"] = self.get_details(path)
+                    files.append(dict_)
+                elif ext == ".ufp":
+                    dict_["details"] = self.get_ufp_details(path)
+                    dict_["thumbnail"] = self.get_ufp_thumbnail(path)
+                    files.append(dict_)
+
         # Sort files by modification time (last modified first)
         files.sort(key=lambda d: os.path.getmtime(d["path"]), reverse=True)
         # Sort folders alphabetically
@@ -87,70 +95,93 @@ class GC(RecycleView):
     def back(self):
         self.path = dirname(self.path)
         self.load_files()
-    
+
+    def parse_filament_use(self, match, slicer_idx):
+        match2 = re.search(r'\d*\.\d*', match.group())
+        if match2:
+            filament = float(match2.group())
+            if slicer_idx == 4:
+                filament *= 1000 # Cura gives meters -> convert to mm
+            weight = self.filament_crossection*filament*0.00124 #density in g/mm^3
+            return f"{weight:4.0f}g"
+        return "---"
+
+    filament = [
+        r'Ext.*=.*mm',                          # Kisslicer
+        r';.*filament used =',                  # Slic3r
+        r';.*Filament length: \d+.*\(',         # S3d
+        r'.*filament\sused\s=\s.*mm',           # Slic3r PE
+        r';Filament used: \d*.\d+m',            # Cura
+        r';Material#1 Used:\s\d+\.?\d+',        # ideamaker
+        r'.*filament\sused\s.mm.\s=\s[0-9\.]+'  # PrusaSlicer 
+        ]
+
     def get_details(self, path):
         # Pass the filepath. Returns the filament use of a gcode file 
         # Return value is shown below Name of each file
-        filament = [
-            r'Ext.*=.*mm',                          # Kisslicer
-            r';.*filament used =',                  # Slic3r
-            r';.*Filament length: \d+.*\(',         # S3d
-            r'.*filament\sused\s=\s.*mm',           # Slic3r PE
-            r';Filament used: \d*.\d+m',            # Cura
-            r';Material#1 Used:\s\d+\.?\d+',        # ideamaker
-            r'.*filament\sused\s.mm.\s=\s[0-9\.]+'  # PrusaSlicer 
-            ]
-        nlines = 100
-        head = tail = []
-        with open(path, 'rb') as gcode_file :
-            # Read first 100 lines from beginning
-            head = [gcode_file.readline() for i in range(nlines)]
-            tail = []
-            # Read further back until there are enough lines
-            block_count = -1
-            while len(tail) < nlines:
-                offset = block_count * 1024
-                try:
-                    gcode_file.seek(offset, os.SEEK_END)
-                    tail = gcode_file.readlines()
-                except: # For the unlikely case that the file is too small
-                    break
-                block_count -= 1
-        tail = tail[-100:]
+        with open(path, 'rb') as gcode_file:
+            # search in the first 100 lines
+            for i in range(100):
+                line = gcode_file.readline().decode()
+                for i, regex in enumerate(self.filament):
+                    match = re.search(regex, line)
+                    if match:
+                        return self.parse_filament_use(match, i)
+            # search in the last 5 blocks
+            bytes_to_read = -5 * 1024
+            try:
+                gcode_file.seek(bytes_to_read, os.SEEK_END)
+            except:
+                return "--"
+            while True:
+                line = gcode_file.readline().decode()
+                if not line:
+                    return "--"
+                for i, regex in enumerate(self.filament):
+                    match = re.search(regex, line)
+                    if match:
+                        return self.parse_filament_use(match, i)
+            return "--"
 
-        for line in (head + tail):
-            for i, regex in enumerate(filament):
-                match = re.search(regex, line)
+    def get_ufp_details(self, path):
+        with ZipFile(path).open("/3D/model.gcode", 'r') as gcode_file:
+            # search in the first 100 lines, we expect cura gcode
+            for i in range(100):
+                line = gcode_file.readline().decode()
+                match = re.search(self.filament[4], line)
                 if match:
-                    match2 = re.search(r'\d*\.\d*', match.group())
-                    if match2:
-                        filament = float(match2.group())
-                        if i == 4:
-                            filament *= 1000 # Cura gives meters -> convert to mm
-                        weight = self.filament_crossection*filament*0.0011 #density in g/mm^3
-                        return "{:4.0f}g".format(weight)
-        return ""
+                    return self.parse_filament_use(match, 4)
+        return "--"
 
-class GCGrid(LayoutSelectionBehavior, RecycleGridLayout):
+    def get_ufp_thumbnail(self, path):
+        thumbnail_path = path.replace('.ufp', '.png')
+        if not exists(thumbnail_path):
+            zip_obj = ZipFile(path)
+            with open(thumbnail_path, 'wb') as thumbnail:
+                thumbnail.write(zip_obj.read("/Metadata/thumbnail.png"))
+        return thumbnail_path
+
+class FilechooserGrid(LayoutSelectionBehavior, RecycleGridLayout):
     # Adds selection behaviour to the view
     pass
 
-class GCItem(RecycleDataViewBehavior, Label):
+class FilechooserItem(RecycleDataViewBehavior, Label):
     item_type = OptionProperty('file', options = ['file', 'folder', 'usb'])
     name = StringProperty()
     path = StringProperty()
     details = StringProperty()
     index = None
+    thumbnail = StringProperty("")
     pressed = BooleanProperty(False)
 
     def refresh_view_attrs(self, rv, index, data):
         # Catch and handle the view changes
         self.index = index
-        return super(GCItem, self).refresh_view_attrs(rv, index, data)
+        return super(FilechooserItem, self).refresh_view_attrs(rv, index, data)
 
     def on_touch_down(self, touch):
         # Add selection on touch down
-        if super(GCItem, self).on_touch_down(touch):
+        if super(FilechooserItem, self).on_touch_down(touch):
             return True
         if self.collide_point(*touch.pos):
             self.pressed = True
@@ -159,16 +190,16 @@ class GCItem(RecycleDataViewBehavior, Label):
     def on_touch_up(self, touch):
         was_pressed = self.pressed
         self.pressed = False
-        if super(GCItem, self).on_touch_up(touch):
+        if super(FilechooserItem, self).on_touch_up(touch):
             return True
         if self.collide_point(*touch.pos) and was_pressed:
-            gc = self.parent.parent
+            fc = self.parent.parent
             if self.item_type == 'file':
-                self.popup = PrintPopup(self.path, filechooser=gc)
+                self.popup = PrintPopup(self.path, filechooser=fc)
                 self.popup.open()
             elif self.item_type == 'folder' or self.item_type == 'usb':
-                gc.path = self.path
-                gc.load_files()
+                fc.path = self.path
+                fc.load_files()
             return True
         return False
 
@@ -176,50 +207,25 @@ class GCItem(RecycleDataViewBehavior, Label):
         # Respond to the selection of items in the view
         self.selected = is_selected
 
-
-class PrintPopup(BasePopup):
-
-    def __init__(self, path, filechooser, **kwargs):
-        self.path = path
-        self.filechooser = filechooser
-        super(PrintPopup, self).__init__(**kwargs)
-
-    def confirm(self):
-        app = App.get_running_app()
-        self.dismiss()
-        new_path = self.path
-        if 'USB Device' in self.path:
-            new_path = join(p.sdcard_path, basename(self.path))
-            app.notify.show("Copying {} to Printer...".format(basename(self.path)))
-            shutil.copy(self.path, new_path)
-
-        app.send_print(new_path)
-        tabs = app.root.ids.tabs
-        tabs.switch_to(tabs.ids.home_tab)
-
-    def delete(self):
-        """Open a confirmation dialog to delete the file"""
-        super(PrintPopup, self).dismiss()
-        self.confirm_del = DelPopup(path = self.path, filechooser=self.filechooser)
-        self.confirm_del.open()
-
-
-class DelPopup(BasePopup):
+class DeletePopup(BasePopup):
     """Popup to confirm file deletion"""
-    def __init__(self, path, filechooser, **kwargs):
+    def __init__(self, path, filechooser=None, timeline=None, **kwargs):
         self.path = path
         self.filechooser = filechooser
-        super(DelPopup, self).__init__(**kwargs)
+        self.timeline = timeline
+        super(DeletePopup, self).__init__(**kwargs)
 
     def confirm(self):
         """Deletes the file and closes the popup"""
         os.remove(self.path)
-        # Update the files in the filechooser instance
-        self.filechooser.load_files(in_background=True)
-        self.dismiss()
-
         app = App.get_running_app()
-        app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)
 
-class StopPopup(BasePopup):
-    pass
+        # Update the files in the filechooser instance
+        if app.history:
+            app.history.trim_history()
+        if self.timeline:
+            self.timeline.load_all(in_background=False)
+        elif self.filechooser:
+            self.filechooser.load_files(in_background=True)
+        self.dismiss()
+        app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)

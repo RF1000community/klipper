@@ -1,6 +1,7 @@
 # coding: utf-8
 from collections import deque
 from time import time
+from os.path import join, basename
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -11,23 +12,25 @@ from kivy.uix.popup import Popup
 from kivy.uix.vkeyboard import VKeyboard
 from kivy.uix.widget import Widget
 
-import parameters as p
+from . import parameters as p
+import logging
+import shutil
 
 
 class Divider(Widget):
     pass
 
 class BaseButton(Label):
-
+    """ Lightweight adaptation of the kivy button class, with disable functionality """
     pressed = BooleanProperty(False)
     enabled = BooleanProperty(True)
     def __init__(self, **kwargs):
         self.register_event_type('on_press')
         self.register_event_type('on_release')
-        super(BaseButton, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def on_touch_down(self, touch):
-        if super(BaseButton, self).on_touch_down(touch):
+        if super().on_touch_down(touch):
             return True
         if touch.is_mouse_scrolling:
             return False
@@ -49,14 +52,14 @@ class BaseButton(Label):
     def on_touch_move(self, touch):
         if touch.grab_current is self:
             return True
-        if super(BaseButton, self).on_touch_move(touch):
+        if super().on_touch_move(touch):
             return True
         return self in touch.ud
 
     def on_touch_up(self, touch):
         res = False
         if touch.grab_current is not self:
-            return super(BaseButton, self).on_touch_up(touch)
+            return super().on_touch_up(touch)
         assert(self in touch.ud)
         touch.ungrab(self)
         if self.collide_point(*touch.pos) or not self.enabled:
@@ -78,7 +81,7 @@ class BaseButton(Label):
 class RoundButton(BaseButton):
     pass
 
-class Btn_Slider(BaseButton):
+class BtnSlider(BaseButton):
     val = NumericProperty()
     px = NumericProperty()
     s_title = StringProperty()
@@ -86,29 +89,51 @@ class Btn_Slider(BaseButton):
 
 class BasePopup(Popup):
 
-    def __init__(self,**kwargs):
+    def __init__(self, creator=None, val=None, **kwargs):
         # makes this Popup recieve the instance of the calling button to
         # access its methods and e.g. heater_id
-        self.creator = kwargs.get('creator', None)
+        self.creator = creator
         # a popup holds a value that can be passed to a slider, this
         # avoids the value being updated, and the slider reseting
-        self.val = kwargs.get('val', None)
-        super(BasePopup,self).__init__(**kwargs)
+        self.val = val
+        super().__init__(**kwargs)
 
     def open(self, animation=False, **kwargs):
-        super(BasePopup, self).open(animation=animation, **kwargs)
+        super().open(animation=animation, **kwargs)
         app = App.get_running_app()
         app.notify.redraw()
 
     def dismiss(self, animation=False, **kwargs):
-        super(BasePopup, self).dismiss(animation=animation, **kwargs)
+        super().dismiss(animation=animation, **kwargs)
+
+class CriticalErrorPopup(BasePopup):
+    message = StringProperty()
 
 class ErrorPopup(BasePopup):
     message = StringProperty()
-    def __init(self, message, **kwargs):
-        self.message = message
-        super(ErrorPopup, self).__init__(**kwargs)
 
+class StopPopup(BasePopup):
+    pass
+
+class PrintPopup(BasePopup):
+    def __init__(self, path, filechooser=None, timeline=None, **kwargs):
+        self.path = path
+        self.filechooser = filechooser
+        self.timeline = timeline
+        super().__init__(**kwargs)
+
+    def confirm(self):
+        app = App.get_running_app()
+        self.dismiss()
+        new_path = self.path
+        if 'USB Device' in self.path:
+            new_path = join(p.sdcard_path, basename(self.path))
+            app.notify.show(f"Copying {basename(self.path)} to Printer...")
+            shutil.copy(self.path, new_path)
+
+        app.send_print(new_path)
+        tabs = app.root.ids.tabs
+        tabs.switch_to(tabs.ids.home_tab)
 
 class UltraSlider(Widget):
     """
@@ -120,9 +145,8 @@ class UltraSlider(Widget):
                         Defaults to 0 and 100
     unit                Unit string, appended to display value.
                         Defaults to "" (no unit)
-    roundto             How many decimals to round val to.
-                        Is passed to round().
-
+    round_to            How many decimals to round val to, is passed to round().
+    round_style         5 rounds lowest decimal place to multiples of 5... normally 1
     attributes:
     buttons     list of lists: e.g. [[val,offset,"name",the instance]]
     val         value, passed to printer, not in px
@@ -135,7 +159,8 @@ class UltraSlider(Widget):
     val_min = NumericProperty()
     val_max = NumericProperty()
     unit = StringProperty()
-    roundto = NumericProperty()
+    round_to = NumericProperty()
+    round_style = NumericProperty(1)
     px = NumericProperty() #absolute position of dot in px
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
@@ -144,7 +169,7 @@ class UltraSlider(Widget):
     def __init__(self, **kwargs):
         self.btn_last_active = None
         self.initialized = False
-        super(UltraSlider, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
@@ -154,7 +179,7 @@ class UltraSlider(Widget):
         self.px = self.get_px_from_val(self.val)
         self.disp = self.get_disp_from_val(self.val)
         for b in self.buttons:
-            b[3] = Btn_Slider(y=self.y, px=self.get_px_from_val(b[0]), 
+            b[3] = BtnSlider(y=self.y, px=self.get_px_from_val(b[0]), 
                               val=b[0], offset=b[1],  s_title=b[2])
             b[3].bind(on_press=self.on_button)
             self.add_widget(b[3])
@@ -162,8 +187,9 @@ class UltraSlider(Widget):
         self.initialized = True
 
     def on_touch_down(self, touch):
-        if touch.pos[0] > self.px_min - 30 and touch.pos[0] < self.px_max + 30 and\
-           touch.pos[1] > self.y + 95 - 18 and touch.pos[1] < self.y + 95 + 18 and self.initialized:
+        if touch.pos[0] > self.px_min - 30 and touch.pos[0] < self.px_max + 30\
+        and touch.pos[1] > self.y + 95 - 18 and touch.pos[1] < self.y + 95 + 18\
+        and self.initialized:
             self.pressed = True
             touch.grab(self)
             x = self.apply_bounds(touch.pos[0])
@@ -172,7 +198,7 @@ class UltraSlider(Widget):
             if self.btn_last_active is not None: self.btn_last_active[3].active = False
             self.changed = True
             return True
-        return super(UltraSlider, self).on_touch_down(touch)
+        return super().on_touch_down(touch)
 
     def on_touch_move(self, touch):
         if touch.grab_current is self:
@@ -191,7 +217,7 @@ class UltraSlider(Widget):
             self.highlight_button()
             touch.ungrab(self)
             return True
-        return super(UltraSlider, self).on_touch_up(touch)
+        return super().on_touch_up(touch)
 
     def apply_bounds(self, x):
         if x > self.px_max: x = self.px_max
@@ -235,33 +261,17 @@ class UltraSlider(Widget):
         """
         m = float(self.val_max - self.val_min)/(self.px_max - self.px_min)
         val = self.val_min + m*(px - self.px_min)
-        return round(val, self.roundto)
+        return round(val/self.round_style, self.round_to)*self.round_style
 
     def get_disp_from_val(self, val):
         """Returns string of the value and the given unit string"""
-        return "{:.{p}f}{}".format(val, self.unit, p = max(0, self.roundto))
+        dec = max(0, self.round_to)
+        return f"{val:.{dec}f}{self.unit}"
 
 
-class UltraOffsetSlider(UltraSlider):
-    pass
+# class UltraOffsetSlider(UltraSlider):
+#     pass
 
-def get_id(inst, root_widget = None):#doesnt work :)
-    if root_widget is None: root_widget = App.get_running_app().root
-    q = deque(root_widget.ids.values())
-    while 1:
-        c = q.popleft()
-        if inst in list(c.ids.values()):
-            for k in c.ids.keys():
-                if c.ids[k] == inst: return k
-        q.extend(list(c.ids.values()))
-
-def get_instance(id, root_widget = None):#BFS => always gives the highest level instance with id
-    if root_widget is None: root_widget = App.get_running_app().root
-    q = list(root_widget.ids.values())
-    while 1:
-        c = q.popleft()
-        if id in c.ids: return c.ids[id]
-        q.extend(list(c.ids.values()))
 
 class UltraKeyboard(VKeyboard):
     # Copy of VKeyboard, only overwrite two methods

@@ -38,7 +38,13 @@
 <FloatingButton@BaseButton>:
     btn_color: (0,0,0,0)
     size: 74 * p.disp_vertical_stretch, 74
-    canvas:
+    bold: True
+    halign: 'center'
+    valign: 'middle'
+    text_size: self.size
+    font_size: p.normal_font
+    color: (1,1,1,1)
+    canvas.before:
         Color:
             rgba: self.btn_color if self.enabled else (0,0,0,0)
         Ellipse:
@@ -50,7 +56,7 @@
             size: self.size
             pos: self.pos
 
-# Is this needed
+# Basic button for future use
 #<Btn@RoundButton>:
 #    canvas:
 #        Color:
@@ -60,7 +66,7 @@
 #            pos: self.pos
 #            size: self.size
 
-<Btn_Outline@RoundButton>:
+<BtnOutline@RoundButton>:
     canvas.before:
         Color:
             rgba: p.btn_outline
@@ -68,7 +74,7 @@
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
             width: 1
 
-<Btn_P_Cancel@BaseButton>:
+<BtnPCancel@BaseButton>:
     text: "Cancel"
     single: False
     height: 70
@@ -84,7 +90,7 @@
             pos: self.pos
             size: self.size
 
-<Btn_P_Confirm@BaseButton>:
+<BtnPConfirm@BaseButton>:
     text: "Confirm"
     height: 70
     enabled: False
@@ -100,7 +106,7 @@
             pos: self.pos
             size: self.size
 
-<Btn_Slider>:
+<BtnSlider>:
     #:set t 9  #half of width
     #:set j 15
     x: self.px-self.width/2-self.offset
@@ -211,7 +217,7 @@
 # MISC
 
 <TitleBar@BaseButton>:
-    size: 140, 110
+    size: 150, 110
     enabled: False
     title: ""
     #: set q 26
@@ -272,28 +278,52 @@
             pos: self.pos
             size: self.size
 
-<ErrorPopup>:
-    size_hint: 0.8, 0.5
+<CriticalErrorPopup>:
+    size_hint: 0.9, 0.68
     error: True
     message: "--"
     title: "Error - Firmware stopped"
     FloatLayout:
         Label:
             text: root.message
-            halign: 'center'
-            valign: 'middle'
-            max_lines: 5
-            size_hint: 0.9, 0.5
+            halign: 'left'
+            valign: 'top'
+            padding_y: p.large_font * 2
+            max_lines: 20
+            size_hint: 0.9, 1
             pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.1}
             text_size: self.size
-            font_size: p.large_font
+            font_size: p.normal_font -2
             color: p.light_gray
-        Btn_P_Cancel:
+        BtnPCancel:
             id: btn_cancel
             text: "Restart Printer"
             width: root.width
             pos: root.pos
             on_release: app.restart_klipper()
+
+<ErrorPopup>:
+    size_hint: 0.7, 0.5
+    error: True
+    message: "--"
+    title: "Error"
+    FloatLayout:
+        Label:
+            text: root.message
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 20
+            size_hint: 0.9, 1
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.1}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        BtnPCancel:
+            id: btn_cancel
+            title: "Ok"
+            width: root.width
+            pos: root.pos
+            on_release: root.dismiss
 
 <StopPopup>:
     title: 'Stop'
@@ -310,12 +340,46 @@
             text_size: self.size
             font_size: p.large_font
             color: p.light_gray
-        Btn_P_Cancel:
+        BtnPCancel:
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             enabled: True
             width: root.width/2
             pos: root.center_x, root.y
             on_release: root.dismiss(); app.send_stop()
+
+<PrintPopup>:
+    title: 'Print'
+    title_size: p.large_font
+    size_hint: 0.8, 0.3
+    FloatLayout:
+        Label:
+            text: basename(root.path)
+            halign: 'center'
+            valign: 'middle'
+            max_lines: 2
+            size_hint: 0.9, 0.5
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.2}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/3
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            id: btn_del
+            text: 'Delete'
+            enabled: app.printer_objects_available
+            width: root.width/3
+            pos: btn_cancel.right, root.y
+            on_release: Factory.DeletePopup(path = self.path, filechooser=self.filechooser, timeline=self.timeline).open(); root.dismiss()
+        BtnPConfirm:
+            text: 'Print'
+            enabled: app.printer_objects_available
+            width: root.width/3
+            pos: btn_del.right, root.y
+            on_release: root.confirm()

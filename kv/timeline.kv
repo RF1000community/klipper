@@ -8,8 +8,8 @@
     canvas:
         Rectangle:
             source: p.kgui_dir+'/logos/timeline.png'
-            size: 60,60
-            pos: 225-30, 20
+            size: 60*p.disp_vertical_stretch, 65
+            pos: 225-30*p.disp_vertical_stretch, 17.5
     FloatLayout:
         pos: 0, p.tab_height
         canvas.before:
@@ -29,23 +29,29 @@
             size_hint: None, None
             size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
             pos: 0, p.tab_height
-        Btn_QX:
+        BtnPrint:
+            id: btn_print
+            right: p.screen_width - p.h_padding + 10
+            y: p.tab_height + p.padding
+            on_release: Factory.PrintPopup(tl.selected.path).open()
+            enabled: tl.selected is not None and tl.selected.state in ('done', 'stopped')
+        BtnQX:
             id: q_x
-            right: p.screen_width - p.h_padding +10
-            y: p.tab_height + p.padding 
+            right: p.screen_width - p.h_padding + 10
+            y: p.tab_height + p.padding
             on_release: tl.remove()
-            enabled: tl.selected is not None and tl.selected.status == "queued"
-        Btn_QUp:
+            enabled: tl.selected is not None and tl.selected.state == "queued"
+        BtnQUp:
             id: q_up
-            right: q_x.x - p.h_padding  +10
+            right: q_x.x - p.h_padding  + 10
             y: p.tab_height + p.padding
             on_release: tl.move_up()
-            enabled: tl.selected is not None and tl.selected.status == "queued"
-        Btn_QDown:
+            enabled: tl.selected is not None and tl.selected.state == "queued"
+        BtnQDown:
             right: q_up.x - p.h_padding  + 10
             y: p.tab_height + p.padding
             on_release: tl.move_down()
-            enabled: tl.selected is not None and tl.selected.status == "queued"
+            enabled: tl.selected is not None and tl.selected.state == "queued"
 
 <Timeline>:
     TimelineBox:
@@ -60,14 +66,12 @@
 
 <TimelineItem>:
     size: p.screen_width, 777
-    # Extra background color
-    canvas.before:
+    canvas:
         Color:
-            rgba: p.accent if self.status in {"printing", "paused"} else (0, 0, 0, 0)
+            rgba: (1,1,1,0.06) if self.state in ('printing', 'paused', 'pausing', 'stopping') else (0,0,0,0)
         Rectangle:
             size: self.size
             pos: self.pos
-    canvas:
         Color:
             rgba: p.translucent_white if (self.selected or self.pressed) else (0,0,0,0)
         Rectangle:
@@ -75,30 +79,28 @@
             pos: self.pos
     #Label
     size_hint_y: None
-    height: 40 if self.status == "header" else 110
-    text: root.details
-    halign: 'center' if self.status == "header" else 'right'
+    height: 40 if self.state == "header" else 110
+    text: "" if self.state in ('header', 'message') else self.state.capitalize()
+    halign: 'right'
     valign: 'middle'
     max_lines: 1
     padding_x: p.h_padding
     text_size: self.size
-    font_size: p.small_font if self.status == "header" else p.normal_font
-    color: p.medium_dark_gray if self.status in {"printing", "paused"} else p.medium_light_gray
-    italic: self.status == "header"
+    font_size: p.normal_font
+    color: {'done':p.green, 'stopped':p.red, 'stopping':p.red, 'printing': (1,1,1,1), 'paused':(1,1,1,1), 'pausing':(1,1,1,1), 'queued':p.medium_light_gray, 'message':(0,0,0,0), 'header':(0,0,0,0)}[self.state]
     Label:
         text: root.name
         shorten: True
         shorten_from: 'right'
-        halign: 'left'
+        halign: 'center' if root.state in ("header", "message") else 'left'
         valign: 'middle'
-        padding_x: p.h_padding
+        padding_x: p.h_padding 
         size_hint: None, None
-        size: root.width - 120, root.height
+        size: root.width - (0 if root.state in ("header", "message") else 120), root.height
         pos: root.pos
         text_size: self.size
         font_size: p.normal_font
-        color: p.green if root.status == "done" else p.red if root.status == "stopped" else (1,1,1,1)
-        bold: root.status == "header"
+        color: p.medium_gray if root.state in ("header", "message") else (1,1,1,1)
     Divider:
         y: root.top - 1
 
@@ -106,7 +108,21 @@
 # BUTTONS
 
 #:set pad 24
-<Btn_QUp@FloatingButton>:
+<BtnPrint@FloatingButton>:
+    id: btn_print
+    btn_color: p.accent
+    Label:
+        size: root.size
+        pos: root.pos
+        text: "Print"
+        bold: True
+        halign: 'center'
+        valign: 'middle'
+        text_size: self.size
+        font_size: p.normal_font
+        color: (1,1,1,1) if root.enabled else (0,0,0,0)
+
+<BtnQUp@FloatingButton>:
     id: q_up
     btn_color: p.accent
     canvas:
@@ -115,7 +131,7 @@
         Triangle:
             points: self.x+pad-4, self.y+pad+4,  self.right-pad+4, self.y+pad+4,  self.center_x, self.top-pad
 
-<Btn_QDown@FloatingButton>:
+<BtnQDown@FloatingButton>:
     btn_color: p.accent
     canvas:
         Color:
@@ -123,7 +139,7 @@
         Triangle:
             points: self.x+pad-4, self.top-pad-4,  self.right-pad+4, self.top-pad-4,  self.center_x, self.y+pad
 
-<Btn_QX@FloatingButton>:
+<BtnQX@FloatingButton>:
     btn_color: p.accent
     canvas:
         Color:

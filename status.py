@@ -5,12 +5,40 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.graphics.context_instructions import Color
 from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Rectangle, BorderImage
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, NumericProperty
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
-import parameters as p
+from . import parameters as p
+
+
+class StatusBar(BoxLayout):
+
+    animation_pos = NumericProperty(0)
+
+    def __init__(self, **kwargs):
+        app = App.get_running_app()
+        app.bind(state=self.update_animation)
+        app.bind(print_state=self.update_animation)
+        self.scheduled_updating = None
+        self.update_animation(None, app.state)
+        super(StatusBar, self).__init__(**kwargs)
+
+    def update_animation(self, instance, value):
+        if value in ('initializing', 'pausing', 'stopping'):
+            self.animation_pos = 0
+            self.scheduled_updating = Clock.schedule_interval(self.update_animation_pos, 0.065)
+        else:
+            if self.scheduled_updating:
+                Clock.unschedule(self.scheduled_updating)
+                self.scheduled_updating = None
+            self.animation_pos = 0
+
+    def update_animation_pos(self, dt):
+        self.animation_pos += 3
+        self.animation_pos = self.animation_pos % (p.screen_width + 300)
 
 
 class TimeLabel(Label):

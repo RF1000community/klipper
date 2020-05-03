@@ -30,15 +30,15 @@
             on_release: gc.back()
             pos_hint: {'x':0, 'top':1}
             title: relpath(gc.path, dirname(p.sdcard_path))
-        GC:
+        Filechooser:
             id: gc
-            viewclass: 'GCItem'
+            viewclass: 'FilechooserItem'
             size_hint: None, None
             size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
             pos: 0, p.tab_height
 
-<GC>:
-    GCGrid:
+<Filechooser>:
+    FilechooserGrid:
         id: gc_grid
         cols: 3
         padding: (15,)
@@ -53,12 +53,12 @@
         multiselect: False
         touch_multiselect: False
 
-<GCItem>:
+<FilechooserItem>:
     canvas:
         Color:
-            rgba: p.medium_gray
+            rgba: (1,1,1,1) if self.thumbnail else p.medium_light_gray
         Rectangle:
-            source: p.kgui_dir + ('/logos/file.png' if self.item_type == 'file' else '/logos/usb.png' if self.item_type == 'usb' else '/logos/folder.png' )
+            source: self.thumbnail if self.thumbnail else p.kgui_dir + {'file':"/logos/file.png", 'usb':"/logos/usb.png", 'folder':"/logos/folder.png"}[self.item_type]
             size: 84, 84
             pos: self.center_x - 42, self.center_y - 5
         Color:
@@ -95,44 +95,6 @@
 
 # POPUPS
 
-<PrintPopup>:
-    title: 'Print'
-    title_size: p.large_font
-    size_hint: 0.8, 0.3
-    FloatLayout:
-        Label:
-            text: basename(root.path)
-            halign: 'center'
-            valign: 'middle'
-            max_lines: 2
-            size_hint: 0.9, 0.5
-            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.2}
-            text_size: self.size
-            font_size: p.large_font
-            color: p.light_gray
-        Btn_P_Cancel:
-            id: btn_cancel
-            width: root.width/3
-            pos: root.pos
-            on_release: root.dismiss()
-        RectangleButton:
-            id: btn_del
-            canvas:
-                Color:
-                    rgba: p.divider
-                Line:
-                    points: self.x, self.y, self.x, self.top, self.right, self.top
-            text: 'Delete'
-            size: root.width/3, 70
-            pos: btn_cancel.right, root.y
-            on_release: root.delete()
-        Btn_P_Confirm:
-            text: 'Print'
-            enabled: app.printer_objects_available
-            width: root.width/3
-            pos: btn_del.right, root.y
-            on_release: root.confirm()
-
 <DelPopup>:
     title: 'Delete'
     title_size: p.large_font
@@ -148,11 +110,11 @@
             text_size: self.size
             font_size: p.large_font
             color: p.light_gray
-        Btn_P_Cancel:
+        BtnPCancel:
             width: root.width/2
             pos: root.pos
             on_release: root.dismiss()
-        Btn_P_Confirm:
+        BtnPConfirm:
             text: 'Delete'
             width: root.width/2
             enabled: True

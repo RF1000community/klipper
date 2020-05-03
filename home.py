@@ -1,17 +1,13 @@
 # coding: utf-8
 import logging
-import random
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.graphics.context_instructions import Color
-from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Line
-from kivy.properties import ListProperty, StringProperty, NumericProperty
-from kivy.uix.floatlayout import FloatLayout
+from kivy.properties import ListProperty, NumericProperty, StringProperty
 from kivy.uix.widget import Widget
 
-from elements import *
-import parameters as p
+from .elements import *
+from . import parameters as p
 
 
 class XyField(Widget):
@@ -20,7 +16,7 @@ class XyField(Widget):
     enabled = BooleanProperty(False)
 
     def __init__(self, **kwargs):
-        super(XyField, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.point_radius = 10
         self.app = App.get_running_app()
         self.printer_dimensions = (self.app.pos_max['x'] - self.app.pos_min['x'],
@@ -29,7 +25,7 @@ class XyField(Widget):
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
-        #Calculate bounds of actual field
+        # Calculate bounds of actual field
         self.origin = [self.x+self.point_radius, self.y+self.point_radius]
         self.limits = [self.right-self.point_radius, self.top-self.point_radius]
         self.px = self.origin
@@ -92,182 +88,355 @@ class XyField(Widget):
 
 
 class TempSlider(UltraSlider):
+    tool_id = StringProperty()
 
     def __init__(self, **kwargs):
-        super(TempSlider, self).__init__(**kwargs)
-        App.get_running_app().get_temp()
-        self.buttons = []
-    def get_val_from_px(self, x):
-        v = int(((x-self.px_min)/self.px_width)*(280-40)+40)
-        for b in self.buttons:
-            if v >= b[0]-2 and v <= b[0]+2:
-                v = b[0]
-                self.px = self.get_px_from_val(v)
-                break
-        if v <= 42: v = 0
-        return v
-    def get_disp_from_val(self, val):
-        if self.val == 0:
-            s = "Off"
-        else:
-            s = "{}°C".format(self.val)
-        return s
- 
-
-class BedTempSlider(UltraSlider):
-    def __init__(self, **kwargs):
-        super(BedTempSlider, self).__init__(**kwargs)
-        App.get_running_app().get_temp()
-        self.buttons = [[0,0,"Off",None],
-                        [60,0,"PLA",None],
-                        [90,0,"PETG",None],
-                        [110,0,"ABS",None]]
-
-    def get_val_from_px(self, x):
-        v = int(((x-self.px_min)/self.px_width)*(140-30)+30)
-        for b in self.buttons:
-            if v >= b[0]-2 and v <= b[0]+2:
-                v = b[0]
-                self.px = self.get_px_from_val(v)
-                break
-        if v <= 42: v = 0
-        return v
-    def get_disp_from_val(self, val):
-        if self.val == 0:
-            s = "Off"
-        else:
-            s = "{}°C".format(self.val)
-        return s
-    def get_px_from_val(self, val):
-        x = (float(val-30)/float(140-30))*self.px_width+self.px_min
-        if x < self.px_min: x = self.px_min
-        return x
-
-
-class ExtTempSlider(UltraSlider):
-    def __init__(self, **kwargs):
-        super(ExtTempSlider, self).__init__(**kwargs)
-        App.get_running_app().get_temp()
-        self.buttons = [
-            [0,14,"Off",None],
-            [70,0,"PLA\ncold pull",None],
-            [90,-68/2,"ABS/PETG\ncold pull",None],
-            [210,68/2,"PLA",None],
-            [230,0,"PETG",None],
-            [250,-68/2,"ABS",None]]
-    def get_val_from_px(self, x):
-        v = int(((x-self.px_min)/self.px_width)*(280-40)+40)
-        for b in self.buttons:
-            if v >= b[0]-2 and v <= b[0]+2:
-                v = b[0]
-                self.px = self.get_px_from_val(v)
-                break
-        if v <= 42: v = 0
-        return v
-    def get_disp_from_val(self, val):
-        if self.val == 0:
-            s = "Off"
-        else:
-            s = "{}°C".format(self.val)
-        return s
-    def get_px_from_val(self, val):
-        x = (float(val-40)/float(280-40))*self.px_width+self.px_min
-        if x < self.px_min: x = self.px_min
-        return x
-
-"""
-class ExtTempOffsetSlider(UltraOffsetSlider):
-    def __init__(self, **kwargs:
-        super(ExtTempSlider, self).__init__(**kwargs)
-        App.get_running_app().get_temp()
-        self.buttons = [
-            [0,14,"Off",None],
-            [210,68/2,"PLA",None],
-            [230,0,"PETG",None],
-            [250,-68/2,"ABS",None]]
-    def get_val_from_px(self, x):
-        v = int(((x-self.px_min)/self.px_width)*(280-40)+40)
-        for b in self.buttons:
-            if v >= b[0]-2 and v <= b[0]+2:
-                v = b[0]
-                self.px = self.get_px_from_val(v)
-                break
-        if v <= 42: v = 0
-        return v
-    def get_disp_from_val(self, val):
-        offset = str(self.offset)
-        if self.offset >= 0: offset = "+"+ offset
-        if self.val == 0:  return "Off {}".format(offset)
-        else:              return "{}°C {}".format(self.val, offset)
-
-    def get_px_from_val(self, val):
-        x = (float(val-40)/float(280-40))*self.px_width+self.px_min
-        if x < self.px_min: x = self.px_min
-        return x
-"""
-
-class Option(RoundButton):
-    option_color = ListProperty([0,0,0,0])
-    def __init__(self, box_color, **kwargs):
-        if box_color is not None:
-            self.option_color = box_color + [1]
-        super(Option, self).__init__(**kwargs)
-
-    def on_release(self):
-        self.selected = True
-
-class OptionBox(FloatLayout, Widget):
-    def __init__(self, **kwargs):
-        self.selected = None
-        self.options = [["PLA", [1,0,0], None], ["PETG", [0,0,1], None],["ABS", [0,1,0], None],["PP", None, None],["PC", None, None]]
-        super(OptionBox, self).__init__(**kwargs)
+        self.btn_last_active = None
+        self.initialized = False
+        super(UltraSlider, self).__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
 
-    def init_drawing(self, dt):
-        for o in self.options:
-            o[2] = Option(y=self.y + 200, text=o[0], box_color=o[1])
-            o[2].bind(on_release=self.on_selected)
-            self.ids.stack.add_widget(o[2])
+    def init_drawing(self, dt=None):
+        app = App.get_running_app()
+        app.get_temp()
+        fil_man = app.filament_manager
 
-    def on_selected(self, option):
-        if self.selected:
-            self.selected.selected = False
-        self.selected = option
+        self.buttons = [[0, 0, "Off", None]] #[value, pos_offset, text, instance]
+        if self.tool_id == 'B':
+            self.val_min = 30
+            self.val_max = 140
+            if fil_man:
+                loaded_material = fil_man.get_status()['loaded']
+                for material in loaded_material:
+                    if material['guid']:
+                        material_type = fil_man.get_info(material['guid'], "./m:metadata/m:name/m:material")
+                        bed_temp = fil_man.get_info(material['guid'], "./m:settings/m:setting[@key='heated bed temperature']")
+                        if bed_temp:
+                            self.buttons.append([int(bed_temp), 0, material_type, None])
+            else: # show some generic temperatures
+                self.buttons = [
+                    [0,0,"Off",None],
+                    [60,0,"PLA",None],
+                    [90,0,"PETG",None],
+                    [110,0,"ABS",None]]
+        else:
+            self.val_min = 40
+            self.val_max = 280
+            if fil_man:
+                tool_idx = int(self.tool_id[-1])
+                loaded_material = fil_man.get_status()['loaded']
+                if len(loaded_material) > tool_idx and loaded_material[tool_idx]['guid']:
+                    material_type = fil_man.get_info(loaded_material[tool_idx]['guid'], "./m:metadata/m:name/m:material")
+                    ext_temp = fil_man.get_info(loaded_material[tool_idx]['guid'],"./m:settings/m:setting[@key='print temperature']")
+                    if ext_temp:
+                        self.buttons.append([int(ext_temp), 0, material_type, None])
+            else:
+                self.buttons = [
+                    [0,14,"Off",None],
+                    [70,0,"PLA\ncold pull",None],
+                    [90,-68/2,"ABS/PETG\ncold pull",None],
+                    [210,68/2,"PLA",None],
+                    [230,0,"PETG",None],
+                    [250,-68/2,"ABS",None]]
+        self.px_max = self.right - p.padding
+        self.px_min = self.x + p.padding
+        self.px_width = self.px_max - self.px_min
+        self.px = self.get_px_from_val(self.val)
+        self.disp = self.get_disp_from_val(self.val)
+        for b in self.buttons:
+            b[3] = BtnSlider(y=self.y, px=self.get_px_from_val(b[0]), 
+                              val=b[0], offset=b[1], s_title=b[2])
+            b[3].bind(on_press=self.on_button)
+            self.add_widget(b[3])
+        self.highlight_button()
+        self.initialized = True
+
+    def get_val_from_px(self, x):
+        v = int(((x-self.px_min)/self.px_width)*(self.val_max-self.val_min)+self.val_min)
+        for b in self.buttons:
+            if v >= b[0]-2 and v <= b[0]+2:
+                v = b[0]
+                self.px = self.get_px_from_val(v)
+                break
+        if v <= self.val_min + 2:
+            v = 0
+        return v
+
+    def get_disp_from_val(self, val):
+        if self.val == 0:
+            s = "Off"
+        else:
+            s = f"{self.val}°C"
+        return s
+
+    def get_px_from_val(self, val):
+        x = (float(val-self.val_min)/float(self.val_max-self.val_min))*self.px_width+self.px_min	
+        if x < self.px_min: x = self.px_min	
+        return x
 
 class BtnTriple(Widget):
-    filament_color = ListProperty([random.randint(0,100)/100. for i in range(3)])
-    filament_color_adjusted = ListProperty([0,0,0])
-    filament_amount = NumericProperty(0.6)
-    divider_color = ListProperty([1,1,1,0])
-
+    filament_amount = NumericProperty()
+    filament_color = ListProperty([0,0,0,0])
+    title = StringProperty()
+    tool_id = StringProperty()
+    tool_idx = NumericProperty()
+    extruder_id = StringProperty()
     def __init__(self, **kwargs):
-        super(BtnTriple, self).__init__(**kwargs)
-        Clock.schedule_once(self.calculate_colors, 0)
+        self.app = App.get_running_app()
+        self.app.printer.register_event_handler("filament_manager:material_changed", self.update_material)
+        self.app.printer.register_event_handler("klippy:ready", self.update_material)
+        self.app.bind(print_state=self.update_material)
+        self.material = {'guid':None, 'amount':0}
+        super().__init__(**kwargs)
 
-    def calculate_colors(self, *args):
-        """
-        From self.filament_color calculate bg and label colors such
-        that everything is clearly visible.
-        """
-        l = self.lightness(*self.filament_color)
-        # add divider if lightness is too close to background
-        if abs(l - self.lightness(*p.background[:3])) < 0.07:
-            self.divider_color = [1,1,1,0.15]
-        else:
-            self.divider_color = [0,0,0,0]
-        # darken if color is to bright
-        if l > 0.48:
-            self.filament_color_adjusted = [c*0.48/l for c in self.filament_color]
-        else:
-            self.filament_color_adjusted = self.filament_color
+    def update_material(self, *_):
+        if not self.tool_id: # kv ui not initialized yet
+            Clock.schedule_once(self.update_material, 0)
+            return
+        self.fil_man = self.app.filament_manager
+        if not self.fil_man:
+            return
+        loaded_material = self.fil_man.get_status()['loaded']
+        if len(loaded_material) > self.tool_idx:
+            self.material = loaded_material[self.tool_idx]
 
-    def lightness(self, r, g, b):
-        """
-        Returns the lightness of an rgb color.
+        if self.material['guid']:
+            material_type = self.fil_man.get_info(self.material['guid'], "./m:metadata/m:name/m:material")
+            brand = self.fil_man.get_info(self.material['guid'], "./m:metadata/m:name/m:brand")
+            hex_color = self.fil_man.get_info(self.material['guid'], "./m:metadata/m:color_code")
+            self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
+            self.filament_amount = self.material['amount']
+            if self.material['state'] == 'loading':
+                self.title = "Loading..."
+            elif self.material['state'] == 'unloading':
+                self.title = "Unloading..."
+            else:
+                self.title = f"{self.material['amount']*1000:3.0f}g\n{brand} {material_type}"
+        else:
+            self.title = "Load Material"
+            self.filament_color = (0,0,0,0)
+
+    def load_unload(self):
+        if not self.material['guid']:
+            FilamentChooserPopup(self.extruder_id).open()
+        elif self.material['state'] == 'loaded':
+            FilamentPopup(self.extruder_id, False, self.material['guid'], amount=self.material['amount']).open()
+
+
+class FilamentChooserPopup(BasePopup):
+    tab_2 = BooleanProperty(False)
+    def __init__(self, extruder_id, **kwargs):
+        self.app = App.get_running_app()
+        self.fil_man = self.app.filament_manager
+        self.extruder_id = extruder_id
+        self.show_less = [True, True, True]
+        self.sel = [None, None, None, None] # selected [type, manufacturer, color, guid]
+        self.sel_2 = (None, None, None) # selected (amount, idx, guid)
+        self.options = [[], [], []]
+        super().__init__(**kwargs)
+        Clock.schedule_once(self.draw_options, 0)
+
+    def draw_options(self, dt=None):
+        self.options = [[], [], []]
+        self.sel[3] = None
+        self.ids.option_stack.clear_widgets()
+        self.ids.btn_confirm.text = "Select"
+        self.ids.btn_confirm.enabled = False
+        # Calculate options to draw based on selection
+        if not self.tab_2:
+            # get material library from filament manager as type-manufacturer-color tree of dicts
+            tmc = self.fil_man.tmc_to_guid
+
+            # always show types
+            self.options = [[Option(self, level=0, text=t, selected=(t==self.sel[0])) 
+                           for t in list(tmc)], [], []] 
+            if self.sel[0]:
+                # type is selected, show manufacturers
+                # autoselect if there's only one manufacturer, or 'Generic' and none is selected
+                manufacturers = list(tmc[self.sel[0]])
+                if len(manufacturers) == 1:
+                    self.sel[1] = manufacturers[0]
+                elif self.sel[1] is None and 'Generic' in manufacturers:
+                    self.sel[1] = 'Generic'
+                self.options[1] = [Option(self, level=1, text=m, color=p.light_gray,
+                                  font_size=p.small_font, selected=(m==self.sel[1]))
+                                  for m in manufacturers]
+                if self.sel[1]:
+                    # type and manufacturer is selected, show colors
+                    # autoselect if there's only one color
+                    colors = list(tmc[self.sel[0]][self.sel[1]])
+                    if len(colors) == 1:
+                        self.sel[2] = colors[0]
+                    self.options[2] = [Option(self, level=2, hex_color=c, selected=(c==self.sel[2])) 
+                                      for c in colors]
+                    if self.sel[2]:
+                        # type and manufacturer and color is selected, we have a material guid
+                        self.sel[3] = tmc[self.sel[0]][self.sel[1]][self.sel[2]]
+                        self.ids.btn_confirm.text = f"Select {self.sel[1]} {self.sel[0]}"
+                        self.ids.btn_confirm.enabled = True
+
+            # sort types by how many manufactures make them
+            # tmc[option.text] is the dict of manufacturers for the selected type (e.g. for PLA)
+            self.options[0].sort(key = lambda option: len(tmc[option.text]), reverse=True)
+            # sort manufacturers alphabetically, "Generic" always first
+            self.options[1].sort(key = lambda option: option.text.lower() if option.text!='Generic' else '\t')
+
+            # now draw generated options
+            for i in range(len(self.options)):
+                max_amount = (15 if i == 0 else 10)
+                if len(self.options[i]) < max_amount or not self.show_less[i]:
+                    for option in self.options[i]:
+                        self.ids.option_stack.add_widget(option)
+                    if len(self.options) > i+1:
+                        self.ids.option_stack.add_widget(OptionDivider(self, level=i))
+                else: # hidden options
+                    for option in self.options[i][:max_amount]:
+                        self.ids.option_stack.add_widget(option)
+                    if self.options[i]: # draw the show_more divider even if next group is empty
+                        self.ids.option_stack.add_widget(OptionDivider(self, level=i, height=0))
+                self.ids.btn_confirm.text = "Select"
+
+        else:   
+            materials = self.fil_man.get_status()['unloaded']
+            for i, (guid, amount) in enumerate(materials):
+                option = Option(
+                    self, guid=guid, selected=(self.sel_2[1]==i),
+                    amount=amount, unloaded_idx=i, font_size=p.small_font,
+                    hex_color=self.fil_man.get_info(guid, "./m:metadata/m:color_code"),
+                    text=self.fil_man.get_info(guid, "./m:metadata/m:name/m:brand") + " "
+                        + self.fil_man.get_info(guid, "./m:metadata/m:name/m:material"))
+                self.options[0].append(option)
+                self.ids.option_stack.add_widget(option)
+            if self.sel_2:
+                self.ids.btn_confirm.text = "Select"
+                self.ids.btn_confirm.enabled = True
+
+    def on_tab_2(self, instance, tab):
+        self.draw_options()
+
+    def do_selection(self, option):
+        if self.tab_2:
+            self.sel_2 = (option.amount, option.unloaded_idx, option.guid)
+        else:
+            self.sel[option.level] = option.text or option.hex_color
+            for i in range(len(self.sel)):
+                if i > option.level:
+                    self.sel[i] = None
+        self.draw_options()
+
+    def confirm(self):
+        if self.tab_2:
+            FilamentPopup(self.extruder_id, True, self.sel_2[2], unloaded_idx=self.sel_2[1], amount=self.sel_2[0]).open()
+        else:
+            FilamentPopup(self.extruder_id, True, self.sel[3]).open()
+        self.dismiss()
+
+class Option(BaseButton):
+    selected = BooleanProperty(False)
+    def __init__(self, filamentchooser, selected, hex_color=None, amount=1, unloaded_idx=None, 
+                level=0, guid=None, font_size=p.normal_font-2, color=(1,1,1,1), **kwargs):
+        self.selected = selected
+        self.filamentchooser = filamentchooser
+        self.option_color = (0,0,0,0)
+        self.amount = amount
+        self.level = level
+        self.hex_color = hex_color
+        self.guid = guid
+        self.unloaded_idx = unloaded_idx
+        if hex_color is not None:
+            self.option_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
+        super().__init__(**kwargs)
+        self.multiline = True
+        self.max_lines = 2
+        self.shorten_from = 'right'
+        self.font_size = font_size
+        self.color = color
+
+    def on_press(self, **kwargs):
+        self.selected = True
+        self.filamentchooser.do_selection(self)
+
+class OptionDivider(BaseButton):
+    def __init__(self, filamentchooser, level, **kwargs):
+        self.level = level
+        self.filamentchooser = filamentchooser
+        super().__init__(**kwargs)
+
+    def on_touch_down(self, touch):
+        # Add selection on touch down
+        if touch.pos[1] > self.y and touch.pos[1] < self.y + self.actual_height:
+            self.filamentchooser.show_less[self.level] = not self.filamentchooser.show_less[self.level]
+            self.filamentchooser.draw_options()
+            return True
+        if super().on_touch_down(touch):
+            return True
+        return False
+
+class FilamentPopup(BasePopup): 
+    """ this shows info, and an amount slider on a material coming from one of 3 sources:
+        - chosen from library       (extruder_id, new=True, guid)
+        - from unloaded materials   (extruder_id, new=True, guid, amount, unloaded_idx)
+        - currently loaded material (extruder_id, new=False, guid, amount) """
+    amount = NumericProperty(1)
+    def __init__(self, extruder_id, new, guid, amount=1, unloaded_idx=None, **kwargs):
+        self.app = App.get_running_app()
+        self.fil_man = self.app.filament_manager
+        self.reactor = self.app.reactor
+        self.extruder_id = extruder_id
+        self.new = new # set wether the popup is for loading a new material or unloading
+        self.guid = guid
+        self.amount = amount
+        self.unloaded_idx = unloaded_idx
+        self.filament_type = self.fil_man.get_info(guid, "./m:metadata/m:name/m:material")
+        self.manufacturer = self.fil_man.get_info(guid, "./m:metadata/m:name/m:brand")
+        hex_color = self.fil_man.get_info(guid, "./m:metadata/m:color_code")
+        self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
+        super().__init__(**kwargs)
+
+    def confirm(self):
+        if self.new:
+            self.reactor.register_async_callback(
+                lambda e: self.fil_man.load(self.extruder_id, guid=self.guid,
+                amount=self.ids.filament_slider.val/1000, unloaded_idx=self.unloaded_idx))
+        else:
+            self.reactor.register_async_callback(
+                lambda e: self.fil_man.unload(self.extruder_id))
+        self.dismiss()
+
+class FilamentSlider(UltraSlider):
+    filament_color = ListProperty([0,0,0,0])
+    active = BooleanProperty(True)
+    def __init__(self, **kwargs):
+        self.val_min = 0
+        self.val_max = 1000
+        self.unit = "g"
+        self.round_to = 0
+        super().__init__(**kwargs)
+
+    def on_touch_down(self, touch):
+        if self.initialized\
+        and self.active\
+        and touch.pos[0] > self.px_min - 30 and touch.pos[0] < self.px_max + 30\
+        and touch.pos[1] > self.y - 18 and touch.pos[1] < self.top + 18:
+            self.pressed = True
+            touch.grab(self)
+            x = self.apply_bounds(touch.pos[0])
+            self.val = self.get_val_from_px(x)
+            self.disp = self.get_disp_from_val(self.val)
+            if self.btn_last_active is not None: self.btn_last_active[3].active = False
+            self.changed = True
+            return True
+        return super(UltraSlider, self).on_touch_down(touch)
+
+
+def calculate_filament_color(filament_color):
+    """ Calculate filament color thats not to light for text. 
+        Also the lightness of an rgb color.
         This is equal to the average between the minimum and
-        maximum value.
-        """
-        return 0.5*(max(r, g, b) + min(r, g, b))
+        maximum value."""
+    #lightness = 0.5*(max(filament_color) + min(filament_color))
+    return [c*0.6 for c in filament_color]
 
-    def on_filament_color(self, *args):
-        self.calculate_colors()
+def hex_to_rgb(h):
+    """"Converts hex color to rgba float format"""
+    return [int(h[i:i + 2], 16) / 255. for i in (1, 3, 5)]

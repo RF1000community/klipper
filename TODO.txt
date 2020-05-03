@@ -1,40 +1,16 @@
 KGUI:
-
     fix ethernet icon not showing up
-
-    https://wiki.archlinux.org/index.php/Display_Power_Management_Signaling
-
     OTA Updates of klipperui + dependencies
-
-    Klipper bugs
-        see if timer to close error persists
-        DripModeEndSignal during homing maybe due to add. gcode move command
-
-    See if progress bar shows wrong progress on homescreen as well
-
     microcontroller flashing
 
-    Schedule Full sdcard handling e.g. with, add deletion when more than 100 elements except for the USB stick, notification
+    fix pause_resume extrusion
 
-    Material Database, with popups, unload load
+    py3 port
 
-CURA COONNECTION
-    Klipper Module
-        h264 streaming:
-            raspivid
-            mjpegstreamer
+        microcontroller flashing (maybe dead)
 
-    Cura Plugin
-
-HIGH SPEED ODRIVE COONNECTION
-
-ODrive:
-    clock sync command
-
-    add to pos_queue command with optional time
-    get_interval
-
-Replacement for Stepper:
-    handle no homing
-    send positions based 
-    maybe kinematics class
+bugs
+    see if timer to close error persists
+        especially on live move
+    DripModeEndSignal during homing maybe due to add. gcode move command
+                                    also due to stop command

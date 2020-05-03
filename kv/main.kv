@@ -31,14 +31,19 @@ FloatLayout:
     SettingTab:
         id: set_tab
 
-<StatusBar@BoxLayout>:
+<StatusBar>:
     orientation: 'horizontal'
     canvas:
         Color:
-            rgba: p.red if 'error' in app.state else p.green if 'done' == app.print_state else p.accent if app.print_state == 'printing' else p.flat_accent
+            rgba: p.red if 'error' in app.state else p.accent if app.print_state == 'printing' else p.flat_accent
         Rectangle:
             size: self.size
             pos: self.pos
+        Color:
+            rgba: (1,1,1,1)
+        Rectangle:
+            size: 300, 3
+            pos: self.animation_pos - 300, self.y
     StackLayout:
         id: left
         orientation: 'lr-tb'
@@ -46,10 +51,10 @@ FloatLayout:
         x: root.x
         Label:
             id: state
-            text: "state: " + app.state + ", " + app.print_state
+            text: app.state + ", " + app.print_state
             size_hint_x: None
             size: self.texture_size
-            font_size: root.height - 5
+            font_size: p.normal_font
             padding: 7, 0
     StackLayout:
         id: right
@@ -66,6 +71,5 @@ FloatLayout:
             text: self.time
             size_hint_x: None
             size: self.texture_size
-            font_size: root.height - 4
+            font_size: p.normal_font
             padding: 7, 0
-

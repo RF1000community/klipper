@@ -1,6 +1,9 @@
 Installation Guide
 ==================
 
+###### this is still in development, right now the install script likely wont work because the Kivy installer stopped working
+###### with python2 (kivy 1.11.0 could be installed manually and removed from scripts/klippy-kgui-requirements.txt ) 
+
 
 ### Prepare OS on Raspberry Pi 4
 (raspberry pi 3 is not fast enough to run the UI properly and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
@@ -10,17 +13,18 @@ Installation Guide
 
 ```bash
 sudo apt update
-sudo raspi-config 
+sudo apt install git
+sudo raspi-config
 """set memory split to 256,
    GL Driver to OpenGL FKMS, 
    Desktop/CLI to Console Autologin """ 
-sudo apt install git python-pip virtualenv  
 ```
 
 ### Install Octoprint from source
 - This is optional, Klipper can be used just with KGUI
 
 ```bash
+sudo apt install virtualenv  
 cd
 git clone https://github.com/foosel/OctoPrint.git
 cd Octoprint/
