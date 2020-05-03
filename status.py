@@ -24,7 +24,7 @@ class StatusBar(BoxLayout):
         app.bind(print_state=self.update_animation)
         self.scheduled_updating = None
         self.update_animation(None, app.state)
-        super(StatusBar, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def update_animation(self, instance, value):
         if value in ('initializing', 'pausing', 'stopping'):
@@ -49,7 +49,7 @@ class TimeLabel(Label):
         self.update_clock = None
         self.get_time_str()
         self.start_clock()
-        super(TimeLabel, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def start_clock(self):
         # How many seconds are left to the next full minute
@@ -71,7 +71,7 @@ class ConnectionIcon(Widget):
         self.signal = 1
         self.icon_padding = 2
         self.transparent = (0, 0, 0, 0)
-        super(ConnectionIcon, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.signal_timer = None # Clock timer for requesting signal strength
         self.network_manager.bind(connection_type=self.set_icon)
@@ -83,7 +83,8 @@ class ConnectionIcon(Widget):
             self.wifi_color = Color(rgba=self.transparent)
             self.wifi = Ellipse(pos=(0, 0), size=(0, 0), angle_start=315, angle_end=405)
             self.eth_color = Color(rgba=self.transparent)
-            self.eth = Rectangle(pos=(0, 0), size=(0, 0), source="logos/ethernet.png")
+            self.eth = Rectangle(pos=(0, 0), size=(0, 0),
+                    source=p.kgui_dir + "/logos/ethernet.png")
         self.set_icon(None, self.network_manager.connection_type)
 
     def draw_wifi(self):
@@ -137,8 +138,12 @@ class ConnectionIcon(Widget):
             self.draw_nothing()
 
     def update_wifi(self, *args):
-        self.signal = self.network_manager.get_connection_strength() / 100.0
-        self.draw_wifi()
+        strength = self.network_manager.get_connection_strength()
+        if strength:
+            self.signal = strength / 100.0
+            self.draw_wifi()
+        else: # strength can be None if WiFi disconnected
+            self.draw_nothing()
 
 
 class Notifications(FloatLayout):
@@ -152,7 +157,7 @@ class Notifications(FloatLayout):
         Clock.schedule_once(self.late_setup, 0)
 
     def late_setup(self, dt):
-        super(Notifications, self).__init__()
+        super().__init__()
         self.root_widget = App.get_running_app().root
         self.size_hint = (None, None)
         self.size = self.root_widget.width - 2*p.notification_padding, 110
@@ -161,7 +166,7 @@ class Notifications(FloatLayout):
         with self.canvas:
             Color(rgb=p.notification_shadow)
             BorderImage(
-                source=p.kgui_dir+'/logos/shadow.png',
+                source=p.kgui_dir + '/logos/shadow.png',
                 pos=(self.x-64, self.y-64),
                 size=(self.width + 128, self.height + 127),
                 border=(64, 64, 64, 64))
@@ -274,4 +279,4 @@ class Notifications(FloatLayout):
         if self.collide_point(*touch.pos):
             self.hide()
             return True
-        return super(Notifications, self).on_touch_down(touch)
+        return super().on_touch_down(touch)
