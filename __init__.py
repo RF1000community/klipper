@@ -91,6 +91,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.z_timer = None
         self.extrude_timer = None
         self.filament_manager = None
+        self.curaconnection = None
         self.bed_mesh = True #initialize as True so it shows up on load, maybe dissapears after handle_connect
         self.sdcard = None
         self.history = None
@@ -155,6 +156,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
         self.filament_manager = self.printer.lookup_object('filament_manager', None)
         self.heater_manager = self.printer.lookup_object('heaters', None)
+        self.curaconnection = self.printer.lookup_object('klipper-cura-connection', None)
         self.heaters = {}
         self.extruders = []
         if 'heater_bed' in self.heater_manager.heaters: 

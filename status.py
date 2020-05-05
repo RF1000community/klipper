@@ -5,7 +5,7 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.graphics.context_instructions import Color
 from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Rectangle, BorderImage
-from kivy.properties import StringProperty, NumericProperty
+from kivy.properties import StringProperty, NumericProperty, BooleanProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -144,6 +144,22 @@ class ConnectionIcon(Widget):
             self.draw_wifi()
         else: # strength can be None if WiFi disconnected
             self.draw_nothing()
+
+class CuraConnectionIcon(Widget):
+    """Icon indicating that there currently is a connection to Cura"""
+
+    connected = BooleanProperty(False)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        Clock.schedule_interval(self.update, 2)
+
+    def update(self, *args):
+        curaconnection = App.get_running_app().curaconnection
+        if curaconnection is not None:
+            self.connected = curaconnection.is_connected()
+        else:
+            self.connected = False
 
 
 class Notifications(FloatLayout):
