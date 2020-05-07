@@ -45,9 +45,8 @@ git clone --recurse-submodules https://github.com/D4SK/klipperui
 ```
 
 - move your printer configuration (printer.cfg) to /home/pi  
-- reboot
-- connect OctoPrint to /tmp/printer using web interface  
-
+- reboot ``` sudo reboot  ```
+- done !
 
 ---
   
