@@ -5,14 +5,13 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.graphics.context_instructions import Color
 from kivy.graphics.vertex_instructions import RoundedRectangle, Ellipse, Rectangle, BorderImage
-from kivy.properties import StringProperty, NumericProperty
+from kivy.properties import StringProperty, NumericProperty, BooleanProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
 from . import parameters as p
-from .settings import wifi
 
 
 class StatusBar(BoxLayout):
@@ -25,7 +24,7 @@ class StatusBar(BoxLayout):
         app.bind(print_state=self.update_animation)
         self.scheduled_updating = None
         self.update_animation(None, app.state)
-        super(StatusBar, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def update_animation(self, instance, value):
         if value in ('initializing', 'pausing', 'stopping'):
@@ -50,7 +49,7 @@ class TimeLabel(Label):
         self.update_clock = None
         self.get_time_str()
         self.start_clock()
-        super(TimeLabel, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def start_clock(self):
         # How many seconds are left to the next full minute
@@ -67,24 +66,26 @@ class TimeLabel(Label):
 class ConnectionIcon(Widget):
 
     def __init__(self, **kwargs):
+        self.network_manager = App.get_running_app().network_manager
         self.topright = []
-        super(ConnectionIcon, self).__init__(**kwargs)
-        Clock.schedule_once(self.init_drawing, 0)
-
-        self.show_wifi = False
-        self.show_eth = False
-        wifi.bind(on_connection_types=self.set_icon)
-        wifi.bind(on_networks=self.update_wifi)
-
-    def init_drawing(self, dt):
+        self.signal = 1
         self.icon_padding = 2
         self.transparent = (0, 0, 0, 0)
+        super().__init__(**kwargs)
+
+        self.signal_timer = None # Clock timer for requesting signal strength
+        self.network_manager.bind(connection_type=self.set_icon)
+
+        Clock.schedule_once(self.init_drawing, 0)
+
+    def init_drawing(self, dt):
         with self.canvas:
             self.wifi_color = Color(rgba=self.transparent)
             self.wifi = Ellipse(pos=(0, 0), size=(0, 0), angle_start=315, angle_end=405)
-            self.eth_color = Color(rgba=p.red)
-            self.eth = Rectangle(pos=(0, 0), size=(0, 0), source="logos/ethernet.png")
-        self.draw_nothing()
+            self.eth_color = Color(rgba=self.transparent)
+            self.eth = Rectangle(pos=(0, 0), size=(0, 0),
+                    source=p.kgui_dir + "/logos/ethernet.png")
+        self.set_icon(None, self.network_manager.connection_type)
 
     def draw_wifi(self):
         padding = self.icon_padding
@@ -114,7 +115,7 @@ class ConnectionIcon(Widget):
         pos = [self.topright[0] - size[0] - padding,
                self.topright[1] - size[1] - padding]
 
-        self.eth_color.rgba = p.medium_gray
+        self.eth_color.rgba = p.translucent_white
         self.wifi_color.rgba = self.transparent
 
         self.eth.pos = pos
@@ -122,19 +123,43 @@ class ConnectionIcon(Widget):
 
     def draw_nothing(self):
         self.width = 0
-        self.eth_color.rgba = self.wifi_color.rgba = self.transparent
+        self.eth_color.rgba = self.transparent
+        self.wifi_color.rgba = self.transparent
 
     def set_icon(self, instance, value):
-        if value['eth']:
+        if self.signal_timer is not None:
+            self.signal_timer.cancel()
+        if value == "ethernet":
             self.draw_eth()
-        elif value['wifi']:
-            self.draw_wifi()
+        elif value == "wireless":
+            self.signal_timer = Clock.schedule_interval(self.update_wifi, 4)
+            self.update_wifi() # Takes care of drawing too
         else:
             self.draw_nothing()
 
-    def update_wifi(self, instance, value):
-        self.signal = value[0]['signal'] / 100.0
-        self.draw_wifi()
+    def update_wifi(self, *args):
+        strength = self.network_manager.get_connection_strength()
+        if strength:
+            self.signal = strength / 100.0
+            self.draw_wifi()
+        else: # strength can be None if WiFi disconnected
+            self.draw_nothing()
+
+class CuraConnectionIcon(Widget):
+    """Icon indicating that there currently is a connection to Cura"""
+
+    connected = BooleanProperty(False)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        Clock.schedule_interval(self.update, 2)
+
+    def update(self, *args):
+        curaconnection = App.get_running_app().curaconnection
+        if curaconnection is not None:
+            self.connected = curaconnection.is_connected()
+        else:
+            self.connected = False
 
 
 class Notifications(FloatLayout):
@@ -148,7 +173,7 @@ class Notifications(FloatLayout):
         Clock.schedule_once(self.late_setup, 0)
 
     def late_setup(self, dt):
-        super(Notifications, self).__init__()
+        super().__init__()
         self.root_widget = App.get_running_app().root
         self.size_hint = (None, None)
         self.size = self.root_widget.width - 2*p.notification_padding, 110
@@ -157,7 +182,7 @@ class Notifications(FloatLayout):
         with self.canvas:
             Color(rgb=p.notification_shadow)
             BorderImage(
-                source=p.kgui_dir+'/logos/shadow.png',
+                source=p.kgui_dir + '/logos/shadow.png',
                 pos=(self.x-64, self.y-64),
                 size=(self.width + 128, self.height + 127),
                 border=(64, 64, 64, 64))
@@ -270,4 +295,4 @@ class Notifications(FloatLayout):
         if self.collide_point(*touch.pos):
             self.hide()
             return True
-        return super(Notifications, self).on_touch_down(touch)
+        return super().on_touch_down(touch)

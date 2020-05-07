@@ -27,6 +27,7 @@ from .files import *
 from .freedir import freedir
 from .timeline import *
 from .home import *
+from .nm_dbus import *
 from .settings import *
 from .status import *
 from .update import *
@@ -81,6 +82,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def __init__(self, config = None, **kwargs):
         logging.info("Kivy app initializing...")
+        self.network_manager = NetworkManager()
         self.notify = Notifications()
         self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
         self.homed = {'x':False, 'y':False, 'z':False}
@@ -89,6 +91,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.z_timer = None
         self.extrude_timer = None
         self.filament_manager = None
+        self.curaconnection = None
         self.bed_mesh = True #initialize as True so it shows up on load, maybe dissapears after handle_connect
         self.sdcard = None
         self.history = None
@@ -153,6 +156,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
         self.filament_manager = self.printer.lookup_object('filament_manager', None)
         self.heater_manager = self.printer.lookup_object('heaters', None)
+        self.curaconnection = self.printer.lookup_object('klipper-cura-connection', None)
         self.heaters = {}
         self.extruders = []
         if 'heater_bed' in self.heater_manager.heaters: 
@@ -233,14 +237,19 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def run(self):
         logging.info("Kivy app.run")
-        Clock.schedule_once(self.setup_after_run, 1)
         super().run()
 
-    def setup_after_run(self, dt):
+    def on_start(self, *args):
+        if self.network_manager.available:
+            self.network_manager.start()
         try:
             self.root_window.set_vkeyboard_class(UltraKeyboard)
         except:
             logging.warning("root_window wasnt available")
+
+    def on_stop(self, *args):
+        # Stop networking dbus event loop
+        self.network_manager.loop.quit()
 
     def bind_updating(self, *args):
         self.root.ids.tabs.bind(current_tab=self.control_updating)
@@ -594,7 +603,7 @@ for fname in kv_files:
     Builder.load_file(join(p.kgui_dir, "kv", fname))
 
 
-# Entry point, order of execution: __init__()  run()  main.kv  setup_after_run()  handle_connect()  handle_ready()
+# Entry point, order of execution: __init__()  run()  main.kv  on_start()  handle_connect()  handle_ready()
 def load_config(config):
     kgui_object = mainApp(config)
     kgui_object.start()

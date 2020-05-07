@@ -314,9 +314,9 @@
     left_title: "Timezone"
     on_release: Factory.TimezonePopup().open()
 
-<SIWifiNetwork>:
+<SIWifiAccessPoint>:
     Label:
-        text: root.network['ssid']
+        text: root.ap.ssid
         font_size: p.normal_font
         text_size: self.size
         color: p.light_gray
@@ -328,7 +328,7 @@
         right: p.screen_width
         padding_x: p.padding
     Label:
-        text: str(root.network['signal'])
+        text: str(root.ap.signal)
         font_size: p.normal_font
         padding_x: p.padding
         width: self.texture_size[0]
@@ -388,18 +388,18 @@
             pos: root.pos
             on_release: root.dismiss()
         BtnPConfirm:
-            enabled: len(pwd_input.text) > 3
+            enabled: len(pwd_input.text) >= 8
             width: root.width/2
             pos: root.center_x, root.y
             on_release: root.confirm()
 
 <ConnectionPopup>:
-    title: self.network['ssid']
+    title: self.ap.ssid
     size_hint: 0.65, 0.4
     FloatLayout:
         RectangleButton:
             id: btn_toggle_connect
-            text: 'Disconnect' if root.connected else 'Connect'
+            text: 'Disconnect' if root.ap.in_use else 'Connect'
             size_hint: 0.7, None
             height: 80
             pos_hint: {'center_x': 0.5, 'top': 1}

@@ -66,6 +66,10 @@ FloatLayout:
             size_hint: None, None
             size: 0, root.height
             topright: root.right, root.top
+        CuraConnectionIcon:
+            id: s_con
+            size_hint: None, None
+            size: 0, root.height
         TimeLabel:
             id: time
             text: self.time
@@ -73,3 +77,13 @@ FloatLayout:
             size: self.texture_size
             font_size: p.normal_font
             padding: 7, 0
+
+<CuraConnectionIcon>:
+    canvas:
+        Color:
+            rgba: (1, 1, 1, 1) if self.connected else (0, 0, 0, 0)
+        Rectangle:
+            size: self.width - 2, self.height - 4
+            pos: self.x, self.y + 2
+            source: p.kgui_dir + "/logos/cura-32.png"
+    width: self.height + 2 if self.connected else 0
