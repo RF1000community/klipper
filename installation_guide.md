@@ -1,13 +1,13 @@
 Installation Guide
 ==================
 
-###### this is still in development, right now the install script likely wont work because the Kivy installer stopped working
-###### with python2 (kivy 1.11.0 could be installed manually and removed from scripts/klippy-kgui-requirements.txt ) 
+###### this is still in development, works except connecting to a printer or homing moves fail some of the time with a "Timer too close" error
+###### additionally the kivy master branch has to be installed manually e.g. from precompiled wheel because it includes necessary fixes for the raspberry pi
 
 
 ### Prepare OS on Raspberry Pi 4
 (raspberry pi 3 is not fast enough to run the UI properly and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
-- flash [Raspian buster lite](https://www.raspberrypi.org/downloads/raspbian) image to SD-Card
+- flash [Raspian buster **lite**](https://www.raspberrypi.org/downloads/raspbian) image to SD-Card
 - add new file named "ssh" (with no file extension) to the boot folder to enable ssh
 - Boot your pi and run the following commands via SSH
 
@@ -20,9 +20,7 @@ sudo raspi-config
    Desktop/CLI to Console Autologin """ 
 ```
 
-### Install Octoprint from source
-- This is optional, Klipper can be used just with KGUI
-
+### Install Octoprint if required <br> (it is recommended to just use the klipper-cura plugin instead of any webinterface)
 ```bash
 sudo apt install virtualenv  
 cd
@@ -55,7 +53,7 @@ git clone --recurse-submodules https://github.com/D4SK/klipperui
   
   
   
-## Manual Installation 
+## Manual Installation and Debugging Notes (incomplete)
 #### KGUI deps
 
 Execute klipperui/scripts/install-kgui.sh or:
