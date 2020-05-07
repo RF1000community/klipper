@@ -34,6 +34,8 @@ class FilamentManager:
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
         # xml files for each material
         self.material_dir = expanduser('~/materials')
+        if not os.path.exists(self.material_dir):
+            os.mkdir(self.material_dir)
         self.tmc_to_guid = {} # [Type][Manufacturer][Color] = guid, a dict tree for choosing filaments
         self.guid_to_path = {}
         self.read_material_library_xml()
@@ -65,12 +67,10 @@ class FilamentManager:
     def read_material_library_xml(self):
         self.guid_to_path = {}
         self.tmc_to_guid = {}
-        if os.path.exists(self.material_dir):
-            files = os.listdir(self.material_dir)
-            for f in files:
-                if not f.endswith(".xml.fdm_material"):
-                    continue
-                self.read_single_file(os.path.join(self.material_dir, f))
+        files = os.listdir(self.material_dir)
+        for f in files:
+            if f.endswith(".xml.fdm_material"):
+                self.read_single_file(os.path.join(self.material_dir, f))            
 
     def read_single_file(self, f_path):
         try:
