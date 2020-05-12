@@ -183,8 +183,11 @@ class BtnTriple(Widget):
     extruder_id = StringProperty()
     def __init__(self, **kwargs):
         self.app = App.get_running_app()
-        self.app.printer.register_event_handler("filament_manager:material_changed", self.update_material)
-        self.app.printer.register_event_handler("klippy:ready", self.update_material)
+        try:
+            self.app.printer.register_event_handler("filament_manager:material_changed", self.update_material)
+            self.app.printer.register_event_handler("klippy:ready", self.update_material)
+        except AttributeError:
+            pass
         self.app.bind(print_state=self.update_material)
         self.material = {'guid':None, 'amount':0}
         super().__init__(**kwargs)

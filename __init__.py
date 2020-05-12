@@ -9,7 +9,7 @@ from os.path import join, dirname
 from datetime import datetime, timedelta
 from subprocess import Popen
 
-TESTING = __name__ == "__main__"
+TESTING = "KGUI_TESTING" in os.environ
 if not TESTING:
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'sdl2'
@@ -68,7 +68,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     print_done_time = StringProperty()
     print_title = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
-    pos = ListProperty([0,0,0,0]) #updated by scheduled update_home
+    pos = ListProperty([0, 0, 0, 0]) #updated by scheduled update_home
     #tuning  #updated by upate_printing
     speed = NumericProperty(100)
     flow = NumericProperty(100)
@@ -608,6 +608,3 @@ def load_config(config):
     kgui_object = mainApp(config)
     kgui_object.start()
     return kgui_object
-
-if TESTING:
-    mainApp().run()
