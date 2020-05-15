@@ -13,7 +13,10 @@ and can be used together with octoprint or the klipper-cura-plugin (recommended)
   * Print Speed
 * Accurate and instant print time predictions (with Cura gcode)
 * Support for decompressing zip-compressed gcode (Cura .ufp files) on the fly
-* Material Tracking, keep track of your spools and material use by chosing wich material you load with the automatic loading procedure
+* Material Tracking, keep track of your spools and material use by choosing wich material you load with the automatic loading procedure
 * A print queue. Add as many printjobs as you like, new jobs will start in paused state
 * A Printjob history, to easily find and reprint past printjobs
-![Homescreen](logos/screenshot.png)
+
+
+<img src="logos/screenshot.png" height="512" width="300">
+
