@@ -1,13 +1,17 @@
 Installation Guide
 ==================
 
-###### this is still in development, works except connecting to a printer or homing moves fail some of the time with a "Timer too close" error
+###### this is still in development, works except connecting to a printer or homing moves fail sometimes with a "Timer too close" error
 ###### additionally the kivy master branch has to be installed manually e.g. from precompiled wheel because it includes necessary fixes for the raspberry pi
 
+### Requirements
+* Raspberry pi 4 (raspberry pi 3 is not fast enough to run the UI properly and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
+* 7 inch LCD Touch screen with 1024\*600 resolution (lower resolutions are not supported at the moment)
+These screens can be purchased for around 35$ on [Aliexpress](https://de.aliexpress.com/item/4000375954941.html?spm=a2g0x.12010612.8148356.46.7c802eb8VaLawi), Ebay, or [Banggood](https://www.banggood.com/de/7-Inch-Full-View-LCD-IPS-Touch-Screen-1024+600-800+480-HD-HDMI-Display-Monitor-for-Raspberry-Pi-p-1633584.html?rmmds=search&ID=514816&cur_warehouse=CN). Make sure to get one with an IPS panel, and 1024\*600 resolution.
 
-### Prepare OS on Raspberry Pi 4
-(raspberry pi 3 is not fast enough to run the UI properly and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
-- flash [Raspian buster **lite**](https://www.raspberrypi.org/downloads/raspbian) image to SD-Card
+### Prepare OS
+
+- flash [Raspian buster **lite** 2020-02-13](https://www.raspberrypi.org/downloads/raspbian) to SD-Card
 - add new file named "ssh" (with no file extension) to the boot folder to enable ssh
 - Boot your pi and run the following commands via SSH
 
@@ -16,7 +20,7 @@ sudo apt update
 sudo apt install git
 sudo raspi-config
 """set memory split to 256,
-   GL Driver to OpenGL FKMS, 
+   GL Driver to Legacy, 
    Desktop/CLI to Console Autologin """ 
 ```
 
