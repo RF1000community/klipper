@@ -1,8 +1,7 @@
 Installation Guide
 ==================
 
-###### this is still in development, works except connecting to a printer or homing moves fail sometimes with a "Timer too close" error
-###### additionally the kivy master branch has to be installed manually e.g. from precompiled wheel because it includes necessary fixes for the raspberry pi
+##### this is still in development, works except connecting to a printer or homing moves fail sometimes with a "Timer too close" error additionally the kivy master branch has to be installed manually e.g. from precompiled wheel because it includes necessary fixes for the raspberry pi #####
 
 ### Requirements
 * Raspberry pi 4 (raspberry pi 3 is not fast enough to run the UI properly and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
@@ -11,7 +10,7 @@ These screens can be purchased for around 35$ on [Aliexpress](https://de.aliexpr
 
 ### Prepare OS
 
-- flash [Raspian buster **lite** 2020-02-13](https://www.raspberrypi.org/downloads/raspbian) to SD-Card
+- flash [Raspian buster lite 2020-02-13](https://www.raspberrypi.org/downloads/raspbian) to SD-Card
 - add new file named "ssh" (with no file extension) to the boot folder to enable ssh
 - Boot your pi and run the following commands via SSH
 
@@ -48,7 +47,7 @@ git clone --recurse-submodules https://github.com/D4SK/klipperui
 ./klipperui/scripts/install-kgui.sh
 ```
 
-- move your printer configuration (printer.cfg) to /home/pi  
+- move your printer configuration (printer.cfg) to /home/pi (make sure it includes sections from /config/sample-kgui.cfg)
 - reboot ``` sudo reboot  ```
 - done !
 
