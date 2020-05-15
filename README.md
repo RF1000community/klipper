@@ -16,3 +16,4 @@ and can be used together with octoprint or the klipper-cura-plugin (recommended)
 * Material Tracking, keep track of your spools and material use by chosing wich material you load with the automatic loading procedure
 * A print queue. Add as many printjobs as you like, new jobs will start in paused state
 * A Printjob history, to easily find and reprint past printjobs
+![Homescreen](logos/screenshot.png)
