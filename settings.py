@@ -4,7 +4,6 @@ import os
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.event import EventDispatcher
 from kivy.logger import Logger
 from kivy.properties import ListProperty, ObjectProperty, NumericProperty, DictProperty, StringProperty, BooleanProperty
 from kivy.uix.behaviors import FocusBehavior

@@ -5,7 +5,6 @@ from datetime import date
 from os.path import splitext, basename, exists
 
 from kivy.app import App
-from kivy.event import EventDispatcher
 from kivy.properties import (ListProperty, NumericProperty, StringProperty,
     BooleanProperty, OptionProperty, ObjectProperty)
 from kivy.uix.label import Label
