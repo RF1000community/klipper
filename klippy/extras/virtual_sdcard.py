@@ -32,7 +32,7 @@ class Printjob:
                 self.file_size = self.file_obj.tell()
                 self.file_obj.seek(0)
             except:
-                logging.info("printjob_manager: couldn't open file {}".format(self.path))
+                logging.info(f"printjob_manager: couldn't open file {self.path}")
                 self.set_state('stopped')
                 self.manager.check_queue()
         elif ext == '.ufp':
@@ -46,7 +46,7 @@ class Printjob:
                     self.file_size = self.file_obj.tell()
                     self.file_obj.seek(0)
             except Exception as e:
-                logging.debug("printjob_manager: couldn't open compressed file {}, exception {}".format(self.path, e))
+                logging.debug(f"printjob_manager: failed opening compressed file {self.path}, with exception {e}")
                 self.set_state('stopped')
 
     def set_state(self, state):
@@ -92,7 +92,7 @@ class Printjob:
             self.manager.check_queue()
 
     def work_handler(self, eventtime):
-        logging.info("Printjob entering work handler (position %d)", self.file_position)
+        logging.info(f"Printjob entering work handler (position {self.file_position})")
         self.reactor.unregister_timer(self.work_timer)
         try:
             self.file_obj.seek(self.file_position)
@@ -226,7 +226,7 @@ class PrintjobManager(object):
 
     def stats(self, eventtime):
         if len(self.jobs) and self.jobs[0].state in ('printing', 'pausing', 'stopping'):
-            return True, "sd_pos=%d" % (self.jobs[0].file_position,)
+            return True, f"sd_pos={self.jobs[0].file_position}"
         return False, ""
 
 
@@ -283,7 +283,7 @@ class VirtualSD(PrintjobManager):
         files_by_lower = { fname.lower(): fname for fname, fsize in files }
         filename = files_by_lower[filename.lower()]
         self.selected_file = os.path.join(self.sdcard_dirname, filename)
-        self.gcode.respond("File {} selected".format(filename))
+        self.gcode.respond(f"File {filename} selected")
     def cmd_M24(self, params):
         # Start/resume SD print
         if self.state == 'paused':
@@ -308,7 +308,7 @@ class VirtualSD(PrintjobManager):
             self.gcode.respond("SD printing byte %d/%d" % (
             self.jobs[0].file_position, self.file_size))
         else:
-            self.gcode.respond("SD print {}".format(self.state))
+            self.gcode.respond(f"SD print {self.state}")
 
 def load_config(config):
     return VirtualSD(config)
