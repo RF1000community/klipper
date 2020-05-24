@@ -19,7 +19,7 @@ from .elements import *
 
 class UpdateScreen(Screen):
     def __init__(self, **kwargs):
-        super(UpdateScreen, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.klipper_dir = os.path.dirname(os.path.dirname(os.path.dirname(p.kgui_dir)))
 
         Clock.schedule_once(self.draw_releases, 0)
@@ -70,13 +70,13 @@ class UpdateScreen(Screen):
 
 class FileDownload(threading.Thread):
     def __init__(self, url, comm_list, result_handler):
-        super(FileDownload, self).__init__()
+        super().__init__()
         self.url = url
         self.comm_list = comm_list # [bytes, totalbytes, cancel_signal]
         self.result_handler = result_handler
 
     def run(self):
-        super(FileDownload, self).run()
+        super().run()
         CHUNK_SIZE=32768
         for i in range(20):
             try:
@@ -109,7 +109,7 @@ class FileDownload(threading.Thread):
 class UpdatePopup(BasePopup):
     message = StringProperty()
     def __init__(self, release, **kwargs):
-        super(UpdatePopup, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.release = release
     def update(self):
         pass
@@ -119,15 +119,15 @@ class UpdatePopup(BasePopup):
       
 
     def dismiss(self, **kwargs):
-        super(UpdatePopup, self).dismiss(**kwargs)
+        super().dismiss(**kwargs)
 
 class SIRelease(SetItem):
     def __init__(self, release, **kwargs):
         self.release = release
         self.left_title = release['tag_name']
         self.right_title = release['published_at'].split("T")[0]
-        super(SIRelease, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def on_release(self, **kwargs):
-        super(SIRelease, self).on_release(**kwargs)
+        super().on_release(**kwargs)
         UpdatePopup(self.release).open()

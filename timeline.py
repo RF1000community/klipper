@@ -22,7 +22,7 @@ class Timeline(RecycleView):
     # Initially is None, then always the last selected view object
     selected = ObjectProperty(None)
     def __init__(self, **kwargs):
-        super(Timeline, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.app = App.get_running_app()
         self.load_all(in_background=False)
         self.app.bind(jobs=self.load_all)
@@ -124,11 +124,11 @@ class TimelineItem(RecycleDataViewBehavior, Label):
         default_data = {"name": "", "path": "", "selected": False,
                 "state": "header", "timestamp": 0}
         default_data.update(data)
-        return super(TimelineItem, self).refresh_view_attrs(rv, index, default_data)
+        return super().refresh_view_attrs(rv, index, default_data)
 
     def on_touch_down(self, touch):
         # Add selection on touch down
-        if super(TimelineItem, self).on_touch_down(touch):
+        if super().on_touch_down(touch):
             return True
         if self.state == "header":
             return False
@@ -140,7 +140,7 @@ class TimelineItem(RecycleDataViewBehavior, Label):
     def on_touch_up(self, touch):
         was_pressed = self.pressed
         self.pressed = False
-        if super(TimelineItem, self).on_touch_up(touch):
+        if super().on_touch_up(touch):
             return True
         if self.collide_point(*touch.pos) and was_pressed:
             return True
