@@ -31,8 +31,8 @@ class Printjob:
                 self.file_obj.seek(0, os.SEEK_END)
                 self.file_size = self.file_obj.tell()
                 self.file_obj.seek(0)
-            except:
-                logging.info(f"printjob_manager: couldn't open file {self.path}")
+            except Exception as e:
+                logging.warning(f"printjob_manager: failed opening file {self.path}, with exception {e}")
                 self.set_state('stopped')
                 self.manager.check_queue()
         elif ext == '.ufp':
@@ -46,7 +46,7 @@ class Printjob:
                     self.file_size = self.file_obj.tell()
                     self.file_obj.seek(0)
             except Exception as e:
-                logging.debug(f"printjob_manager: failed opening compressed file {self.path}, with exception {e}")
+                logging.warning(f"printjob_manager: failed opening compressed file {self.path}, with exception {e}")
                 self.set_state('stopped')
 
     def set_state(self, state):
@@ -165,7 +165,7 @@ class Printjob:
         return printed_time
 
 
-class PrintjobManager(object):
+class PrintjobManager:
     def __init__(self, config):
         self.toolhead = None
         self.printer = config.get_printer()
@@ -181,13 +181,13 @@ class PrintjobManager(object):
         self.jobs.append(Printjob(path, paused, self))
         self.check_queue()
 
-    def pause_printjob(self):
+    def pause_printjob(self, _):
         self.jobs[0].pause()
 
-    def stop_printjob(self):
+    def stop_printjob(self, _):
         self.jobs[0].stop()
 
-    def resume_printjob(self):
+    def resume_printjob(self, _):
         self.jobs[0].resume()
 
     def clear_queue(self):
@@ -232,16 +232,19 @@ class PrintjobManager(object):
 
 class VirtualSD(PrintjobManager):
     def __init__(self, config):
-        super(VirtualSD, self).__init__(config)
+        super().__init__(config)
         self.selected_file = None # str
         sd_path = config.get('path')
         self.sdcard_dirname = os.path.normpath(os.path.expanduser(sd_path))
+        self.gcode.register_command("PAUSE", self.pause_printjob)
+        self.gcode.register_command("RESUME", self.resume_printjob)
+        self.gcode.register_command("STOP", self.stop_printjob)
         self.gcode.register_command('M21', None)
-
-        for cmd in ['M20', 'M21', 'M23', 'M24', 'M25', 'M26', 'M27']:
+        for cmd in ('M20', 'M21', 'M23', 'M24', 'M25', 'M26', 'M27'):
             self.gcode.register_command(cmd, getattr(self, 'cmd_' + cmd))
-        for cmd in ['M28', 'M29', 'M30']:
+        for cmd in ('M28', 'M29', 'M30'):
             self.gcode.register_command(cmd, self.cmd_error)
+
     def get_file_list(self):
         dname = self.sdcard_dirname
         try:
