@@ -181,13 +181,13 @@ class PrintjobManager:
         self.jobs.append(Printjob(path, paused, self))
         self.check_queue()
 
-    def pause_printjob(self, _):
+    def pause_printjob(self, *args):
         self.jobs[0].pause()
 
-    def stop_printjob(self, _):
+    def stop_printjob(self, *args):
         self.jobs[0].stop()
 
-    def resume_printjob(self, _):
+    def resume_printjob(self, *args):
         self.jobs[0].resume()
 
     def clear_queue(self):
