@@ -125,7 +125,7 @@ class TempSlider(UltraSlider):
             if fil_man:
                 tool_idx = int(self.tool_id[-1])
                 loaded_material = fil_man.get_status()['loaded']
-                if len(loaded_material) > tool_idx and loaded_material[tool_idx]['guid']:
+                if loaded_material[tool_idx]['guid']:
                     material_type = fil_man.get_info(loaded_material[tool_idx]['guid'], "./m:metadata/m:name/m:material")
                     ext_temp = fil_man.get_info(loaded_material[tool_idx]['guid'],"./m:settings/m:setting[@key='print temperature']")
                     if ext_temp:
@@ -193,19 +193,18 @@ class BtnTriple(Widget):
         super().__init__(**kwargs)
 
     def update_material(self, *_):
-        if not self.tool_id: # kv ui not initialized yet
-            Clock.schedule_once(self.update_material, 0)
-            return
         self.fil_man = self.app.filament_manager
         if not self.fil_man:
             return
-        loaded_material = self.fil_man.get_status()['loaded']
-        if len(loaded_material) > self.tool_idx:
-            self.material = loaded_material[self.tool_idx]
+        if not self.tool_id: # kv ui not initialized yet
+            Clock.schedule_once(self.update_material, 0)
+            return
+        material = self.fil_man.get_status()['loaded']
+        if len(material) > self.tool_idx:
+            self.material = material[self.tool_idx]
 
         if self.material['guid']:
             material_type = self.fil_man.get_info(self.material['guid'], "./m:metadata/m:name/m:material")
-            brand = self.fil_man.get_info(self.material['guid'], "./m:metadata/m:name/m:brand")
             hex_color = self.fil_man.get_info(self.material['guid'], "./m:metadata/m:color_code")
             self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
             self.filament_amount = self.material['amount']
@@ -214,7 +213,7 @@ class BtnTriple(Widget):
             elif self.material['state'] == 'unloading':
                 self.title = "Unloading..."
             else:
-                self.title = f"{self.material['amount']*1000:3.0f}g\n{brand} {material_type}"
+                self.title = f"{self.material['amount']*1000:3.0f}g\n{material_type}"
         else:
             self.title = "Load Material"
             self.filament_color = (0,0,0,0)
