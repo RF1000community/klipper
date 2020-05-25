@@ -9,6 +9,7 @@ Jinja2==2.10.1
 
 #KGUI
 Cython==0.29.17
+requests
 #kivy==1.11.1 # for now we install a newer version of kivy manually
 #Wifi
 pydbus

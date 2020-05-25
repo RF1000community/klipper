@@ -117,7 +117,7 @@ class Printjob:
                 if not data:
                     # End of file
                     self.set_state('done')
-                    self.gcode.respond("Done printing file")
+                    self.gcode.respond_raw("Done printing file")
                     break
                 lines = data.split('\n')
                 lines[0] = partial_input + lines[0]
@@ -286,7 +286,7 @@ class VirtualSD(PrintjobManager):
         files_by_lower = { fname.lower(): fname for fname, fsize in files }
         filename = files_by_lower[filename.lower()]
         self.selected_file = os.path.join(self.sdcard_dirname, filename)
-        self.gcode.respond(f"File {filename} selected")
+        self.gcode.respond_raw(f"File {filename} selected")
     def cmd_M24(self, params):
         # Start/resume SD print
         if self.state == 'paused':
@@ -308,10 +308,10 @@ class VirtualSD(PrintjobManager):
     def cmd_M27(self, params):
         # Report SD print status
         if self.state == 'printing':
-            self.gcode.respond("SD printing byte %d/%d" % (
+            self.gcode.respond_raw("SD printing byte %d/%d" % (
             self.jobs[0].file_position, self.file_size))
         else:
-            self.gcode.respond(f"SD print {self.state}")
+            self.gcode.respond_raw(f"SD print {self.state}")
 
 def load_config(config):
     return VirtualSD(config)
