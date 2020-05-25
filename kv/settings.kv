@@ -101,7 +101,7 @@
         pos_hint: {'center_x':0.5, 'top':1}
     Label:
         id: message
-        text: "Choose a Version to install"
+        text: ""
         font_size: p.normal_font
         text_size: self.size
         size_hint: 1, 0.2
@@ -578,7 +578,7 @@
     FloatLayout:
         id: f_layout
         Label:
-            text: root.release['version_tag']
+            text: root.version
             halign: 'center'
             valign: 'middle'
             size_hint: 0.8, None

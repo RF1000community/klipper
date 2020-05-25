@@ -347,16 +347,16 @@
     #:set w 19
     canvas:
         Color:
-            rgba: root.filament_color
+            rgba: self.filament_color
         RoundedRectangle:
-            size: root.size
-            pos: root.pos
+            size: self.size
+            pos: self.pos
             radius: (p.radius,)
         Color:
             rgba: p.background
         Rectangle:
-            size: root.width * (1-root.filament_amount), root.height
-            pos: root.x + root.filament_amount * root.width, root.y
+            size: self.width * (1-self.filament_amount), self.height
+            pos: self.x + self.filament_amount * self.width, self.y
         Color:
             rgba: p.btn_outline
         Line:
@@ -367,9 +367,9 @@
         Line:
             points: self.x+self.w1+1+self.w2, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2, self.top-p.btn_divider_padding
         Color:
-            rgba: p.btn_outline if root.material else (0,0,0,0)
+            rgba: p.btn_outline if self.material else (0,0,0,0)
         Line:
-            points: self.x+self.w1+1+self.w2*root.filament_amount, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2*root.filament_amount, self.top-p.btn_divider_padding
+            points: self.x + self.filament_amount * self.width, self.y+p.btn_divider_padding, self.x + self.filament_amount * self.width, self.top-p.btn_divider_padding
     BaseButton:
         size: root.w1, root.height
         pos: root.pos

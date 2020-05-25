@@ -143,8 +143,7 @@ class WifiScreen(Screen):
         if value:
             box.add_widget(Divider(pos_hint={'center_x':0.5}))
             for ap in value:
-                entry = SIWifiAccessPoint(ap)
-                box.add_widget(entry)
+                box.add_widget(SIWifiAccessPoint(ap))
         # In case no networks were found
         else:
             self.set_message(msg='no wifi networks detected')
