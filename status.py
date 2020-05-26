@@ -73,7 +73,6 @@ class ConnectionIcon(Widget):
         super().__init__(**kwargs)
 
         self.signal_timer = None # Clock timer for requesting signal strength
-        self.network_manager.bind(connection_type=self.set_icon)
 
         Clock.schedule_once(self.init_drawing, 0)
 
@@ -85,6 +84,7 @@ class ConnectionIcon(Widget):
             self.eth = Rectangle(pos=(0, 0), size=(0, 0),
                     source=p.kgui_dir + "/logos/ethernet.png")
         self.set_icon(None, self.network_manager.connection_type)
+        self.network_manager.bind(connection_type=self.set_icon)
 
     def draw_wifi(self):
         padding = self.icon_padding
