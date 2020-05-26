@@ -9,3 +9,5 @@ Unwanted Features
     timer to close error (on live move, homing, connect)
     DripModeEndSignal during homing due to add. gcode move command or stop command
     Keyboard automatically closes when typing too fast
+    
+    handle absense of xml material properties if its not guaranteed they exist 
