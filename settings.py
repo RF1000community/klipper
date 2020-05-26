@@ -30,51 +30,18 @@ class SetItem(FloatLayout, RectangleButton):
 
 class SIWifi(SetItem):
 
-    # The string that is displayed by the label.
-    # Holds the current wifi connection and possibly the signal strength as well.
-    # [0]: ssid or message, [1]: formatted as ssid if true, as message otherwise
-    display = ListProperty(['', False])
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.network_manager = App.get_running_app().network_manager
         self.network_manager.bind(connected_ssid=self.update)
         # Set default messages after everything is set up and running
-        Clock.schedule_once(self.late_setup, 0)
+        Clock.schedule_once(self.update, 0)
 
-    def late_setup(self, dt):
+    def update(self, *args):
         if self.network_manager.available:
-            self.display = [self.network_manager.connected_ssid or "not_connected",
-                bool(self.network_manager.connected_ssid)]
+            self.right_title = self.network_manager.connected_ssid or "not connected"
         else:
-            self.display = ['not available', False]
-
-    def on_release(self, *args):
-        # don't open wifiscreen when wifi doesn't work
-        if self.network_manager.available:
-            mgr = self.parent.parent.parent.manager
-            mgr.current = 'WifiScreen'
-
-    def update(self, instance, value):
-        """Called whenever the active wifi connection changes"""
-        if value:
-            self.display = [value, True]
-        else: # value = "" <=> currently no wifi connection
-            self.display = ['not connected', False]
-
-    def on_display(self, instance, value):
-        """
-        Applies the new text to display in the Label whenever the
-        text got updated
-        """
-        label = self.ids.right_label
-        label.text = value[0]
-        if value[1]:
-            label.color = p.light_gray
-            label.italic = False
-        else:
-            label.color = p.medium_light_gray
-            label.italic = True
+            self.right_title = "not available"
 
 
 class SIWifiAccessPoint(SetItem):

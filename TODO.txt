@@ -8,3 +8,4 @@ Unwanted Features
     z_adjust before first move crashes
     timer to close error (on live move, homing, connect)
     DripModeEndSignal during homing due to add. gcode move command or stop command
+    Keyboard automatically closes when typing too fast

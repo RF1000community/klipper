@@ -213,7 +213,7 @@ class BtnTriple(Widget):
             elif self.material['state'] == 'unloading':
                 self.title = "Unloading..."
             else:
-                self.title = f"{self.material['amount']*1000:3.0f}g\n{material_type}"
+                self.title = f"{self.material['amount']*1000:3.0f}g {material_type}\n(unload)"
         else:
             self.title = "Load Material"
             self.filament_color = (0,0,0,0)
@@ -239,82 +239,93 @@ class FilamentChooserPopup(BasePopup):
         Clock.schedule_once(self.draw_options, 0)
 
     def draw_options(self, dt=None):
+        """ (re)draw material library from filament_manager """
         self.options = [[], [], []]
         self.sel[3] = None
         self.ids.option_stack.clear_widgets()
         self.ids.btn_confirm.text = "Select"
         self.ids.btn_confirm.enabled = False
-        # Calculate options to draw based on selection
-        if not self.tab_2:
-            # get material library from filament manager as type-manufacturer-color tree of dicts
-            tmc = self.fil_man.tmc_to_guid
 
-            # always show types
-            self.options = [[Option(self, level=0, text=t, selected=(t==self.sel[0])) 
-                           for t in list(tmc)], [], []] 
-            if self.sel[0]:
-                # type is selected, show manufacturers
-                # autoselect if there's only one manufacturer, or 'Generic' and none is selected
-                manufacturers = list(tmc[self.sel[0]])
-                if len(manufacturers) == 1:
-                    self.sel[1] = manufacturers[0]
-                elif self.sel[1] is None and 'Generic' in manufacturers:
-                    self.sel[1] = 'Generic'
-                self.options[1] = [Option(self, level=1, text=m, color=p.light_gray,
-                                  font_size=p.small_font, selected=(m==self.sel[1]))
-                                  for m in manufacturers]
-                if self.sel[1]:
-                    # type and manufacturer is selected, show colors
-                    # autoselect if there's only one color
-                    colors = list(tmc[self.sel[0]][self.sel[1]])
-                    if len(colors) == 1:
-                        self.sel[2] = colors[0]
-                    self.options[2] = [Option(self, level=2, hex_color=c, selected=(c==self.sel[2])) 
-                                      for c in colors]
-                    if self.sel[2]:
-                        # type and manufacturer and color is selected, we have a material guid
-                        self.sel[3] = tmc[self.sel[0]][self.sel[1]][self.sel[2]]
-                        self.ids.btn_confirm.text = f"Select {self.sel[1]} {self.sel[0]}"
-                        self.ids.btn_confirm.enabled = True
+        # generate options to draw based on selection
+        # get material library from filament manager as type-manufacturer-color tree of dicts
+        tmc = self.fil_man.tmc_to_guid
 
-            # sort types by how many manufactures make them
-            # tmc[option.text] is the dict of manufacturers for the selected type (e.g. for PLA)
-            self.options[0].sort(key = lambda option: len(tmc[option.text]), reverse=True)
-            # sort manufacturers alphabetically, "Generic" always first
-            self.options[1].sort(key = lambda option: option.text.lower() if option.text!='Generic' else '\t')
+        # always show types
+        self.options = [[Option(self, level=0, text=t, selected=(t==self.sel[0])) 
+                        for t in list(tmc)], [], []] 
+        if self.sel[0]:
+            # type is selected, show manufacturers
+            # autoselect if there's only one manufacturer, or 'Generic' and none is selected
+            manufacturers = list(tmc[self.sel[0]])
+            if len(manufacturers) == 1:
+                self.sel[1] = manufacturers[0]
+            elif self.sel[1] is None and 'Generic' in manufacturers:
+                self.sel[1] = 'Generic'
+            self.options[1] = [Option(self, level=1, text=m, color=p.light_gray,
+                                font_size=p.small_font, selected=(m==self.sel[1]))
+                                for m in manufacturers]
+            if self.sel[1]:
+                # type and manufacturer is selected, show colors
+                # autoselect if there's only one color
+                colors = list(tmc[self.sel[0]][self.sel[1]])
+                if len(colors) == 1:
+                    self.sel[2] = colors[0]
+                self.options[2] = [Option(self, level=2, hex_color=c, selected=(c==self.sel[2])) 
+                                    for c in colors]
+                if self.sel[2]:
+                    # type and manufacturer and color is selected, we have a material guid
+                    self.sel[3] = tmc[self.sel[0]][self.sel[1]][self.sel[2]]
+                    self.ids.btn_confirm.text = f"Select {self.sel[1]} {self.sel[0]}"
+                    self.ids.btn_confirm.enabled = True
 
-            # now draw generated options
-            for i in range(len(self.options)):
-                max_amount = (15 if i == 0 else 10)
-                if len(self.options[i]) < max_amount or not self.show_less[i]:
-                    for option in self.options[i]:
-                        self.ids.option_stack.add_widget(option)
-                    if len(self.options) > i+1:
-                        self.ids.option_stack.add_widget(OptionDivider(self, level=i))
-                else: # hidden options
-                    for option in self.options[i][:max_amount]:
-                        self.ids.option_stack.add_widget(option)
-                    if self.options[i]: # draw the show_more divider even if next group is empty
-                        self.ids.option_stack.add_widget(OptionDivider(self, level=i, height=0))
-                self.ids.btn_confirm.text = "Select"
+        # sort types by how many manufactures make them
+        # tmc[option.text] is the dict of manufacturers for the selected type (e.g. for PLA)
+        self.options[0].sort(key = lambda option: len(tmc[option.text]), reverse=True)
+        # sort manufacturers alphabetically, "Generic" always first
+        self.options[1].sort(key = lambda option: option.text.lower() if option.text!='Generic' else '\t')
 
-        else:   
-            materials = self.fil_man.get_status()['unloaded']
-            for i, (guid, amount) in enumerate(materials):
-                option = Option(
-                    self, guid=guid, selected=(self.sel_2[1]==i),
-                    amount=amount, unloaded_idx=i, font_size=p.small_font,
-                    hex_color=self.fil_man.get_info(guid, "./m:metadata/m:color_code"),
-                    text=self.fil_man.get_info(guid, "./m:metadata/m:name/m:brand") + " "
-                        + self.fil_man.get_info(guid, "./m:metadata/m:name/m:material"))
-                self.options[0].append(option)
-                self.ids.option_stack.add_widget(option)
-            if self.sel_2:
-                self.ids.btn_confirm.text = "Select"
-                self.ids.btn_confirm.enabled = True
+        # now draw generated options
+        for i in range(len(self.options)):
+            max_amount = (15 if i == 0 else 10)
+            if len(self.options[i]) < max_amount or not self.show_less[i]:
+                for option in self.options[i]:
+                    self.ids.option_stack.add_widget(option)
+                if len(self.options) > i+1:
+                    self.ids.option_stack.add_widget(OptionDivider(self, level=i))
+            else: # hidden options
+                for option in self.options[i][:max_amount]:
+                    self.ids.option_stack.add_widget(option)
+                if self.options[i]: # draw the show_more divider even if next group is empty
+                    self.ids.option_stack.add_widget(OptionDivider(self, level=i, height=0))
 
-    def on_tab_2(self, instance, tab):
-        self.draw_options()
+    def draw_options_2(self, dt=None):
+        """ draw recently unloaded materials from filament_manager """
+        self.ids.option_stack.clear_widgets()
+        self.ids.btn_confirm.text = "Select"
+        self.ids.btn_confirm.enabled = False
+        self.options = [[], [], []]
+
+        materials = self.fil_man.get_status()['unloaded']
+        for i, (guid, amount) in enumerate(materials):
+            option = Option(self, 
+                guid=guid,
+                amount=amount,
+                unloaded_idx=i,
+                font_size=p.small_font,
+                selected=(self.sel_2[1]==i),
+                hex_color=self.fil_man.get_info(guid, "./m:metadata/m:color_code"),
+                # don't crash when get_info(...) returns None
+                text=f"{self.fil_man.get_info(guid, './m:metadata/m:name/m:brand')} {self.fil_man.get_info(guid, './m:metadata/m:name/m:material')}")
+            self.options[0].append(option)
+            self.ids.option_stack.add_widget(option)
+        if self.sel_2:
+            self.ids.btn_confirm.enabled = True
+
+    def on_tab_2(self, instance, tab_2):
+        if tab_2:
+            self.draw_options_2()
+        else:
+            self.draw_options()
 
     def do_selection(self, option):
         if self.tab_2:
@@ -365,7 +376,6 @@ class OptionDivider(BaseButton):
         super().__init__(**kwargs)
 
     def on_touch_down(self, touch):
-        # Add selection on touch down
         if touch.pos[1] > self.y and touch.pos[1] < self.y + self.actual_height:
             self.filamentchooser.show_less[self.level] = not self.filamentchooser.show_less[self.level]
             self.filamentchooser.draw_options()
@@ -412,10 +422,11 @@ class FilamentSlider(UltraSlider):
         self.val_min = 0
         self.val_max = 1000
         self.unit = "g"
-        self.round_to = 0
+        self.round_to = -1
         super().__init__(**kwargs)
 
     def on_touch_down(self, touch):
+        # overwrite method so touch area matches increased height, also add disabling
         if self.initialized\
         and self.active\
         and touch.pos[0] > self.px_min - 30 and touch.pos[0] < self.px_max + 30\

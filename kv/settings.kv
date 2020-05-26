@@ -59,6 +59,7 @@
                 on_release: Factory.PressureAdvanceConfPopup(val=app.default_pressure_advance).open()
             SIWifi:
                 left_title: "Wifi"
+                on_release: if self.network_manager.available: root.manager.current = "WifiScreen"
             SITimezone:
                 id: si_timezone
             SetItem:
