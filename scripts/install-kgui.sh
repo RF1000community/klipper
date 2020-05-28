@@ -218,5 +218,3 @@ create_virtualenv
 install_klipper_service
 install_usb_automounting
 install_lcd_driver
-report_status "Installation finished Successfully!"
-
