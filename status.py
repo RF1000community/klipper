@@ -29,7 +29,7 @@ class StatusBar(BoxLayout):
     def update_animation(self, instance, value):
         if value in ('initializing', 'pausing', 'stopping'):
             self.animation_pos = 0
-            self.scheduled_updating = Clock.schedule_interval(self.update_animation_pos, 0.065)
+            self.scheduled_updating = Clock.schedule_interval(self.update_animation_pos, 0.02)
         else:
             if self.scheduled_updating:
                 Clock.unschedule(self.scheduled_updating)
@@ -37,7 +37,7 @@ class StatusBar(BoxLayout):
             self.animation_pos = 0
 
     def update_animation_pos(self, dt):
-        self.animation_pos += 3
+        self.animation_pos += 1
         self.animation_pos = self.animation_pos % (p.screen_width + 300)
 
 
