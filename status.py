@@ -29,7 +29,7 @@ class StatusBar(BoxLayout):
     def update_animation(self, instance, value):
         if value in ('initializing', 'pausing', 'stopping'):
             self.animation_pos = 0
-            self.scheduled_updating = Clock.schedule_interval(self.update_animation_pos, 0.065)
+            self.scheduled_updating = Clock.schedule_interval(self.update_animation_pos, 0.02)
         else:
             if self.scheduled_updating:
                 Clock.unschedule(self.scheduled_updating)
@@ -37,7 +37,7 @@ class StatusBar(BoxLayout):
             self.animation_pos = 0
 
     def update_animation_pos(self, dt):
-        self.animation_pos += 3
+        self.animation_pos += 1
         self.animation_pos = self.animation_pos % (p.screen_width + 300)
 
 
@@ -69,23 +69,22 @@ class ConnectionIcon(Widget):
         self.network_manager = App.get_running_app().network_manager
         self.topright = []
         self.signal = 1
-        self.icon_padding = 2
-        self.transparent = (0, 0, 0, 0)
+        self.icon_padding = 4
         super().__init__(**kwargs)
 
         self.signal_timer = None # Clock timer for requesting signal strength
-        self.network_manager.bind(connection_type=self.set_icon)
 
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
         with self.canvas:
-            self.wifi_color = Color(rgba=self.transparent)
+            self.wifi_color = Color(rgba=(0,0,0,0))
             self.wifi = Ellipse(pos=(0, 0), size=(0, 0), angle_start=315, angle_end=405)
-            self.eth_color = Color(rgba=self.transparent)
+            self.eth_color = Color(rgba=(0,0,0,0))
             self.eth = Rectangle(pos=(0, 0), size=(0, 0),
                     source=p.kgui_dir + "/logos/ethernet.png")
         self.set_icon(None, self.network_manager.connection_type)
+        self.network_manager.bind(connection_type=self.set_icon)
 
     def draw_wifi(self):
         padding = self.icon_padding
@@ -101,30 +100,26 @@ class ConnectionIcon(Widget):
         difference = h*(1 - self.signal)
         partial_pos = [full_pos[0] + difference, full_pos[1] + difference]
 
-        self.wifi_color.rgba = p.translucent_white
-        self.eth_color.rgba = self.transparent
+        self.wifi_color.rgba = (1,1,1,1)
+        self.eth_color.rgba = (0,0,0,0)
 
         self.wifi.pos = partial_pos
         self.wifi.size = partial_size
 
     def draw_eth(self):
-        padding = self.icon_padding
-        h = self.height - 2*padding
+        h = self.height - 2*self.icon_padding
         size = [h, h]
-        self.width = size[0] + padding
-        pos = [self.topright[0] - size[0] - padding,
-               self.topright[1] - size[1] - padding]
-
-        self.eth_color.rgba = p.translucent_white
-        self.wifi_color.rgba = self.transparent
-
-        self.eth.pos = pos
+        self.width = size[0] + self.icon_padding
+        self.eth.pos = [self.topright[0] - size[0] - self.icon_padding,
+                        self.topright[1] - size[1] - self.icon_padding]
         self.eth.size = size
+        self.eth_color.rgba = (1,1,1,1)
+        self.wifi_color.rgba = (0,0,0,0)
 
     def draw_nothing(self):
         self.width = 0
-        self.eth_color.rgba = self.transparent
-        self.wifi_color.rgba = self.transparent
+        self.eth_color.rgba = (0,0,0,0)
+        self.wifi_color.rgba = (0,0,0,0)
 
     def set_icon(self, instance, value):
         if self.signal_timer is not None:

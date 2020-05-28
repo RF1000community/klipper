@@ -242,7 +242,7 @@ class NetworkManager(EventDispatcher, Thread):
         """
         if ap._path not in self.wifi_dev.AccessPoints:
             # Network got out of view since previous scan
-            raise ValueError("Network " + ssid + " is not in view.")
+            raise ValueError("Network " + ap.ssid + " is not in view.")
         if ap.encrypted:
             if not ap.supports_psk:
                 raise Exception("Access Point " + ap.ssid + " doesn't support PSK verification")

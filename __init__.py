@@ -84,7 +84,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         logging.info("Kivy app initializing...")
         self.network_manager = NetworkManager()
         self.notify = Notifications()
-        self.temp = {'T0':(0,0), 'T1':(0,0), 'B':(0,0)}
+        self.temp = {'T0':[0,0], 'T1':[0,0], 'B':[0,0]}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.ongoing_live_move = False
         self.scheduled_updating = None
@@ -432,14 +432,13 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 t = {}
                 for tool_id, sensor in self.heater_manager.gcode_id_to_sensor.items():
                     current, target = sensor.get_temp(self.reactor.monotonic())
-                    self.temp[tool_id] = (target, current)
+                    self.temp[tool_id] = [target, current]
         self.reactor.register_async_callback(read_temp)
 
     def send_temp(self, temp, tool_id):
         def change_temp(e):
             self.heaters[tool_id].set_temp(temp)
-            current = self.temp[tool_id]
-            self.temp[tool_id] = (temp, current[1])
+            self.temp[tool_id][0] = temp
         self.reactor.register_async_callback(change_temp)
 
     def get_homing_state(self):
@@ -448,7 +447,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.homed[axis] = axis in homed_axes_string
 
     def send_home(self, axis):
-        self.reactor.register_async_callback((lambda e: self.gcode.cmd_G28(axis.upper())))
+        self.reactor.register_async_callback(lambda e: self.gcode.cmd_G28(axis.upper()))
 
     def send_motors_off(self):
         self.reactor.register_async_callback(lambda e: self.gcode.run_script_from_command("M18"))
@@ -545,7 +544,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(stop_ext)
 
     def send_calibrate(self):
-        self.reactor.register_async_callback((lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(None)))
+        self.reactor.register_async_callback(lambda e: self.bed_mesh.calibrate.cmd_BED_MESH_CALIBRATE(None))
 
     def send_print(self, filepath):
         self.reactor.register_async_callback(lambda e: self.sdcard.add_printjob(filepath))

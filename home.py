@@ -99,18 +99,18 @@ class TempSlider(UltraSlider):
     def init_drawing(self, dt=None):
         app = App.get_running_app()
         app.get_temp()
-        fil_man = app.filament_manager
+        fm = app.filament_manager
 
         self.buttons = [[0, 0, "Off", None]] #[value, pos_offset, text, instance]
         if self.tool_id == 'B':
             self.val_min = 30
             self.val_max = 140
-            if fil_man:
-                loaded_material = fil_man.get_status()['loaded']
+            if fm:
+                loaded_material = fm.get_status()['loaded']
                 for material in loaded_material:
                     if material['guid']:
-                        material_type = fil_man.get_info(material['guid'], "./m:metadata/m:name/m:material")
-                        bed_temp = fil_man.get_info(material['guid'], "./m:settings/m:setting[@key='heated bed temperature']")
+                        material_type = fm.get_info(material['guid'], "./m:metadata/m:name/m:material")
+                        bed_temp = fm.get_info(material['guid'], "./m:settings/m:setting[@key='heated bed temperature']")
                         if bed_temp:
                             self.buttons.append([int(bed_temp), 0, material_type, None])
             else: # show some generic temperatures
@@ -122,12 +122,12 @@ class TempSlider(UltraSlider):
         else:
             self.val_min = 40
             self.val_max = 280
-            if fil_man:
+            if fm:
                 tool_idx = int(self.tool_id[-1])
-                loaded_material = fil_man.get_status()['loaded']
-                if len(loaded_material) > tool_idx and loaded_material[tool_idx]['guid']:
-                    material_type = fil_man.get_info(loaded_material[tool_idx]['guid'], "./m:metadata/m:name/m:material")
-                    ext_temp = fil_man.get_info(loaded_material[tool_idx]['guid'],"./m:settings/m:setting[@key='print temperature']")
+                loaded_material = fm.get_status()['loaded']
+                if loaded_material[tool_idx]['guid']:
+                    material_type = fm.get_info(loaded_material[tool_idx]['guid'], "./m:metadata/m:name/m:material")
+                    ext_temp = fm.get_info(loaded_material[tool_idx]['guid'],"./m:settings/m:setting[@key='print temperature']")
                     if ext_temp:
                         self.buttons.append([int(ext_temp), 0, material_type, None])
             else:
@@ -193,20 +193,19 @@ class BtnTriple(Widget):
         super().__init__(**kwargs)
 
     def update_material(self, *_):
+        self.fm = self.app.filament_manager
+        if not self.fm:
+            return
         if not self.tool_id: # kv ui not initialized yet
             Clock.schedule_once(self.update_material, 0)
             return
-        self.fil_man = self.app.filament_manager
-        if not self.fil_man:
-            return
-        loaded_material = self.fil_man.get_status()['loaded']
-        if len(loaded_material) > self.tool_idx:
-            self.material = loaded_material[self.tool_idx]
+        material = self.fm.get_status()['loaded']
+        if len(material) > self.tool_idx:
+            self.material = material[self.tool_idx]
 
         if self.material['guid']:
-            material_type = self.fil_man.get_info(self.material['guid'], "./m:metadata/m:name/m:material")
-            brand = self.fil_man.get_info(self.material['guid'], "./m:metadata/m:name/m:brand")
-            hex_color = self.fil_man.get_info(self.material['guid'], "./m:metadata/m:color_code")
+            material_type = self.fm.get_info(self.material['guid'], "./m:metadata/m:name/m:material")
+            hex_color = self.fm.get_info(self.material['guid'], "./m:metadata/m:color_code")
             self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
             self.filament_amount = self.material['amount']
             if self.material['state'] == 'loading':
@@ -214,7 +213,7 @@ class BtnTriple(Widget):
             elif self.material['state'] == 'unloading':
                 self.title = "Unloading..."
             else:
-                self.title = f"{self.material['amount']*1000:3.0f}g\n{brand} {material_type}"
+                self.title = f"{self.material['amount']*1000:3.0f}g {material_type}\n(unload)"
         else:
             self.title = "Load Material"
             self.filament_color = (0,0,0,0)
@@ -230,7 +229,7 @@ class FilamentChooserPopup(BasePopup):
     tab_2 = BooleanProperty(False)
     def __init__(self, extruder_id, **kwargs):
         self.app = App.get_running_app()
-        self.fil_man = self.app.filament_manager
+        self.fm = self.app.filament_manager
         self.extruder_id = extruder_id
         self.show_less = [True, True, True]
         self.sel = [None, None, None, None] # selected [type, manufacturer, color, guid]
@@ -240,91 +239,101 @@ class FilamentChooserPopup(BasePopup):
         Clock.schedule_once(self.draw_options, 0)
 
     def draw_options(self, dt=None):
+        """ (re)draw material library from filament_manager """
         self.options = [[], [], []]
         self.sel[3] = None
         self.ids.option_stack.clear_widgets()
         self.ids.btn_confirm.text = "Select"
         self.ids.btn_confirm.enabled = False
-        # Calculate options to draw based on selection
-        if not self.tab_2:
-            # get material library from filament manager as type-manufacturer-color tree of dicts
-            tmc = self.fil_man.tmc_to_guid
 
-            # always show types
-            self.options = [[Option(self, level=0, text=t, selected=(t==self.sel[0])) 
-                           for t in list(tmc)], [], []] 
-            if self.sel[0]:
-                # type is selected, show manufacturers
-                # autoselect if there's only one manufacturer, or 'Generic' and none is selected
-                manufacturers = list(tmc[self.sel[0]])
-                if len(manufacturers) == 1:
-                    self.sel[1] = manufacturers[0]
-                elif self.sel[1] is None and 'Generic' in manufacturers:
-                    self.sel[1] = 'Generic'
-                self.options[1] = [Option(self, level=1, text=m, color=p.light_gray,
-                                  font_size=p.small_font, selected=(m==self.sel[1]))
-                                  for m in manufacturers]
-                if self.sel[1]:
-                    # type and manufacturer is selected, show colors
-                    # autoselect if there's only one color
-                    colors = list(tmc[self.sel[0]][self.sel[1]])
-                    if len(colors) == 1:
-                        self.sel[2] = colors[0]
-                    self.options[2] = [Option(self, level=2, hex_color=c, selected=(c==self.sel[2])) 
-                                      for c in colors]
-                    if self.sel[2]:
-                        # type and manufacturer and color is selected, we have a material guid
-                        self.sel[3] = tmc[self.sel[0]][self.sel[1]][self.sel[2]]
-                        self.ids.btn_confirm.text = f"Select {self.sel[1]} {self.sel[0]}"
-                        self.ids.btn_confirm.enabled = True
+        # generate options to draw based on selection
+        # get material library from filament manager as type-manufacturer-color tree of dicts
+        tmc = self.fm.tmc_to_guid
 
-            # sort types by how many manufactures make them
-            # tmc[option.text] is the dict of manufacturers for the selected type (e.g. for PLA)
-            self.options[0].sort(key = lambda option: len(tmc[option.text]), reverse=True)
-            # sort manufacturers alphabetically, "Generic" always first
-            self.options[1].sort(key = lambda option: option.text.lower() if option.text!='Generic' else '\t')
+        # always show types
+        self.options = [[Option(self, level=0, text=t, selected=(t==self.sel[0])) 
+                        for t in list(tmc)], [], []] 
+        if self.sel[0]:
+            # type is selected, show manufacturers
+            # autoselect if there's only one manufacturer, or 'Generic' and none is selected
+            manufacturers = list(tmc[self.sel[0]])
+            if len(manufacturers) == 1:
+                self.sel[1] = manufacturers[0]
+            elif self.sel[1] is None and 'Generic' in manufacturers:
+                self.sel[1] = 'Generic'
+            self.options[1] = [Option(self, level=1, text=m, color=p.light_gray,
+                                font_size=p.small_font, selected=(m==self.sel[1]))
+                                for m in manufacturers]
+            if self.sel[1]:
+                # type and manufacturer is selected, show colors
+                # autoselect if there's only one color
+                colors = list(tmc[self.sel[0]][self.sel[1]])
+                if len(colors) == 1:
+                    self.sel[2] = colors[0]
+                self.options[2] = [Option(self, level=2, hex_color=c, selected=(c==self.sel[2])) 
+                                    for c in colors]
+                if self.sel[2]:
+                    # type and manufacturer and color is selected, we have a material guid
+                    self.sel[3] = tmc[self.sel[0]][self.sel[1]][self.sel[2]]
+                    self.ids.btn_confirm.text = f"Select {self.sel[1]} {self.sel[0]}"
+                    self.ids.btn_confirm.enabled = True
 
-            # now draw generated options
-            for i in range(len(self.options)):
-                max_amount = (15 if i == 0 else 10)
-                if len(self.options[i]) < max_amount or not self.show_less[i]:
-                    for option in self.options[i]:
-                        self.ids.option_stack.add_widget(option)
-                    if len(self.options) > i+1:
-                        self.ids.option_stack.add_widget(OptionDivider(self, level=i))
-                else: # hidden options
-                    for option in self.options[i][:max_amount]:
-                        self.ids.option_stack.add_widget(option)
-                    if self.options[i]: # draw the show_more divider even if next group is empty
-                        self.ids.option_stack.add_widget(OptionDivider(self, level=i, height=0))
-                self.ids.btn_confirm.text = "Select"
+        # sort types by how many manufactures make them
+        # tmc[option.text] is the dict of manufacturers for the selected type (e.g. for PLA)
+        self.options[0].sort(key = lambda option: len(tmc[option.text]), reverse=True)
+        # sort manufacturers alphabetically, "Generic" always first
+        self.options[1].sort(key = lambda option: option.text.lower() if option.text!='Generic' else '\t')
 
-        else:   
-            materials = self.fil_man.get_status()['unloaded']
-            for i, (guid, amount) in enumerate(materials):
-                option = Option(
-                    self, guid=guid, selected=(self.sel_2[1]==i),
-                    amount=amount, unloaded_idx=i, font_size=p.small_font,
-                    hex_color=self.fil_man.get_info(guid, "./m:metadata/m:color_code"),
-                    text=self.fil_man.get_info(guid, "./m:metadata/m:name/m:brand") + " "
-                        + self.fil_man.get_info(guid, "./m:metadata/m:name/m:material"))
-                self.options[0].append(option)
-                self.ids.option_stack.add_widget(option)
-            if self.sel_2:
-                self.ids.btn_confirm.text = "Select"
-                self.ids.btn_confirm.enabled = True
+        # now draw generated options
+        for i in range(len(self.options)):
+            max_amount = (15 if i == 0 else 10)
+            if len(self.options[i]) < max_amount or not self.show_less[i]:
+                for option in self.options[i]:
+                    self.ids.option_stack.add_widget(option)
+                if len(self.options) > i+1:
+                    self.ids.option_stack.add_widget(OptionDivider(self, level=i))
+            else: # hidden options
+                for option in self.options[i][:max_amount]:
+                    self.ids.option_stack.add_widget(option)
+                if self.options[i]: # draw the show_more divider even if next group is empty
+                    self.ids.option_stack.add_widget(OptionDivider(self, level=i, height=0))
 
-    def on_tab_2(self, instance, tab):
-        self.draw_options()
+    def draw_options_2(self, dt=None):
+        """ draw recently unloaded materials from filament_manager """
+        self.ids.option_stack.clear_widgets()
+        self.ids.btn_confirm.text = "Select"
+        self.ids.btn_confirm.enabled = False
+        self.options = [[], [], []]
+
+        materials = self.fm.get_status()['unloaded']
+        for i, (guid, amount) in enumerate(materials):
+            option = Option(self, 
+                guid=guid,
+                amount=amount,
+                unloaded_idx=i,
+                font_size=p.small_font,
+                selected=(self.sel_2[1]==i),
+                hex_color=self.fm.get_info(guid, "./m:metadata/m:color_code"),
+                # don't crash when get_info() returns None
+                text=f"{self.fm.get_info(guid, './m:metadata/m:name/m:brand')} {self.fm.get_info(guid, './m:metadata/m:name/m:material')}")
+            self.options[0].append(option)
+            self.ids.option_stack.add_widget(option)
+        if self.sel_2:
+            self.ids.btn_confirm.enabled = True
+
+    def on_tab_2(self, instance, tab_2):
+        if tab_2:
+            self.draw_options_2()
+        else:
+            self.draw_options()
 
     def do_selection(self, option):
         if self.tab_2:
             self.sel_2 = (option.amount, option.unloaded_idx, option.guid)
         else:
             self.sel[option.level] = option.text or option.hex_color
-            for i in range(len(self.sel)):
-                if i > option.level:
-                    self.sel[i] = None
+            for i in range(option.level + 1, len(self.sel)):
+                self.sel[i] = None
         self.draw_options()
 
     def confirm(self):
@@ -366,7 +375,6 @@ class OptionDivider(BaseButton):
         super().__init__(**kwargs)
 
     def on_touch_down(self, touch):
-        # Add selection on touch down
         if touch.pos[1] > self.y and touch.pos[1] < self.y + self.actual_height:
             self.filamentchooser.show_less[self.level] = not self.filamentchooser.show_less[self.level]
             self.filamentchooser.draw_options()
@@ -383,27 +391,27 @@ class FilamentPopup(BasePopup):
     amount = NumericProperty(1)
     def __init__(self, extruder_id, new, guid, amount=1, unloaded_idx=None, **kwargs):
         self.app = App.get_running_app()
-        self.fil_man = self.app.filament_manager
+        self.fm = self.app.filament_manager
         self.reactor = self.app.reactor
         self.extruder_id = extruder_id
         self.new = new # set wether the popup is for loading a new material or unloading
         self.guid = guid
         self.amount = amount
         self.unloaded_idx = unloaded_idx
-        self.filament_type = self.fil_man.get_info(guid, "./m:metadata/m:name/m:material")
-        self.manufacturer = self.fil_man.get_info(guid, "./m:metadata/m:name/m:brand")
-        hex_color = self.fil_man.get_info(guid, "./m:metadata/m:color_code")
+        self.filament_type = self.fm.get_info(guid, "./m:metadata/m:name/m:material")
+        self.manufacturer = self.fm.get_info(guid, "./m:metadata/m:name/m:brand")
+        hex_color = self.fm.get_info(guid, "./m:metadata/m:color_code")
         self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
         super().__init__(**kwargs)
 
     def confirm(self):
         if self.new:
             self.reactor.register_async_callback(
-                lambda e: self.fil_man.load(self.extruder_id, guid=self.guid,
+                lambda e: self.fm.load(self.extruder_id, guid=self.guid,
                 amount=self.ids.filament_slider.val/1000, unloaded_idx=self.unloaded_idx))
         else:
             self.reactor.register_async_callback(
-                lambda e: self.fil_man.unload(self.extruder_id))
+                lambda e: self.fm.unload(self.extruder_id))
         self.dismiss()
 
 class FilamentSlider(UltraSlider):
@@ -417,6 +425,7 @@ class FilamentSlider(UltraSlider):
         super().__init__(**kwargs)
 
     def on_touch_down(self, touch):
+        # overwrite method so touch area matches increased height, also add disabling
         if self.initialized\
         and self.active\
         and touch.pos[0] > self.px_min - 30 and touch.pos[0] < self.px_max + 30\

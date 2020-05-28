@@ -83,7 +83,7 @@ FloatLayout:
         Color:
             rgba: (1, 1, 1, 1) if self.connected else (0, 0, 0, 0)
         Rectangle:
-            size: self.width - 2, self.height - 4
-            pos: self.x, self.y + 2
+            size: self.width - 4, self.height - 8
+            pos: self.x, self.y + 4
             source: p.kgui_dir + "/logos/cura-32.png"
-    width: self.height + 2 if self.connected else 0
+    width: self.height - 4 if self.connected else 0

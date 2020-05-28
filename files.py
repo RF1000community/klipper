@@ -28,7 +28,7 @@ class Filechooser(RecycleView):
             self.path = p.sdcard_path
         else:
             self.path = "/"
-        super(Filechooser, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         Clock.schedule_once(self.bind_tab, 0)
         self.load_files()
 
@@ -177,11 +177,11 @@ class FilechooserItem(RecycleDataViewBehavior, Label):
     def refresh_view_attrs(self, rv, index, data):
         # Catch and handle the view changes
         self.index = index
-        return super(FilechooserItem, self).refresh_view_attrs(rv, index, data)
+        return super().refresh_view_attrs(rv, index, data)
 
     def on_touch_down(self, touch):
         # Add selection on touch down
-        if super(FilechooserItem, self).on_touch_down(touch):
+        if super().on_touch_down(touch):
             return True
         if self.collide_point(*touch.pos):
             self.pressed = True
@@ -190,7 +190,7 @@ class FilechooserItem(RecycleDataViewBehavior, Label):
     def on_touch_up(self, touch):
         was_pressed = self.pressed
         self.pressed = False
-        if super(FilechooserItem, self).on_touch_up(touch):
+        if super().on_touch_up(touch):
             return True
         if self.collide_point(*touch.pos) and was_pressed:
             fc = self.parent.parent
@@ -213,7 +213,7 @@ class DeletePopup(BasePopup):
         self.path = path
         self.filechooser = filechooser
         self.timeline = timeline
-        super(DeletePopup, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def confirm(self):
         """Deletes the file and closes the popup"""
