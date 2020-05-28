@@ -53,13 +53,11 @@ class SIWifiAccessPoint(SetItem):
     def on_release(self):
         # Present different options when wifi is stored by NM
         if self.ap.saved:
-            self.popup = ConnectionPopup(self.ap)
-            self.popup.open()
+            ConnectionPopup(self.ap).open()
         elif not self.ap.encrypted:
             self.ap.connect()
         else:
-            self.popup = PasswordPopup(self.ap)
-            self.popup.open()
+            PasswordPopup(self.ap).open()
 
     def get_color(self):
         if self.ap.saved:

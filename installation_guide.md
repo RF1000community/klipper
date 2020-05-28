@@ -19,10 +19,10 @@ sudo apt update
 sudo apt install git
 sudo raspi-config
 ```
-Set following settings:
-* Advanced Options -> Memory Split to `256`
-* Advanced Options -> GL Driver to `GL (Fake KMS)`
-* Boot Options -> Desktop/CLI to `Console Autologin`
+- Set following settings:
+   - Advanced Options -> Memory Split to `256`
+   - Advanced Options -> GL Driver to `GL (Fake KMS)`
+   - Boot Options -> Desktop/CLI to `Console Autologin`
 
 ### Install Octoprint if required <br> (it is recommended to use the [klipper-cura-connection](https://github.com/Gobbel2000/klipper_cura_connection) plugin instead of a webinterface)
 ```bash

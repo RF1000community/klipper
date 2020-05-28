@@ -30,7 +30,7 @@ padding = (screen_height\
         - btn_stop\
         - progress_bar_height\
         - tab_height)\
-        /float(7)#remaining space has to contain 9* padding and 1* hpadding
+        /7 # remaining space has to contain 7* padding
 notification_padding = status_bar_height
 notification_text_padding = 20
 btn_spacing = padding + btn_height
@@ -62,35 +62,3 @@ notify_info = (0.28,0.28,0.28,0.65)
 notify_warning = (0.44,0.31,0.11,0.7)
 notify_error = (0.6,0.1,0.1,0.8)
 notify_success = (0.1,0.4,0.2,0.8)
-
-
-"""
-Kivy Guide
-https://blog.kivy.org/2019/06/widget-interactions-between-python-and-kv/
-Screens (of screenmanager) are relative Layouts (new root for coordinate system)
-setting properties of parent class in kv rules doesnt work if they are assigned to a value in parent rule
-Defining Properties in kv is often bad since it happens too late, and prohibits setting them in __init__
-LABELS: try setting hints to None if it does shit e.g. setting size doesnt work
-    size: outer dimensions of the label widget, available space, can be set to texture_size to show everything
-    text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits bounding box for text
-    texture_size: size of the actual text not cut off(outer dimensions), can set font_size
-    always size_hint: None, None when setting size: needed
-    halign or valign set position of text within text_size
-in canvas: e.g. self.*** acceses the 'parent' widget of the canvas, unlike in other child Instances like Label:
-pos: coordinates are always relative to the innermost Layout, not Widget you are in
-Widgets: always define size first then pos at least when using top or right.. x:
-Never Put comments after canvas: Instruction
-f-strings in kv are not reevaluated if properties change, format() is
-How to access Instances or their methods:
-    in kv to on_propertychange: id.method() id can be bound within root widget
-    in py someinstance.bind(someinstances on_propertychange = self.method_to_bind) passes instance and every property
-    by instantiating in python, storing instance
-    in python self.ids["id"].method() instances of child widges can be accessed by id (ids is dict with instance as value)
-THREAD SAFETY: 
-    Clock methods (e.g. Clock.schedule_once()) are thread safe, can be used do execute methods in Kivy thread from somewhere else
-    reactor.register_async_callback should also be thread safe, since it uses a Queue
-    Simple Assignments are thread safe because of GIL
-"""
-
-
-
