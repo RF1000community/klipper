@@ -11,15 +11,16 @@ from kivy.uix.screenmanager import Screen
 from kivy.properties import NumericProperty
 
 from . import parameters as p
-from .settings import SetItem
 from .elements import *
+from .git_update import GitHelper
+from .settings import SetItem
 if not "KGUI_TESTING" in os.environ:
     from util import get_git_version
 
 class UpdateScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        #self.klipper_dir = dirname(dirname(dirname(p.kgui_dir)))
+        self.githelper = GitHelper()
         Clock.schedule_once(self.draw_releases, 0)
 
     def draw_releases(self, dt):
@@ -47,20 +48,22 @@ class UpdatePopup(BasePopup):
         super().__init__(**kwargs)
 
     def update(self):
-        # as a convention klipper is always installed in HOME directory
-        install_dir = os.path.expanduser('~')
-        self.run_in_tty("some update script ")
-        # exit klipper to terminal
-        App.get_running_app().quit()
+        self.githelper.install_release(self.version)
 
-    def run_in_tty(self, command):
-        #TODO
-        process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-    
+
 class SIRelease(SetItem):
-    def __init__(self, version, details, **kwargs):
+    """
+    version     version number or branch name
+    details     extra info like release date
+    current     True if this is the currently installed release
+    unstable    True if beta/testing/development release or branch
+    """
+
+    def __init__(self, version, details, current=False, unstable=False, **kwargs):
         self.version = version
         self.details = details
+        self.current = current
+        self.unstable = unstable
         self.left_title = version
         self.right_title = details
         super().__init__(**kwargs)

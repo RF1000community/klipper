@@ -24,9 +24,8 @@ from .elements import *
 class FlashScreen(Screen):
     def __init__(self, **kwargs):
         super(FlashScreen, self).__init__(**kwargs)
-        klipper_dir = dirname(dirname(dirname(p.kgui_dir)))
-        os.environ['srctree'] = klipper_dir
-        self.kconf = Kconfig(os.path.join(klipper_dir, "src/Kconfig"))
+        os.environ['srctree'] = p.klipper_dir
+        self.kconf = Kconfig(os.path.join(p.klipper_dir, "src/Kconfig"))
 
         Clock.schedule_once(self.draw_nodes, 0)
 

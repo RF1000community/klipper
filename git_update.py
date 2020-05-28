@@ -7,11 +7,12 @@ from kivy.event import EventDispatcher
 from elements import ErrorPopup
 import parameters as p
 
-KLIPPER_DIR = os.path.dirname(os.path.dirname(os.path.dirname(p.kgui_dir)))
-
 class GitHelper(EventDispatcher):
+    # TODO: git fetch
+    #       branches
 
     REMOTE = "origin"
+    INSTALL_SCRIPT = os.path.join(p.klipper_dir, "scripts/install-kgui.sh")
     # Filter tags that are considered a release
     # TODO change to differentiate klipper and klipperui releases
     #      maybe prepend "kgui" or "release" instead of "v"?
@@ -19,10 +20,9 @@ class GitHelper(EventDispatcher):
 
     def __init__(self):
         # Use klipperui repository and no pager (-P)
-        self._base_cmd = ["git", "-C", KLIPPER_DIR, "-P"]
+        self._base_cmd = ["git", "-C", p.klipper_dir, "-P"]
         self._install_process = None
 
-        # Events
         # Dispatched whenever an installation is finished, succesfully or not
         self.register_event_type("on_install_finished")
 
@@ -32,20 +32,31 @@ class GitHelper(EventDispatcher):
         """
         cmd = self._base_cmd + cmd
         proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return proc.stdout
+        # The output always ends with a newline, we don't want that
+        return proc.stdout.rstrip()
 
-    def get_current_verion(self):
+    def get_git_version(self):
+        """Return the git version number"""
+        git_version = self._execute(["--version"])
+        # Strip prefix "git version " from output
+        if git_version.startswith("git version "):
+            git_version = git_version[12:]
+        return git_version
+
+    def get_current_version(self):
+        """Get version with commit info if not on tagged commit, mostly useful for displaying"""
         cmd = ["describe", "--tags", "--dirty"]
         version = self._execute(cmd)
-        # Strip v in beginning and newline on end
-        version = version[len(self.RELEASES)-1:].rstrip()
+        # Strip v in beginning
+        version = version[len(self.RELEASES)-1:]
         return version
 
     def get_exact_version(self):
         """Return only the exact version
         must match one of get_release()
+        If not on release commit, return None
         """
-        cmd = ["describe", "--tags", "--exact-match", "--match", RELEASES]
+        cmd = ["describe", "--tags", "--exact-match", "--match", self.RELEASES]
         try:
             version = self._execute(cmd)
         except subprocess.CalledProcessError:
@@ -68,10 +79,9 @@ class GitHelper(EventDispatcher):
         if self._install_process is not None: # Install is currently running
             logging.warning("Updater: Attempted to install while script is running")
             return
-        cmd = os.path.join(KLIPPER_DIR, "scripts/install-kgui.sh")
         # Capture both stderr and stdout in stdout
-        self._install_process = Popen(cmd, capture_output=True, text=True,
-                stderr=subprocess.STDOUT)
+        self._install_process = Popen(self.INSTALL_SCRIPT, capture_output=True,
+                text=True, stderr=subprocess.STDOUT)
         Clock.schedule_once(self._poll_install_process, 0.5)
 
     def _poll_install_process(self):
