@@ -145,9 +145,11 @@ class NetworkManager(EventDispatcher, Thread):
         access_points = []
         for path in self.wifi_dev.AccessPoints:
             try:
-                access_points.append(AccessPoint(self, path))
+                ap = AccessPoint(self, path)
             except: # DBus sometimes throws a random error here
                 continue
+            if ap.ssid:
+                access_points.append(ap)
         # Sort by signal strength and then by 'in-use'
         access_points.sort(key=lambda x: x.signal, reverse=True)
         access_points.sort(key=lambda x: x.in_use, reverse=True)

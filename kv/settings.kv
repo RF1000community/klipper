@@ -72,23 +72,78 @@
             #     left_title: "Flash Klipper Firmware to Printer"
             #     on_release: root.manager.current = "FlashScreen"
 
-<WifiScreen>:
+<WifiScreen@Screen>:
     name: 'WifiScreen'
-    ScrollView:
-        canvas.before:
-            Color:
-                rgba: p.background
-            Rectangle:
-                pos: self.pos
-                size: self.size
-        size_hint: 1, 1
-        pos_hint: {'x':0, 'y':0}
-        do_scroll_x: False
-        BoxLayout:
-            id: wifi_box
-            orientation: 'vertical'
-            height: self.minimum_height
-            size_hint_y: None
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0,0 # screens are relative layouts
+            size: self.size
+    Label:
+        id: wifi_message
+        text: ""
+        font_size: p.normal_font
+        text_size: self.size
+        size_hint: 1, 0.2
+        valign: 'top'
+        halign: 'left'
+        padding_x: p.padding
+        padding_y: p.padding - 10
+        pos_hint: {'x':0, 'top':1}
+        color: p.medium_light_gray
+    Wifi:
+        id: wifi
+        message: wifi_message
+        viewclass: 'WifiItem'
+
+<Wifi>:
+    WifiBox:
+        id: wifi_box
+        default_size: None, None
+        default_size_hint: 1, None
+        size_hint_y: None
+        width: p.screen_width
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False
+
+<WifiItem>:
+    #Label
+    width: p.screen_width
+    size_hint_y: None
+    height: 110
+    text: self.ap.ssid
+    halign: 'right'
+    valign: 'middle'
+    max_lines: 1
+    padding_x: p.h_padding
+    text_size: self.size
+    font_size: p.normal_font
+    color: p.light_gray
+    Label:
+        # canvas:
+        #     Color:
+        #         rgba: p.translucent_white if self.pressed or self.ap.in_use else (0,0,0,0)
+        #     Rectangle:
+        #         size: self.size
+        #         pos: self.pos
+        text: str(root.ap.signal)
+        shorten: True
+        halign: 'left'
+        valign: 'middle'
+        padding_x: p.h_padding 
+        size_hint: None, None
+        size: root.size
+        pos: root.pos
+        text_size: self.size
+        font_size: p.normal_font
+        color: (0.7, 0, 0, 1) if root.ap.saved else (1,1,1,1)
+    Divider:
+        y: root.top
+    Divider:
+        y: root.y
 
 <UpdateScreen>:
     name: 'UpdateScreen'
@@ -314,29 +369,6 @@
 <SITimezone>:
     left_title: "Timezone"
     on_release: Factory.TimezonePopup().open()
-
-<SIWifiAccessPoint>:
-    Label:
-        text: root.ap.ssid
-        font_size: p.normal_font
-        text_size: self.size
-        color: p.light_gray
-        size: root.width, root.height
-        size_hint: None, None
-        valign: 'middle'
-        halign: 'right'
-        y: root.y
-        right: p.screen_width
-        padding_x: p.padding
-    Label:
-        text: str(root.ap.signal)
-        font_size: p.normal_font
-        padding_x: p.padding
-        width: self.texture_size[0]
-        height: root.height
-        size_hint: None, None
-        color: root.get_color()
-        pos: root.pos
 
 
 # POPUPS

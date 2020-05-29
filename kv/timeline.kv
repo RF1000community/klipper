@@ -65,7 +65,6 @@
         touch_multiselect: False
 
 <TimelineItem>:
-    size: p.screen_width, 777
     canvas:
         Color:
             rgba: (1,1,1,0.06) if self.state in ('printing', 'paused', 'pausing', 'stopping') else (0,0,0,0)
@@ -78,6 +77,7 @@
             size: self.size
             pos: self.pos
     #Label
+    width: p.screen_width
     size_hint_y: None
     height: 40 if self.state == "header" else 110
     text: "" if self.state in ('header', 'message') else self.state.capitalize()
