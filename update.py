@@ -11,8 +11,6 @@ from . import parameters as p
 from .git_update import GitHelper
 from .settings import SetItem
 from .elements import Divider, BasePopup
-if not "KGUI_TESTING" in os.environ:
-    from util import get_git_version
 
 class UpdateScreen(Screen):
     def __init__(self, **kwargs):
@@ -21,8 +19,7 @@ class UpdateScreen(Screen):
         Clock.schedule_once(self.draw_releases, 0)
 
     def draw_releases(self, dt):
-        if not "KGUI_TESTING" in os.environ:
-            self.ids.message.text = "You're on Version " + get_git_version()
+        self.ids.message.text = "You're on Version " + self.githelper.get_current_version()
         self.ids.box.clear_widgets()
         self.ids.box.add_widget(Divider(pos_hint={'center_x':0.5}))
 
