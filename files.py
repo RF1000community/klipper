@@ -13,7 +13,6 @@ from kivy.uix.recycleview import RecycleView
 
 from .elements import BasePopup, PrintPopup
 from . import parameters as p
-from pytictoc import TicToc
 
 class Filechooser(RecycleView):
     path = StringProperty()
