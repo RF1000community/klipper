@@ -134,14 +134,8 @@ class NetworkManager(EventDispatcher, Thread):
     def handle_scan_complete(self):
         """
         Called on changes in wifi_dev.LastScan, which is changed whenever
-        a scan completed.  Parses the access points into dictionaries
-        containing the relevant properties:
-        ssid    name of wifi
-        signal  signal strength in percent
-        freq    radio channel frequency in MHz
-        in-use  whether we are currently connected with the wifi
-        saved   whether the connection is already known and saved
-        path    the dbus object path of the access point.
+        a scan completed.  Parses the access points into wrapper objects
+        containing the relevant attributes and methods
 
         WARNING: Because of some DBus calls, this function can take
         from 0.5 up to 5 seconds to complete.
@@ -258,6 +252,7 @@ class NetworkManager(EventDispatcher, Thread):
                 {}, self.wifi_dev._path, ap._path)
         active = self.bus.get(_NM, act_path)
         self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
+        self.wifi_scan()
         return con
 
     def wifi_up(self, ap):
@@ -267,6 +262,7 @@ class NetworkManager(EventDispatcher, Thread):
         active = self.nm.ActivateConnection("/", self.wifi_dev._path, ap._path)
         active = self.bus.get(_NM, active)
         self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
+        self.wifi_scan()
 
     def wifi_down(self):
         """Deactivate the currently active wifi connection, if any"""
@@ -274,6 +270,7 @@ class NetworkManager(EventDispatcher, Thread):
         if active == "/":
             return False
         self.nm.DeactivateConnection(active)
+        self.wifi_scan()
         return True
 
     def wifi_delete(self, ap):
@@ -285,6 +282,7 @@ class NetworkManager(EventDispatcher, Thread):
             if '802-11-wireless' in settings: # Only check wifi connections
                 if ap.b_ssid == settings['802-11-wireless']['ssid']:
                     con.Delete()
+                    self.wifi_scan()
                     return True
         return False
 

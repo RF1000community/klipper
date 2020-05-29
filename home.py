@@ -1,12 +1,10 @@
 # coding: utf-8
-import logging
-
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.properties import ListProperty, NumericProperty, StringProperty
+from kivy.properties import ListProperty, NumericProperty, StringProperty, BooleanProperty
 from kivy.uix.widget import Widget
 
-from .elements import *
+from .elements import BaseButton, BtnSlider, BasePopup, UltraSlider
 from . import parameters as p
 
 

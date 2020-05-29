@@ -1,19 +1,16 @@
 import os
-import logging
 import subprocess
-import site
 import requests
 
 from os.path import dirname
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.uix.screenmanager import Screen
-from kivy.properties import NumericProperty
 
 from . import parameters as p
-from .elements import *
 from .git_update import GitHelper
 from .settings import SetItem
+from .elements import Divider, BasePopup
 if not "KGUI_TESTING" in os.environ:
     from util import get_git_version
 

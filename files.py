@@ -1,18 +1,16 @@
-import logging
-import re
-import shutil
 import os
-from os.path import getmtime, basename, dirname, exists, abspath, join
+from os.path import getmtime, basename, dirname, exists, join
+import re
 from zipfile import ZipFile
 
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.properties import BooleanProperty, OptionProperty, StringProperty
 from kivy.uix.label import Label
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.recycleview import RecycleView
-from kivy.properties import BooleanProperty, OptionProperty, StringProperty
 
 from .elements import BasePopup, PrintPopup
 from . import parameters as p

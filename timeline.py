@@ -1,20 +1,18 @@
 # coding: utf-8
-import json
-import logging
 from datetime import date
-from os.path import splitext, basename, exists
+from os.path import splitext, basename
 
 from kivy.app import App
-from kivy.properties import (ListProperty, NumericProperty, StringProperty,
-    BooleanProperty, OptionProperty, ObjectProperty)
+from kivy.properties import (NumericProperty, StringProperty, BooleanProperty,
+        OptionProperty, ObjectProperty)
 from kivy.uix.label import Label
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 
-from . import parameters as p
 from .elements import StopPopup
+from . import parameters as p
 
 class Timeline(RecycleView):
     path = StringProperty()
