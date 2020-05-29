@@ -45,38 +45,39 @@ class Filechooser(RecycleView):
         self.load_files(in_background=True)
 
     def load_files(self, in_background = False):
-        content = os.listdir(self.path)
-        # filter usb
         usb = []
-        if "USB-Device" in content:
-            content.remove("USB-Device")
-            # Check if folder is not empty -> a usb stick is plugged in
-            if len(os.listdir(join(self.path, "USB-Device"))) > 0:
-                usb = [{'name': "USB-Device", 'item_type': 'usb', 'details':"",
-                        'path': (join(self.path, "USB-Device"))}]
         files = []
         folders = []
-        for base in content:
-            # Filter out hidden files/directories
+        for base in os.listdir(self.path):
+            # Hidden files/directories (don't show)
             if base.startswith("."):
                 continue
             path = os.path.join(self.path, base)
-            dict_ = {"name": base, "path": path, "thumbnail": ""}
-            if os.path.isdir(path):
-                dict_["item_type"] = "folder"
-                dict_["details"] = ""
-                folders.append(dict_)
-            # Filter only gcode and compressed gcode (ufp) files
-            elif os.path.isfile(path):
+            dict_ = {'name': base, 'path': path, 'thumbnail': "", 'details': ""}
+            # Gcode/ufp files
+            if os.path.isfile(path):
                 ext = os.path.splitext(base)[1]
-                dict_["item_type"] = "file"
+                dict_['item_type'] = "file"
                 if ext in (".gco", ".gcode"):
-                    dict_["details"] = self.get_details(path)
+                    dict_['details'] = self.get_details(path)
                     files.append(dict_)
                 elif ext == ".ufp":
-                    dict_["details"] = self.get_ufp_details(path)
-                    dict_["thumbnail"] = self.get_ufp_thumbnail(path)
+                    dict_['details'] = self.get_ufp_details(path)
+                    dict_['thumbnail'] = self.get_ufp_thumbnail(path)
                     files.append(dict_)
+                continue
+            # USB Stick (if folder is not empty => a usb stick is plugged in, usbmount mounts them to this directory)
+            if base == "USB-Device":
+                if len(os.listdir(path)) > 0:
+                    dict_['item_type'] = "usb"
+                    usb.append(dict_)
+                continue
+            # Folders
+            if os.path.isdir(path):
+                dict_['item_type'] = "folder"
+                folders.append(dict_)
+                continue
+
 
         # Sort files by modification time (last modified first)
         files.sort(key=lambda d: os.path.getmtime(d["path"]), reverse=True)
