@@ -16,7 +16,7 @@ from kivy.properties import BooleanProperty, OptionProperty, StringProperty
 
 from .elements import BasePopup, PrintPopup
 from . import parameters as p
-
+from pytictoc import TicToc
 
 class Filechooser(RecycleView):
     path = StringProperty()
@@ -24,6 +24,7 @@ class Filechooser(RecycleView):
     def __init__(self, **kwargs):
         self.app = App.get_running_app()
         self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2
+        self.content = []
         if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
         else:
@@ -45,53 +46,59 @@ class Filechooser(RecycleView):
         self.load_files(in_background=True)
 
     def load_files(self, in_background = False):
+        t = TicToc()
+        t.tic()
         usb = []
         files = []
         folders = []
-        for base in os.listdir(self.path):
-            # Hidden files/directories (don't show)
-            if base.startswith("."):
-                continue
-            path = os.path.join(self.path, base)
-            dict_ = {'name': base, 'path': path, 'thumbnail': "", 'details': ""}
-            # Gcode/ufp files
-            if os.path.isfile(path):
-                ext = os.path.splitext(base)[1]
-                dict_['item_type'] = "file"
-                if ext in (".gco", ".gcode"):
-                    dict_['details'] = self.get_details(path)
-                    files.append(dict_)
-                elif ext == ".ufp":
-                    dict_['details'] = self.get_ufp_details(path)
-                    dict_['thumbnail'] = self.get_ufp_thumbnail(path)
-                    files.append(dict_)
-                continue
-            # USB Stick (if folder is not empty => a usb stick is plugged in, usbmount mounts them to this directory)
-            if base == "USB-Device":
-                if len(os.listdir(path)) > 0:
-                    dict_['item_type'] = "usb"
-                    usb.append(dict_)
-                continue
-            # Folders
-            if os.path.isdir(path):
-                dict_['item_type'] = "folder"
-                folders.append(dict_)
-                continue
+        content = os.listdir(self.path)
+        usb_state = "USB-Device" in content and len(os.listdir(join(self.path, "USB-Device"))) > 0
+        if self.content != content or self.usb_state != usb_state:
+            for base in content:
+                # Hidden files/directories (don't show)
+                if base.startswith("."):
+                    continue
+                path = os.path.join(self.path, base)
+                dict_ = {'name': base, 'path': path, 'thumbnail': "", 'details': ""}
+                # Gcode/ufp files
+                if os.path.isfile(path):
+                    ext = os.path.splitext(base)[1]
+                    dict_['item_type'] = "file"
+                    if ext in (".gco", ".gcode"):
+                        dict_['details'] = self.get_details(path)
+                        files.append(dict_)
+                    elif ext == ".ufp":
+                        dict_['details'] = self.get_ufp_details(path)
+                        dict_['thumbnail'] = self.get_ufp_thumbnail(path)
+                        files.append(dict_)
+                    continue
+                # USB Stick (if folder is not empty => a usb stick is plugged in, usbmount mounts them to this directory)
+                if base == "USB-Device":
+                    if usb_state:
+                        dict_['item_type'] = "usb"
+                        usb.append(dict_)
+                    continue
+                # Folders
+                if os.path.isdir(path):
+                    dict_['item_type'] = "folder"
+                    folders.append(dict_)
+                    continue
 
+            # Sort files by modification time (last modified first)
+            files.sort(key=lambda d: os.path.getmtime(d["path"]), reverse=True)
+            # Sort folders alphabetically
+            folders.sort(key=lambda d: d["name"].lower())
 
-        # Sort files by modification time (last modified first)
-        files.sort(key=lambda d: os.path.getmtime(d["path"]), reverse=True)
-        # Sort folders alphabetically
-        folders.sort(key=lambda d: d["name"].lower())
-
-        self.btn_back_visible = self.path != p.sdcard_path
-
-        new_data = usb + folders + files
-        if self.data != new_data:
-            self.data = new_data
+            self.data = usb + folders + files
             self.refresh_from_data()
             if not in_background:
                 self.scroll_y = 1
+            self.btn_back_visible = self.path != p.sdcard_path
+            self.content = content
+            self.usb_state = usb_state
+
+        t.toc()
+        logging.info(t.elapsed)
 
     def back(self):
         self.path = dirname(self.path)
