@@ -2,7 +2,6 @@ import logging
 import re
 import shutil
 import os
-from os.path import getmtime, basename, dirname, exists, abspath, join
 from zipfile import ZipFile
 
 from kivy.app import App
@@ -25,6 +24,8 @@ class Filechooser(RecycleView):
         self.app = App.get_running_app()
         self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2
         self.content = []
+        self.usb_state = False
+        self.update_timer = None
         if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
         else:
@@ -40,20 +41,23 @@ class Filechooser(RecycleView):
     def control_updating(self, instance, tab):
         if tab == instance.ids.file_tab:
             self.load_files(in_background = True)
-            Clock.schedule_interval(self.update, 10)
+            self.update_timer = Clock.schedule_interval(self.update, 1.782)
+        elif self.update_timer:
+            Clock.unschedule(self.update_timer)
+            self.update_timer = None
 
     def update(self, dt):
         self.load_files(in_background=True)
 
     def load_files(self, in_background = False):
-        t = TicToc()
-        t.tic()
         usb = []
         files = []
         folders = []
         content = os.listdir(self.path)
-        usb_state = "USB-Device" in content and len(os.listdir(join(self.path, "USB-Device"))) > 0
-        if self.content != content or self.usb_state != usb_state:
+        # if USB-Device folder is not empty => a usb stick is plugged in (usbmount mounts them to this directory)
+        usb_state = "USB-Device" in content and len(os.listdir(os.path.join(self.path, "USB-Device"))) > 0
+        # only update if files have changed
+        if (not in_background) or self.content != content or self.usb_state != usb_state:
             for base in content:
                 # Hidden files/directories (don't show)
                 if base.startswith("."):
@@ -72,7 +76,7 @@ class Filechooser(RecycleView):
                         dict_['thumbnail'] = self.get_ufp_thumbnail(path)
                         files.append(dict_)
                     continue
-                # USB Stick (if folder is not empty => a usb stick is plugged in, usbmount mounts them to this directory)
+                # USB Stick
                 if base == "USB-Device":
                     if usb_state:
                         dict_['item_type'] = "usb"
@@ -93,15 +97,11 @@ class Filechooser(RecycleView):
             self.refresh_from_data()
             if not in_background:
                 self.scroll_y = 1
-            self.btn_back_visible = self.path != p.sdcard_path
             self.content = content
             self.usb_state = usb_state
 
-        t.toc()
-        logging.info(t.elapsed)
-
     def back(self):
-        self.path = dirname(self.path)
+        self.path = os.path.dirname(self.path)
         self.load_files()
 
     def parse_filament_use(self, match, slicer_idx):
@@ -163,7 +163,7 @@ class Filechooser(RecycleView):
 
     def get_ufp_thumbnail(self, path):
         thumbnail_path = path.replace('.ufp', '.png')
-        if not exists(thumbnail_path):
+        if not os.path.exists(thumbnail_path):
             zip_obj = ZipFile(path)
             with open(thumbnail_path, 'wb') as thumbnail:
                 thumbnail.write(zip_obj.read("/Metadata/thumbnail.png"))
@@ -236,4 +236,4 @@ class DeletePopup(BasePopup):
         elif self.filechooser:
             self.filechooser.load_files(in_background=True)
         self.dismiss()
-        app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)
+        app.notify.show("File deleted", "Deleted " + os.path.basename(self.path), delay=4)
