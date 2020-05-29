@@ -2,6 +2,7 @@ Features
     Updates
     microcontroller flashing (maybe dead)
     gcode console
+    Sommer/Winterzeit, oder abschaffen
 
 Unwanted Features
     pause_resume extrusion

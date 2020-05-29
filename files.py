@@ -1,5 +1,4 @@
 import os
-from os.path import getmtime, basename, dirname, exists, join
 import re
 from zipfile import ZipFile
 
@@ -15,13 +14,15 @@ from kivy.uix.recycleview import RecycleView
 from .elements import BasePopup, PrintPopup
 from . import parameters as p
 
-
 class Filechooser(RecycleView):
     path = StringProperty()
     btn_back_visible = BooleanProperty(False)
     def __init__(self, **kwargs):
         self.app = App.get_running_app()
         self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2
+        self.content = []
+        self.usb_state = False
+        self.update_timer = None
         if os.path.exists(p.sdcard_path):
             self.path = p.sdcard_path
         else:
@@ -37,61 +38,67 @@ class Filechooser(RecycleView):
     def control_updating(self, instance, tab):
         if tab == instance.ids.file_tab:
             self.load_files(in_background = True)
-            Clock.schedule_interval(self.update, 10)
+            self.update_timer = Clock.schedule_interval(self.update, 1.782)
+        elif self.update_timer:
+            Clock.unschedule(self.update_timer)
+            self.update_timer = None
 
     def update(self, dt):
         self.load_files(in_background=True)
 
     def load_files(self, in_background = False):
-        content = os.listdir(self.path)
-        # filter usb
         usb = []
-        if "USB-Device" in content:
-            content.remove("USB-Device")
-            # Check if folder is not empty -> a usb stick is plugged in
-            if len(os.listdir(join(self.path, "USB-Device"))) > 0:
-                usb = [{'name': "USB-Device", 'item_type': 'usb', 'details':"",
-                        'path': (join(self.path, "USB-Device"))}]
         files = []
         folders = []
-        for base in content:
-            # Filter out hidden files/directories
-            if base.startswith("."):
-                continue
-            path = os.path.join(self.path, base)
-            dict_ = {"name": base, "path": path, "thumbnail": ""}
-            if os.path.isdir(path):
-                dict_["item_type"] = "folder"
-                dict_["details"] = ""
-                folders.append(dict_)
-            # Filter only gcode and compressed gcode (ufp) files
-            elif os.path.isfile(path):
-                ext = os.path.splitext(base)[1]
-                dict_["item_type"] = "file"
-                if ext in (".gco", ".gcode"):
-                    dict_["details"] = self.get_details(path)
-                    files.append(dict_)
-                elif ext == ".ufp":
-                    dict_["details"] = self.get_ufp_details(path)
-                    dict_["thumbnail"] = self.get_ufp_thumbnail(path)
-                    files.append(dict_)
+        content = os.listdir(self.path)
+        # if USB-Device folder is not empty => a usb stick is plugged in (usbmount mounts them to this directory)
+        usb_state = "USB-Device" in content and len(os.listdir(os.path.join(self.path, "USB-Device"))) > 0
+        # only update if files have changed
+        if (not in_background) or self.content != content or self.usb_state != usb_state:
+            for base in content:
+                # Hidden files/directories (don't show)
+                if base.startswith("."):
+                    continue
+                path = os.path.join(self.path, base)
+                dict_ = {'name': base, 'path': path, 'thumbnail': "", 'details': ""}
+                # Gcode/ufp files
+                if os.path.isfile(path):
+                    ext = os.path.splitext(base)[1]
+                    dict_['item_type'] = "file"
+                    if ext in (".gco", ".gcode"):
+                        dict_['details'] = self.get_details(path)
+                        files.append(dict_)
+                    elif ext == ".ufp":
+                        dict_['details'] = self.get_ufp_details(path)
+                        dict_['thumbnail'] = self.get_ufp_thumbnail(path)
+                        files.append(dict_)
+                    continue
+                # USB Stick
+                if base == "USB-Device":
+                    if usb_state:
+                        dict_['item_type'] = "usb"
+                        usb.append(dict_)
+                    continue
+                # Folders
+                if os.path.isdir(path):
+                    dict_['item_type'] = "folder"
+                    folders.append(dict_)
+                    continue
 
-        # Sort files by modification time (last modified first)
-        files.sort(key=lambda d: os.path.getmtime(d["path"]), reverse=True)
-        # Sort folders alphabetically
-        folders.sort(key=lambda d: d["name"].lower())
+            # Sort files by modification time (last modified first)
+            files.sort(key=lambda d: os.path.getmtime(d["path"]), reverse=True)
+            # Sort folders alphabetically
+            folders.sort(key=lambda d: d["name"].lower())
 
-        self.btn_back_visible = self.path != p.sdcard_path
-
-        new_data = usb + folders + files
-        if self.data != new_data:
-            self.data = new_data
+            self.data = usb + folders + files
             self.refresh_from_data()
             if not in_background:
                 self.scroll_y = 1
+            self.content = content
+            self.usb_state = usb_state
 
     def back(self):
-        self.path = dirname(self.path)
+        self.path = os.path.dirname(self.path)
         self.load_files()
 
     def parse_filament_use(self, match, slicer_idx):
@@ -153,7 +160,7 @@ class Filechooser(RecycleView):
 
     def get_ufp_thumbnail(self, path):
         thumbnail_path = path.replace('.ufp', '.png')
-        if not exists(thumbnail_path):
+        if not os.path.exists(thumbnail_path):
             zip_obj = ZipFile(path)
             with open(thumbnail_path, 'wb') as thumbnail:
                 thumbnail.write(zip_obj.read("/Metadata/thumbnail.png"))
@@ -226,4 +233,4 @@ class DeletePopup(BasePopup):
         elif self.filechooser:
             self.filechooser.load_files(in_background=True)
         self.dismiss()
-        app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)
+        app.notify.show("File deleted", "Deleted " + os.path.basename(self.path), delay=4)
