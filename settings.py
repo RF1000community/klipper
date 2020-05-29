@@ -4,10 +4,7 @@ import os
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.event import EventDispatcher
-from kivy.logger import Logger
-from kivy.properties import ListProperty, ObjectProperty, NumericProperty, DictProperty, StringProperty, BooleanProperty
-from kivy.uix.behaviors import FocusBehavior
+from kivy.properties import ListProperty, ObjectProperty, StringProperty, BooleanProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
@@ -16,7 +13,7 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 
-from .elements import *
+from .elements import Divider, BaseButton, BasePopup
 from . import parameters as p
 
 

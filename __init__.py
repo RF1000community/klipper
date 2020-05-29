@@ -20,19 +20,16 @@ from kivy.base import ExceptionHandler, ExceptionManager
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.lang import Builder
-from kivy.properties import OptionProperty, BooleanProperty, DictProperty, NumericProperty
+from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
+        NumericProperty, ListProperty, StringProperty)
 
 from .elements import UltraKeyboard
-from .files import *
 from .freedir import freedir
-from .timeline import *
-from .home import *
-from .nm_dbus import *
-from .settings import *
-from .status import *
-from .update import *
-from .kconfig_ui import *
+from .nm_dbus import NetworkManager
 from . import parameters as p
+from .status import Notifications
+# Imports for KvLang Builder
+from . import files, home, kconfig_ui, settings, status, timeline, update
 
 if not TESTING:
     site.addsitedir(dirname(dirname(p.kgui_dir)))

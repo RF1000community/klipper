@@ -1,20 +1,17 @@
 # coding: utf-8
-from collections import deque
-from time import time
 from os.path import join, basename
+import shutil
+from time import time
 
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.properties import NumericProperty, BooleanProperty, StringProperty, ListProperty
-from kivy.uix.behaviors.button import ButtonBehavior
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.vkeyboard import VKeyboard
 from kivy.uix.widget import Widget
 
 from . import parameters as p
-import logging
-import shutil
 
 
 class Divider(Widget):
