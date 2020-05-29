@@ -1,4 +1,5 @@
 from os.path import dirname, expanduser, join
+
 kgui_dir = dirname(__file__)
 sdcard_path = expanduser('~/sdcard')
 history_file = join(sdcard_path, ".history.json")

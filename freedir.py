@@ -120,7 +120,8 @@ def _check_input(dirs):
 
 def get_space(path='.'):
     """
-    Get available disk space. -BM gives output in M (1,048,576 Bytes)
+    Get available disk space.
+    -BM gives output as an integer value in M (1,048,576 Bytes)
     """
     df_cmd = ['df', '-BM', '--output=avail', path]
     proc = Popen(df_cmd, stdout=PIPE, stderr=STDOUT, universal_newlines=True)

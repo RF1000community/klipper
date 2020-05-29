@@ -1,24 +1,22 @@
-import sys
 import os
-import logging
 from os.path import dirname
 
-from .kconfiglib import Kconfig, \
-                       Symbol, MENU, COMMENT, \
-                       BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
-                       expr_value, \
-                       TRI_TO_STR, \
-                       Choice, MenuNode, AND, OR, \
-                       expr_str, split_expr, \
-                       standard_sc_expr_str, TYPE_TO_STR, \
-                       standard_kconfig, standard_config_filename
+from .kconfiglib import (Kconfig,
+                       Symbol, MENU, COMMENT,
+                       BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN,
+                       expr_value,
+                       TRI_TO_STR,
+                       Choice, MenuNode, AND, OR,
+                       expr_str, split_expr,
+                       standard_sc_expr_str, TYPE_TO_STR,
+                       standard_kconfig, standard_config_filename)
+from kivy.clock import Clock
+from kivy.properties import NumericProperty, BooleanProperty, StringProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
-from kivy.properties import NumericProperty, BooleanProperty, StringProperty
 
+from .elements import Divider
 from . import parameters as p
-from .settings import SetItem
-from .elements import *
 
 
 class FlashScreen(Screen):
