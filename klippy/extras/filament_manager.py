@@ -100,18 +100,19 @@ class FilamentManager:
         else: #add dict for this type ..
             self.tmc_to_guid[f_type] = {f_brand: {f_color: f_guid}}
 
-    def get_info(self, material, xpath):
+    def get_info(self, material, xpath, default=None):
         """material can be either GUID or filepath"""
         fpath = self.guid_to_path.get(material) or material
         try:
             root = ElementTree.parse(fpath).getroot()
         except: 
-            logging.info(f"Failed to parse {fpath}")
+            logging.warning(f"Failed to parse {fpath}")
         else:
             ns = {'m': 'http://www.ultimaker.com/material'}
             node = root.find(xpath, ns)
             if node is not None:
                 return node.text
+        return default
 
 ######################################################################
 # loading and unloading api (only execute in klippy thread)
