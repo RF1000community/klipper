@@ -7,12 +7,11 @@ PYTHONDIR="${SRCDIR}/klippy-environment"
 
 
 
-# Must be called before install_packages
+# Must be called after install_packages
 setup_port_redirection()
 {
     sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-ports 8008
-    echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
-    echo iptables-persistent iptables-persistent/autosave_v6 boolean false | sudo debconf-set-selections
+    sudo iptables-save -f /etc/iptables/rules.v4
 }
 
 
@@ -99,6 +98,8 @@ install_packages()
     # Usb Stick Automounting
     PKGLIST="${PKGLIST} usbmount"
     # Cura connection
+    echo iptables-persistent iptables-persistent/autosave_v4 boolean false | sudo debconf-set-selections
+    echo iptables-persistent iptables-persistent/autosave_v6 boolean false | sudo debconf-set-selections
     PKGLIST="${PKGLIST} iptables-persistent"
 
     # Update system package info
@@ -212,8 +213,8 @@ set -e
 
 # Run installation steps defined above
 verify_ready
-setup_port_redirection
 install_packages
+setup_port_redirection
 create_virtualenv
 install_klipper_service
 install_usb_automounting
