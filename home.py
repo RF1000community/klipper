@@ -236,11 +236,11 @@ class FilamentChooserPopup(BasePopup):
         super().__init__(**kwargs)
         Clock.schedule_once(self.draw_options, 0)
 
-    def draw_options(self, dt=None):
+    def draw_options(self, dt=None, change_level=0):
         """ (re)draw material library from filament_manager """
         self.options = [[], [], []]
+        self.widgets = [[], [], []]
         self.sel[3] = None
-        self.ids.option_stack.clear_widgets()
         self.ids.btn_confirm.text = "Select"
         self.ids.btn_confirm.enabled = False
 
@@ -283,18 +283,30 @@ class FilamentChooserPopup(BasePopup):
         self.options[1].sort(key = lambda option: option.text.lower() if option.text!='Generic' else '\t')
 
         # now draw generated options
-        for i in range(len(self.options)):
+        for i in range(change_level, len(self.options)):
+            # only replace widgets that have changed
+            for widget in self.widgets[i]:
+                self.ids.option_stack.remove_widget(widget)
+            self.widgets[i] = []
             max_amount = (15 if i == 0 else 10)
-            if len(self.options[i]) < max_amount or not self.show_less[i]:
+
+            if len(self.options[i]) <= max_amount or not self.show_less[i]:
                 for option in self.options[i]:
                     self.ids.option_stack.add_widget(option)
+                    self.widgets[i].append(option)
                 if len(self.options) > i+1:
-                    self.ids.option_stack.add_widget(OptionDivider(self, level=i))
+                    divider = OptionDivider(self, level=i)
+                    self.ids.option_stack.add_widget(divider)
+                    self.widgets[i].append(divider)
             else: # hidden options
                 for option in self.options[i][:max_amount]:
                     self.ids.option_stack.add_widget(option)
+                    self.widgets[i].append(option)
                 if self.options[i]: # draw the show_more divider even if next group is empty
-                    self.ids.option_stack.add_widget(OptionDivider(self, level=i, height=0))
+                    divider = OptionDivider(self, level=i, height=0)
+                    self.ids.option_stack.add_widget(divider)
+                    self.widgets[i].append(divider)
+
 
     def draw_options_2(self, dt=None):
         """ draw recently unloaded materials from filament_manager """
@@ -332,7 +344,7 @@ class FilamentChooserPopup(BasePopup):
             self.sel[option.level] = option.text or option.hex_color
             for i in range(option.level + 1, len(self.sel)):
                 self.sel[i] = None
-        self.draw_options()
+        self.draw_options(change_level=i)
 
     def confirm(self):
         if self.tab_2:

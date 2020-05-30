@@ -67,9 +67,9 @@
             SetItem:
                 left_title: "Update"
                 on_release: root.manager.current = "UpdateScreen"
-            # SetItem:
-            #     left_title: "Flash Klipper Firmware to Printer"
-            #     on_release: root.manager.current = "FlashScreen"
+            SetItem:
+                left_title: "Flash Klipper Firmware to Printer"
+                on_release: root.manager.current = "FlashScreen"
 
 <WifiScreen@Screen>:
     name: 'WifiScreen'
@@ -141,7 +141,7 @@
         color: p.medium_light_gray if not (root.ap and root.ap.saved) else (1,1,1,1)
     Divider:
         y: root.y
-       
+
 <UpdateScreen>:
     name: 'UpdateScreen'
     canvas.before:
