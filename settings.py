@@ -49,7 +49,7 @@ class WifiScreen(Screen):
         wifi = self.ids.wifi
         network_manager = wifi.network_manager
         if not network_manager.available:
-            # Sanity check, SIWifi Button should be disabled
+            # Sanity check, SIWifi Button should be disabled in this case
             self.manager.current = "SettingScreen"
             return
         network_manager.wifi_scan()
@@ -58,7 +58,8 @@ class WifiScreen(Screen):
 
     def on_leave(self):
         """Disable frequent scanning which slows down the wifi device"""
-        self.ids.wifi.network_manager.set_scan_frequency(0)
+        if self.ids.wifi.network_manager.available:
+            self.ids.wifi.network_manager.set_scan_frequency(0)
 
 
 class Wifi(RecycleView):
@@ -71,7 +72,6 @@ class Wifi(RecycleView):
     def update(self, instance, value):
         # Repopulate the list of networks
         if value:
-            self.message = "TEESSSTTT"
             self.data = [{'ap':value[0], 'height':1}] + [{'ap': ap, 'height':110} for ap in value]
             self.refresh_from_data()
         else:
