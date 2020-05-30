@@ -42,16 +42,30 @@ class SIWifi(SetItem):
             self.right_title = "not available"
 
 
+class WifiScreen(Screen):
+
+    def on_pre_enter(self):
+        """Update the recycleview and trigger frequent scanning"""
+        wifi = self.ids.wifi
+        network_manager = wifi.network_manager
+        if not network_manager.available:
+            # Sanity check, SIWifi Button should be disabled
+            self.manager.current = "SettingScreen"
+            return
+        network_manager.wifi_scan()
+        network_manager.set_scan_frequency(10)
+        wifi.update(None, network_manager.access_points)
+
+    def on_leave(self):
+        """Disable frequent scanning which slows down the wifi device"""
+        self.ids.wifi.network_manager.set_scan_frequency(0)
+
+
 class Wifi(RecycleView):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.network_manager = App.get_running_app().network_manager
-        assert(self.network_manager.available)
-        self.network_manager.wifi_scan()
-        # Amount of seconds between wifi rescans in seconds
-        self.network_manager.set_scan_frequency(10)
-        self.update(None, self.network_manager.access_points)
         self.network_manager.bind(on_access_points=self.update)
 
     def update(self, instance, value):

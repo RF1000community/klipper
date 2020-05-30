@@ -58,7 +58,8 @@
                 on_release: Factory.PressureAdvanceConfPopup(val=app.default_pressure_advance).open()
             SIWifi:
                 left_title: "Wifi"
-                on_release: if self.network_manager.available: root.manager.current = "WifiScreen"
+                enabled: self.network_manager.available
+                on_release: root.manager.current = "WifiScreen"
             SITimezone:
                 id: si_timezone
             SetItem:
@@ -71,7 +72,7 @@
                 left_title: "Flash Klipper Firmware to Printer"
                 on_release: root.manager.current = "FlashScreen"
 
-<WifiScreen@Screen>:
+<WifiScreen>:
     name: 'WifiScreen'
     canvas.before:
         Color:
@@ -330,15 +331,14 @@
     size_hint_y: None
     height: 110
     width: p.screen_width
-    Label:
-        id: left_label
-        text: root.left_title
-        font_size: p.normal_font
-        text_size: self.size
-        size: root.width - root.height, root.height
-        valign: 'middle'
-        pos: root.pos
-        padding_x: p.padding
+    # Button Label
+    text: self.left_title
+    font_size: p.normal_font
+    text_size: self.size
+    valign: 'middle'
+    halign: 'left'
+    pos: self.pos
+    padding_x: p.padding
     Label:
         id: right_label
         text: root.right_title
