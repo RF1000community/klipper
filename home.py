@@ -6,8 +6,7 @@ from kivy.uix.widget import Widget
 
 from .elements import BaseButton, BtnSlider, BasePopup, UltraSlider
 from . import parameters as p
-import logging
-from pytictoc import TicToc
+
 class XyField(Widget):
 
     pressed = BooleanProperty(False)
