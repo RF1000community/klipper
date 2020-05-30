@@ -15,8 +15,7 @@
     BoxLayout:
         orientation: 'vertical'
         TitleBar:
-            titles: {'SettingScreen': "Settings", 'WifiScreen': "Wifi", 'UpdateScreen': "System Update", 'FlashScreen': "Flash Klipper Firmware"}
-            title: self.titles[screen_man.current]
+            title: {'SettingScreen': "Settings", 'WifiScreen': "Wifi", 'UpdateScreen': "System Update", 'FlashScreen': "Flash Klipper Firmware"}[screen_man.current]
             enabled: screen_man.current != 'SettingScreen'
             on_release: screen_man.current = 'SettingScreen'
             pos_hint: {'x':0, 'top':1}
@@ -80,9 +79,12 @@
         Rectangle:
             pos: 0,0 # screens are relative layouts
             size: self.size
+    Wifi:
+        id: wifi
+        viewclass: 'WifiItem'
     Label:
         id: wifi_message
-        text: ""
+        text: wifi.message
         font_size: p.normal_font
         text_size: self.size
         size_hint: 1, 0.2
@@ -92,12 +94,9 @@
         padding_y: p.padding - 10
         pos_hint: {'x':0, 'top':1}
         color: p.medium_light_gray
-    Wifi:
-        id: wifi
-        message: wifi_message
-        viewclass: 'WifiItem'
 
 <Wifi>:
+    message: ""
     WifiBox:
         id: wifi_box
         default_size: None, None
@@ -110,11 +109,17 @@
         touch_multiselect: False
 
 <WifiItem>:
+    canvas:
+        Color:
+            rgba: p.translucent_white if self.pressed or (self.ap and self.ap.in_use) else (0,0,0,0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
     #Label
     width: p.screen_width
     size_hint_y: None
     height: 110
-    text: self.ap.ssid
+    text: "" if not root.ap else self.ap.ssid
     halign: 'right'
     valign: 'middle'
     max_lines: 1
@@ -123,13 +128,7 @@
     font_size: p.normal_font
     color: p.light_gray
     Label:
-        # canvas:
-        #     Color:
-        #         rgba: p.translucent_white if self.pressed or self.ap.in_use else (0,0,0,0)
-        #     Rectangle:
-        #         size: self.size
-        #         pos: self.pos
-        text: str(root.ap.signal)
+        text: "" if not root.ap else str(root.ap.signal)
         shorten: True
         halign: 'left'
         valign: 'middle'
@@ -139,12 +138,10 @@
         pos: root.pos
         text_size: self.size
         font_size: p.normal_font
-        color: (0.7, 0, 0, 1) if root.ap.saved else (1,1,1,1)
-    Divider:
-        y: root.top
+        color: p.medium_light_gray if not (root.ap and root.ap.saved) else (1,1,1,1)
     Divider:
         y: root.y
-
+       
 <UpdateScreen>:
     name: 'UpdateScreen'
     canvas.before:
@@ -375,7 +372,7 @@
 
 <PasswordPopup>:
     txt_input: pwd_input
-    size_hint: 0.86, 0.3
+    size_hint: 0.9, 0.32
     FloatLayout:
         Label:
             text: 'Password'
@@ -428,14 +425,17 @@
 
 <ConnectionPopup>:
     title: self.ap.ssid
-    size_hint: 0.65, 0.4
+    size_hint: 0.67, 0.4
     FloatLayout:
+        Divider:
+            size_hint: None, None
+            size: btn_toggle_connect.width, 1
+            pos: btn_toggle_connect.x, btn_toggle_connect.top
         RectangleButton:
             id: btn_toggle_connect
             text: 'Disconnect' if root.ap.in_use else 'Connect'
-            size_hint: 0.7, None
-            height: 80
-            pos_hint: {'center_x': 0.5, 'top': 1}
+            size: btn_cancel.size
+            pos: root.x, btn_delete.top
             on_release: root.toggle_connected()
         Divider:
             size_hint: None, None
@@ -443,12 +443,12 @@
             pos: btn_toggle_connect.pos
         RectangleButton:
             id: btn_delete
-            text: 'Delete connection'
-            size: btn_toggle_connect.size
-            x: btn_toggle_connect.x
-            top: btn_toggle_connect.y
+            text: 'Delete Connection'
+            size: btn_cancel.size
+            pos: root.x, btn_cancel.top
             on_release: root.delete()
         BtnPCancel:
+            id: btn_cancel
             single: True
             width: root.width
             pos: root.pos
@@ -493,7 +493,7 @@
             id: btn_poweroff
             text: "Shutdown"
             size_hint: 1, None
-            height: 70
+            height: btn_cancel.height
             pos: root.x, btn_cancel.top
             on_release: app.poweroff()
         BtnPCancel:
@@ -554,7 +554,7 @@
 
 <AccConfPopup@BasePopup>:
     title: "Configure Acceleration"
-    size_hint: 0.83,0.4
+    size_hint: 0.9, 0.4
     FloatLayout:
         UltraSlider:
             val: root.val
@@ -565,8 +565,7 @@
             buttons: [[36000,0,"default",None],]
             id: slider
             width: root.width
-            pos_hint: {'center_x':0.5}
-            y: btn_cancel.top+40
+            pos_hint: {'center_x':0.5, 'y':0.35}
         BtnPCancel:
             id: btn_cancel
             width: root.width/2
@@ -580,7 +579,7 @@
             on_release: app.write_config('printer', 'max_accel', slider.val), root.dismiss()
 
 <PressureAdvanceConfPopup@BasePopup>:
-    size_hint: 0.95, 0.4
+    size_hint: 0.9, 0.4
     title: "Configure Pressure Advance"
     FloatLayout:
         UltraSlider:

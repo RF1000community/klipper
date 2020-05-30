@@ -57,8 +57,8 @@ class Wifi(RecycleView):
     def update(self, instance, value):
         # Repopulate the list of networks
         if value:
-            self.message = ""
-            self.data = [{'ap': ap} for ap in value]
+            self.message = "TEESSSTTT"
+            self.data = [{'ap':value[0], 'height':1}] + [{'ap': ap, 'height':110} for ap in value]
             self.refresh_from_data()
         else:
             self.data = []
@@ -70,21 +70,15 @@ class WifiBox(LayoutSelectionBehavior, RecycleBoxLayout):
     # Adds selection behaviour to the view
     pass
 
-class DummyAccesPoint:
-    ssid = ""
-    signal = 0
-    in_use = False
-    saved = False
 
 class WifiItem(RecycleDataViewBehavior, Label):
-    ap = ObjectProperty(DummyAccesPoint())
-    index = None
+    ap = ObjectProperty()
     pressed = BooleanProperty(False)
+    index = None
 
     def refresh_view_attrs(self, rv, index, data):
         # Catch and handle the view changes
         self.index = index
-        self.ap = data['ap']
         return super().refresh_view_attrs(rv, index, data)
 
     def on_touch_down(self, touch):
@@ -111,9 +105,6 @@ class WifiItem(RecycleDataViewBehavior, Label):
             return True
         return False
 
-    def apply_selection(self, rv, index, is_selected):
-        # Respond to the selection of items in the view
-        self.selected = is_selected
 
 class PasswordPopup(BasePopup):
 
