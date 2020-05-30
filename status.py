@@ -20,8 +20,7 @@ class StatusBar(BoxLayout):
 
     def __init__(self, **kwargs):
         app = App.get_running_app()
-        app.bind(state=self.update_animation)
-        app.bind(print_state=self.update_animation)
+        app.bind(state=self.update_animation, print_state=self.update_animation)
         self.scheduled_updating = None
         self.update_animation(None, app.state)
         super().__init__(**kwargs)

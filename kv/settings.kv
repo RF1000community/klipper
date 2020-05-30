@@ -372,7 +372,7 @@
 
 <PasswordPopup>:
     txt_input: pwd_input
-    size_hint: 0.9, 0.32
+    size_hint: 0.94, 0.32
     FloatLayout:
         Label:
             text: 'Password'
@@ -425,7 +425,7 @@
 
 <ConnectionPopup>:
     title: self.ap.ssid
-    size_hint: 0.67, 0.4
+    size_hint: 0.67, 0.38
     FloatLayout:
         Divider:
             size_hint: None, None
@@ -504,7 +504,7 @@
             on_release: root.dismiss()
 
 <TimezonePopup>:
-    size_hint: 0.9, 0.7
+    size_hint: 0.94, 0.7
     title: "Choose Region"
     FloatLayout:
         id: maincontainer
@@ -554,7 +554,7 @@
 
 <AccConfPopup@BasePopup>:
     title: "Configure Acceleration"
-    size_hint: 0.9, 0.4
+    size_hint: 0.94, 0.4
     FloatLayout:
         UltraSlider:
             val: root.val
@@ -579,7 +579,7 @@
             on_release: app.write_config('printer', 'max_accel', slider.val), root.dismiss()
 
 <PressureAdvanceConfPopup@BasePopup>:
-    size_hint: 0.9, 0.4
+    size_hint: 0.94, 0.4
     title: "Configure Pressure Advance"
     FloatLayout:
         UltraSlider:
@@ -605,7 +605,7 @@
             on_release: app.write_pressure_advance(slider.val), root.dismiss()
 
 <UpdatePopup>:
-    size_hint: 0.95, 0.4
+    size_hint: 0.94, 0.4
     title: "Install"
     FloatLayout:
         id: f_layout

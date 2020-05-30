@@ -32,8 +32,7 @@ class Filechooser(RecycleView):
         self.load_files()
 
     def bind_tab(self, e):
-        tabs = self.app.root.ids.tabs
-        tabs.bind(current_tab=self.control_updating)
+        self.app.root.ids.tabs.bind(current_tab=self.control_updating)
 
     def control_updating(self, instance, tab):
         if tab == instance.ids.file_tab:

@@ -1,13 +1,13 @@
 # coding: utf-8
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.properties import ListProperty, NumericProperty, StringProperty, BooleanProperty
+from kivy.properties import ListProperty, NumericProperty, StringProperty, BooleanProperty, ObjectProperty
 from kivy.uix.widget import Widget
 
 from .elements import BaseButton, BtnSlider, BasePopup, UltraSlider
 from . import parameters as p
-
-
+import logging
+from pytictoc import TicToc
 class XyField(Widget):
 
     pressed = BooleanProperty(False)
@@ -107,8 +107,8 @@ class TempSlider(UltraSlider):
                 loaded_material = fm.get_status()['loaded']
                 for material in loaded_material:
                     if material['guid']:
-                        material_type = fm.get_info(material['guid'], "./m:metadata/m:name/m:material")
-                        bed_temp = fm.get_info(material['guid'], "./m:settings/m:setting[@key='heated bed temperature']")
+                        material_type = fm.get_info(material['guid'], "./m:metadata/m:name/m:material", "")
+                        bed_temp = fm.get_info(material['guid'], "./m:settings/m:setting[@key='heated bed temperature']", 0)
                         if bed_temp:
                             self.buttons.append([int(bed_temp), 0, material_type, None])
             else: # show some generic temperatures
@@ -124,8 +124,8 @@ class TempSlider(UltraSlider):
                 tool_idx = int(self.tool_id[-1])
                 loaded_material = fm.get_status()['loaded']
                 if loaded_material[tool_idx]['guid']:
-                    material_type = fm.get_info(loaded_material[tool_idx]['guid'], "./m:metadata/m:name/m:material")
-                    ext_temp = fm.get_info(loaded_material[tool_idx]['guid'],"./m:settings/m:setting[@key='print temperature']")
+                    material_type = fm.get_info(loaded_material[tool_idx]['guid'], "./m:metadata/m:name/m:material", "")
+                    ext_temp = fm.get_info(loaded_material[tool_idx]['guid'],"./m:settings/m:setting[@key='print temperature']", 0)
                     if ext_temp:
                         self.buttons.append([int(ext_temp), 0, material_type, None])
             else:
@@ -202,8 +202,8 @@ class BtnTriple(Widget):
             self.material = material[self.tool_idx]
 
         if self.material['guid']:
-            material_type = self.fm.get_info(self.material['guid'], "./m:metadata/m:name/m:material")
-            hex_color = self.fm.get_info(self.material['guid'], "./m:metadata/m:color_code")
+            material_type = self.fm.get_info(self.material['guid'], "./m:metadata/m:name/m:material", "")
+            hex_color = self.fm.get_info(self.material['guid'], "./m:metadata/m:color_code", 0xffffff)
             self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
             self.filament_amount = self.material['amount']
             if self.material['state'] == 'loading':
@@ -225,32 +225,33 @@ class BtnTriple(Widget):
 
 class FilamentChooserPopup(BasePopup):
     tab_2 = BooleanProperty(False)
+    sel = ListProperty()
+    sel_2 = ListProperty()
     def __init__(self, extruder_id, **kwargs):
         self.app = App.get_running_app()
         self.fm = self.app.filament_manager
         self.extruder_id = extruder_id
-        self.show_less = [True, True, True]
+        self.show_more = [False, False, False]
         self.sel = [None, None, None, None] # selected [type, manufacturer, color, guid]
-        self.sel_2 = (None, None, None) # selected (amount, idx, guid)
-        self.options = [[], [], []]
+        self.sel_2 = [None, None, None] # selected [amount, idx, guid]
+        self.widgets = [[], [], []]
         super().__init__(**kwargs)
         Clock.schedule_once(self.draw_options, 0)
 
     def draw_options(self, dt=None, change_level=0):
-        """ (re)draw material library from filament_manager """
-        self.options = [[], [], []]
-        self.widgets = [[], [], []]
+        """ (re)draw material library from filament_manager
+            this is performance-critical, but instanciating the widgets takes 98% of time ~100ms """
+        options = [[], [], []]
         self.sel[3] = None
         self.ids.btn_confirm.text = "Select"
         self.ids.btn_confirm.enabled = False
 
-        # generate options to draw based on selection
+        # 1. generate options to draw based on selection
         # get material library from filament manager as type-manufacturer-color tree of dicts
         tmc = self.fm.tmc_to_guid
 
         # always show types
-        self.options = [[Option(self, level=0, text=t, selected=(t==self.sel[0])) 
-                        for t in list(tmc)], [], []] 
+        options = [[{'level':0, 'text':t, 'key':t} for t in list(tmc)], [], []]
         if self.sel[0]:
             # type is selected, show manufacturers
             # autoselect if there's only one manufacturer, or 'Generic' and none is selected
@@ -259,17 +260,15 @@ class FilamentChooserPopup(BasePopup):
                 self.sel[1] = manufacturers[0]
             elif self.sel[1] is None and 'Generic' in manufacturers:
                 self.sel[1] = 'Generic'
-            self.options[1] = [Option(self, level=1, text=m, color=p.light_gray,
-                                font_size=p.small_font, selected=(m==self.sel[1]))
-                                for m in manufacturers]
+            options[1] = [{'level':1, 'text':m, 'color':p.light_gray, 'font_size':p.small_font, 'key':m}
+                         for m in manufacturers]
             if self.sel[1]:
                 # type and manufacturer is selected, show colors
                 # autoselect if there's only one color
                 colors = list(tmc[self.sel[0]][self.sel[1]])
                 if len(colors) == 1:
                     self.sel[2] = colors[0]
-                self.options[2] = [Option(self, level=2, hex_color=c, selected=(c==self.sel[2])) 
-                                    for c in colors]
+                options[2] = [{'level':2, 'hex_color':c, 'key':c} for c in colors]
                 if self.sel[2]:
                     # type and manufacturer and color is selected, we have a material guid
                     self.sel[3] = tmc[self.sel[0]][self.sel[1]][self.sel[2]]
@@ -278,56 +277,52 @@ class FilamentChooserPopup(BasePopup):
 
         # sort types by how many manufactures make them
         # tmc[option.text] is the dict of manufacturers for the selected type (e.g. for PLA)
-        self.options[0].sort(key = lambda option: len(tmc[option.text]), reverse=True)
+        options[0].sort(key = lambda option: len(tmc[option['key']]), reverse=True)
         # sort manufacturers alphabetically, "Generic" always first
-        self.options[1].sort(key = lambda option: option.text.lower() if option.text!='Generic' else '\t')
+        options[1].sort(key = lambda option: option['text'].lower() if option['text']!='Generic' else '\t')
 
-        # now draw generated options
-        for i in range(change_level, len(self.options)):
-            # only replace widgets that have changed
+        # remove widgets that need to be updated (level >= change_level)
+        for i in range(change_level, len(options)):
             for widget in self.widgets[i]:
                 self.ids.option_stack.remove_widget(widget)
             self.widgets[i] = []
-            max_amount = (15 if i == 0 else 10)
 
-            if len(self.options[i]) <= max_amount or not self.show_less[i]:
-                for option in self.options[i]:
-                    self.ids.option_stack.add_widget(option)
-                    self.widgets[i].append(option)
-                if len(self.options) > i+1:
-                    divider = OptionDivider(self, level=i)
-                    self.ids.option_stack.add_widget(divider)
-                    self.widgets[i].append(divider)
-            else: # hidden options
-                for option in self.options[i][:max_amount]:
-                    self.ids.option_stack.add_widget(option)
-                    self.widgets[i].append(option)
-                if self.options[i]: # draw the show_more divider even if next group is empty
-                    divider = OptionDivider(self, level=i, height=0)
-                    self.ids.option_stack.add_widget(divider)
-                    self.widgets[i].append(divider)
+        # 2. draw new widgets
+        for i in range(change_level, len(options)):
+            max_amount = 50*self.show_more[i] + (15 if i == 0 else 10)
+            # Options
+            for option in options[i][:max_amount]:
+                widget = Option(self, **option)
+                self.ids.option_stack.add_widget(widget)
+                self.widgets[i].append(widget)
 
+            # Divider
+            if len(options[i]) > max_amount: # hidden options, draw show more divider
+                divider = OptionDivider(self, level=i, height=0)
+                self.ids.option_stack.add_widget(divider)
+                self.widgets[i].append(divider)
+            elif len(options) > i+1: # if next group exists we draw a normal divider
+                divider = OptionDivider(self, level=i)
+                self.ids.option_stack.add_widget(divider)
+                self.widgets[i].append(divider)
 
     def draw_options_2(self, dt=None):
         """ draw recently unloaded materials from filament_manager """
         self.ids.option_stack.clear_widgets()
         self.ids.btn_confirm.text = "Select"
         self.ids.btn_confirm.enabled = False
-        self.options = [[], [], []]
-
         materials = self.fm.get_status()['unloaded']
         for i, (guid, amount) in enumerate(materials):
-            option = Option(self, 
+            self.ids.option_stack.add_widget(Option(
+                self, 
                 guid=guid,
                 amount=amount,
                 unloaded_idx=i,
                 font_size=p.small_font,
-                selected=(self.sel_2[1]==i),
-                hex_color=self.fm.get_info(guid, "./m:metadata/m:color_code"),
-                # don't crash when get_info() returns None
-                text=f"{self.fm.get_info(guid, './m:metadata/m:name/m:brand')} {self.fm.get_info(guid, './m:metadata/m:name/m:material')}")
-            self.options[0].append(option)
-            self.ids.option_stack.add_widget(option)
+                key=i,
+                hex_color=self.fm.get_info(guid, "./m:metadata/m:color_code", 0xffffff),
+                text=self.fm.get_info(guid, './m:metadata/m:name/m:brand', "")+\
+                ' '+ self.fm.get_info(guid, './m:metadata/m:name/m:material', "")))
         if self.sel_2:
             self.ids.btn_confirm.enabled = True
 
@@ -339,12 +334,13 @@ class FilamentChooserPopup(BasePopup):
 
     def do_selection(self, option):
         if self.tab_2:
-            self.sel_2 = (option.amount, option.unloaded_idx, option.guid)
+            self.sel_2 = [option.amount, option.unloaded_idx, option.guid]
+            self.draw_options_2()
         else:
-            self.sel[option.level] = option.text or option.hex_color
             for i in range(option.level + 1, len(self.sel)):
                 self.sel[i] = None
-        self.draw_options(change_level=i)
+            self.sel[option.level] = option.key
+            self.draw_options(change_level=option.level + 1)
 
     def confirm(self):
         if self.tab_2:
@@ -355,9 +351,9 @@ class FilamentChooserPopup(BasePopup):
 
 class Option(BaseButton):
     selected = BooleanProperty(False)
-    def __init__(self, filamentchooser, selected, hex_color=None, amount=1, unloaded_idx=None, 
+    def __init__(self, filamentchooser, key, hex_color=None, amount=1, unloaded_idx=None, 
                 level=0, guid=None, font_size=p.normal_font-2, color=(1,1,1,1), **kwargs):
-        self.selected = selected
+        self.key = key
         self.filamentchooser = filamentchooser
         self.option_color = (0,0,0,0)
         self.amount = amount
@@ -374,7 +370,7 @@ class Option(BaseButton):
         self.font_size = font_size
         self.color = color
 
-    def on_press(self, **kwargs):
+    def on_press(self, *args):
         self.selected = True
         self.filamentchooser.do_selection(self)
 
@@ -386,7 +382,11 @@ class OptionDivider(BaseButton):
 
     def on_touch_down(self, touch):
         if touch.pos[1] > self.y and touch.pos[1] < self.y + self.actual_height:
-            self.filamentchooser.show_less[self.level] = not self.filamentchooser.show_less[self.level]
+            # if self.height is 0 => Options are hidden (we might set True = True...)
+            if self.height == 0:
+                self.filamentchooser.show_more[self.level] = True
+            else:
+                self.filamentchooser.show_more[self.level] = False
             self.filamentchooser.draw_options()
             return True
         if super().on_touch_down(touch):
@@ -408,9 +408,9 @@ class FilamentPopup(BasePopup):
         self.guid = guid
         self.amount = amount
         self.unloaded_idx = unloaded_idx
-        self.filament_type = self.fm.get_info(guid, "./m:metadata/m:name/m:material")
-        self.manufacturer = self.fm.get_info(guid, "./m:metadata/m:name/m:brand")
-        hex_color = self.fm.get_info(guid, "./m:metadata/m:color_code")
+        self.filament_type = self.fm.get_info(guid, "./m:metadata/m:name/m:material", "")
+        self.manufacturer = self.fm.get_info(guid, "./m:metadata/m:name/m:brand", "")
+        hex_color = self.fm.get_info(guid, "./m:metadata/m:color_code", 0xffffff)
         self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
         super().__init__(**kwargs)
 
