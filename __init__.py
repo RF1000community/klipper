@@ -23,7 +23,7 @@ from kivy.lang import Builder
 from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
         NumericProperty, ListProperty, StringProperty)
 
-from .elements import UltraKeyboard, ErrorPopup, CriticalErrorPopup
+from .elements import UltraKeyboard, CriticalErrorPopup, ErrorPopup
 from .freedir import freedir
 from .nm_dbus import NetworkManager
 from . import parameters as p
