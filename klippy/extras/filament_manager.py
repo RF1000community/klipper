@@ -45,7 +45,7 @@ class FilamentManager:
         self.read_material_library_xml()
         # json list of loaded and unloaded material
         self.loaded_material_path = join(self.material_dir, "loaded_material.json")
-        # {'loaded': [{'guid': None if nothing is loaded, 'amount': amount in kg, 'state': loading | loaded | unloading | no material, 'all_time_extruded_length': mm], ...], 
+        # {'loaded': [{'guid': None if nothing is loaded, 'amount': amount in kg, 'state': loading | loaded | unloading | no material, 'all_time_extruded_length': mm], ...],
         # 'unloaded': [{'guid': None if nothing is loaded, 'amount': amount in kg}, ...]}
         self.material = {'loaded':[{'guid':None, 'state':"no material", 'amount':0, 'all_time_extruded_length':0}] * extruder_count, 'unloaded':[]}
         self.read_loaded_material_json()
@@ -112,6 +112,7 @@ class FilamentManager:
             node = root.find(xpath, ns)
             if node is not None:
                 return node.text
+        logging.warning(f"Filament Manager returned default value for material {material}, xpath {xpath}")
         return default
 
 ######################################################################
@@ -122,13 +123,18 @@ class FilamentManager:
         self.update_loaded_material_amount()
         return self.material
 
-    def load(self, extruder_id, temp=None, amount=1., unloaded_idx=None, guid=None):
+    def load(self, extruder_id, temp=None, amount=None, unloaded_idx=None, guid=None):
+        """
+        physically load a material, either from unloaded material list or a new one from a guid
+        """
         self.extruders[extruder_id].untracked_extruded_length = 0
         idx = self.idx(extruder_id)
         if unloaded_idx is not None:
-            guid, _ = self.material['unloaded'].pop(unloaded_idx)
-        if not temp:
-            temp = self.get_info(guid, "./m:settings/m:setting[@key='print temperature']")
+            unloaded = self.material['unloaded'].pop(unloaded_idx)
+            guid = guid or unloaded['guid']
+            amount = amount or unloaded['amount']
+        amount = amount or 1
+        temp = temp or self.get_info(guid, "./m:settings/m:setting[@key='print temperature']", 200)
 
         self.material['loaded'][idx]['guid'] = guid
         self.material['loaded'][idx]['amount'] = amount
@@ -161,7 +167,7 @@ class FilamentManager:
             self.material['loaded'][idx]['state'] = 'unloading'
             self.write_loaded_material_json()
             temp = self.get_info(self.material['loaded'][idx]['guid'],
-                   "./m:settings/m:setting[@key='print temperature']") or temp
+                   "./m:settings/m:setting[@key='print temperature']", temp)
 
         # set temp and wait
         self.heater_manager.heaters[extruder_id].set_temp(float(temp))
