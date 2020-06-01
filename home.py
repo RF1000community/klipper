@@ -1,4 +1,6 @@
 # coding: utf-8
+import logging
+
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.properties import ListProperty, NumericProperty, StringProperty, BooleanProperty, ObjectProperty
@@ -6,8 +8,7 @@ from kivy.uix.widget import Widget
 
 from .elements import BaseButton, BtnSlider, BasePopup, UltraSlider
 from . import parameters as p
-import logging
-from pytictoc import TicToc
+
 class XyField(Widget):
 
     pressed = BooleanProperty(False)
@@ -203,7 +204,7 @@ class BtnTriple(Widget):
 
         if self.material['guid']:
             material_type = self.fm.get_info(self.material['guid'], "./m:metadata/m:name/m:material", "")
-            hex_color = self.fm.get_info(self.material['guid'], "./m:metadata/m:color_code", 0xffffff)
+            hex_color = self.fm.get_info(self.material['guid'], "./m:metadata/m:color_code", "#ffffff")
             self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
             self.filament_amount = self.material['amount']
             if self.material['state'] == 'loading':
@@ -312,17 +313,17 @@ class FilamentChooserPopup(BasePopup):
         self.ids.btn_confirm.text = "Select"
         self.ids.btn_confirm.enabled = False
         materials = self.fm.get_status()['unloaded']
-        for i, (guid, amount) in enumerate(materials):
+        for i, material in enumerate(materials):
             self.ids.option_stack.add_widget(Option(
                 self, 
-                guid=guid,
-                amount=amount,
+                guid=material['guid'],
+                amount=material['amount'],
                 unloaded_idx=i,
                 font_size=p.small_font,
                 key=i,
-                hex_color=self.fm.get_info(guid, "./m:metadata/m:color_code", 0xffffff),
-                text=self.fm.get_info(guid, './m:metadata/m:name/m:brand', "")+\
-                ' '+ self.fm.get_info(guid, './m:metadata/m:name/m:material', "")))
+                hex_color=self.fm.get_info(material['guid'], "./m:metadata/m:color_code", "#ffffff"),
+                text=self.fm.get_info(material['guid'], './m:metadata/m:name/m:brand', "")+\
+                ' '+ self.fm.get_info(material['guid'], './m:metadata/m:name/m:material', "")))
         if self.sel_2:
             self.ids.btn_confirm.enabled = True
 
@@ -343,6 +344,7 @@ class FilamentChooserPopup(BasePopup):
             self.draw_options(change_level=option.level + 1)
 
     def confirm(self):
+        logging.info(f"confirm, option has amount {self.sel_2[0]} of type {type(self.sel_2[0])}")
         if self.tab_2:
             FilamentPopup(self.extruder_id, True, self.sel_2[2], unloaded_idx=self.sel_2[1], amount=self.sel_2[0]).open()
         else:
@@ -353,6 +355,7 @@ class Option(BaseButton):
     selected = BooleanProperty(False)
     def __init__(self, filamentchooser, key, hex_color=None, amount=1, unloaded_idx=None, 
                 level=0, guid=None, font_size=p.normal_font-2, color=(1,1,1,1), **kwargs):
+        logging.info(locals())
         self.key = key
         self.filamentchooser = filamentchooser
         self.option_color = (0,0,0,0)
@@ -410,7 +413,7 @@ class FilamentPopup(BasePopup):
         self.unloaded_idx = unloaded_idx
         self.filament_type = self.fm.get_info(guid, "./m:metadata/m:name/m:material", "")
         self.manufacturer = self.fm.get_info(guid, "./m:metadata/m:name/m:brand", "")
-        hex_color = self.fm.get_info(guid, "./m:metadata/m:color_code", 0xffffff)
+        hex_color = self.fm.get_info(guid, "./m:metadata/m:color_code", "#ffffff")
         self.filament_color = calculate_filament_color(hex_to_rgb(hex_color)) + [1]
         super().__init__(**kwargs)
 
@@ -460,5 +463,7 @@ def calculate_filament_color(filament_color):
     return [c*0.6 for c in filament_color]
 
 def hex_to_rgb(h):
-    """"Converts hex color to rgba float format"""
+    """ Converts hex color to rgba float format
+        accepts strings like "#ffffff" """
+    logging.info(f"trying to convert {h} with type {type(h)} to rgb")
     return [int(h[i:i + 2], 16) / 255. for i in (1, 3, 5)]
