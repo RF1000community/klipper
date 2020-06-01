@@ -344,7 +344,6 @@ class FilamentChooserPopup(BasePopup):
             self.draw_options(change_level=option.level + 1)
 
     def confirm(self):
-        logging.info(f"confirm, option has amount {self.sel_2[0]} of type {type(self.sel_2[0])}")
         if self.tab_2:
             FilamentPopup(self.extruder_id, True, self.sel_2[2], unloaded_idx=self.sel_2[1], amount=self.sel_2[0]).open()
         else:
@@ -355,7 +354,6 @@ class Option(BaseButton):
     selected = BooleanProperty(False)
     def __init__(self, filamentchooser, key, hex_color=None, amount=1, unloaded_idx=None, 
                 level=0, guid=None, font_size=p.normal_font-2, color=(1,1,1,1), **kwargs):
-        logging.info(locals())
         self.key = key
         self.filamentchooser = filamentchooser
         self.option_color = (0,0,0,0)
@@ -465,5 +463,4 @@ def calculate_filament_color(filament_color):
 def hex_to_rgb(h):
     """ Converts hex color to rgba float format
         accepts strings like "#ffffff" """
-    logging.info(f"trying to convert {h} with type {type(h)} to rgb")
     return [int(h[i:i + 2], 16) / 255. for i in (1, 3, 5)]
