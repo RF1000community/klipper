@@ -25,7 +25,7 @@ class PrintjobHistory:
         self.history_path = expanduser("~/history.json")
         self.history = self.read()
         self.trim_history()
-        self.printer.register_event_handler("virtual_sdcard:printjob_ended", self.add)
+        self.printer.register_event_handler("virtual_sdcard:printjob_end", self.add)
 
     def trim_history(self):
         """Remove all entries of deleted files, return number of removed entries"""
@@ -75,9 +75,9 @@ class PrintjobHistory:
         except IOError:
             return
 
-    def add(self, path, state):
+    def add(self, job):
         """Add a new entry to the history with the path and state string specified"""
-        self.history.append([path, state, time.time()])
+        self.history.append([job.path, job.state, time.time()])
         self.write(self.history)
 
 def load_config(config):

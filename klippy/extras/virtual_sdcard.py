@@ -52,7 +52,7 @@ class Printjob:
     def set_state(self, state):
         if self.state != state:
             self.state = state
-            self.printer.send_event("virtual_sdcard:printjob_change")
+            self.printer.send_event("virtual_sdcard:printjob_change", self.manager.jobs)
 
     def start(self):
         if self.state == 'queued':
@@ -62,7 +62,7 @@ class Printjob:
                 self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
             else:
                 self.set_state('paused')
-            self.printer.send_event("virtual_sdcard:printjob_started", self.path, self.state)
+            self.printer.send_event("virtual_sdcard:printjob_start", self)
 
     def resume(self):
         if self.state == 'pausing':
@@ -193,13 +193,14 @@ class PrintjobManager:
     def clear_queue(self):
         """ remove everything but the first element wich is currently being printed """
         self.jobs = self.jobs[:1]
+        self.printer.send_event("virtual_sdcard:printjob_change", self.manager.jobs)
 
     def check_queue(self):
         """ remove 'stopped' or 'done' printjobs from queue, start next if necessary """ 
         if len(self.jobs) and self.jobs[0].state in ('done', 'stopped'):
-            last = self.jobs.pop(0)
-            self.printer.send_event("virtual_sdcard:printjob_ended", last.path, last.state)
-            self.printer.send_event("virtual_sdcard:printjob_change")
+            last_job = self.jobs.pop(0)
+            self.printer.send_event("virtual_sdcard:printjob_end", last_job)
+            self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
         if len(self.jobs) and self.jobs[0].state in ('queued'):
             self.jobs[0].start()
 
