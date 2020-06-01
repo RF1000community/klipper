@@ -317,13 +317,12 @@ class NetworkManager(EventDispatcher, Thread):
         Return the connection strength in percent of the currently connected
         wifi access point.  If no wifi connection currently exists, return None.
         """
-        active_path = self.wifi_dev.ActiveConnection
-        if active_path == "/":
+        active_ap_path = self.wifi_dev.ActiveAccessPoint
+        if active_ap_path == "/":
             # There is no wifi connection right now
             return None
-        active = self.bus.get(_NM, active_path)
-        ap = self.bus.get(_NM, active.SpecificObject)
-        return ap.Strength
+        active_ap = self.bus.get(_NM, active_ap_path)
+        return active_ap.Strength
 
     def on_access_points(self, aps):
         pass
