@@ -21,7 +21,7 @@ from kivy.clock import Clock
 from kivy.config import Config
 from kivy.lang import Builder
 from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
-        NumericProperty, ListProperty, StringProperty, ObjectProperty)
+        NumericProperty, ListProperty, StringProperty)
 
 from .elements import UltraKeyboard, CriticalErrorPopup, ErrorPopup
 from .freedir import freedir
@@ -61,7 +61,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
     jobs = ListProperty()
-    displayed_job = ObjectProperty()
+    print_title = StringProperty()
     print_time = StringProperty() #updated by get_printjob_progress
     print_done_time = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
@@ -124,6 +124,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.printer.register_event_handler("klippy:critical_error", self.handle_critical_error)
             self.printer.register_event_handler("klippy:error", self.handle_error)
             self.printer.register_event_handler("homing:home_rails_end", self.handle_homed)
+            self.printer.register_event_handler("virtual_sdcard:printjob_start", self.handle_printjob_start)
+            self.printer.register_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
             self.printer.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
         else:
             site.addsitedir(dirname(p.kgui_dir))
@@ -188,38 +190,46 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
-
     # self.reset_tuning() # tuning values are only reset once print_queue has ran out
-    def handle_printjob_change(self, jobs):        
+    def handle_printjob_change(self, jobs):
+        """ this monitors changes of 2 things:
+            - the configuration of printjobs
+            - the state of individual printjobs
+            Since jobs are passed by reference their state may not be the state
+            that caused the event (this state will seemingly get skipped) """
         # check if queue has increased
         if len(jobs) > len(self.jobs):
             self.notify.show("Added Printjob", f"Added {jobs[-1].name} to print Queue")
-
-        # update displayed job and printer_state
+        # update print_state, unless there's no printjob
         if len(jobs):
-            self.displayed_job = jobs[0] # displayed job can be old and not in jobs!
-            print_state = jobs[0].state
-        else:
-            print_state = "no printjob"
-
-        # react to state change
-        if self.displayed_job:
-            if 'stopped' == self.displayed_job.state:
-                self.displayed_job = None
-            elif 'done' == self.displayed_job.state:
-                self.progress = 1
-                self.print_done_time = ""
-                self.print_time = "finished in " + self.format_time(self.sdcard.jobs[0].get_printed_time())
-                Clock.schedule_once(lambda dt: self.hide_printjob(self.displayed_job), 3600) # keep showing finished jobs for 1h
-            elif 'printing' == self.displayed_job.state and self.print_state not in ('paused', 'pausing'):
-                self.notify.show("Started printing", f"Started printing {self.displayed_job.name}", delay=4)
-                self.get_printjob_progress()
+            self.print_state = jobs[0].state
         self.jobs = jobs
-        self.print_state = print_state
 
-    def hide_printjob(self, job):
-        if self.displayed_job == job:
-            self.displayed_job = None
+    def handle_printjob_start(self, job):
+        self.notify.show("Started printing", f"Started printing {job.name}", delay=4)
+        self.print_title = job.name
+        self.get_printjob_progress()
+
+    def handle_printjob_end(self, job):
+        self.handle_printjob_change(self.sdcard.jobs)
+        if self.print_state == 'no printjob':
+            self.reset_tuning()
+        if 'done' == job.state:
+            self.progress = 1
+            self.print_done_time = ""
+            self.print_time = "finished in " + self.format_time(job.get_printed_time())
+            Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 3600) # keep showing finished jobs for 1h
+        else:
+            self.handle_printjob_change(self.sdcard.jobs)
+            self.hide_printjob(job.name)
+
+    def hide_printjob(self, name):
+        if not self.jobs and self.print_title == name:
+            self.print_title = ""
+            self.print_done_time = ""
+            self.print_time = ""
+            self.progress = 0
+            self.print_state = "no printjob"
 
 # KLIPPY THREAD ^
 ########################################################################################

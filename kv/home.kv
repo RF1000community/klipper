@@ -18,7 +18,7 @@
             pos_hint: {'x':0,'y':0}
             size_hint: 1,1
         ProgressBar:
-            enabled: bool(app.displayed_job)
+            enabled: app.print_state != "no printjob"
             id: progress_bar
             max: 1
             value: app.progress
@@ -26,17 +26,18 @@
             size: p.screen_width-2*p.h_padding+2, p.progress_bar_height
             pos: p.h_padding-1, p.tab_height + p.padding
         Label:
-            text: app.print_time if app.displayed_job else ""
+            text: app.print_time
             size_hint: None, None
             size: p.screen_width-2*p.padding, p.normal_font
             text_size: self.size
             font_size: p.normal_font
             x: p.h_padding - 2
             top: progress_bar.y - 5
+            color: (1,1,1,1) if app.print_state in ('printing', 'pausing', 'paused') else p.btn_disabled
             halign: 'left'
             valign: 'bottom'
         Label:
-            text: app.print_done_time if app.displayed_job else ""
+            text: app.print_done_time
             size_hint: None, None
             size: p.screen_width-2*p.padding, p.normal_font
             text_size: self.size
@@ -64,8 +65,8 @@
             right: btn_stop.x
         Label:
             id: l_filename
-            text: "" if not app.displayed_job else displayed_job.name
-            color: p.btn_disabled if app.print_state in ('no printjob', 'stopping', 'stopped') else (1,1,1,1)
+            text: app.print_title
+            color: (1,1,1,1) if app.print_state in ('printing', 'pausing', 'paused') else p.btn_disabled
             size_hint: None, None
             size: 280,134
             text_size: self.size
