@@ -72,6 +72,7 @@ class Wifi(RecycleView):
     def update(self, instance, value):
         # Repopulate the list of networks
         if value:
+            self.message = ""
             self.data = [{'ap':value[0], 'height':1}] + [{'ap': ap, 'height':110} for ap in value]
             self.refresh_from_data()
         else:

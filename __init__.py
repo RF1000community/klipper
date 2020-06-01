@@ -21,7 +21,7 @@ from kivy.clock import Clock
 from kivy.config import Config
 from kivy.lang import Builder
 from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
-        NumericProperty, ListProperty, StringProperty)
+        NumericProperty, ListProperty, StringProperty, ObjectProperty)
 
 from .elements import UltraKeyboard, CriticalErrorPopup, ErrorPopup
 from .freedir import freedir
@@ -61,9 +61,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
     jobs = ListProperty()
+    displayed_job = ObjectProperty()
     print_time = StringProperty() #updated by get_printjob_progress
     print_done_time = StringProperty()
-    print_title = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
     pos = ListProperty([0, 0, 0, 0]) #updated by scheduled update_home
     #tuning  #updated by upate_printing
@@ -188,45 +188,38 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
-    def handle_printjob_change(self):
-        jobs = self.sdcard.jobs
 
+    # self.reset_tuning() # tuning values are only reset once print_queue has ran out
+    def handle_printjob_change(self, jobs):        
         # check if queue has increased
         if len(jobs) > len(self.jobs):
             self.notify.show("Added Printjob", f"Added {jobs[-1].name} to print Queue")
 
-        # get current print_state
+        # update displayed job and printer_state
         if len(jobs):
-            self.print_title = jobs[0].name
-            state = jobs[0].state
+            self.displayed_job = jobs[0] # displayed job can be old and not in jobs!
+            print_state = jobs[0].state
         else:
-            state = "no printjob"
+            print_state = "no printjob"
 
         # react to state change
-        if self.print_state != state:
-            if state == 'no printjob':
-                self.reset_tuning() # tuning values are only reset once print_queue has ran out
-                Clock.schedule_once(lambda dt: self.hide_printjob(self.jobs[0].name), 3600) # show old printjob for 1h then throw it out
-            elif state == 'printing' and self.print_state not in ('paused', 'pausing'):
-                self.notify.show("Started printing", f"Started printing {jobs[0].name}", delay=4)
-                self.get_printjob_progress()
-            elif state == 'done':
+        if self.displayed_job:
+            if 'stopped' == self.displayed_job.state:
+                self.displayed_job = None
+            elif 'done' == self.displayed_job.state:
                 self.progress = 1
                 self.print_done_time = ""
                 self.print_time = "finished in " + self.format_time(self.sdcard.jobs[0].get_printed_time())
-            elif state == 'stopping':
-                self.print_title = ""
-                self.print_done_time = ""
-                self.print_time = ""
-            self.print_state = state
-
+                Clock.schedule_once(lambda dt: self.hide_printjob(self.displayed_job), 3600) # keep showing finished jobs for 1h
+            elif 'printing' == self.displayed_job.state and self.print_state not in ('paused', 'pausing'):
+                self.notify.show("Started printing", f"Started printing {self.displayed_job.name}", delay=4)
+                self.get_printjob_progress()
         self.jobs = jobs
+        self.print_state = print_state
 
-    def hide_printjob(self, name):
-        if self.print_state == 'no printjob' and self.print_title == name:
-            self.print_title = ""
-            self.print_time = ""
-            self.print_done_time = ""
+    def hide_printjob(self, job):
+        if self.displayed_job == job:
+            self.displayed_job = None
 
 # KLIPPY THREAD ^
 ########################################################################################

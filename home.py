@@ -282,13 +282,13 @@ class FilamentChooserPopup(BasePopup):
         # sort manufacturers alphabetically, "Generic" always first
         options[1].sort(key = lambda option: option['text'].lower() if option['text']!='Generic' else '\t')
 
-        # remove widgets that need to be updated (level >= change_level)
+        # 2. remove widgets that need to be updated (level >= change_level)
         for i in range(change_level, len(options)):
             for widget in self.widgets[i]:
                 self.ids.option_stack.remove_widget(widget)
             self.widgets[i] = []
 
-        # 2. draw new widgets
+        # 3. draw new widgets
         for i in range(change_level, len(options)):
             max_amount = 50*self.show_more[i] + (15 if i == 0 else 10)
             # Options
@@ -462,5 +462,5 @@ def calculate_filament_color(filament_color):
 
 def hex_to_rgb(h):
     """ Converts hex color to rgba float format
-        accepts strings like "#ffffff" """
+        accepts strings like '#ffffff' or "#FFFFFF" """
     return [int(h[i:i + 2], 16) / 255. for i in (1, 3, 5)]
