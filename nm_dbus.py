@@ -22,15 +22,25 @@ _NM = "org.freedesktop.NetworkManager"
 
 class NetworkManager(EventDispatcher, Thread):
 
-    available = BooleanProperty(True)
     connected_ssid = StringProperty()
     connection_type = OptionProperty("none", options=["none", "ethernet", "wireless"])
 
     def __init__(self, **kwargs):
+        self.available = False
         super().__init__(**kwargs)
 
         self.loop = GLib.MainLoop()
         self.bus = SystemBus()
+
+        # ID used to cancel the scan timer and to find out whether it is running
+        # Will be None whenever the timer isn't running
+        self.scan_timer_id = None
+        self.access_points = []
+        self.saved_ssids = []
+
+        # Register kivy events
+        self.register_event_type('on_access_points')
+        self.register_event_type('on_connect_failed')
 
         # Get proxy objects
         try:
@@ -38,8 +48,7 @@ class NetworkManager(EventDispatcher, Thread):
         except GLib.GError as e:
             # Occurs when NetworkManager was not installed
             if "org.freedesktop.DBus.Error.ServiceUnknown" in e.message:
-                self.available = False
-                return
+                return # Leaves self.available = False
             else:
                 raise
 
@@ -55,29 +64,20 @@ class NetworkManager(EventDispatcher, Thread):
                     self.wifi_dev = dev_obj
         # For simplicity require both devices to be available
         if not(self.eth_dev and self.wifi_dev):
-            self.available = False
-            return
+            return # Leaves self.available = False
         # Does the wifi device support 5gGHz (flag 0x400)
         #UNUSED
         #self.freq_5ghz = bool(self.wifi_dev.WirelessCapabilities & 0x400)
 
-        # ID used to cancel the scan timer and to find out whether it is running
-        # Will be None whenever the timer isn't running
-        self.scan_timer_id = None
-        self.access_points = []
-        self.saved_ssids = []
-
         self.connect_signals()
-
-        # Register kivy events
-        self.register_event_type('on_access_points')
-        self.register_event_type('on_connect_failed')
 
         # Initiate the values handled by signal handlers by simply
         # sending all the properties that are being listened to.
         self.handle_wifi_dev_props(None, self.wifi_dev.GetAll(_NM + ".Device"), None)
         self.handle_wifi_dev_props(None, self.wifi_dev.GetAll(_NM + ".Device.Wireless"), None)
         self.handle_nm_props(None, self.nm.GetAll('org.freedesktop.NetworkManager'), None)
+
+        self.available = True
 
     def connect_signals(self):
         """Connect DBus signals to their callbacks.  Called in __init__"""
@@ -317,13 +317,12 @@ class NetworkManager(EventDispatcher, Thread):
         Return the connection strength in percent of the currently connected
         wifi access point.  If no wifi connection currently exists, return None.
         """
-        active_path = self.wifi_dev.ActiveConnection
-        if active_path == "/":
+        active_ap_path = self.wifi_dev.ActiveAccessPoint
+        if active_ap_path == "/":
             # There is no wifi connection right now
             return None
-        active = self.bus.get(_NM, active_path)
-        ap = self.bus.get(_NM, active.SpecificObject)
-        return ap.Strength
+        active_ap = self.bus.get(_NM, active_ap_path)
+        return active_ap.Strength
 
     def on_access_points(self, aps):
         pass
