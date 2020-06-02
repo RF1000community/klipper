@@ -65,7 +65,7 @@
             SetItem:
                 left_title: "Shutdown..."
                 on_release: Factory.PowerPopup().open()
-            SetItem:
+            SIUpdate:
                 left_title: "Update"
                 on_release: root.manager.current = "UpdateScreen"
             # SetItem:
@@ -113,7 +113,7 @@
         pos_hint: {'x':0, 'top':1}
         color: p.medium_light_gray
     ScrollView:
-        size_hint: 1, 0.9
+        size_hint: 1, 1
         pos_hint: {'x':0, 'y':0}
         do_scroll_x: False
         BoxLayout:
@@ -599,3 +599,12 @@
             width: root.width/2
             pos: btn_cancel.right, root.y
             on_release: root.update(), root.dismiss()
+
+<InstallPopup>:
+    size_hint: 0.95, 0.4
+    title: "Install"
+    Label:
+        id: stdout
+        size_hint: root.size
+        pos_hint: root.pos
+        font_size: p.small_font

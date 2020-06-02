@@ -3,13 +3,14 @@ import subprocess
 
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
+from kivy.properties import StringProperty
 
 from .elements import ErrorPopup
 from . import parameters as p
 
 class GitHelper(EventDispatcher):
-    # TODO: git fetch
-    #       branches
+    # TODO: git fetch asynchronously
+    #       test install
 
     # If you want to receive updates from a different remote, change this value
     REMOTE = "origin"
@@ -19,6 +20,8 @@ class GitHelper(EventDispatcher):
     #      maybe prepend "kgui" or "release" instead of "v"?
     RELEASES = "v*"
 
+    install_output = StringProperty()
+
     def __init__(self):
         # Use klipperui repository and no pager (-P)
         self._base_cmd = ["git", "-C", p.klipper_dir, "-P"]
@@ -27,9 +30,13 @@ class GitHelper(EventDispatcher):
         # Dispatched whenever an installation is finished, succesfully or not
         self.register_event_type("on_install_finished")
 
+        #fetch_cmd = self._base_cmd + ["fetch", "--recurse-submodules", self.REMOTE]
+        #subprocess.Popen(fetch_cmd, stdout=subprocess.PIPE, text=True)
+
     def _execute(self, cmd, catch=True):
         """Execute a git command, and return its stdout
-        This function blocks until git returns
+        This function blocks until git returns.
+        If catch=False, propagate any Exceptions that occur
         """
         cmd = self._base_cmd + cmd
         try:
@@ -38,13 +45,17 @@ class GitHelper(EventDispatcher):
             if not catch:
                 raise
             #ErrorPopup(title="Git failed", proc.stdout + "\n" + proc.stderr).open()
+            #TODO this is only testing
             print(proc.stdout, proc.stderr)
         # The output always ends with a newline, we don't want that
-        return proc.stdout.rstrip()
+        return proc.stdout.rstrip("\n")
 
     def fetch(self):
-        cmd = ["fetch", "--recurse-submodules", self.REMOTE]
-        self._execute(cmd)
+        try:
+            self._execute(["fetch", "--recurse-submodules", self.REMOTE], catch=False)
+            return True
+        except subprocess.CalledProcessError:
+            return False
 
     def get_git_version(self):
         """Return the git version number"""
@@ -87,49 +98,74 @@ class GitHelper(EventDispatcher):
                "--format=(%(refname:strip=-1), %(committerdate:unix))",
                "refs/tags/" + self.RELEASES]
         data = self._execute(cmd).splitlines()
+        current = self.get_exact_version()
         releases = []
         for e in data:
             tag, timestamp = eval(e)
             version = tag[len(self.RELEASES)-1:]
             rel = Release(name=tag, time=int(timestamp), version=version)
-            rel.current = tag == self.get_exact_version()
+            rel.current = tag == current
             releases.append(rel)
         return releases
 
     def get_branches(self):
+        """Return a list of all branches
+        This includes local branches as well as remote tracking branches
+        from the remote specified in self.REMOTE. If a branch with the
+        same name exists locally as well as on the remote, prefer the
+        local branch.
+        """
         cmd = ["for-each-ref", "--sort=-authordate", "--python",
-               "--format=(%(refname:strip=-1), %(authordate:unix), %(objectname))",
-               "refs/remotes/" + self.REMOTE]
+               "--format=(%(refname:strip=-1), %(authordate:unix), %(objectname), %(HEAD))",
+               "refs/heads"]
+        branches = []
+        local_data = self._execute(cmd).splitlines()
+        local_names = set()
+        for e in local_data:
+            name, timestamp, hash_, head = eval(e)
+            branch = Branch(name=name, time=int(timestamp), commit=hash_, local=True)
+            if head == '*':
+                branch.current = True
+            branches.append(branch)
+            local_names.add(name)
+
+        cmd[-2] = "--format=(%(refname:strip=-1), %(authordate:unix), %(objectname))"
+        cmd[-1] = "refs/remotes/" + self.REMOTE
         remote_data = self._execute(cmd).splitlines()
-        remote_branches = []
         for e in remote_data:
             name, timestamp, hash_ = eval(e)
-            branch = Branch(name=name, time=int(timestamp), commit=hash_)
-            remote_branches.append(branch)
+            if name not in local_names:
+                branch = Branch(name=name, time=int(timestamp), commit=hash_)
+                branches.append(branch)
+        return branches
 
-        cmd[-1] = "refs/heads"
-        local_data = self._execute(cmd).splitlines()
-        local_branches = []
-        for e in local_data:
-            name, timestamp, hash_ = eval(e)
-            branch = Branch(name=name, time=int(timestamp), commit=hash_, local=True)
-            local_branches.append(branch)
-        return (local_branches, remote_branches)
-
-    def install_release(self, release):
+    def checkout_release(self, release):
         """Change working directory to the release and execute the install script"""
+        #TODO account for uncommitted changes: check if working directory is dirty?
         cmd = ["checkout", "--recurse-submodules", "--detach", release]
-        self._install()
+        self._execute(cmd)
 
-    def _install(self):
+    def install(self):
         """Run the installation script"""
         if self._install_process is not None: # Install is currently running
             logging.warning("Updater: Attempted to install while script is running")
             return
         # Capture both stderr and stdout in stdout
-        self._install_process = Popen(["sudo", self.INSTALL_SCRIPT],
-                capture_output=True, text=True, stderr=subprocess.STDOUT)
-        Clock.schedule_once(self._poll_install_process, 0.5)
+        self._install_process = Popen(self.INSTALL_SCRIPT, text=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        Thread(target=self._capture_install_output).start()
+
+    def _capture_install_output(self):
+        """Run in a seperate thread as proc.stdout.readline() blocks until
+        the next line is received."""
+        proc = self._install_process
+        while True:
+            line = proc.stdout.readline()
+            if not line:
+                self.dispatch("on_install_finished", proc.returncode)
+                self._install_process = None
+                break
+            self.install_output += line
 
     def _poll_install_process(self):
         """Keep track of when the installation is finished and if it succeded"""
@@ -144,18 +180,24 @@ class GitHelper(EventDispatcher):
         else: # Still running, check again in 0.5 seconds
             Clock.schedule_once(self._poll_install_process, 0.5)
 
-    def on_install_finished(self):
+    def on_install_finished(self, returncode):
         pass
 
 
 class Release:
     """A release that corresponds to a tag"""
 
-    def __init__(self, *, name, time, version=None):
+    def __init__(self, *, name, time, version=None, curent=None):
+        """
+        name        tagname or branchname
+        time        time of creation in seconds since epoch
+        version     version number of the release
+        current     True if this exact tag is currently checked out
+        """
         self.name = name
+        self.release_date = time
         self.version = version or name
         self.current = False
-        self.release_date = time
 
     def install(self):
         pass
