@@ -47,6 +47,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         "error",
         "error disconnected"
         ])
+    # this is more of a UI-state, it may be 'done' even though virtual_sdcard has no printjobs
     print_state = OptionProperty("no printjob", options=[
         "no printjob",
         "queued",
@@ -66,7 +67,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     print_done_time = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
     pos = ListProperty([0, 0, 0, 0]) #updated by scheduled update_home
-    #tuning  #updated by upate_printing
+    #tuning, updated by upate_printing
     speed = NumericProperty(100)
     flow = NumericProperty(100)
     fan_speed = NumericProperty(0)
@@ -89,7 +90,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.extrude_timer = None
         self.filament_manager = None
         self.curaconnection = None
-        self.bed_mesh = True #initialize as True so it shows up on load, maybe dissapears after handle_connect
+        self.bed_mesh = True # initialize as True so it shows up on load, maybe dissapears after handle_connect
         self.sdcard = None
         self.history = None
         self.printjob_progress = None
@@ -100,7 +101,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.reactor = self.printer.get_reactor()
             self.klipper_config_manager = self.printer.objects['configfile']
             self.klipper_config = self.klipper_config_manager.read_main_config()
-            #read config
+            # read config
             self.z_speed = self.kgui_config.getfloat('manual_z_speed', 3)
             self.ext_speed = self.kgui_config.getfloat('manual_extrusion_speed', 1)
             self.invert_z_controls = self.kgui_config.getboolean('invert_z_controls', False)
@@ -108,10 +109,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             stepper_config = {'x': self.klipper_config.getsection('stepper_x'),
                               'y': self.klipper_config.getsection('stepper_y'),
                               'z': self.klipper_config.getsection('stepper_z')}
-            self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in ('x','y','z')}
-            self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in ('x','y','z')}# maybe use position_min, position_max = rail.get_range()
+            self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in 'xyz'}
+            self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in 'xyz'}
             self.filament_diameter = self.klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
-            self.min_extrude_temp = self.klipper_config.getsection("extruder").getint("min_extrude_temp", 170) # maintain this by keeping default the same as klipper            
+            # maintain this by keeping default the same as klipper
+            self.min_extrude_temp = self.klipper_config.getsection("extruder").getint("min_extrude_temp", 170)
             # count how many extruders exist before drawing homescreen
             for i in range(1, 10):
                 try: klipper_config.getsection(f"extruder{i}")
@@ -126,7 +128,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.printer.register_event_handler("homing:home_rails_end", self.handle_homed)
             self.printer.register_event_handler("virtual_sdcard:printjob_start", self.handle_printjob_start)
             self.printer.register_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
-            self.printer.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
+            self.printer.register_event_handler("virtual_sdcard:printjob_change", self.update_printjobs)
+            self.printer.register_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
         else:
             site.addsitedir(dirname(p.kgui_dir))
             import filament_manager
@@ -190,37 +193,33 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
-    # self.reset_tuning() # tuning values are only reset once print_queue has ran out
-    def handle_printjob_change(self, jobs):
+    def update_printjobs(self, jobs):
         """ this monitors changes of 2 things:
             - the configuration of printjobs
-            - the state of individual printjobs
-            Since jobs are passed by reference their state may not be the state
-            that caused the event (this state will seemingly get skipped) """
-        # check if queue has increased
-        if len(jobs) > len(self.jobs):
-            self.notify.show("Added Printjob", f"Added {jobs[-1].name} to print Queue")
-        # update print_state, unless there's no printjob
-        if len(jobs):
+            - the state of 1. printjob
+            due to pass-by-reference states may be skipped """
+        if len(jobs): # update print_state, unless there's no printjob
             self.print_state = jobs[0].state
+        elif len(self.jobs): # if the job is already removed we still want to update state
+            self.print_state = self.jobs[0].state
         self.jobs = jobs
+
+    def handle_printjob_added(self, job):
+        self.notify.show("Added Printjob", f"Added {job.name} to print Queue")
 
     def handle_printjob_start(self, job):
         self.notify.show("Started printing", f"Started printing {job.name}", delay=4)
         self.print_title = job.name
+        # this only works if we are in a printing state (we rely on this being called after update_printjobs)
         self.get_printjob_progress()
 
     def handle_printjob_end(self, job):
-        self.handle_printjob_change(self.sdcard.jobs)
-        if self.print_state == 'no printjob':
-            self.reset_tuning()
         if 'done' == job.state:
             self.progress = 1
             self.print_done_time = ""
             self.print_time = "finished in " + self.format_time(job.get_printed_time())
-            Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 3600) # keep showing finished jobs for 1h
+            Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 3600) # show finished job for 1h
         else:
-            self.handle_printjob_change(self.sdcard.jobs)
             self.hide_printjob(job.name)
 
     def hide_printjob(self, name):
@@ -230,6 +229,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.print_time = ""
             self.progress = 0
             self.print_state = "no printjob"
+            self.reset_tuning() # tuning values are only reset once print_queue has run out
 
 # KLIPPY THREAD ^
 ########################################################################################
@@ -299,6 +299,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             return f"{minutes} min"
 
     def get_printjob_progress(self, *args):
+        logging.info("get printjob progress info")
+        logging.warning("get_printjob_warning")
         if self.print_state in ('printing', 'pausing', 'paused'):
             est_remaining, progress = self.printjob_progress.get_print_time_prediction()
             if progress is None: # no prediction could be made yet
@@ -306,10 +308,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 self.print_time = ""
                 self.print_done_time = ""
             else:
-                remaining = timedelta(seconds = est_remaining)
+                remaining = timedelta(seconds=est_remaining)
                 done = datetime.now() + remaining
                 tomorrow = datetime.now() + timedelta(days=1)
                 self.progress = progress
+                logging.info(f"got printjob progress of {progress}, remaining {remaining.total_seconds()}")
                 self.print_time = self.format_time(remaining.total_seconds()) + " remaining"
                 if done.day == datetime.now().day:
                     self.print_done_time = done.strftime("%-H:%M")
@@ -374,8 +377,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.fan_speed = self.fan.last_fan_value * 100 / self.fan.max_power
     def send_fan(self, speed):
         self.fan_speed = speed
-        self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed/100.))
-
+        self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed/100))
+ 
     def get_pressure_advance(self):#gives pressure_advance value of 1. extruder for now
         self.pressure_advance = self.extruders[0].get_status(self.reactor.monotonic())['pressure_advance']
     def send_pressure_advance(self, val):
@@ -409,10 +412,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 val = Section.get(option)
             setattr(self, property_name, val)
         self.reactor.register_async_callback(read_config)
-
-    def set_config(self, section, option, value):
-        logging.info(f"trying to set config section: {section} option: {option}, value: {value}")
-        self.reactor.register_async_callback(lambda e: self.klipper_config_manager.set(section, option, value))
 
     def write_config(self, section, option, value):
         logging.info(f"trying to write config section: {section} option: {option}, value: {value}")
@@ -461,7 +460,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         def set_pos(e):
             new_pos = [x,y,z,e]
             homed_axes = self.toolhead.get_status(self.reactor.monotonic())['homed_axes']
-            new_pos = [new if name in homed_axes else None for new, name in zip(new_pos, 'xyze')] #check whether axes are still homed
+            # check whether axes are still homed
+            new_pos = [new if name in homed_axes else None for new, name in zip(new_pos, 'xyze')]
             new_pos = self._fill_coord(new_pos)
             self.toolhead.move(new_pos, speed)
         self.reactor.register_async_callback(set_pos)
@@ -482,7 +482,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     #     self.toolhead.move(cur_pos, speed)
 
     def _fill_coord(self, new_pos):
-        """ Fill in any None entries in 'pos' with current toolhead position """
+        """ Fill in any None entries in 'new_pos' with current toolhead position """
         pos = list(self.toolhead.get_position())
         for i, new in enumerate(new_pos):
             if new is not None:
