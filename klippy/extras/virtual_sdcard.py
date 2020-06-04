@@ -178,7 +178,10 @@ class PrintjobManager:
 
     def add_printjob(self, path, paused=True):
         """ add new printjob to queue """
-        self.jobs.append(Printjob(path, paused, self))
+        job = Printjob(path, paused, self)
+        self.jobs.append(job)
+        self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
+        self.printer.send_event("virtual_sdcard:printjob_added", job)
         self.check_queue()
 
     def pause_printjob(self, *args):
@@ -193,14 +196,14 @@ class PrintjobManager:
     def clear_queue(self):
         """ remove everything but the first element wich is currently being printed """
         self.jobs = self.jobs[:1]
-        self.printer.send_event("virtual_sdcard:printjob_change", self.manager.jobs)
+        self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
 
     def check_queue(self):
-        """ remove 'stopped' or 'done' printjobs from queue, start next if necessary """ 
+        """ remove 'stopped' or 'done' printjobs from queue, start next if necessary """
         if len(self.jobs) and self.jobs[0].state in ('done', 'stopped'):
             last_job = self.jobs.pop(0)
-            self.printer.send_event("virtual_sdcard:printjob_end", last_job)
             self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
+            self.printer.send_event("virtual_sdcard:printjob_end", last_job)
         if len(self.jobs) and self.jobs[0].state in ('queued'):
             self.jobs[0].start()
 

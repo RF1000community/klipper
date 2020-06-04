@@ -13,7 +13,9 @@ class PrintjobProgress:
         self.reactor = self.printer.get_reactor()
         self.initialize_printjob()
         self.printer.register_event_handler("gcode:read_metadata", self.handle_gcode_metadata)
-        self.printer.register_event_handler("virtual_sdcard:printjob_ended", self.initialize_printjob)
+        self.printer.register_event_handler("virtual_sdcard:printjob_end", self.initialize_printjob)
+        # this relies on no gcode being processed before the start event which is given.
+        self.printer.register_event_handler("virtual_sdcard:printjob_start", self.initialize_printjob)
         self.printer.register_event_handler("klippy:connect", self.handle_connect)
 
     def handle_connect(self):
@@ -24,7 +26,7 @@ class PrintjobProgress:
         self.slicer_estimated_time = None
 
     def handle_gcode_metadata(self, print_time, line):
-        # recieves all gcode-comment-lines as they are printed, and searches for print-time estimations
+        """ recieves all gcode-comment-lines as they are printed, and searches for print-time estimations """
         slicer_estimated_time = [
             r'\s\s\d*\.\d*\sminutes' ,                        # Kisslicer
             r'; estimated printing time' ,                    # Slic3r
@@ -71,11 +73,12 @@ class PrintjobProgress:
                 return
 
     def get_print_time_prediction(self):
-        # we try to consider everything 'printed' that ran through gcode processing, 
-        # time are measured using print_time
-        # time estimations in gcode: |....|....|....|........................|
-        # actual print time      |......|.....|.....|.............................|
-        #                        ^ start of print   ^ current point in time       ^ prediction
+        """ we try to consider everything 'printed' that ran through gcode processing, 
+            time are measured using print_time
+            time estimations in gcode: |....|....|....|........................|
+            actual print time      |......|.....|.....|.............................|
+                                   ^ start of print   ^ current point in time       ^ prediction
+            after the printjob is done the output is undefined, normally None """
         est_remaining = None
         progress = None
 
