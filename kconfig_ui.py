@@ -21,7 +21,7 @@ from . import parameters as p
 
 class FlashScreen(Screen):
     def __init__(self, **kwargs):
-        super(FlashScreen, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         klipper_dir = dirname(dirname(dirname(p.kgui_dir)))
         os.environ['srctree'] = klipper_dir
         self.kconf = Kconfig(os.path.join(klipper_dir, "src/Kconfig"))
@@ -80,7 +80,7 @@ class FlashScreen(Screen):
 class CI_Tristate(Label):
     state = NumericProperty(0)
     def __init__(self, node, state, states=2, **kwargs):
-        super(CI_Tristate, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.states = states
         self.node = node
     def on_release(self):
@@ -90,18 +90,18 @@ class CI_Tristate(Label):
 class CI_Radio(Label):
     selected = BooleanProperty(False)
     def __init__(self, node, **kwargs):
-        super(CI_Radio, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.node = node
 
 class CI_Value(Label):
     locked = BooleanProperty(False)
     value = StringProperty()
     def __init__(self, node, **kwargs):
-        super(CI_Value, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.node = node
 
 class CI_Text(Label):
     value = StringProperty()
     def __init__(self, node, **kwargs):
-        super(CI_Text, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.node = node
