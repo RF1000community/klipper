@@ -12,9 +12,18 @@ from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
+from kivy.uix.tabbedpanel import TabbedPanelItem
 
 from .elements import Divider, BaseButton, BasePopup
 from . import parameters as p
+
+
+class SettingTab(TabbedPanelItem):
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self.ids.screen_man.current = "SettingScreen"
+        return super().on_touch_down(touch)
 
 
 class RectangleButton(BaseButton):
