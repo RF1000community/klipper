@@ -3,16 +3,8 @@
 
 # Find SRCDIR from the pathname of this script
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
+# Directory for the virtual environment
 PYTHONDIR="${SRCDIR}/klippy-environment"
-
-
-
-# Must be called after install_packages
-setup_port_redirection()
-{
-    sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-ports 8008
-    sudo iptables-save -f /etc/iptables/rules.v4
-}
 
 
 
@@ -103,15 +95,15 @@ install_packages()
     PKGLIST="${PKGLIST} iptables-persistent"
 
     # Update system package info
-    report_status "Running apt-get update..."
-    sudo apt update
+    report_status "Updating package database..."
+    sudo apt -qq --yes update
     # Install desired packages
     report_status "Installing packages..."
-    sudo apt install --yes ${PKGLIST}
+    sudo apt install -qq --yes ${PKGLIST}
 
-    # Wifi 
-    sudo apt purge dhcpcd5 --yes
-    # Needed to allow scanning to non-root users. Not needed with later NM updates
+    # Networking
+    sudo apt -qq --yes purge dhcpcd5
+    # Needed to allow wifi scanning to non-root users. Probably not needed with NM >= 1.16
     if [ $(grep -c auth-polkit= /etc/NetworkManager/NetworkManager.conf) -eq 0 ]; then
         sudo sed -i '/\[main\]/a auth-polkit=false' /etc/NetworkManager/NetworkManager.conf
     fi
@@ -123,16 +115,26 @@ install_packages()
 
 
 
+# Must be called after install_packages
+setup_port_redirection()
+{
+    report_status "Setting up Port redirection..."
+    sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-ports 8008
+    sudo iptables-save -f /etc/iptables/rules.v4
+}
+
+
+
 # Step 2: Create python virtual environment
 create_virtualenv()
 {
     report_status "Updating python virtual environment..."
     # Create virtualenv if it doesn't already exist
     [ ! -d ${PYTHONDIR} ] && python3 -m venv ${PYTHONDIR}
-    report_status "install pip packages..."
-    # Install/update dependencies                             v  custom KGUI list of pip packages
+    report_status "Installing pip packages..."
+    # Install/update dependencies                      v  custom KGUI list of pip packages
     ${PYTHONDIR}/bin/pip3 install -r ${SRCDIR}/scripts/klippy-kgui-requirements.txt
-    # Use the gi package from the system installation
+    # Use the python-gi module from the system installation
     ln -sf /usr/lib/python3/dist-packages/gi ${PYTHONDIR}/lib/python3.?/site-packages/
 }
 
@@ -150,7 +152,7 @@ Type=simple
 User=$USER
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=/bin/bash -c "/usr/bin/startx ${PYTHONDIR}/bin/python3 ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
-Nice=-20
+Nice=-19
 Restart=always
 RestartSec=10
 [Install]
@@ -166,12 +168,12 @@ EOF
 
 install_usb_automounting()
 {
-    report_status "Install usbmount.conf..."
+    report_status "Configuring USB automounting..."
     mkdir -p ~/sdcard/USB-Device
     sudo cp ${SRCDIR}/klippy/extras/kgui/usbmount.conf /etc/usbmount/usbmount.conf
     # https://raspberrypi.stackexchange.com/questions/100312/raspberry-4-usbmount-not-working
     # https://www.oguska.com/blog.php?p=Using_usbmount_with_ntfs_and_exfat_filesystems
-    
+
     # maybe needed
     sudo sed -i 's/PrivateMounts=yes/PrivateMounts=no/' /lib/systemd/system/systemd-udevd.service
 }
@@ -185,8 +187,7 @@ install_lcd_driver()
     # Kivy: Add user to render group to give permission for hardware rendering
     sudo adduser "$USER" render
 
-
-    report_status "Installing LCD Driver..."
+    report_status "Installing Display Driver..."
     sudo ${SRCDIR}/klippy/extras/kgui/LCDC7-better.sh -r 90
     # Copy the dpms configuration
     sudo cp ${SRCDIR}/klippy/extras/kgui/10-dpms.conf /etc/X11/xorg.conf.d/
@@ -197,7 +198,7 @@ install_lcd_driver()
 # Helper functions
 report_status()
 {
-    echo -e "\n\n###### $1"
+    echo -e "\n\n===> $1"
 }
 verify_ready()
 {
