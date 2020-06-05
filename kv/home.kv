@@ -613,8 +613,7 @@
             round_to: 2
             round_style: 5
             id: slider
-            width: root.width
-            pos_hint: {'center_x':0.5, 'y':0.35}
+            pos_hint: {'center_x':0.5, 'y':0.6}
         BtnPCancel:
             id: btn_cancel
             width: root.width/2
@@ -638,8 +637,7 @@
             unit: "mm/mm/s"
             round_to: 3
             id: slider
-            width: root.width
-            pos_hint: {'center_x':0.5, 'y':0.35}
+            pos_hint: {'center_x':0.5, 'y':0.6}
         BtnPCancel:
             id: btn_cancel
             width: root.width/2
@@ -663,9 +661,7 @@
             round_to: -2
             buttons: [[36000,0,"default",None],]
             id: slider
-            width: root.width
-            pos_hint: {'center_x':0.5}
-            y: btn_cancel.top+40
+            pos_hint: {'center_x':0.5, 'y':0.6}
         BtnPCancel:
             id: btn_cancel
             width: root.width/2
@@ -689,8 +685,7 @@
             unit: "%"
             round_to: 0
             id: slider
-            width: root.width
-            pos_hint: {'center_x':0.5, 'y':0.35}
+            pos_hint: {'center_x':0.5, 'y':0.6}
         BtnPCancel:
             id: btn_cancel
             width: root.width/2
@@ -715,8 +710,7 @@
             round_to: 1
             round_style: 5
             id: slider
-            width: root.width
-            pos_hint: {'center_x':0.5, 'y':0.35}
+            pos_hint: {'center_x':0.5, 'y':0.6}
         BtnPCancel:
             id: btn_cancel
             width: root.width/2
@@ -740,8 +734,7 @@
             unit: "%"
             round_to: 0
             id: slider
-            width: root.width
-            pos_hint: {'center_x':0.5, 'y':0.35}
+            pos_hint: {'center_x':0.5, 'y':0.6}
         BtnPCancel:
             id: btn_cancel
             width: root.width/2
@@ -761,8 +754,7 @@
             id: slider
             tool_id: 'B'
             val: root.val['B'][0]
-            width: root.width
-            pos_hint: {'center_x':0.5, 'y':0.35}
+            pos_hint: {'center_x':0.5, 'y':0.6}
         BtnPCancel:
             id: btn_cancel
             width: root.width/2
@@ -782,8 +774,7 @@
             val: root.val[root.creator.tool_id][0]
             id: slider
             tool_id: root.creator.tool_id
-            width: root.width
-            pos_hint: {'center_x':0.5, 'y':0.35}
+            pos_hint: {'center_x':0.5, 'y':0.6}
         BtnPCancel:
             id: btn_cancel
             width: root.width/2

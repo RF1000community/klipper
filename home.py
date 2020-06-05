@@ -135,21 +135,10 @@ class TempSlider(UltraSlider):
                     [210,68/2,"PLA",None],
                     [230,0,"PETG",None],
                     [250,-68/2,"ABS",None]]
-        self.px_max = self.right - p.padding
-        self.px_min = self.x + p.padding
-        self.px_width = self.px_max - self.px_min
-        self.px = self.get_px_from_val(self.val)
-        self.disp = self.get_disp_from_val(self.val)
-        for b in self.buttons:
-            b[3] = BtnSlider(y=self.y, px=self.get_px_from_val(b[0]), 
-                              val=b[0], offset=b[1], s_title=b[2])
-            b[3].bind(on_press=self.on_button)
-            self.add_widget(b[3])
-        self.highlight_button()
-        self.initialized = True
+        super().init_drawing()
 
     def get_val_from_px(self, x):
-        v = int(((x-self.px_min)/self.px_width)*(self.val_max-self.val_min)+self.val_min)
+        v = int(((x-self.x)/self.width)*(self.val_max-self.val_min)+self.val_min)
         for b in self.buttons:
             if v >= b[0]-2 and v <= b[0]+2:
                 v = b[0]
@@ -167,8 +156,8 @@ class TempSlider(UltraSlider):
         return s
 
     def get_px_from_val(self, val):
-        x = (float(val-self.val_min)/float(self.val_max-self.val_min))*self.px_width+self.px_min	
-        if x < self.px_min: x = self.px_min	
+        x = ((val-self.val_min)/(self.val_max-self.val_min))*self.width + self.x
+        x = max(self.x, x)
         return x
 
 class BtnTriple(Widget):
@@ -423,9 +412,12 @@ class FilamentPopup(BasePopup):
                 lambda e: self.fm.unload(self.extruder_id))
         self.dismiss()
 
+
 class FilamentSlider(UltraSlider):
+
     filament_color = ListProperty([0,0,0,0])
     active = BooleanProperty(True)
+
     def __init__(self, **kwargs):
         self.val_min = 0
         self.val_max = 1000
@@ -434,19 +426,9 @@ class FilamentSlider(UltraSlider):
         super().__init__(**kwargs)
 
     def on_touch_down(self, touch):
-        # overwrite method so touch area matches increased height, also add disabling
-        if self.initialized\
-        and self.active\
-        and touch.pos[0] > self.px_min - 30 and touch.pos[0] < self.px_max + 30\
-        and touch.pos[1] > self.y - 18 and touch.pos[1] < self.top + 18:
-            self.pressed = True
-            touch.grab(self)
-            x = self.apply_bounds(touch.pos[0])
-            self.val = self.get_val_from_px(x)
-            self.disp = self.get_disp_from_val(self.val)
-            if self.btn_last_active is not None: self.btn_last_active[3].active = False
-            self.changed = True
-            return True
+        # overwrite method to add disabling
+        if self.active:
+            return super().on_touch_down(touch)
         return super(UltraSlider, self).on_touch_down(touch)
 
 
