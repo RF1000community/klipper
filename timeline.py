@@ -14,6 +14,7 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from .elements import StopPopup
 from . import parameters as p
 
+
 class Timeline(RecycleView):
     path = StringProperty()
     # Initially is None, then always the last selected view object
@@ -22,9 +23,7 @@ class Timeline(RecycleView):
         super().__init__(**kwargs)
         self.app = App.get_running_app()
         self.load_all(in_background=False)
-        self.app.bind(jobs=self.load_all)
-        self.app.bind(state=self.load_all)
-        self.app.bind(print_state=self.load_all)
+        self.app.bind(jobs=self.load_all, state=self.load_all, print_state=self.load_all)
 
     def load_all(self, instance=None, value=None, in_background=True):
         queue = [{'name': job.name, 'path': job.path, 'state': job.state} 
@@ -54,7 +53,7 @@ class Timeline(RecycleView):
         if len(queue) + len(history) == 0: # Give message in case of empty list
             self.data = [{"name": "No printjobs scheduled or finished", "state": 'message'}]
         else:
-            self.data = queue + history + [{}] # for a dividing line afer last element
+            self.data = queue + history + [{}] # for a dividing line after last element
         self.refresh_from_data()
         if not in_background and 'tl_box' in self.ids:
             self.ids.tl_box.selected_nodes = []
@@ -100,16 +99,18 @@ class Timeline(RecycleView):
             self.ids.tl_box.selected_nodes = []
             self.send_queue(queue)
 
+
 class TimelineBox(LayoutSelectionBehavior, RecycleBoxLayout):
     # Adds selection behaviour to the view
     pass
+
 
 class TimelineItem(RecycleDataViewBehavior, Label):
     name = StringProperty()
     path = StringProperty()
     state = OptionProperty("header", options=["header", "message", "queued", "printing", "pausing", "paused", "stopping", "stopped", "done"])
     timestamp = NumericProperty(0)
-    index = None # TODO ?
+    index = None
     selected = BooleanProperty(False)
     pressed = BooleanProperty(False)
     thumbnail = StringProperty("")

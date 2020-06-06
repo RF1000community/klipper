@@ -1,8 +1,10 @@
-from kivy.app import App
+import logging
+
+from kivy.clock import Clock
 from kivy.uix.screenmanager import Screen
 
 from .elements import Divider, BasePopup
-from .git_update import GitHelper
+from .git_update import githelper
 from . import parameters as p
 from .settings import SetItem
 
@@ -11,21 +13,14 @@ class SIUpdate(SetItem):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.right_title = GitHelper().get_current_version()
+        self.right_title = githelper.get_current_version()
 
 class UpdateScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.githelper = GitHelper()
-
-    def on_pre_enter(self):
-        self.draw_releases()
-        return #FIXME fetch in background
-        if self.githelper.fetch() is False:
-            App.get_running_app().notify.show(
-                    "Couldn't fetch new updates",
-                    "Check your internet connection and try again",
-                    level="info", delay=4)
+        self.githelper = githelper
+        # Avoid rebuilding the screen on every entry
+        Clock.schedule_once(self.draw_releases, 0)
 
     def draw_releases(self, *args):
         self.ids.box.clear_widgets()
@@ -44,12 +39,19 @@ class UpdatePopup(BasePopup):
 
     def update(self):
         self.release.install()
+        self.dismiss()
+        ip = InstallPopup()
+        ip.open()
+
 
 class InstallPopup(BasePopup):
 
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        githelper.bind(install_output=self.update)
+        super().__init__(**kwargs)
 
+    def update(self, instance, value):
+        self.ids.output_label.text = value
 
 class SIRelease(SetItem):
 

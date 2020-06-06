@@ -37,7 +37,7 @@
 
 <FloatingButton@BaseButton>:
     btn_color: (0,0,0,0)
-    size: 74 * p.disp_vertical_stretch, 74
+    size: 76 * p.disp_vertical_stretch, 76
     bold: True
     halign: 'center'
     valign: 'middle'
@@ -77,7 +77,7 @@
 <BtnPCancel@BaseButton>:
     text: "Cancel"
     single: False
-    height: 70
+    height: 74
     canvas:
         Color:
             rgba: p.divider
@@ -92,7 +92,7 @@
 
 <BtnPConfirm@BaseButton>:
     text: "Confirm"
-    height: 70
+    height: 74
     enabled: False
     canvas:
         Color:
@@ -284,17 +284,23 @@
     message: "--"
     title: "Error - Firmware stopped"
     FloatLayout:
-        Label:
-            text: root.message
-            halign: 'left'
-            valign: 'top'
-            padding_y: p.large_font * 2
-            max_lines: 20
-            size_hint: 0.9, 1
-            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.1}
-            text_size: self.size
-            font_size: p.normal_font -2
-            color: p.light_gray
+        id: content
+        ScrollView:
+            id: message_scroll
+            size_hint: 1, None
+            height: content.height - btn_cancel.height
+            pos: content.x, btn_cancel.top
+            do_scroll_x: False
+            Label:
+                text: root.message
+                halign: 'left'
+                valign: 'top'
+                padding: p.small_padding, p.small_padding
+                size_hint_y: None
+                text_size: self.width, None
+                height: self.texture_size[1]
+                font_size: p.normal_font - 2
+                color: p.light_gray
         BtnPCancel:
             id: btn_cancel
             text: "Restart Printer"

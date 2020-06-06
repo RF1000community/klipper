@@ -40,7 +40,7 @@
             right: p.screen_width - p.h_padding + 10
             y: p.tab_height + p.padding
             on_release: tl.remove()
-            enabled: tl.selected is not None and tl.selected.state == "queued"
+            enabled: tl.selected is not None and tl.selected.state in ("queued", "printing")
         BtnQUp:
             id: q_up
             right: q_x.x - p.h_padding  + 10
@@ -65,7 +65,6 @@
         touch_multiselect: False
 
 <TimelineItem>:
-    size: p.screen_width, 777
     canvas:
         Color:
             rgba: (1,1,1,0.06) if self.state in ('printing', 'paused', 'pausing', 'stopping') else (0,0,0,0)
@@ -78,6 +77,7 @@
             size: self.size
             pos: self.pos
     #Label
+    width: p.screen_width
     size_hint_y: None
     height: 40 if self.state == "header" else 110
     text: "" if self.state in ('header', 'message') else self.state.capitalize()
@@ -111,16 +111,11 @@
 <BtnPrint@FloatingButton>:
     id: btn_print
     btn_color: p.accent
-    Label:
-        size: root.size
-        pos: root.pos
-        text: "Print"
-        bold: True
-        halign: 'center'
-        valign: 'middle'
-        text_size: self.size
-        font_size: p.normal_font
-        color: (1,1,1,1) if root.enabled else (0,0,0,0)
+    canvas:
+        Color:
+            rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
+        Triangle:
+            points: self.x+pad+4, self.y+pad-4,  self.x+pad+4, self.top-pad+4,   self.right-pad+4, self.center_y
 
 <BtnQUp@FloatingButton>:
     id: q_up

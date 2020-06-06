@@ -12,13 +12,23 @@ from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
+from kivy.uix.tabbedpanel import TabbedPanelItem
 
 from .elements import Divider, BaseButton, BasePopup
 from . import parameters as p
 
 
+class SettingTab(TabbedPanelItem):
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self.ids.screen_man.current = "SettingScreen"
+        return super().on_touch_down(touch)
+
+
 class RectangleButton(BaseButton):
     pass
+
 
 class SetItem(FloatLayout, RectangleButton):
     left_title = StringProperty()
@@ -41,74 +51,83 @@ class SIWifi(SetItem):
             self.right_title = "not available"
 
 
-class SIWifiAccessPoint(SetItem):
-
-    def __init__(self, ap, **kwargs):
-        self.ap = ap
-        super().__init__(**kwargs)
-
-    def on_release(self):
-        # Present different options when wifi is stored by NM
-        if self.ap.saved:
-            ConnectionPopup(self.ap).open()
-        elif not self.ap.encrypted:
-            self.ap.connect()
-        else:
-            PasswordPopup(self.ap).open()
-
-    def get_color(self):
-        if self.ap.saved:
-            if self.ap.in_use:
-                return [0, 0.7, 0, 1]
-            return [0.7, 0, 0, 1]
-        return p.light_gray
-
-
 class WifiScreen(Screen):
+
+    def on_pre_enter(self):
+        """Update the recycleview and trigger frequent scanning"""
+        wifi = self.ids.wifi
+        network_manager = wifi.network_manager
+        if not network_manager.available:
+            # Sanity check, SIWifi Button should be disabled in this case
+            self.manager.current = "SettingScreen"
+            return
+        network_manager.wifi_scan()
+        network_manager.set_scan_frequency(10)
+        wifi.update(None, network_manager.access_points)
+
+    def on_leave(self):
+        """Disable frequent scanning which slows down the wifi device"""
+        if self.ids.wifi.network_manager.available:
+            self.ids.wifi.network_manager.set_scan_frequency(0)
+
+
+class Wifi(RecycleView):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.network_manager = App.get_running_app().network_manager
-        self.message = '...'
-        Clock.schedule_once(self.set_message, 0)
-        # Amount of seconds between wifi rescans in seconds
-        self.freq = 10
         self.network_manager.bind(on_access_points=self.update)
 
-    def on_pre_enter(self):
-        # pre_enter: This function is executed when the animation starts
-        assert(self.network_manager.available)
-        self.network_manager.wifi_scan()
-        self.network_manager.set_scan_frequency(self.freq)
-        self.update(None, self.network_manager.access_points)
-
-    def set_message(self, dt=None, msg=None):
-        message = msg or self.message
-        box = self.ids.wifi_box
-        box.clear_widgets()
-        label = Label(
-                text = message,
-                italic = True,
-                color = p.medium_light_gray,
-                size_hint = (1, None),
-                text_size = (p.screen_width, None),
-                height = 110,
-                font_size = p.normal_font,
-                padding = (p.padding, p.padding),
-                halign = 'center')
-        box.add_widget(label)
-
     def update(self, instance, value):
-        # Repopulate the list of networks when wifi.networks changes
-        box = self.ids.wifi_box
-        box.clear_widgets()
+        # Repopulate the list of networks
         if value:
-            box.add_widget(Divider(pos_hint={'center_x':0.5}))
-            for ap in value:
-                box.add_widget(SIWifiAccessPoint(ap))
-        # In case no networks were found
+            self.message = ""
+            self.data = [{'ap':value[0], 'height':1}] + [{'ap': ap, 'height':110} for ap in value]
+            self.refresh_from_data()
         else:
-            self.set_message(msg='no wifi networks detected')
+            self.data = []
+            self.refresh_from_data()
+            self.message = "No Networks found"
+
+
+class WifiBox(LayoutSelectionBehavior, RecycleBoxLayout):
+    # Adds selection behaviour to the view
+    pass
+
+
+class WifiItem(RecycleDataViewBehavior, Label):
+    ap = ObjectProperty()
+    pressed = BooleanProperty(False)
+    index = None
+
+    def refresh_view_attrs(self, rv, index, data):
+        # Catch and handle the view changes
+        self.index = index
+        return super().refresh_view_attrs(rv, index, data)
+
+    def on_touch_down(self, touch):
+        if super().on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos):
+            self.pressed = True
+            return True
+
+    def on_touch_up(self, touch):
+        was_pressed = self.pressed
+        self.pressed = False
+        if super().on_touch_up(touch):
+            return True
+        if self.collide_point(*touch.pos) and was_pressed:
+
+            if self.ap.saved:
+                ConnectionPopup(self.ap).open()
+            elif not self.ap.encrypted:
+                self.ap.connect()
+            else:
+                PasswordPopup(self.ap).open()
+
+            return True
+        return False
 
 
 class PasswordPopup(BasePopup):
@@ -124,7 +143,7 @@ class PasswordPopup(BasePopup):
         self.txt_input.bind(on_text_validate=self.confirm)
         self.network_manager.bind(on_connect_failed=self.connect_failed)
         # If focus is set immediately, keyboard will be covered by popup
-        Clock.schedule_once(self.set_focus_on, 0.4)
+        Clock.schedule_once(self.set_focus_on, 0)
 
     def set_focus_on(self, *args):
         self.txt_input.focus = True
@@ -186,6 +205,7 @@ class ConnectionPopup(BasePopup):
                     "Please try again later", delay=6, level="warning")
         self.dismiss()
 
+
 class SITimezone(SetItem):
 
     def __init__(self, **kwargs):
@@ -197,6 +217,7 @@ class SITimezone(SetItem):
             self.right_title = os.path.basename(os.readlink("/etc/localtime"))
         else:
             self.right_title = "not available"
+
 
 class TimezonePopup(BasePopup):
 
@@ -224,6 +245,7 @@ class TimezonePopup(BasePopup):
             root_ids.status_bar.ids.time.get_time_str()
             self.dismiss()
 
+
 class TimezoneRV(RecycleView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -238,9 +260,11 @@ class TimezoneRV(RecycleView):
                 logging.warning(f"Please update Timezones: {folder} could not be removed from list")
         self.data = [{'text': region} for region in region_folders]
 
+
 class TimezoneRVBox(LayoutSelectionBehavior, RecycleBoxLayout):
     # Adds selection behaviour to the view
     pass
+
 
 class TimezoneRVItem(RecycleDataViewBehavior, Label):
     # Add selection support to the Label

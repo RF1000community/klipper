@@ -20,8 +20,7 @@ class StatusBar(BoxLayout):
 
     def __init__(self, **kwargs):
         app = App.get_running_app()
-        app.bind(state=self.update_animation)
-        app.bind(print_state=self.update_animation)
+        app.bind(state=self.update_animation, print_state=self.update_animation)
         self.scheduled_updating = None
         self.update_animation(None, app.state)
         super().__init__(**kwargs)
@@ -43,7 +42,7 @@ class StatusBar(BoxLayout):
 
 class TimeLabel(Label):
 
-    time = StringProperty("00:00")
+    time = StringProperty("--:--")
 
     def __init__(self, **kwargs):
         self.update_clock = None
@@ -62,6 +61,7 @@ class TimeLabel(Label):
 
     def get_time_str(self, *args):
         self.time = time.strftime("%H:%M")
+
 
 class ConnectionIcon(Widget):
 
@@ -139,6 +139,7 @@ class ConnectionIcon(Widget):
             self.draw_wifi()
         else: # strength can be None if WiFi disconnected
             self.draw_nothing()
+
 
 class CuraConnectionIcon(Widget):
     """Icon indicating that there currently is a connection to Cura"""
@@ -235,7 +236,7 @@ class Notifications(FloatLayout):
                 "error": p.notify_error,
                 "success": p.notify_success}
         if level not in color_presets.keys():
-            raise Exception("Unrecognized log level preset " + level)
+            raise ValueError("Unrecognized log level preset " + level)
 
         # Only show one Notification at a time
         if self.active:
@@ -271,7 +272,7 @@ class Notifications(FloatLayout):
         self.active = True
         # Schedule automatic hiding
         # Never automatically hide for negative delay values
-        if delay > -1:
+        if delay >= 0:
             self.update_clock = Clock.schedule_once(self.hide, delay)
 
     def hide(self, *args):

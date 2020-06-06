@@ -1,6 +1,7 @@
 import logging
 import os
 import subprocess
+from threading import Thread
 
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
@@ -15,7 +16,8 @@ class GitHelper(EventDispatcher):
 
     # If you want to receive updates from a different remote, change this value
     REMOTE = "origin"
-    INSTALL_SCRIPT = os.path.join(p.klipper_dir, "scripts/install-kgui.sh")
+    #INSTALL_SCRIPT = os.path.join(p.klipper_dir, "scripts/install-kgui.sh")
+    INSTALL_SCRIPT = os.path.join(p.klipper_dir, "scripts/testinstall.sh")
     # Filter tags that are considered a release
     # TODO change to differentiate klipper and klipperui releases
     #      maybe prepend "kgui" or "release" instead of "v"?
@@ -145,7 +147,8 @@ class GitHelper(EventDispatcher):
     def checkout_release(self, release):
         """Change working directory to the release and execute the install script"""
         #TODO account for uncommitted changes: check if working directory is dirty?
-        cmd = ["checkout", "--recurse-submodules", "--detach", release]
+        return
+        cmd = ["checkout", "--detach", release]
         self._execute(cmd)
 
     def install(self):
@@ -154,7 +157,7 @@ class GitHelper(EventDispatcher):
             logging.warning("Updater: Attempted to install while script is running")
             return
         # Capture both stderr and stdout in stdout
-        self._install_process = Popen(self.INSTALL_SCRIPT, text=True,
+        self._install_process = subprocess.Popen(self.INSTALL_SCRIPT, text=True,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         Thread(target=self._capture_install_output).start()
 
@@ -164,15 +167,19 @@ class GitHelper(EventDispatcher):
         proc = self._install_process
         while True:
             line = proc.stdout.readline()
+            logging.info(line)
             if not line:
                 self.dispatch("on_install_finished", proc.returncode)
                 self._install_process = None
                 break
+            # Highlight important lines
+            if line.startswith("/etc"): #TODO actual pattern
+                line = "[b][color=ffffff]" + line + "[/color][/b]"
             self.install_output += line
 
     def _poll_install_process(self):
+        #DEPERECATED _capture_install_output is used instead now
         """Keep track of when the installation is finished and if it succeded"""
-        #TODO: Live display of status outputs in GUI maybe
         if self._install_process.poll() is not None:
             self.dispatch("on_install_finished")
             if self._install_process.returncode > 0:
@@ -185,6 +192,8 @@ class GitHelper(EventDispatcher):
 
     def on_install_finished(self, returncode):
         pass
+
+githelper = GitHelper()
 
 
 class Release:
@@ -203,7 +212,8 @@ class Release:
         self.current = False
 
     def install(self):
-        pass
+        githelper.checkout_release(self.name)
+        githelper.install()
 
 
 class Branch(Release):
