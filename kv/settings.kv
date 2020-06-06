@@ -338,6 +338,15 @@
         color: root.get_color()
         pos: root.pos
 
+<SIRelease>:
+    # Highlight the currently installed version
+    canvas:
+        Color:
+            rgba: p.translucent_white if self.release.current else (0, 0, 0, 0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
 
 # POPUPS
 
@@ -579,7 +588,7 @@
     FloatLayout:
         id: f_layout
         Label:
-            text: root.version + "\n" +  root.details
+            text: root.release.version + "\n" +  root.release.date
             halign: 'center'
             valign: 'middle'
             size_hint: 0.8, None

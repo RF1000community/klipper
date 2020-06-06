@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 
@@ -46,7 +47,9 @@ class GitHelper(EventDispatcher):
                 raise
             #ErrorPopup(title="Git failed", proc.stdout + "\n" + proc.stderr).open()
             #TODO this is only testing
-            print(proc.stdout, proc.stderr)
+            logging.error("git Failed!")
+            logging.error(repr(e))
+            return ""
         # The output always ends with a newline, we don't want that
         return proc.stdout.rstrip("\n")
 
@@ -95,15 +98,15 @@ class GitHelper(EventDispatcher):
     def get_releases(self):
         """Return a list of all releases, sorted by newest first"""
         cmd = ["for-each-ref", "--sort=-version:refname", "--python",
-               "--format=(%(refname:strip=-1), %(committerdate:unix))",
+               "--format=(%(refname:strip=-1), %(creatordate:short-local))",
                "refs/tags/" + self.RELEASES]
         data = self._execute(cmd).splitlines()
         current = self.get_exact_version()
         releases = []
         for e in data:
-            tag, timestamp = eval(e)
+            tag, datestring = eval(e)
             version = tag[len(self.RELEASES)-1:]
-            rel = Release(name=tag, time=int(timestamp), version=version)
+            rel = Release(name=tag, date=datestring, version=version)
             rel.current = tag == current
             releases.append(rel)
         return releases
@@ -116,7 +119,7 @@ class GitHelper(EventDispatcher):
         local branch.
         """
         cmd = ["for-each-ref", "--sort=-authordate", "--python",
-               "--format=(%(refname:strip=-1), %(authordate:unix), %(objectname), %(HEAD))",
+               "--format=(%(refname:strip=-1), %(authordate:short-local), %(objectname), %(HEAD))",
                "refs/heads"]
         branches = []
         local_data = self._execute(cmd).splitlines()
@@ -129,7 +132,7 @@ class GitHelper(EventDispatcher):
             branches.append(branch)
             local_names.add(name)
 
-        cmd[-2] = "--format=(%(refname:strip=-1), %(authordate:unix), %(objectname))"
+        cmd[-2] = cmd[-2].replace(", %(HEAD)", "")
         cmd[-1] = "refs/remotes/" + self.REMOTE
         remote_data = self._execute(cmd).splitlines()
         for e in remote_data:
@@ -187,15 +190,15 @@ class GitHelper(EventDispatcher):
 class Release:
     """A release that corresponds to a tag"""
 
-    def __init__(self, *, name, time, version=None, curent=None):
+    def __init__(self, *, name, date, version=None, curent=None):
         """
         name        tagname or branchname
-        time        time of creation in seconds since epoch
+        date        string representing the date of the release
         version     version number of the release
         current     True if this exact tag is currently checked out
         """
         self.name = name
-        self.release_date = time
+        self.date = date
         self.version = version or name
         self.current = False
 
@@ -207,6 +210,7 @@ class Branch(Release):
     """A branch that can be installed like a release"""
 
     def __init__(self, *, commit, local=False, **kwargs):
+        """All arguments must be kwargs"""
         self.commit = commit
         self.local = local
         super().__init__(**kwargs)

@@ -53,9 +53,11 @@ class InstallPopup(BasePopup):
 
 class SIRelease(SetItem):
 
-    def __init__(self, release):
+    def __init__(self, release, **kwargs):
         self.release = release
         super().__init__(**kwargs)
+        self.left_title = self.release.version
+        self.right_title = str(self.release.date)
 
     def on_release(self, **kwargs):
         super().on_release(**kwargs)
