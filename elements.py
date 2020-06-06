@@ -138,15 +138,15 @@ class UltraSlider(Widget):
 
     kwargs:
     val_min, val_max    Minimum and Maximum for the output value,
-                        used for px <-> conversion.
+                        used for px <-> val conversion.
                         Defaults to 0 and 100
     unit                Unit string, appended to display value.
                         Defaults to "" (no unit)
     round_to            How many decimals to round val to, is passed to round().
     round_style         5 rounds lowest decimal place to multiples of 5... normally 1
     attributes:
-    buttons     list of lists: e.g. [[val,offset,"name",the instance]]
-    val         value, passed to printer, not in px
+    buttons             list of lists: e.g. [[val,offset,"name",the instance]]
+    val                 value, passed to printer, not in px
 
     The conversion methods get_px_from_val() and get_val_from_px()
     can be safely overwritten by inheritors for nonlinear conversion.
@@ -162,7 +162,7 @@ class UltraSlider(Widget):
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
     changed = BooleanProperty(False)
-    
+
     def __init__(self, **kwargs):
         self.btn_last_active = None
         self.initialized = False
@@ -186,11 +186,7 @@ class UltraSlider(Widget):
                 self.initialized):
             self.pressed = True
             touch.grab(self)
-            self.px = self.apply_bounds(touch.pos[0])
-            self.val = self.get_val_from_px(self.px)
-            self.disp = self.get_disp_from_val(self.val)
-            if self.btn_last_active is not None:
-                self.btn_last_active[3].active = False
+            self.on_touch_move(touch)
             self.changed = True
             return True
         return super().on_touch_down(touch)
@@ -200,15 +196,13 @@ class UltraSlider(Widget):
             self.px = self.apply_bounds(touch.pos[0])
             self.val = self.get_val_from_px(self.px)
             self.disp = self.get_disp_from_val(self.val)
+            self.highlight_button()
             return True
 
     def on_touch_up(self, touch):
         if touch.grab_current is self:
+            self.on_touch_move(touch)
             self.pressed = False
-            self.px = self.apply_bounds(touch.pos[0])
-            self.val = self.get_val_from_px(self.px)
-            self.disp = self.get_disp_from_val(self.val)
-            self.highlight_button()
             touch.ungrab(self)
             return True
         return super().on_touch_up(touch)
@@ -225,6 +219,7 @@ class UltraSlider(Widget):
             if b[0] == self.val:
                 b[3].active = True
                 self.btn_last_active = b
+                break
 
     def on_button(self, instance):
         self.val = instance.val
@@ -242,8 +237,8 @@ class UltraSlider(Widget):
         """
         val = max(self.val_min, val)
         val = min(self.val_max, val)
-        m = self.width/(self.val_max - self.val_min)
-        px = self.x + m*(val - self.val_min)
+        px_per_unit = self.width/(self.val_max - self.val_min)
+        px = self.x + px_per_unit*(val - self.val_min)
         return int(px)
 
     def get_val_from_px(self, px):
@@ -251,8 +246,8 @@ class UltraSlider(Widget):
         Inverse function of get_px_from_val(),
         returns val rounded according to self.round_to and self.round_style
         """
-        m = (self.val_max - self.val_min)/self.width
-        val = self.val_min + m*(px - self.x)
+        units_per_px = (self.val_max - self.val_min)/self.width
+        val = self.val_min + units_per_px*(px - self.x)
         return round(val/self.round_style, self.round_to)*self.round_style
 
     def get_disp_from_val(self, val):
