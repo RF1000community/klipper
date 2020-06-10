@@ -96,19 +96,20 @@ install_packages()
 
     # Update system package info
     report_status "Updating package database..."
-    sudo apt -qq --yes update
+    sudo apt-get -qq --yes update
     # Install desired packages
     report_status "Installing packages..."
-    sudo apt install -qq --yes ${PKGLIST}
+    sudo apt-get install -qq --yes ${PKGLIST}
 
+    report_status "Adjusting configurations..."
     # Networking
-    sudo apt -qq --yes purge dhcpcd5
+    sudo apt-get -qq --yes purge dhcpcd5
     # Needed to allow wifi scanning to non-root users. Probably not needed with NM >= 1.16
+    # Adds option "auth-polkit=false" in [main] section if it doesn't exist already
     if [ $(grep -c auth-polkit= /etc/NetworkManager/NetworkManager.conf) -eq 0 ]; then
         sudo sed -i '/\[main\]/a auth-polkit=false' /etc/NetworkManager/NetworkManager.conf
     fi
     # change line in Xwrapper.config so xorg feels inclined to start when asked by systemd
-    report_status "Xwrapper config mod..."
     sudo sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
     # -i for in place (just modify file), s for substitute (this line)
 }
@@ -133,7 +134,7 @@ create_virtualenv()
     [ ! -d ${PYTHONDIR} ] && python3 -m venv ${PYTHONDIR}
     report_status "Installing pip packages..."
     # Install/update dependencies                      v  custom KGUI list of pip packages
-    ${PYTHONDIR}/bin/pip3 install -r ${SRCDIR}/scripts/klippy-kgui-requirements.txt
+    ${PYTHONDIR}/bin/pip3 install -q -r ${SRCDIR}/scripts/klippy-kgui-requirements.txt
     # Use the python-gi module from the system installation
     ln -sf /usr/lib/python3/dist-packages/gi ${PYTHONDIR}/lib/python3.?/site-packages/
 }
@@ -142,7 +143,7 @@ create_virtualenv()
 
 install_klipper_service()
 {
-    report_status "Install klipper systemd service..."
+    report_status "Installing systemd service klipper.service..."
     sudo /bin/sh -c "cat > /etc/systemd/system/klipper.service" <<EOF
 [Unit]
 Description="Klipper with GUI running in Xorg"
@@ -184,10 +185,10 @@ install_usb_automounting()
 # Use custom install script in kgui directory
 install_lcd_driver()
 {
+    report_status "Installing Display Driver..."
     # Kivy: Add user to render group to give permission for hardware rendering
     sudo adduser "$USER" render
 
-    report_status "Installing Display Driver..."
     sudo ${SRCDIR}/klippy/extras/kgui/LCDC7-better.sh -r 90
     # Copy the dpms configuration
     sudo cp ${SRCDIR}/klippy/extras/kgui/10-dpms.conf /etc/X11/xorg.conf.d/
@@ -198,7 +199,7 @@ install_lcd_driver()
 # Helper functions
 report_status()
 {
-    echo -e "\n\n===> $1"
+    echo -e "\n===> $1"
 }
 verify_ready()
 {
@@ -220,3 +221,5 @@ create_virtualenv
 install_klipper_service
 install_usb_automounting
 install_lcd_driver
+
+report_status "Installation completed successfully. Reboot for the changes to take effect"
