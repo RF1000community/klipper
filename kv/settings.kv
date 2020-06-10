@@ -638,20 +638,20 @@
             enabled: True
             width: root.width/2
             pos: btn_cancel.right, root.y
-            on_release: root.update(), root.dismiss()
+            on_release: root.install()
 
 <InstallPopup>:
     size_hint: 0.94, 0.68
     title: "Install"
-    #auto_dismiss: False
+    auto_dismiss: False
     FloatLayout:
         id: content
         ScrollView:
             id: output_scroll
             size_hint: 1, None
             pos_hint: {'x': 0}
-            y: btn_cancel.top
-            height: content.height - btn_cancel.height
+            y: btn_abort.top
+            height: content.height - btn_abort.height
             do_scroll_x: False
             Label:
                 id: output_label
@@ -667,8 +667,21 @@
                 font_size: p.small_font
                 color: p.light_gray
         BtnPCancel:
-            id: btn_cancel
+            id: btn_abort
             text: "Abort"
             width: root.width
             pos: root.pos
             on_release: root.dismiss() #TODO: actually cancel installation
+        BtnPCancel:
+            id: btn_cancel
+            text: "Reboot later"
+            width: root.width/2
+            pos: root.x, p.mars
+            on_release: root.dismiss()
+        BtnPConfirm:
+            id: btn_reboot
+            enabled: True
+            text: "Reboot now"
+            width: root.width/2
+            pos: btn_cancel.right, p.mars
+            on_release: app.reboot()

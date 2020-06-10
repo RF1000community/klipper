@@ -11,13 +11,11 @@ from .elements import ErrorPopup
 from . import parameters as p
 
 class GitHelper(EventDispatcher):
-    # TODO: git fetch asynchronously
-    #       test install
 
     # If you want to receive updates from a different remote, change this value
     REMOTE = "origin"
     #INSTALL_SCRIPT = os.path.join(p.klipper_dir, "scripts/install-kgui.sh")
-    INSTALL_SCRIPT = os.path.join(p.klipper_dir, "scripts/testinstall.sh")
+    INSTALL_SCRIPT = os.path.join(p.klipper_dir, "scripts/install-kgui.sh")
     # Filter tags that are considered a release
     # TODO change to differentiate klipper and klipperui releases
     #      maybe prepend "kgui" or "release" instead of "v"?
@@ -162,24 +160,27 @@ class GitHelper(EventDispatcher):
         Thread(target=self._capture_install_output).start()
 
     def _capture_install_output(self):
-        """Run in a seperate thread as proc.stdout.readline() blocks until
-        the next line is received."""
+        """
+        Run in a seperate thread as proc.stdout.readline() blocks until
+        the next line is received.
+        """
         proc = self._install_process
+        self.install_output = ""
         while True:
             line = proc.stdout.readline()
-            logging.info(line)
             if not line:
-                self.dispatch("on_install_finished", proc.returncode)
+                rc = proc.wait()
+                self.dispatch("on_install_finished", rc)
                 self._install_process = None
                 break
             # Highlight important lines
-            if line.startswith("/etc"): #TODO actual pattern
+            if line.startswith("===>"): #TODO actual pattern
                 line = "[b][color=ffffff]" + line + "[/color][/b]"
             self.install_output += line
 
     def _poll_install_process(self):
-        #DEPERECATED _capture_install_output is used instead now
-        """Keep track of when the installation is finished and if it succeded"""
+        """DEPRECATED _capture_install_output is used instead now
+        Keep track of when the installation is finished and if it succeded"""
         if self._install_process.poll() is not None:
             self.dispatch("on_install_finished")
             if self._install_process.returncode > 0:
