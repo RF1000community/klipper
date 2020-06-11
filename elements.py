@@ -138,23 +138,23 @@ class UltraSlider(Widget):
 
     kwargs:
     val_min, val_max    Minimum and Maximum for the output value,
-                        used for px <-> conversion.
+                        used for px <-> val conversion.
                         Defaults to 0 and 100
     unit                Unit string, appended to display value.
                         Defaults to "" (no unit)
     round_to            How many decimals to round val to, is passed to round().
     round_style         5 rounds lowest decimal place to multiples of 5... normally 1
     attributes:
-    buttons     list of lists: e.g. [[val,offset,"name",the instance]]
-    val         value, passed to printer, not in px
+    buttons             list of lists: e.g. [[val,offset,"name",the instance]]
+    val                 value, passed to printer, not in px
 
     The conversion methods get_px_from_val() and get_val_from_px()
     can be safely overwritten by inheritors for nonlinear conversion.
     """
     buttons = ListProperty()  #list of lists: e.g. [[val,offset,"name",the instance]]
     val = NumericProperty() #value, passed to printer, not in px
-    val_min = NumericProperty()
-    val_max = NumericProperty()
+    val_min = NumericProperty(0)
+    val_max = NumericProperty(100)
     unit = StringProperty()
     round_to = NumericProperty()
     round_style = NumericProperty(1)
@@ -162,71 +162,64 @@ class UltraSlider(Widget):
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
     changed = BooleanProperty(False)
-    
+
     def __init__(self, **kwargs):
         self.btn_last_active = None
         self.initialized = False
         super().__init__(**kwargs)
         Clock.schedule_once(self.init_drawing, 0)
 
-    def init_drawing(self, dt):
-        self.px_max = self.right - p.padding
-        self.px_min = self.x + p.padding
-        self.px_width = self.px_max - self.px_min
+    def init_drawing(self, *args):
         self.px = self.get_px_from_val(self.val)
         self.disp = self.get_disp_from_val(self.val)
         for b in self.buttons:
-            b[3] = BtnSlider(y=self.y, px=self.get_px_from_val(b[0]), 
-                              val=b[0], offset=b[1],  s_title=b[2])
+            b[3] = BtnSlider(y=self.center_y-95, px=self.get_px_from_val(b[0]),
+                    val=b[0], offset=b[1], s_title=b[2])
             b[3].bind(on_press=self.on_button)
             self.add_widget(b[3])
         self.highlight_button()
         self.initialized = True
 
     def on_touch_down(self, touch):
-        if touch.pos[0] > self.px_min - 30 and touch.pos[0] < self.px_max + 30\
-        and touch.pos[1] > self.y + 95 - 18 and touch.pos[1] < self.y + 95 + 18\
-        and self.initialized:
+        if (touch.pos[0] > self.x - 30 and touch.pos[0] < self.right + 30 and
+                touch.pos[1] > self.y - 18 and touch.pos[1] < self.top + 18 and
+                self.initialized):
             self.pressed = True
             touch.grab(self)
-            x = self.apply_bounds(touch.pos[0])
-            self.val = self.get_val_from_px(x)
-            self.disp = self.get_disp_from_val(self.val)
-            if self.btn_last_active is not None: self.btn_last_active[3].active = False
+            self.on_touch_move(touch)
             self.changed = True
             return True
         return super().on_touch_down(touch)
 
     def on_touch_move(self, touch):
         if touch.grab_current is self:
-            x = self.apply_bounds(touch.pos[0])
-            self.val = self.get_val_from_px(x)
+            self.px = self.apply_bounds(touch.pos[0])
+            self.val = self.get_val_from_px(self.px)
             self.disp = self.get_disp_from_val(self.val)
+            self.highlight_button()
             return True
 
     def on_touch_up(self, touch):
         if touch.grab_current is self:
+            self.on_touch_move(touch)
             self.pressed = False
-            x = self.apply_bounds(touch.pos[0])
-            self.px = x
-            self.val = self.get_val_from_px(x)
-            self.disp = self.get_disp_from_val(self.val)
-            self.highlight_button()
             touch.ungrab(self)
             return True
         return super().on_touch_up(touch)
 
     def apply_bounds(self, x):
-        if x > self.px_max: x = self.px_max
-        elif x < self.px_min: x = self.px_min
+        x = max(self.x, x)
+        x = min(self.right, x)
         return x
 
     def highlight_button(self):
-        if self.btn_last_active is not None: self.btn_last_active[3].active = False
+        if self.btn_last_active is not None:
+            self.btn_last_active[3].active = False
         for b in self.buttons:
             if b[0] == self.val:
                 b[3].active = True
                 self.btn_last_active = b
+                break
 
     def on_button(self, instance):
         self.val = instance.val
@@ -238,26 +231,23 @@ class UltraSlider(Widget):
     def get_px_from_val(self, val):
         """
         Function that converts values between val_min and val_max
-        linearly, returning absolute pixel values between px_min and
-        px_max.  If val is outside val_min and val_max, the returned
-        pixel value is still cast within the slider.
-        Requires px_max to be set, do not use in __init__
+        linearly, returning absolute pixel values within the widget
+        boundaries.  If val is outside val_min and val_max, the
+        returned pixel value is still cast within the slider.
         """
-        if val < self.val_min:
-            val = self.val_min
-        elif val > self.val_max:
-            val = self.val_max
-        m = float(self.px_max - self.px_min)/(self.val_max - self.val_min)
-        px = self.px_min + m*(val - self.val_min)
+        val = max(self.val_min, val)
+        val = min(self.val_max, val)
+        px_per_unit = self.width/(self.val_max - self.val_min)
+        px = self.x + px_per_unit*(val - self.val_min)
         return int(px)
 
     def get_val_from_px(self, px):
         """
         Inverse function of get_px_from_val(),
-        returns val rounded to an integer.
+        returns val rounded according to self.round_to and self.round_style
         """
-        m = float(self.val_max - self.val_min)/(self.px_max - self.px_min)
-        val = self.val_min + m*(px - self.px_min)
+        units_per_px = (self.val_max - self.val_min)/self.width
+        val = self.val_min + units_per_px*(px - self.x)
         return round(val/self.round_style, self.round_to)*self.round_style
 
     def get_disp_from_val(self, val):
