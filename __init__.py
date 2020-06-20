@@ -299,8 +299,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             return f"{minutes} min"
 
     def get_printjob_progress(self, *args):
-        logging.info("get printjob progress info")
-        logging.warning("get_printjob_warning")
         if self.print_state in ('printing', 'pausing', 'paused'):
             est_remaining, progress = self.printjob_progress.get_print_time_prediction()
             if progress is None: # no prediction could be made yet
