@@ -47,12 +47,7 @@ cd ~
 git clone --recurse-submodules https://github.com/D4SK/klipperui
 ./klipperui/scripts/install-kgui.sh
 ```
-- download [latest kivy build](https://kivy.org/downloads/ci/raspberrypi/kivy/) (cpython37 for armv7) to your raspberry pi
-- install downloaded kivy build
-```bash
-source ./klipperui/klippy-environment/bin/activate
-pip install ./filename_of_kivy_build.whl
-```
+
 - if you haven't flashed your printer-mainboards firmware yet follow [klipper/Installation.md](https://github.com/KevinOConnor/klipper/blob/master/docs/Installation.md) (Building and flashing the micro-controller)
 - move your printer configuration (printer.cfg) to /home/pi (make sure it includes sections from [klipper/config/sample-kgui.cfg](https://github.com/D4SK/klipperui/blob/master/config/sample-kgui.cfg))
 - reboot ``` sudo reboot  ```
