@@ -7,6 +7,7 @@ dirs-y += src/stm32 src/generic
 dirs-$(CONFIG_MACH_STM32F0) += lib/stm32f0
 dirs-$(CONFIG_MACH_STM32F1) += lib/stm32f1
 dirs-$(CONFIG_MACH_STM32F4) += lib/stm32f4
+dirs-$(CONFIG_MACH_STM32H7) += lib/stm32h7
 
 MCU := $(shell echo $(CONFIG_MCU))
 MCU_UPPER := $(shell echo $(CONFIG_MCU) | tr a-z A-Z | tr X x)
@@ -15,6 +16,8 @@ CFLAGS-$(CONFIG_MACH_STM32F0) += -mcpu=cortex-m0 -Ilib/stm32f0/include
 CFLAGS-$(CONFIG_MACH_STM32F1) += -mcpu=cortex-m3 -Ilib/stm32f1/include
 CFLAGS-$(CONFIG_MACH_STM32F4) += -mcpu=cortex-m4 -Ilib/stm32f4/include
 CFLAGS-$(CONFIG_MACH_STM32F4) += -mfpu=fpv4-sp-d16 -mfloat-abi=hard
+CFLAGS-$(CONFIG_MACH_STM32H7) += -mcpu=cortex-m7 -Ilib/stm32h7/include
+# TODO maybe add more for stm32h7 like stm32f4
 CFLAGS += $(CFLAGS-y) -D$(MCU_UPPER) -mthumb -Ilib/cmsis-core
 
 CFLAGS_klipper.elf += --specs=nano.specs --specs=nosys.specs
@@ -34,6 +37,9 @@ src-$(CONFIG_MACH_STM32F1) += stm32/adc.c stm32/i2c.c
 src-$(CONFIG_MACH_STM32F4) += ../lib/stm32f4/system_stm32f4xx.c
 src-$(CONFIG_MACH_STM32F4) += stm32/stm32f4.c generic/armcm_timer.c
 src-$(CONFIG_MACH_STM32F4) += stm32/adc.c stm32/i2c.c
+src-$(CONFIG_MACH_STM32H7) += ../lib/stm32h7/system_stm32h7xx.c
+src-$(CONFIG_MACH_STM32H7) += stm32/stm32h7.c generic/armcm_timer.c
+src-$(CONFIG_MACH_STM32H7) += stm32/adc.c stm32/i2c.c
 src-$(CONFIG_HAVE_GPIO_SPI) += stm32/spi.c
 usb-src-$(CONFIG_HAVE_STM32_USBFS) := stm32/usbfs.c
 usb-src-$(CONFIG_HAVE_STM32_USBOTG) := stm32/usbotg.c
@@ -55,7 +61,7 @@ $(OUT)klipper.bin: $(OUT)klipper.elf
 flash: $(OUT)klipper.bin
 	@echo "  Flashing $< to $(FLASH_DEVICE)"
 	$(Q)$(PYTHON) ./scripts/flash_usb.py -t $(CONFIG_MCU) -d "$(FLASH_DEVICE)" -s "$(CONFIG_FLASH_START)" $(if $(NOSUDO),--no-sudo) $(OUT)klipper.bin
-
+# flash with 115200 baud rate for stm32h750 TODO fix for other mcus
 serialflash: $(OUT)klipper.bin
 	@echo "  Flashing $< to $(FLASH_DEVICE) via stm32flash"
-	$(Q)stm32flash -w $< -v -g 0 $(FLASH_DEVICE)
+	$(Q)stm32flash -w $< -v -b 115200 -g 0 $(FLASH_DEVICE)
