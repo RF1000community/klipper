@@ -1,12 +1,12 @@
 Installation Guide
 ==================
 
-##### this is still in development, works except connecting to a printer or homing moves fail sometimes with a "Timer too close" error (see bugs in TODO.txt) #####
+##### This is still in development and may have bugs. E.g. connecting to a printer or homing moves sometimes fail with a "Timer too close" error (see bugs in TODO.txt) #####
 
 ### Requirements
 * Raspberry pi 4 (raspberry pi 3 is not fast enough to run the UI properly and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
 * 7 inch LCD Touch screen with 1024\*600 resolution (lower resolutions are not supported at the moment)
-These screens can be purchased for around 35$ on [Aliexpress](https://de.aliexpress.com/item/4000375954941.html?spm=a2g0x.12010612.8148356.46.7c802eb8VaLawi), Ebay, or [Banggood](https://www.banggood.com/de/7-Inch-Full-View-LCD-IPS-Touch-Screen-1024+600-800+480-HD-HDMI-Display-Monitor-for-Raspberry-Pi-p-1633584.html?rmmds=search&ID=514816&cur_warehouse=CN). Make sure to get one with an IPS panel (much better image quality), and 1024\*600 resolution (necessary for the).
+These screens can be purchased for around 35$ on [Aliexpress](https://de.aliexpress.com/item/4000375954941.html?spm=a2g0x.12010612.8148356.46.7c802eb8VaLawi), Ebay, or [Banggood](https://www.banggood.com/de/7-Inch-Full-View-LCD-IPS-Touch-Screen-1024+600-800+480-HD-HDMI-Display-Monitor-for-Raspberry-Pi-p-1633584.html?rmmds=search&ID=514816&cur_warehouse=CN). Make sure to get one with an IPS panel (much better image quality), and 1024\*600 resolution (necessary for the UI).
 
 ### Prepare OS
 
@@ -49,6 +49,6 @@ git clone --recurse-submodules https://github.com/D4SK/klipperui
 ```
 
 - if you haven't flashed your printer-mainboards firmware yet follow [klipper/Installation.md](https://github.com/KevinOConnor/klipper/blob/master/docs/Installation.md) (Building and flashing the micro-controller)
-- move your printer configuration (printer.cfg) to /home/pi (make sure it includes sections from [klipper/config/sample-kgui.cfg](https://github.com/D4SK/klipperui/blob/master/config/sample-kgui.cfg))
+- move your printer configuration (printer.cfg) to /home/pi and add the necessary sections to activate the KGUI UI as seen here [klipper/config/sample-kgui.cfg](https://github.com/D4SK/klipperui/blob/master/config/sample-kgui.cfg)
 - reboot ``` sudo reboot  ```
 - done !
