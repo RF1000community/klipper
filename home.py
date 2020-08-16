@@ -264,7 +264,7 @@ class FilamentChooserPopup(BasePopup):
                     self.ids.btn_confirm.enabled = True
 
         # sort types by how many manufactures make them
-        # tmc[option.text] is the dict of manufacturers for the selected type (e.g. for PLA)
+        # tmc[option['key']] is the dict of manufacturers for the selected type (e.g. for PLA)
         options[0].sort(key = lambda option: len(tmc[option['key']]), reverse=True)
         # sort manufacturers alphabetically, "Generic" always first
         options[1].sort(key = lambda option: option['text'].lower() if option['text']!='Generic' else '\t')
