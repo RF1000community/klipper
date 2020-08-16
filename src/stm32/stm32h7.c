@@ -5,8 +5,6 @@
 // This file may be distributed under the terms of the GNU GPLv3 license.
 
 
-// This may only support STM32H750!!!!!!
-
 #include "autoconf.h" // CONFIG_CLOCK_REF_FREQ
 #include "board/armcm_boot.h" // VectorTable
 #include "board/irq.h" // irq_disable
@@ -22,19 +20,41 @@
 void
 enable_pclock(uint32_t periph_base)
 {
-    // TODO maybe add missing case
-    // argument is a device
-    // This calculates a relative position in e.g. the APB2ENR register (32bit field)
-    // if the given pos (periph_base) is > 32 the next bit field will be chosen
-    // AHB1PERIPH_BASE is the adress offset of the given bitfield
-    if (periph_base < AHB1PERIPH_BASE) {
-        uint32_t pos = (periph_base - APB2PERIPH_BASE) / 0x400;
+    // periph_base determins in which bitfield at wich position to set a bit
+    // E.g. D2_AHB1PERIPH_BASE is the adress offset of the given bitfield
+    // the naming makes 0% sense
+    if (periph_base < D2_APB2PERIPH_BASE) {
+        uint32_t pos = (periph_base - D2_APB1PERIPH_BASE) / 0x400;
+        RCC->APB1LENR |= (1<<pos);// we assume it is not in APB1HENR
+        RCC->APB1LENR;
+    } else if (periph_base < D2_AHB1PERIPH_BASE) {
+        uint32_t pos = (periph_base - D2_APB2PERIPH_BASE) / 0x400;
         RCC->APB2ENR |= (1<<pos);
         RCC->APB2ENR;
-    } else if (periph_base < AHB2PERIPH_BASE) {
-        uint32_t pos = (periph_base - AHB1PERIPH_BASE) / 0x400;
+    } else if (periph_base < D2_AHB2PERIPH_BASE) {
+        uint32_t pos = (periph_base - D2_AHB1PERIPH_BASE) / 0x400;
         RCC->AHB1ENR |= (1<<pos);
         RCC->AHB1ENR;
+    } else if (periph_base < D1_APB1PERIPH_BASE) {
+        uint32_t pos = (periph_base - D2_AHB2PERIPH_BASE) / 0x400;
+        RCC->AHB2ENR |= (1<<pos);
+        RCC->AHB2ENR;
+    } else if (periph_base < D1_AHB1PERIPH_BASE) {
+        uint32_t pos = (periph_base - D1_APB1PERIPH_BASE) / 0x400;
+        RCC->APB3ENR |= (1<<pos);
+        RCC->APB3ENR;
+    } else if (periph_base < D3_APB1PERIPH_BASE) {
+        uint32_t pos = (periph_base - D1_AHB1PERIPH_BASE) / 0x400;
+        RCC->AHB3ENR |= (1<<pos);
+        RCC->AHB3ENR;
+    } else if (periph_base < D3_AHB1PERIPH_BASE) {
+        uint32_t pos = (periph_base - D3_APB1PERIPH_BASE) / 0x400;
+        RCC->APB4ENR |= (1<<pos);
+        RCC->APB4ENR;
+    } else {
+        uint32_t pos = (periph_base - D3_AHB1PERIPH_BASE) / 0x400;
+        RCC->AHB4ENR |= (1<<pos);
+        RCC->AHB4ENR;
     }
 }
 
@@ -42,15 +62,31 @@ enable_pclock(uint32_t periph_base)
 int
 is_enabled_pclock(uint32_t periph_base)
 {
-    // TODO maybe add missing case
-    if (periph_base < AHB1PERIPH_BASE) {
-        uint32_t pos = (periph_base - APB2PERIPH_BASE) / 0x400;
+    if (periph_base < D2_APB2PERIPH_BASE) {
+        uint32_t pos = (periph_base - D2_APB1PERIPH_BASE) / 0x400;
+        return RCC->APB1LENR & (1<<pos);// we assume it is not in APB1HENR
+    } else if (periph_base < D2_AHB1PERIPH_BASE) {
+        uint32_t pos = (periph_base - D2_APB2PERIPH_BASE) / 0x400;
         return RCC->APB2ENR & (1<<pos);
-    } else if (periph_base < AHB2PERIPH_BASE) {
-        uint32_t pos = (periph_base - AHB1PERIPH_BASE) / 0x400;
+    } else if (periph_base < D2_AHB2PERIPH_BASE) {
+        uint32_t pos = (periph_base - D2_AHB1PERIPH_BASE) / 0x400;
         return RCC->AHB1ENR & (1<<pos);
+    } else if (periph_base < D1_APB1PERIPH_BASE) {
+        uint32_t pos = (periph_base - D2_AHB2PERIPH_BASE) / 0x400;
+        return RCC->AHB2ENR & (1<<pos);
+    } else if (periph_base < D1_AHB1PERIPH_BASE) {
+        uint32_t pos = (periph_base - D1_APB1PERIPH_BASE) / 0x400;
+        return RCC->APB3ENR & (1<<pos);
+    } else if (periph_base < D3_APB1PERIPH_BASE) {
+        uint32_t pos = (periph_base - D1_AHB1PERIPH_BASE) / 0x400;
+        return RCC->AHB3ENR & (1<<pos);
+    } else if (periph_base < D3_AHB1PERIPH_BASE) {
+        uint32_t pos = (periph_base - D3_APB1PERIPH_BASE) / 0x400;
+        return RCC->APB4ENR & (1<<pos);
+    } else {
+        uint32_t pos = (periph_base - D3_AHB1PERIPH_BASE) / 0x400;
+        return RCC->AHB4ENR & (1<<pos);
     }
-    return 0;
 }
 
 // Return the frequency of the given peripheral clock
@@ -61,15 +97,14 @@ get_pclock_frequency(uint32_t periph_base)
 }
 
 // Enable a GPIO peripheral clock
+// TODO test this
 void
 gpio_clock_enable(GPIO_TypeDef *regs)
 {
-    uint32_t rcc_pos = ((uint32_t)regs - AHB1PERIPH_BASE) / 0x400;
-    RCC->AHB1ENR |= 1 << rcc_pos;
-    RCC->AHB1ENR;
+    enable_pclock((uint32_t)regs);
 }
 
-// Set the mode and extended function of a pin
+// Set the mode and extended function of a pin TODO verify
 void
 gpio_peripheral(uint32_t gpio, uint32_t mode, int pullup)
 {
@@ -108,38 +143,30 @@ usb_request_bootloader(void)
 DECL_CONSTANT_STR("RESERVE_PINS_crystal", "PH0,PH1");
 #endif
 
-// Clock configuration
-static void
-enable_clock(void)
-{
-    uint32_t pll_base = 2000000, pll_freq = CONFIG_CLOCK_FREQ * 2, pllcfgr;
-    if (!CONFIG_STM32_CLOCK_REF_INTERNAL) {
-        // Configure 168Mhz PLL from external crystal (HSE)
-        uint32_t div = CONFIG_CLOCK_REF_FREQ / pll_base;
-        RCC->CR |= RCC_CR_HSEON;
-        pllcfgr = RCC_PLLCFGR_PLLSRC_HSE | (div << RCC_PLLCFGR_PLLM_Pos);
-    } else {
-        // Configure 168Mhz PLL from internal 16Mhz oscillator (HSI)
-        uint32_t div = 16000000 / pll_base;
-        pllcfgr = RCC_PLLCFGR_PLLSRC_HSI | (div << RCC_PLLCFGR_PLLM_Pos);
-    }
-    RCC->PLLCFGR = (pllcfgr | ((pll_freq/pll_base) << RCC_PLLCFGR_PLLN_Pos)
-                    | (0 << RCC_PLLCFGR_PLLP_Pos)
-                    | ((pll_freq/FREQ_USB) << RCC_PLLCFGR_PLLQ_Pos));
-    RCC->CR |= RCC_CR_PLLON;
-}
-
 // Main clock setup called at chip startup
 static void
 clock_setup(void)
 {
-    // Configure and enable PLL
-    enable_clock();
+    uint32_t pll_base = 2000000;//TODO
+    uint32_t pll_freq = CONFIG_CLOCK_FREQ * 2;
+    if (!CONFIG_STM32_CLOCK_REF_INTERNAL) {
+        // Configure PLL from external crystal (HSE)
+        RCC->CR |= RCC_CR_HSEON; // enable HSE input
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_NONE, RCC_PLLCKSELR_PLLSRC_HSE); // choose HSE as clock source
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1, (CONFIG_CLOCK_REF_FREQ / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
+    } else {
+        // Configure PLL from internal 64Mhz oscillator (HSI)
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_NONE, RCC_PLLCKSELR_PLLSRC_HSI); // choose HSI as clock source
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1, (64000000 / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
+    }
+    RCC->PLL1DIVR = (((pll_freq/pll_base) << RCC_PLL1DIVR_N1_Pos)
+                    | (0 << RCC_PLL1DIVR_P1_Pos)
+                    | ((pll_freq/FREQ_USB) << RCC_PLL1DIVR_Q1_Pos));
+    RCC->CR |= RCC_CR_PLLON; //when configuration is done turn on the PLL
+
 
     // Set flash latency
-    FLASH->ACR = (FLASH_ACR_LATENCY_5WS | FLASH_ACR_ICEN | FLASH_ACR_DCEN
-                  | FLASH_ACR_PRFTEN);
-
+    MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, (uint32_t)(FLASH_ACR_LATENCY_7WS)); // 5 should also work
     // Wait for PLL lock
     while (!(RCC->CR & RCC_CR_PLLRDY))
         ;
