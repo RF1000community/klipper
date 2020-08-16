@@ -153,12 +153,14 @@ class NetworkManager(EventDispatcher, Thread):
         access_points.sort(key=lambda x: x.in_use, reverse=True)
 
         # Filter out access points with duplicate ssids
+        seen_ssids = set()
         unique_aps = []
         for ap in access_points:
             # Because access_points are already sorted most wanted first
             # we just add the first occurence of each ssid
-            if ap.ssid not in unique_aps:
+            if ap.ssid not in seen_ssids:
                 unique_aps.append(ap)
+                seen_ssids.add(ap.ssid)
         self.access_points = unique_aps # update the property
         self.dispatch('on_access_points', self.access_points)
 
