@@ -6,7 +6,7 @@ Installation Guide
 ### Requirements
 * Raspberry pi 4 (raspberry pi 3 is not fast enough to run the UI properly and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
 * 7" LCD Touch screen with 1024\*600 resolution (lower resolutions are not supported at the moment)
-These screens can be purchased for around 35$ on [Aliexpress](https://de.aliexpress.com/item/4000375954941.html?spm=a2g0x.12010612.8148356.46.7c802eb8VaLawi), Ebay, or [Banggood](https://www.banggood.com/de/7-Inch-Full-View-LCD-IPS-Touch-Screen-1024+600-800+480-HD-HDMI-Display-Monitor-for-Raspberry-Pi-p-1633584.html?rmmds=search&ID=514816&cur_warehouse=CN). 
+These screens can be purchased for around 35$ on [Aliexpress](https://s.click.aliexpress.com/e/_d78tnDk), Ebay, or Banggood. 
 Make sure to get one with an IPS panel (much better image quality)
 
 ### Prepare OS
