@@ -68,3 +68,10 @@ in python self.ids.some_id.method() instances of child widges can be accessed by
 Clock methods (e.g. Clock.schedule_once()) are thread safe, can be used do execute methods in Kivy thread from somewhere else
 reactor.register_async_callback should also be thread safe, since it uses a Queue
 Simple Assignments are thread safe because of GIL
+#### How to install from Source #####
+- download [latest kivy build](https://kivy.org/downloads/ci/raspberrypi/kivy/) (cpython37 for armv7) to your raspberry pi
+- install downloaded kivy build
+```bash
+source ./klipperui/klippy-environment/bin/activate
+pip install ./filename_of_kivy_build.whl
+```

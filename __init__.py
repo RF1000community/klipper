@@ -181,10 +181,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def handle_critical_error(self, message):
         self.state = "error"
-        CriticalErrorPopup(message = message).open()
+        # avoid weird behaviour (misplaced widgets etc.) when opeining the popup in Klippy thread
+        Clock.schedule_once(lambda dt: CriticalErrorPopup(message = message).open(), 0)
 
     def handle_error(self, message):
-        ErrorPopup(message = message).open()
+        Clock.schedule_once(lambda dt: ErrorPopup(message = message).open(), 0)
 
     def handle_disconnect(self):
         self.state = "error disconnected"
@@ -299,8 +300,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             return f"{minutes} min"
 
     def get_printjob_progress(self, *args):
-        logging.info("get printjob progress info")
-        logging.warning("get_printjob_warning")
         if self.print_state in ('printing', 'pausing', 'paused'):
             est_remaining, progress = self.printjob_progress.get_print_time_prediction()
             if progress is None: # no prediction could be made yet

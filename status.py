@@ -176,11 +176,11 @@ class Notifications(FloatLayout):
         self.x = self.root_widget.x + p.notification_padding
         self.top = self.root_widget.top - p.notification_padding
         with self.canvas:
-            Color(rgb=p.notification_shadow)
+            Color(rgba=p.notification_shadow)
             BorderImage(
                 source=p.kgui_dir + '/logos/shadow.png',
-                pos=(self.x-64, self.y-64),
-                size=(self.width + 128, self.height + 127),
+                pos=(self.x-64, self.y-63),
+                size=(self.width + 128, self.height + 126),
                 border=(64, 64, 64, 64))
             self.bg_color = Color(rgba=p.red)
             RoundedRectangle(pos=self.pos, size=self.size, radius=(p.radius, p.radius))

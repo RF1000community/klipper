@@ -10,12 +10,12 @@ and ap.RsnFlags must have 0x100.
 
 eduroam with wpa-enterprise? has 0x200, but not 0x100 in RsnFlags.
 """
+from threading import Thread
+
 from gi.repository import GLib
 from kivy.event import EventDispatcher
-from kivy.properties import OptionProperty, BooleanProperty, StringProperty
+from kivy.properties import OptionProperty, StringProperty
 from pydbus import SystemBus
-
-from threading import Thread
 
 
 _NM = "org.freedesktop.NetworkManager"
@@ -35,6 +35,7 @@ class NetworkManager(EventDispatcher, Thread):
         # ID used to cancel the scan timer and to find out whether it is running
         # Will be None whenever the timer isn't running
         self.scan_timer_id = None
+        self.new_connection_subscription = None
         self.access_points = []
         self.saved_ssids = []
 
@@ -49,11 +50,10 @@ class NetworkManager(EventDispatcher, Thread):
             # Occurs when NetworkManager was not installed
             if "org.freedesktop.DBus.Error.ServiceUnknown" in e.message:
                 return # Leaves self.available = False
-            else:
-                raise
+            raise
 
         self.settings = self.bus.get(_NM, "/org/freedesktop/NetworkManager/Settings")
-        devices = self.nm.Devices # type: ao
+        devices = self.nm.Devices # Type: ao
         self.eth_dev = self.wifi_dev = None
         for dev in devices:
             dev_obj = self.bus.get(_NM, dev)
@@ -65,35 +65,30 @@ class NetworkManager(EventDispatcher, Thread):
         # For simplicity require both devices to be available
         if not(self.eth_dev and self.wifi_dev):
             return # Leaves self.available = False
-        # Does the wifi device support 5gGHz (flag 0x400)
-        #UNUSED
+        #UNUSED Does the wifi device support 5gGHz (flag 0x400)
         #self.freq_5ghz = bool(self.wifi_dev.WirelessCapabilities & 0x400)
 
-        self.connect_signals()
-
-        # Initiate the values handled by signal handlers by simply
-        # sending all the properties that are being listened to.
-        self.handle_wifi_dev_props(None, self.wifi_dev.GetAll(_NM + ".Device"), None)
-        self.handle_wifi_dev_props(None, self.wifi_dev.GetAll(_NM + ".Device.Wireless"), None)
-        self.handle_nm_props(None, self.nm.GetAll('org.freedesktop.NetworkManager'), None)
-
-        self.available = True
-
-    def connect_signals(self):
-        """Connect DBus signals to their callbacks.  Called in __init__"""
+        # Connect DBus signals to their callbacks
         # Pick out the .DBus.Properties interface because the .NetworkManager
         # interface overwrites that with a less functioning one.
         nm_prop = self.nm['org.freedesktop.DBus.Properties']
-        nm_prop.PropertiesChanged.connect(self.handle_nm_props)
+        nm_prop.PropertiesChanged.connect(self._handle_nm_props)
         wifi_prop = self.wifi_dev['org.freedesktop.DBus.Properties']
-        wifi_prop.PropertiesChanged.connect(self.handle_wifi_dev_props)
+        wifi_prop.PropertiesChanged.connect(self._handle_wifi_dev_props)
+        # Initiate the values handled by signal handlers by simply
+        # sending all the properties that are being listened to.
+        self._handle_nm_props(None, self.nm.GetAll('org.freedesktop.NetworkManager'), None)
+        self._handle_wifi_dev_props(None, self.wifi_dev.GetAll(_NM + ".Device"), None)
+        self._handle_wifi_dev_props(None, self.wifi_dev.GetAll(_NM + ".Device.Wireless"), None)
+
+        self.available = True
 
     def run(self):
         """Executed by Thread.start(). This thread stops when this method finishes."""
         self.loop.run()
 
 
-    def handle_nm_props(self, iface, props, inval):
+    def _handle_nm_props(self, iface, props, inval):
         """Receives all property changes of self.nm"""
         if "PrimaryConnectionType" in props:
             # Connection Type changed
@@ -105,17 +100,17 @@ class NetworkManager(EventDispatcher, Thread):
             else: # No active connection
                 self.connection_type = "none"
 
-    def handle_wifi_dev_props(self, iface, props, inval):
+    def _handle_wifi_dev_props(self, iface, props, inval):
         """
         Receives all property changes of self.wifi_dev and calls the
         appropriate methods.
         """
         if "LastScan" in props:
-            self.handle_scan_complete()
+            self._handle_scan_complete()
         if "ActiveAccessPoint" in props:
-            self.handle_connected_ssid(props['ActiveAccessPoint'])
+            self._handle_connected_ssid(props['ActiveAccessPoint'])
 
-    def handle_new_connection(self, state, reason):
+    def _handle_new_connection(self, state, reason):
         """
         Receives state changes from newly added connections.
         Required to ensure everything went OK and to dispatch events
@@ -131,7 +126,7 @@ class NetworkManager(EventDispatcher, Thread):
             # done, no need to listen further
             self.new_connection_subscription.disconnect()
 
-    def handle_scan_complete(self):
+    def _handle_scan_complete(self):
         """
         Called on changes in wifi_dev.LastScan, which is changed whenever
         a scan completed.  Parses the access points into wrapper objects
@@ -148,39 +143,28 @@ class NetworkManager(EventDispatcher, Thread):
                 ap = AccessPoint(self, path)
             except: # DBus sometimes throws a random error here
                 continue
+            # Ignore unnamed access points
             if ap.ssid:
                 access_points.append(ap)
-        # Sort by signal strength and then by 'in-use'
+        # Sort by signal strength, frequency and then by 'in-use'
         access_points.sort(key=lambda x: x.signal, reverse=True)
+        # We only really want to differentiate between 2.4 GHz and 5 GHz
+        access_points.sort(key=lambda x: x.freq // 2000, reverse=True)
         access_points.sort(key=lambda x: x.in_use, reverse=True)
 
         # Filter out access points with duplicate ssids
-        unique_ssids = set()
-        to_remove = [] # Avoid removing while iterating
+        seen_ssids = set()
+        unique_aps = []
         for ap in access_points:
-            if ap.ssid in unique_ssids:
-                # Find previous occurence again
-                for prev in access_points:
-                    if ap.ssid == prev.ssid:
-                        break
-                # Decide which to keep weighing in-use*4, freq*2, signal*1
-                decision = (4*cmp(ap.in_use, prev.in_use) +
-                    2*cmp(ap.freq // 2000, prev.freq // 2000) +
-                    cmp(ap.signal, prev.signal))
-                # Decid for ap
-                # prev may already be in to_remove, in this case also remove ap
-                if decision > 0 and prev not in to_remove:
-                    to_remove.append(prev)
-                else:
-                    to_remove.append(ap)
-            else:
-                unique_ssids.add(ap.ssid)
-        for rm in to_remove:
-            access_points.remove(rm)
-        self.access_points = access_points # update the property
+            # Because access_points are already sorted most wanted first
+            # we just add the first occurence of each ssid
+            if ap.ssid not in seen_ssids:
+                unique_aps.append(ap)
+                seen_ssids.add(ap.ssid)
+        self.access_points = unique_aps # update the property
         self.dispatch('on_access_points', self.access_points)
 
-    def handle_connected_ssid(self, active_path):
+    def _handle_connected_ssid(self, active_path):
         """
         Called whenever the active wifi connection changes.
         Sets the ssid of the currently connected wifi connection.
@@ -193,6 +177,7 @@ class NetworkManager(EventDispatcher, Thread):
             active = self.bus.get(_NM, active_path)
             # The id which isn't guaranteed to be, but by default is the ssid
             self.connected_ssid = _bytes_to_string(active.Ssid)
+
 
     def set_scan_frequency(self, freq):
         """
@@ -210,8 +195,8 @@ class NetworkManager(EventDispatcher, Thread):
     def wifi_scan(self):
         """
         Request a rescan on the wifi device.
-        
-        When finished, self.handle_scan_complete() is called.  In case
+
+        When finished, self._handle_scan_complete() is called.  In case
         the previous scan is still running a new scan isn't allowed and
         this method returns False, otherwise True.
         """
@@ -222,8 +207,7 @@ class NetworkManager(EventDispatcher, Thread):
         except GLib.GError as e:
             if "org.freedesktop.NetworkManager.Device.NotAllowed" in e.message:
                 return False
-            else:
-                raise
+            raise
 
     def wifi_connect(self, ap, password=None):
         """
@@ -245,7 +229,7 @@ class NetworkManager(EventDispatcher, Thread):
             if password is None:
                 raise ValueError("No password provided")
             password = GLib.Variant('s', password)
-            connection_info = {'802-11-wireless-security': {'psk': password}} # type: a{sa{sv}}
+            connection_info = {'802-11-wireless-security': {'psk': password}} # Type: a{sa{sv}}
             con, act_path = self.nm.AddAndActivateConnection(
                 connection_info, self.wifi_dev._path, ap._path)
         else:
@@ -253,7 +237,7 @@ class NetworkManager(EventDispatcher, Thread):
             con, act_path = self.nm.AddAndActivateConnection(
                 {}, self.wifi_dev._path, ap._path)
         active = self.bus.get(_NM, act_path)
-        self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
+        self.new_connection_subscription = active.StateChanged.connect(self._handle_new_connection)
         self.wifi_scan()
         return con
 
@@ -263,7 +247,7 @@ class NetworkManager(EventDispatcher, Thread):
             raise Exception("Can't activate connection " + ap.ssid)
         active = self.nm.ActivateConnection("/", self.wifi_dev._path, ap._path)
         active = self.bus.get(_NM, active)
-        self.new_connection_subscription = active.StateChanged.connect(self.handle_new_connection)
+        self.new_connection_subscription = active.StateChanged.connect(self._handle_new_connection)
         self.wifi_scan()
 
     def wifi_down(self):
@@ -277,10 +261,10 @@ class NetworkManager(EventDispatcher, Thread):
 
     def wifi_delete(self, ap):
         """Delete a saved connection"""
-        connection_paths = self.settings.Connections # type: ao
+        connection_paths = self.settings.Connections # Type: ao
         for path in connection_paths:
             con = self.bus.get(_NM, path)
-            settings = con.GetSettings() # type: a{sa{sv}}
+            settings = con.GetSettings() # Type: a{sa{sv}}
             if '802-11-wireless' in settings: # Only check wifi connections
                 if ap.b_ssid == settings['802-11-wireless']['ssid']:
                     con.Delete()
@@ -290,11 +274,11 @@ class NetworkManager(EventDispatcher, Thread):
 
     def get_saved_ssids(self):
         """Return list of ssid bytearrays of all stored Wi-Fi connections"""
-        connection_paths = self.settings.Connections # type: ao
+        connection_paths = self.settings.Connections # Type: ao
         ssids = []
         for path in connection_paths:
             con = self.bus.get(_NM, path)
-            settings = con.GetSettings() # type: a{sa{sv}}
+            settings = con.GetSettings() # Type: a{sa{sv}}
             if '802-11-wireless' in settings: # Wired connections don't have ssids
                 ssid_b = settings['802-11-wireless']['ssid']
                 ssids.append(ssid_b)
@@ -310,7 +294,7 @@ class NetworkManager(EventDispatcher, Thread):
             return None
         active = self.bus.get(_NM, active_path)
         config = self.bus.get(_NM, active.Ip4Config)
-        return config.AddressData[0]['address'] # type: aa{sv}
+        return config.AddressData[0]['address'] # Type: aa{sv}
 
     def get_connection_strength(self):
         """
@@ -330,7 +314,7 @@ class NetworkManager(EventDispatcher, Thread):
         pass
 
 
-class AccessPoint(object):
+class AccessPoint:
     """Simpler wrapper class for dbus' AccessPoint proxy objects"""
 
     def __init__(self, network_manager, path):
@@ -339,10 +323,10 @@ class AccessPoint(object):
         self._proxy = self._network_manager.bus.get(_NM, path)
         self._path = path
 
-        self.b_ssid = self._proxy.Ssid # type: ay
+        self.b_ssid = self._proxy.Ssid # Type: ay
         self.ssid = _bytes_to_string(self.b_ssid)
-        self.signal = self._proxy.Strength # type: y, Signal strength
-        # type: u, Radio channel frequency in MHz
+        self.signal = self._proxy.Strength # Type: y, Signal strength
+        # Type: u, Radio channel frequency in MHz
         self.freq = self._proxy.Frequency
         # whether the connection is known
         self.saved = self.b_ssid in self._network_manager.saved_ssids
@@ -367,14 +351,6 @@ class AccessPoint(object):
     def delete(self):
         self._network_manager.wifi_delete(self)
 
-def _bytes_to_string(b):
+def _bytes_to_string(array):
     """Helper function to transform a bytearray to a string"""
-    return bytearray(b).decode('utf-8')
-
-def cmp(x, y):
-    """
-    Return negative if x<y, zero if x==y, positive if x>y
-
-    This got removed from builtin functions in python3
-    """
-    return (x > y) - (x < y)
+    return bytearray(array).decode('utf-8')
