@@ -5,16 +5,16 @@ from threading import Thread
 
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, ListProperty
 
 from .elements import ErrorPopup
 from . import parameters as p
+
 
 class GitHelper(EventDispatcher):
 
     # If you want to receive updates from a different remote, change this value
     REMOTE = "origin"
-    #INSTALL_SCRIPT = os.path.join(p.klipper_dir, "scripts/install-kgui.sh")
     INSTALL_SCRIPT = os.path.join(p.klipper_dir, "scripts/install-kgui.sh")
     # Filter tags that are considered a release
     # TODO change to differentiate klipper and klipperui releases
@@ -22,6 +22,7 @@ class GitHelper(EventDispatcher):
     RELEASES = "v*"
 
     install_output = StringProperty()
+    releases = ListProperty()
 
     def __init__(self):
         # Use klipperui repository and no pager (-P)
@@ -30,35 +31,50 @@ class GitHelper(EventDispatcher):
 
         # Dispatched whenever an installation is finished, succesfully or not
         self.register_event_type("on_install_finished")
+        self.register_event_type("on_fetch_failed")
+        self.get_releases()
+        # Leave some time after startup in case WiFi isn't connected yet
+        self._fetch_retries = 0
+        self.fetch_clock = Clock.schedule_once(self.fetch, 15)
 
-        #fetch_cmd = self._base_cmd + ["fetch", "--recurse-submodules", self.REMOTE]
-        #subprocess.Popen(fetch_cmd, stdout=subprocess.PIPE, text=True)
-
-    def _execute(self, cmd, catch=True):
+    def _execute(self, cmd, ignore_errors=False):
         """Execute a git command, and return its stdout
         This function blocks until git returns.
-        If catch=False, propagate any Exceptions that occur
+        In case of an error an error message is displayed,
+        unless ignore_errors is set to True.
         """
         cmd = self._base_cmd + cmd
-        try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        except subprocess.CalledProcessError as e:
-            if not catch:
-                raise
-            #ErrorPopup(title="Git failed", proc.stdout + "\n" + proc.stderr).open()
-            #TODO this is only testing
-            logging.error("git Failed!")
-            logging.error(repr(e))
-            return ""
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            if not ignore_errors:
+                #ErrorPopup(title="Git failed", proc.stdout + "\n" + proc.stderr).open()
+                #TODO this is only testing
+                logging.error("Git: Operation failed: " + " ".join(cmd))
+                logging.error(proc.stdout + "\n" + proc.stderr)
         # The output always ends with a newline, we don't want that
         return proc.stdout.rstrip("\n")
 
-    def fetch(self):
-        try:
-            self._execute(["fetch", "--recurse-submodules", self.REMOTE], catch=False)
-            return True
-        except subprocess.CalledProcessError:
-            return False
+    def fetch(self, *args, retries=2):
+        # Fetch automatically every 24h = 86400s
+        self.fetch_clock.cancel()
+        self.fetch_clock = Clock.schedule_once(self.fetch, 86400)
+
+        self._fetch_retries = retries
+        logging.info("Git: Fetching updates")
+        cmd = self._base_cmd + ["fetch", "--recurse-submodules", self.REMOTE]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, text=True)
+        self.poll(proc)
+
+    def poll(self, proc):
+        if proc.poll() is None:
+            Clock.schedule_once(lambda dt: self.poll(proc), 0.5)
+        elif proc.returncode != 0:
+            logging.warning("Git: fetching failed: " +
+                    proc.stdout.read() + " " + proc.stderr.read())
+            self.dispatch("on_fetch_failed")
+        else:
+            self.get_releases()
 
     def get_git_version(self):
         """Return the git version number"""
@@ -80,16 +96,12 @@ class GitHelper(EventDispatcher):
 
     def get_exact_version(self):
         """Return only the exact version
-        must match one of get_release()
+        must match one of get_releases()
         If not on release commit, return None
         """
         cmd = ["describe", "--tags", "--exact-match", "--match", self.RELEASES]
-        try:
-            version = self._execute(cmd, catch=False)
-        except subprocess.CalledProcessError:
-            return None
-        else:
-            return version
+        version = self._execute(cmd, ignore_errors=True)
+        return version
 
     def get_nearest_version(self, commitish):
         cmd = ["describe", "--tags", "--abbrev=0", "--match", self.RELEASES, commitish]
@@ -109,7 +121,7 @@ class GitHelper(EventDispatcher):
             rel = Release(name=tag, date=datestring, version=version)
             rel.current = tag == current
             releases.append(rel)
-        return releases
+        self.releases = releases
 
     def get_branches(self):
         """Return a list of all branches
@@ -178,23 +190,12 @@ class GitHelper(EventDispatcher):
                 line = "[b][color=ffffff]" + line + "[/color][/b]"
             self.install_output += line
 
-    def _poll_install_process(self):
-        """DEPRECATED _capture_install_output is used instead now
-        Keep track of when the installation is finished and if it succeded"""
-        if self._install_process.poll() is not None:
-            self.dispatch("on_install_finished")
-            if self._install_process.returncode > 0:
-                # Error occured
-                ErrorPopup(title="Installation Error",
-                        message=self._install_process.stdout).open()
-            self._install_process = None
-        else: # Still running, check again in 0.5 seconds
-            Clock.schedule_once(self._poll_install_process, 0.5)
-
     def on_install_finished(self, returncode):
         pass
-
-githelper = GitHelper()
+    def on_fetch_failed(self):
+        if self._fetch_retries > 0:
+            self._fetch_retries -= 1
+            self.fetch()
 
 
 class Release:
@@ -228,3 +229,5 @@ class Branch(Release):
 
     def update(self):
         pass
+
+githelper = GitHelper()

@@ -23,17 +23,18 @@ class UpdateScreen(Screen):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.githelper = githelper
+        githelper.bind(releases=self.draw_releases)
         # Avoid rebuilding the screen on every entry
         Clock.schedule_once(self.draw_releases, 0)
 
     def draw_releases(self, *args):
         self.ids.box.clear_widgets()
         self.ids.box.add_widget(Divider(pos_hint={'center_x':0.5}))
-
-        releases = self.githelper.get_releases()
-        for release in self.githelper.get_releases():
+        for release in githelper.releases:
             self.ids.box.add_widget(SIRelease(release))
+
+    def fetch(self):
+        githelper.fetch()
 
 
 class SIRelease(SetItem):
