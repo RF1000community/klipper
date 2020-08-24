@@ -33,25 +33,26 @@ class Timeline(RecycleView):
         if self.app.history and self.app.history.history != []:
             # latest date in history
             prev_date = date.fromtimestamp(self.app.history.history[0][2])
-            for job in self.app.history.history: #TODO use reversed instead of insert for speed
+            for job in self.app.history.history:
                 new_date = date.fromtimestamp(job[2])
                 # This print happened on a later day than the previous
                 if new_date != prev_date:
                     # Format date like "25. Aug 1991"
-                    history.insert(0, {"name": prev_date.strftime("%d. %b %Y")})
+                    history.append({"name": prev_date.strftime("%d. %b %Y")})
                     prev_date = new_date
                 new = {"path": job[0],
                     "state": job[1],
                     "timestamp": job[2],
                     "name": splitext(basename(job[0]))[0]}
-                history.insert(0, new)
-            # history is sorted last file at end
+                history.append(new)
             # Also show the newest date, but not if the last print happened today
             if new_date != date.today():
-                history.insert(0, {"name": new_date.strftime("%d. %b %Y")})
+                history.append({"name": new_date.strftime("%d. %b %Y")})
+            history.reverse() # sort history to last file at end (bottom)
 
-        if len(queue) + len(history) == 0: # Give message in case of empty list
-            self.data = [{"name": "No printjobs scheduled or finished", "state": 'message'}]
+        if not (queue or history): # Give message in case of empty list
+            self.data = [{"name": "No printjobs scheduled or finished",
+                          "state": 'message'}]
         else:
             self.data = queue + history + [{}] # for a dividing line after last element
         self.refresh_from_data()
