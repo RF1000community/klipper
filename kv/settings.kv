@@ -176,7 +176,7 @@
             size_hint_y: None
     FloatingButton:
         id: btn_update
-        btn_color: p.medium_light_gray
+        btn_color: p.medium_gray
         y: p.padding
         right: root.right - p.padding
         size: 85*p.disp_vertical_stretch, 85
@@ -677,7 +677,7 @@
             text: "Abort"
             width: root.width
             pos: root.pos
-            on_release: root.dismiss() #TODO: actually cancel installation
+            on_release: root.terminate()
         BtnPCancel:
             id: btn_cancel
             text: "Reboot later"

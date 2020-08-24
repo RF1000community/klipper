@@ -3,6 +3,7 @@ import os
 import subprocess
 from threading import Thread
 
+from kivy.app import App
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
 from kivy.properties import StringProperty, ListProperty
@@ -28,6 +29,7 @@ class GitHelper(EventDispatcher):
         # Use klipperui repository and no pager (-P)
         self._base_cmd = ["git", "-C", p.klipper_dir, "-P"]
         self._install_process = None
+        self._terminate_installation = False
 
         # Dispatched whenever an installation is finished, succesfully or not
         self.register_event_type("on_install_finished")
@@ -45,12 +47,10 @@ class GitHelper(EventDispatcher):
         """
         cmd = self._base_cmd + cmd
         proc = subprocess.run(cmd, capture_output=True, text=True)
-        if proc.returncode != 0:
-            if not ignore_errors:
-                #ErrorPopup(title="Git failed", proc.stdout + "\n" + proc.stderr).open()
-                #TODO this is only testing
-                logging.error("Git: Operation failed: " + " ".join(cmd))
-                logging.error(proc.stdout + "\n" + proc.stderr)
+        if proc.returncode != 0 and not ignore_errors:
+            #ErrorPopup(title="Git failed", proc.stdout + "\n" + proc.stderr).open()
+            logging.error("Git: Operation failed: " + " ".join(cmd))
+            logging.error("Git: " + proc.stdout + " " + proc.stderr)
         # The output always ends with a newline, we don't want that
         return proc.stdout.rstrip("\n")
 
@@ -154,17 +154,27 @@ class GitHelper(EventDispatcher):
                 branches.append(branch)
         return branches
 
+    def is_dirty(self):
+        """Return true if the working tree is dirty"""
+        cmd = ["diff-index", "--quiet", "HEAD"]
+        cmd = self._base_cmd + cmd
+        proc = supbrocess.run(cmd)
+        return bool(proc.returncode)
+
     def checkout_release(self, release):
         """Change working directory to the release and execute the install script"""
-        #TODO account for uncommitted changes: check if working directory is dirty?
-        return
+        if self.is_dirty():
+            App.get_running_app().notify.show(
+                    "Program files changed",
+                    "Revert or commit changes before updating")
+            return
         cmd = ["checkout", "--detach", release]
         self._execute(cmd)
 
     def install(self):
         """Run the installation script"""
         if self._install_process is not None: # Install is currently running
-            logging.warning("Updater: Attempted to install while script is running")
+            logging.warning("Update: Attempted to install while script is running")
             return
         # Capture both stderr and stdout in stdout
         self._install_process = subprocess.Popen(self.INSTALL_SCRIPT, text=True,
@@ -179,6 +189,11 @@ class GitHelper(EventDispatcher):
         proc = self._install_process
         self.install_output = ""
         while True:
+            if self._terminate_installation:
+                self._install_process.terminate()
+                logging.info("Update: Installation aborted!")
+                self._terminate_installation = False
+                break
             line = proc.stdout.readline()
             if not line:
                 rc = proc.wait()
@@ -186,9 +201,12 @@ class GitHelper(EventDispatcher):
                 self._install_process = None
                 break
             # Highlight important lines
-            if line.startswith("===>"): #TODO actual pattern
+            if line.startswith("===>"):
                 line = "[b][color=ffffff]" + line + "[/color][/b]"
             self.install_output += line
+
+    def terminate_installation(self):
+        self._terminate_installation = True
 
     def on_install_finished(self, returncode):
         pass

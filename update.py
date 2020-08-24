@@ -91,3 +91,6 @@ class InstallPopup(BasePopup):
             # Theses buttons were previously on mars
             self.ids.btn_cancel.y = self.y
             self.ids.btn_reboot.y = self.y
+
+    def terminate(self):
+        githelper.terminate_installation()
