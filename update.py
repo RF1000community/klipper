@@ -60,8 +60,11 @@ class UpdatePopup(BasePopup):
 
     def install(self):
         self.dismiss()
+        try:
+            self.release.install()
+        except FileExistsError:
+            return
         InstallPopup().open()
-        self.release.install()
 
 
 class InstallPopup(BasePopup):
@@ -78,19 +81,22 @@ class InstallPopup(BasePopup):
     def on_finished(self, instance, returncode):
         """Replace the abort button with reboot prompt"""
         self.ids.content.remove_widget(self.ids.btn_abort)
-        if returncode > 0:
+        if returncode == 0:
+            # Theses buttons were previously on mars
+            self.ids.btn_cancel.y = self.y
+            self.ids.btn_reboot.y = self.y
+        else:
             notify = App.get_running_app().notify
-            notify.show("Installation failed",
-                    f"Installer exited with returncode {returncode}",
-                    level="error")
+            if returncode is None:
+                notify.show("Installation aborted", delay=3)
+            elif returncode > 0:
+                notify.show("Installation failed",
+                        f"Installer exited with returncode {returncode}",
+                        level="error")
             # Repurpose the "Reboot later" button for exiting
             self.ids.btn_cancel.y = self.y
             self.ids.btn_cancel.width = self.width
             self.ids.btn_cancel.text = "Close"
-        else:
-            # Theses buttons were previously on mars
-            self.ids.btn_cancel.y = self.y
-            self.ids.btn_reboot.y = self.y
 
     def terminate(self):
         githelper.terminate_installation()

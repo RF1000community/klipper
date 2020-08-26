@@ -158,7 +158,7 @@ class GitHelper(EventDispatcher):
         """Return true if the working tree is dirty"""
         cmd = ["diff-index", "--quiet", "HEAD"]
         cmd = self._base_cmd + cmd
-        proc = supbrocess.run(cmd)
+        proc = subprocess.run(cmd)
         return bool(proc.returncode)
 
     def checkout_release(self, release):
@@ -166,9 +166,11 @@ class GitHelper(EventDispatcher):
         if self.is_dirty():
             App.get_running_app().notify.show(
                     "Program files changed",
-                    "Revert or commit changes before updating")
-            return
-        cmd = ["checkout", "--detach", release]
+                    "Revert or commit changes before updating",
+                    level="warning",
+                    delay=15)
+            raise FileExistsError
+        cmd = ["checkout", "--recurse-submodules", release]
         self._execute(cmd)
 
     def install(self):
@@ -192,7 +194,9 @@ class GitHelper(EventDispatcher):
             if self._terminate_installation:
                 self._install_process.terminate()
                 logging.info("Update: Installation aborted!")
+                self.dispatch("on_install_finished", None)
                 self._terminate_installation = False
+                self._install_process = None
                 break
             line = proc.stdout.readline()
             if not line:
@@ -232,7 +236,10 @@ class Release:
         self.current = False
 
     def install(self):
-        githelper.checkout_release(self.name)
+        try:
+            githelper.checkout_release(self.name)
+        except FileExistsError:
+            raise
         githelper.install()
 
 
