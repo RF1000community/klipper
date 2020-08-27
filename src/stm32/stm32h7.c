@@ -20,7 +20,7 @@
 void
 enable_pclock(uint32_t periph_base)
 {
-    // periph_base determins in which bitfield at wich position to set a bit
+    // periph_base determines in which bitfield at wich position to set a bit
     // E.g. D2_AHB1PERIPH_BASE is the adress offset of the given bitfield
     // the naming makes 0% sense
     if (periph_base < D2_APB2PERIPH_BASE) {
@@ -171,9 +171,16 @@ clock_setup(void)
     while (!(RCC->CR & RCC_CR_PLLRDY))
         ;
 
-    // Switch system clock to PLL
-    RCC->CFGR = RCC_CFGR_PPRE1_DIV4 | RCC_CFGR_PPRE2_DIV4 | RCC_CFGR_SW_PLL;
-    while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL)
+    // Switch system clock source (SYSCLK) to PLL1
+    MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW_PLL1);
+    // Set D1PPRE, D2PPRE, D2PPRE2, D3PPRE 
+    MODIFY_REG(RCC->D1CFGR, RCC_D1CFGR_D1PPRE, RCC_D1CFGR_D1PPRE_DIV2);
+    MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE1, RCC_D2CFGR_D2PPRE1_DIV2);
+    MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE2, RCC_D2CFGR_D2PPRE2_DIV2);
+    MODIFY_REG(RCC->D3CFGR, RCC_D3CFGR_D3PPRE, RCC_D3CFGR_D3PPRE_DIV2);
+
+    // Wait for PLL1 to be selected
+    while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL1)
         ;
 }
 
