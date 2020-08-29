@@ -113,13 +113,17 @@ class GitHelper(EventDispatcher):
                "--format=(%(refname:strip=-1), %(creatordate:short-local))",
                "refs/tags/" + self.RELEASES]
         data = self._execute(cmd).splitlines()
-        current = self.get_exact_version()
+        current = self.get_nearest_version("HEAD")
+        newer_release = True
         releases = []
         for e in data:
             tag, datestring = eval(e)
             version = tag[len(self.RELEASES)-1:]
             rel = Release(name=tag, date=datestring, version=version)
             rel.current = tag == current
+            if tag == current:
+                newer_release = False
+            rel.newer = newer_release # Current release is not newer
             releases.append(rel)
         self.releases = releases
 
@@ -234,6 +238,7 @@ class Release:
         self.date = date
         self.version = version or name
         self.current = False
+        self.newer_release = True
 
     def install(self):
         try:

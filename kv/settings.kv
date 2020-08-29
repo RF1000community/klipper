@@ -619,7 +619,7 @@
             pos: root.center_x, root.y
             on_release: app.write_pressure_advance(slider.val), root.dismiss()
 
-<UpdatePopup>:
+<ReleasePopup>:
     size_hint: 0.94, 0.4
     title: "Install"
     FloatLayout:
@@ -640,7 +640,10 @@
             on_release: root.dismiss()
         BtnPConfirm:
             id: btn_update
-            text: 'Update'
+            text:
+                ('Update' if root.release.newer else
+                'Reinstall' if root.release.current else
+                'Downgrade')
             enabled: True
             width: root.width/2
             pos: btn_cancel.right, root.y

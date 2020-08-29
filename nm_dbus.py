@@ -84,7 +84,10 @@ class NetworkManager(EventDispatcher, Thread):
         self.available = True
 
     def run(self):
-        """Executed by Thread.start(). This thread stops when this method finishes."""
+        """
+        Executed by Thread.start(). This thread stops when this method finishes.
+        Stop the loop by calling self.loop.quit().
+        """
         self.loop.run()
 
 

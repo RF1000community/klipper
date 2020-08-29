@@ -48,10 +48,10 @@ class SIRelease(SetItem):
 
     def on_release(self, **kwargs):
         super().on_release(**kwargs)
-        UpdatePopup(self.release).open()
+        ReleasePopup(self.release).open()
 
 
-class UpdatePopup(BasePopup):
+class ReleasePopup(BasePopup):
     """Dialog with release info and confirmation for installation"""
 
     def __init__(self, release, **kwargs):
