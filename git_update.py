@@ -26,6 +26,7 @@ class GitHelper(EventDispatcher):
     releases = ListProperty()
 
     def __init__(self):
+        super().__init__()
         # Use klipperui repository and no pager (-P)
         self._base_cmd = ["git", "-C", p.klipper_dir, "-P"]
         self._install_process = None
@@ -34,10 +35,10 @@ class GitHelper(EventDispatcher):
         # Dispatched whenever an installation is finished, succesfully or not
         self.register_event_type("on_install_finished")
         self.register_event_type("on_fetch_failed")
-        self.get_releases()
         # Leave some time after startup in case WiFi isn't connected yet
         self._fetch_retries = 0
         self.fetch_clock = Clock.schedule_once(self.fetch, 15)
+        Clock.schedule_once(self.get_releases, 0)
 
     def _execute(self, cmd, ignore_errors=False):
         """Execute a git command, and return its stdout
@@ -107,7 +108,7 @@ class GitHelper(EventDispatcher):
         cmd = ["describe", "--tags", "--abbrev=0", "--match", self.RELEASES, commitish]
         return self._execute(cmd)
 
-    def get_releases(self):
+    def get_releases(self, *args):
         """Return a list of all releases, sorted by newest first"""
         cmd = ["for-each-ref", "--sort=-version:refname", "--python",
                "--format=(%(refname:strip=-1), %(creatordate:short-local))",
@@ -115,6 +116,7 @@ class GitHelper(EventDispatcher):
         data = self._execute(cmd).splitlines()
         current = self.get_nearest_version("HEAD")
         newer_release = True
+        newest_update = None
         releases = []
         for e in data:
             tag, datestring = eval(e)
@@ -124,6 +126,13 @@ class GitHelper(EventDispatcher):
             if tag == current:
                 newer_release = False
             rel.newer = newer_release # Current release is not newer
+            if newest_update is None and newer_release:
+                newest_update = rel
+                App.get_running_app().notify.show(
+                        "New update available",
+                        "You can now update to version " + rel.version,
+                        delay=15,
+                        level="success")
             releases.append(rel)
         self.releases = releases
 
