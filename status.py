@@ -1,3 +1,4 @@
+import collections
 import logging
 import time
 
@@ -164,7 +165,9 @@ class Notifications(FloatLayout):
         # Initialize update_clock as a ClockEvent in case it gets canceled first
         self.update_clock = Clock.schedule_once(lambda x: 0, -1)
         self.active = False
-        self.early_notification = None # Save notifications during startup
+        # Use a queue to save notifications to show after each other
+        # Deletes oldest notifications when queuing more than ten
+        self.queue = collections.deque(maxlen=10)
         self.initialized = False
         Clock.schedule_once(self.late_setup, 0)
 
@@ -207,8 +210,8 @@ class Notifications(FloatLayout):
         self.message_label = message
 
         self.initialized = True
-        if self.early_notification is not None:
-            self.show(**self.early_notification)
+        if self.queue:
+            self.show(**self.queue.popleft())
 
     def show(self, title="", message="", level="info", log=True, delay=-1, color=None):
         """
@@ -226,10 +229,11 @@ class Notifications(FloatLayout):
                 or string   value set by the level preset. Can also be the name of
                             different preset than the specified log level.
         """
-        if not self.initialized:
-            self.early_notification = {"title": title, "message": message,
-                "level": level, "log": log, "delay": delay, "color": color}
+        if self.active or not self.initialized:
+            self.queue.append({"title": title, "message": message,
+                "level": level, "log": log, "delay": delay, "color": color})
             return
+
         color_presets = {
                 "info": p.notify_info,
                 "warning": p.notify_warning,
@@ -238,9 +242,6 @@ class Notifications(FloatLayout):
         if level not in color_presets.keys():
             raise ValueError("Unrecognized log level preset " + level)
 
-        # Only show one Notification at a time
-        if self.active:
-            self.hide()
         self.title_label.text = title
         self.message_label.text = message
 
@@ -275,10 +276,14 @@ class Notifications(FloatLayout):
         if delay >= 0:
             self.update_clock = Clock.schedule_once(self.hide, delay)
 
+    __call__ = show
+
     def hide(self, *args):
         self.update_clock.cancel()
         self.root_widget.get_root_window().remove_widget(self)
         self.active = False
+        if self.queue:
+            self.show(**self.queue.popleft())
 
     def redraw(self):
         # Redraw the notification on top of the window. Used in BasePopup.open()
