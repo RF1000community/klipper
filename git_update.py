@@ -31,6 +31,7 @@ class GitHelper(EventDispatcher):
         self._base_cmd = ["git", "-C", p.klipper_dir, "-P"]
         self._install_process = None
         self._terminate_installation = False
+        self._old_status = None # For restoring in case of failure/abort
 
         # Dispatched whenever an installation is finished, succesfully or not
         self.register_event_type("on_install_finished")
@@ -175,7 +176,7 @@ class GitHelper(EventDispatcher):
         return bool(proc.returncode)
 
     def checkout_release(self, release):
-        """Change working directory to the release and execute the install script"""
+        """Change working directory to the specified release"""
         if self.is_dirty():
             App.get_running_app().notify.show(
                     "Program files changed",
@@ -183,6 +184,11 @@ class GitHelper(EventDispatcher):
                     level="warning",
                     delay=15)
             raise FileExistsError
+        # Save the current status
+        old = self._execute(["branch", "--show-current"])
+        if not old: # detached HEAD
+            old = self._execute(["rev-parse", "HEAD"])
+        self._old_status = old
         cmd = ["checkout", "--recurse-submodules", release]
         self._execute(cmd)
 
@@ -203,6 +209,7 @@ class GitHelper(EventDispatcher):
         """
         proc = self._install_process
         self.install_output = ""
+        success = False
         while True:
             if self._terminate_installation:
                 self._install_process.terminate()
@@ -216,11 +223,15 @@ class GitHelper(EventDispatcher):
                 rc = proc.wait()
                 self.dispatch("on_install_finished", rc)
                 self._install_process = None
+                success = rc == 0
                 break
             # Highlight important lines
             if line.startswith("===>"):
                 line = "[b][color=ffffff]" + line + "[/color][/b]"
             self.install_output += line
+        if not success: # Revert working tree to old_status
+            cmd = ["checkout", "--recurse-submodules", self._old_status]
+            self._execute(cmd)
 
     def terminate_installation(self):
         self._terminate_installation = True
