@@ -185,7 +185,8 @@ class GitHelper(EventDispatcher):
                     delay=15)
             raise FileExistsError
         # Save the current status
-        old = self._execute(["branch", "--show-current"])
+        old = self._execute(["symbolic-ref", "-q", "--short", "HEAD"],
+                ignore_errors=True)
         if not old: # detached HEAD
             old = self._execute(["rev-parse", "HEAD"])
         self._old_status = old
