@@ -76,7 +76,7 @@ class GitHelper(EventDispatcher):
                     proc.stdout.read() + " " + proc.stderr.read())
             self.dispatch("on_fetch_failed")
         else:
-            self.get_releases()
+            self.get_releases(notify=True)
 
     def get_git_version(self):
         """Return the git version number"""
@@ -109,7 +109,7 @@ class GitHelper(EventDispatcher):
         cmd = ["describe", "--tags", "--abbrev=0", "--match", self.RELEASES, commitish]
         return self._execute(cmd)
 
-    def get_releases(self, *args):
+    def get_releases(self, *args, notify=False):
         """Return a list of all releases, sorted by newest first"""
         cmd = ["for-each-ref", "--sort=-version:refname", "--python",
                "--format=(%(refname:strip=-1), %(creatordate:short-local))",
@@ -127,7 +127,7 @@ class GitHelper(EventDispatcher):
             if tag == current:
                 newer_release = False
             rel.newer = newer_release # Current release is not newer
-            if newest_update is None and newer_release:
+            if newest_update is None and newer_release and notify:
                 newest_update = rel
                 App.get_running_app().notify.show(
                         "New update available",
