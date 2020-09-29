@@ -96,11 +96,12 @@ def dump_mcu_build():
 
 def get_cpu_info():
     try:
-        f = open('/proc/cpuinfo', 'rb')
-        data = f.read().decode()
+        f = open('/proc/cpuinfo', 'r')
+        data = f.read()
         f.close()
-    except (IOError, OSError):
-        logging.debug("Exception on read /proc/cpuinfo: %s", traceback.format_exc())
+    except (IOError, OSError) as e:
+        logging.debug("Exception on read /proc/cpuinfo: %s",
+                      traceback.format_exc())
         return "?"
     lines = [l.split(':', 1) for l in data.split('\n')]
     lines = [(l[0].strip(), l[1].strip()) for l in lines if len(l) == 2]

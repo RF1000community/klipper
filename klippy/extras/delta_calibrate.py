@@ -3,8 +3,8 @@
 # Copyright (C) 2017-2019  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import math, logging
-import mathutil, collections
+import math, logging, collections
+import mathutil
 from . import probe
 
 # A "stable position" is a 3-tuple containing the number of steps
@@ -53,7 +53,7 @@ def measurements_to_distances(measured_params, delta_params):
         for od, opw in zip(mp['OUTER_DISTS'], mp['OUTER_PILLAR_WIDTHS']) ]
     # Convert angles in degrees to an XY multiplier
     obj_angles = map(math.radians, MeasureAngles)
-    xy_angles = zip(map(math.cos, obj_angles), map(math.sin, obj_angles))
+    xy_angles = list(zip(map(math.cos, obj_angles), map(math.sin, obj_angles)))
     # Calculate stable positions for center measurements
     inner_ridge = MeasureRidgeRadius * scale
     inner_pos = [(ax * inner_ridge, ay * inner_ridge, 0.)
@@ -222,8 +222,8 @@ class DeltaCalibrate:
             "The SAVE_CONFIG command will update the printer config file\n"
             "with these parameters and restart the printer.")
     cmd_DELTA_CALIBRATE_help = "Delta calibration script"
-    def cmd_DELTA_CALIBRATE(self, params):
-        self.probe_helper.start_probe(params)
+    def cmd_DELTA_CALIBRATE(self, gcmd):
+        self.probe_helper.start_probe(gcmd)
     def add_manual_height(self, height):
         # Determine current location of toolhead
         toolhead = self.printer.lookup_object('toolhead')
@@ -257,9 +257,9 @@ class DeltaCalibrate:
         # Perform analysis
         self.calculate_params(self.last_probe_positions, distances)
     cmd_DELTA_ANALYZE_help = "Extended delta calibration tool"
-    def cmd_DELTA_ANALYZE(self, params):
+    def cmd_DELTA_ANALYZE(self, gcmd):
         # Check for manual height entry
-        mheight = self.gcode.get_float('MANUAL_HEIGHT', params, None)
+        mheight = gcmd.get_float('MANUAL_HEIGHT', None)
         if mheight is not None:
             self.add_manual_height(mheight)
             return
@@ -267,25 +267,23 @@ class DeltaCalibrate:
         args = {'CENTER_DISTS': 6, 'CENTER_PILLAR_WIDTHS': 3,
                 'OUTER_DISTS': 6, 'OUTER_PILLAR_WIDTHS': 6, 'SCALE': 1}
         for name, count in args.items():
-            if name not in params:
+            data = gcmd.get(name, None)
+            if data is None:
                 continue
-            data = self.gcode.get_str(name, params)
             try:
-                parts = map(float, data.split(','))
+                parts = list(map(float, data.split(',')))
             except:
-                raise self.gcode.error("Unable to parse parameter '%s'" % (
-                    name,))
+                raise gcmd.error("Unable to parse parameter '%s'" % (name,))
             if len(parts) != count:
-                raise self.gcode.error("Parameter '%s' must have %d values" % (
-                    name, count))
+                raise gcmd.error("Parameter '%s' must have %d values"
+                                 % (name, count))
             self.delta_analyze_entry[name] = parts
             logging.info("DELTA_ANALYZE %s = %s", name, parts)
         # Perform analysis if requested
-        if 'CALIBRATE' in params:
-            action = self.gcode.get_str('CALIBRATE', params)
-            actions = {'extended': 1}
-            if action not in actions:
-                raise self.gcode.error("Unknown calibrate action")
+        action = gcmd.get('CALIBRATE', None)
+        if action is not None:
+            if action != 'extended':
+                raise gcmd.error("Unknown calibrate action")
             self.do_extended_calibration()
 
 def load_config(config):

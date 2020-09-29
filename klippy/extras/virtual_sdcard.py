@@ -267,14 +267,14 @@ class VirtualSD(PrintjobManager):
     def cmd_M20(self, params):
         # List SD card
         files = self.get_file_list()
-        self.gcode.respond_raw("Begin file list")
+        gcmd.respond_raw("Begin file list")
         for fname, fsize in files:
-            self.gcode.respond_raw("%s %d" % (fname, fsize))
-        self.gcode.respond_raw("End file list")
-    def cmd_M21(self, params):
+            gcmd.respond_raw("%s %d" % (fname, fsize))
+        gcmd.respond_raw("End file list")
+    def cmd_M21(self, gcmd):
         # Initialize SD card
-        self.gcode.respond_raw("SD card ok")
-    def cmd_M23(self, params):
+        gcmd.respond_raw("SD card ok")
+    def cmd_M23(self, gcmd):
         # Select SD file
         # parses filename
         try:
@@ -283,10 +283,12 @@ class VirtualSD(PrintjobManager):
             if '*' in filename:
                 filename = filename[:filename.find('*')].strip()
         except:
-            raise self.gcode.error("Unable to extract filename")
+            raise gcmd.error("Unable to extract filename")
         if filename.startswith('/'):
             filename = filename[1:]
-        files = self.get_file_list()
+        self._load_file(gcmd, filename)
+    def _load_file(self, gcmd, filename, check_subdirs=False):
+        files = self.get_file_list(check_subdirs)
         files_by_lower = { fname.lower(): fname for fname, fsize in files }
         filename = files_by_lower[filename.lower()]
         self.selected_file = os.path.join(self.sdcard_dirname, filename)

@@ -4,7 +4,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import logging, math
-import stepper, homing
+import stepper
 
 class CoreXYKinematics:
     def __init__(self, toolhead, config):
@@ -16,9 +16,9 @@ class CoreXYKinematics:
             self.rails[1].get_steppers()[0])
         self.rails[1].get_endstops()[0][0].add_stepper(
             self.rails[0].get_steppers()[0])
-        self.rails[0].setup_itersolve('corexy_stepper_alloc', '+')
-        self.rails[1].setup_itersolve('corexy_stepper_alloc', '-')
-        self.rails[2].setup_itersolve('cartesian_stepper_alloc', 'z')
+        self.rails[0].setup_itersolve('corexy_stepper_alloc', b'+')
+        self.rails[1].setup_itersolve('corexy_stepper_alloc', b'-')
+        self.rails[2].setup_itersolve('cartesian_stepper_alloc', b'z')
         for s in self.get_steppers():
             s.set_trapq(toolhead.get_trapq())
             toolhead.register_step_generator(s.generate_steps)
@@ -77,9 +77,8 @@ class CoreXYKinematics:
                 and (end_pos[i] < self.limits[i][0]
                      or end_pos[i] > self.limits[i][1])):
                 if self.limits[i][0] > self.limits[i][1]:
-                    raise homing.EndstopMoveError(
-                        end_pos, "Must home axis first")
-                raise homing.EndstopMoveError(end_pos)
+                    raise move.move_error("Must home axis first")
+                raise move.move_error()
     def check_move(self, move):
         limits = self.limits
         xpos, ypos = move.end_pos[:2]
