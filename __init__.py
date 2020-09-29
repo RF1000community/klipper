@@ -128,7 +128,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.printer.register_event_handler("homing:home_rails_end", self.handle_homed)
             self.printer.register_event_handler("virtual_sdcard:printjob_start", self.handle_printjob_start)
             self.printer.register_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
-            self.printer.register_event_handler("virtual_sdcard:printjob_change", self.update_printjobs)
+            self.printer.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
             self.printer.register_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
         else:
             site.addsitedir(dirname(p.kgui_dir))
@@ -194,24 +194,26 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
-    def update_printjobs(self, jobs):
+    def handle_printjob_change(self, jobs):
         """ this monitors changes of 2 things:
             - the configuration of printjobs
             - the state of 1. printjob
             due to pass-by-reference states may be skipped """
-        if len(jobs): # update print_state, unless there's no printjob
-            self.print_state = jobs[0].state
-        elif len(self.jobs): # if the job is already removed we still want to update state
-            self.print_state = self.jobs[0].state
-        self.jobs = jobs
+        def update_printjob(dt):
+            if len(jobs): # update print_state, unless there's no printjob
+                self.print_state = jobs[0].state
+            elif len(self.jobs): # if the job is already removed we still want to update state
+                self.print_state = self.jobs[0].state
+            self.jobs = jobs
+        Clock.schedule_once(update_printjob, 0)
 
     def handle_printjob_added(self, job):
-        self.notify.show("Added Printjob", f"Added {job.name} to print Queue")
+        self.notify.show("Added Printjob", f"Added {job.name} to print Queue", delay=4)
 
     def handle_printjob_start(self, job):
-        self.notify.show("Started printing", f"Started printing {job.name}", delay=4)
+        self.notify.show("Started printing", f"Started printing {job.name}", delay=5)
         self.print_title = job.name
-        # this only works if we are in a printing state (we rely on this being called after update_printjobs)
+        # this only works if we are in a printing state (we rely on this being called after handle_printjob_change)
         self.get_printjob_progress()
 
     def handle_printjob_end(self, job):
@@ -221,7 +223,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.print_time = "finished in " + self.format_time(job.get_printed_time())
             Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 3600) # show finished job for 1h
         else:
-            self.hide_printjob(job.name)
+            Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 0)
 
     def hide_printjob(self, name):
         if not self.jobs and self.print_title == name:
@@ -329,9 +331,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.send_z_adjust(0)
         self.send_fan(0)
         self.send_acceleration(self.klipper_config.getsection('printer').getfloat('max_accel', above=0.))
-        for extruder in self.extruders:
-            pa = self.klipper_config.getsection(extruder.name).getfloat('pressure_advance', 0., minval=0.)
-            extruder._set_pressure_advance(pa, extruder.pressure_advance_smooth_time)
+        self.reset_pressure_advance()
 
     def get_z_adjust(self):
         self.z_adjust = self.gcode.homing_position[2]
@@ -386,6 +386,12 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             for extruder in self.extruders:
                 extruder._set_pressure_advance(val, extruder.pressure_advance_smooth_time)
         self.reactor.register_async_callback(set_pressure_advance)
+    def reset_pressure_advance(self):
+        def reset_pressure_advance(e):
+            for extruder in self.extruders:
+                pa = self.klipper_config.getsection(extruder.name).getfloat('pressure_advance', 0., minval=0.)
+                extruder._set_pressure_advance(pa, extruder.pressure_advance_smooth_time)
+        self.reactor.register_async_callback(reset_pressure_advance)
 
     def get_acceleration(self):
         self.acceleration = self.toolhead.max_accel
