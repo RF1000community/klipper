@@ -89,10 +89,6 @@ install_packages()
     PKGLIST="${PKGLIST} network-manager python3-gi"
     # Usb Stick Automounting
     PKGLIST="${PKGLIST} usbmount"
-    # Cura connection
-    echo iptables-persistent iptables-persistent/autosave_v4 boolean false | sudo debconf-set-selections
-    echo iptables-persistent iptables-persistent/autosave_v6 boolean false | sudo debconf-set-selections
-    PKGLIST="${PKGLIST} iptables-persistent"
 
     # Update system package info
     report_status "Updating package database..."
@@ -112,16 +108,6 @@ install_packages()
     # change line in Xwrapper.config so xorg feels inclined to start when asked by systemd
     sudo sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
     # -i for in place (just modify file), s for substitute (this line)
-}
-
-
-
-# Must be called after install_packages
-setup_port_redirection()
-{
-    report_status "Setting up Port redirection..."
-    sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-ports 8008
-    sudo iptables-save -f /etc/iptables/rules.v4
 }
 
 
@@ -216,7 +202,6 @@ set -e
 # Run installation steps defined above
 verify_ready
 install_packages
-setup_port_redirection
 create_virtualenv
 install_klipper_service
 install_usb_automounting
