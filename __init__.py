@@ -149,8 +149,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.notify.show(f"Disk space freed", "Deleted {ndel} files, freeing {freed} MiB")
 
     def handle_connect(self): # runs in klippy thread
-        self.fan = self.printer.lookup_object('fan', None)
+        self.fan_manager = self.printer.lookup_object('fan', None)
         self.gcode = self.printer.lookup_object('gcode')
+        self.gcode_move = self.printer.lookup_object('gcode_move')
         self.sdcard = self.printer.lookup_object('virtual_sdcard')
         self.history = self.printer.lookup_object('printjob_history')
         self.printjob_progress = self.printer.lookup_object('printjob_progress')
@@ -334,49 +335,49 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reset_pressure_advance()
 
     def get_z_adjust(self):
-        self.z_adjust = self.gcode.homing_position[2]
+        self.z_adjust = self.gcode_move.homing_position[2]
     def send_z_adjust(self, offset):
         self.z_adjust = offset
         def set_z_offset(e):  
             #keeps the difference between base_position and homing_position the same
             #works like this: if base_position = 5, put origin of gcode coordinate system at + 5, 
             #used for z tuning or G92 zeroing
-            delta = offset - self.gcode.homing_position[2] #difference between old and new offset
-            self.gcode.base_position[2] += delta
-            self.gcode.homing_position[2] = offset
+            delta = offset - self.gcode_move.homing_position[2] #difference between old and new offset
+            self.gcode_move.base_position[2] += delta
+            self.gcode_move.homing_position[2] = offset
             #Move to offset
-            self.gcode.last_position[2] += delta
+            self.gcode_move.last_position[2] += delta
             if 'z' in self.toolhead.get_status(self.reactor.monotonic())['homed_axes']:
-                self.gcode.move_with_transform(self.gcode.last_position, 5) #sets speed for adjustment move
+                self.gcode_move.move_with_transform(self.gcode_move.last_position, 5) #sets speed for adjustment move
         self.reactor.register_async_callback(set_z_offset)
 
     def get_speed(self):
-        self.speed = self.gcode.speed_factor*60*100 #speed factor also converts from mm/sec to mm/min
+        self.speed = self.gcode_move.speed_factor*60*100 #speed factor also converts from mm/sec to mm/min
     def send_speed(self, val):
         self.speed = val
         val = val/(60.*100.)
         def set_speed(e):
-            self.gcode.speed = self.gcode._get_gcode_speed() * val
-            self.gcode.speed_factor = val
+            self.gcode_move.speed = self.gcode_move._get_gcode_speed() * val
+            self.gcode_move.speed_factor = val
         self.reactor.register_async_callback(set_speed)
 
     def get_flow(self):
-        self.flow = self.gcode.extrude_factor*100
+        self.flow = self.gcode_move.extrude_factor*100
     def send_flow(self, val):
         self.flow = val
         def set_flow(e):
             new_extrude_factor = val/100.
-            last_e_pos = self.gcode.last_position[3]
-            e_value = (last_e_pos - self.gcode.base_position[3]) / self.gcode.extrude_factor
-            self.gcode.base_position[3] = last_e_pos - e_value * new_extrude_factor
-            self.gcode.extrude_factor = new_extrude_factor
+            last_e_pos = self.gcode_move.last_position[3]
+            e_value = (last_e_pos - self.gcode_move.base_position[3]) / self.gcode_move.extrude_factor
+            self.gcode_move.base_position[3] = last_e_pos - e_value * new_extrude_factor
+            self.gcode_move.extrude_factor = new_extrude_factor
         self.reactor.register_async_callback(set_flow)
 
     def get_fan(self):
-        self.fan_speed = self.fan.last_fan_value * 100 / self.fan.max_power
+        self.fan_speed = self.fan_manager.fan.last_fan_value * 100 / self.fan_manager.fan.max_power
     def send_fan(self, speed):
         self.fan_speed = speed
-        self.reactor.register_async_callback(lambda e: self.fan.set_speed(self.toolhead.get_last_move_time(), speed/100))
+        self.reactor.register_async_callback(lambda e: self.fan_manager.fan.set_speed(self.toolhead.get_last_move_time(), speed/100))
  
     def get_pressure_advance(self):#gives pressure_advance value of 1. extruder for now
         self.pressure_advance = self.extruders[0].get_status(self.reactor.monotonic())['pressure_advance']
@@ -451,7 +452,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.homed[axis] = axis in homed_axes_string
 
     def send_home(self, axis):
-        self.reactor.register_async_callback(lambda e: self.gcode.cmd_G28(axis.upper()))
+        self.reactor.register_async_callback(lambda e: self.gcode.run_script_from_command("G28" + axis.upper()))
 
     def send_motors_off(self):
         self.reactor.register_async_callback(lambda e: self.gcode.run_script_from_command("M18"))
