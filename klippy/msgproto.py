@@ -364,7 +364,7 @@ class MessageParser:
     def process_identify(self, data, decompress=True):
         try:
             if decompress:
-                data = zlib.decompress(data.encode('ISO-8859-1', 'strict'))
+                data = zlib.decompress(data)
             self.raw_identify_data = data
             data = json.loads(data.decode('ISO-8859-1', 'strict'))
             self._fill_enumerations(data.get('enumerations', {}))

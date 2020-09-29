@@ -108,7 +108,7 @@ class PrinterConfig:
             msg = "Unable to open config file %s" % (filename,)
             logging.exception(msg)
             raise error(msg)
-        return data.decode().replace('\r\n', '\n')
+        return data.replace('\r\n', '\n')
     def _find_autosave_data(self, data):
         regular_data = data
         autosave_data = ""

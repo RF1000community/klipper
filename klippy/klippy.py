@@ -190,7 +190,7 @@ class Printer:
         # Enter main reactor loop
         try:
             self.reactor.run()
-        except:
+        except Exception as e:
             msg = ''.join(traceback.format_tb(e.__traceback__)) + "\n\n" + repr(e)
             logging.exception(msg)
             # Exception from a reactor callback - try to shutdown
@@ -318,7 +318,7 @@ def main():
             bglogger.clear_rollover_info()
             bglogger.set_rollover_info('versions', versions)
 
-        res = Printer(input_fd, bglogger, start_args).run()
+        res = Printer(bglogger, start_args).run()
 
         if bglogger is not None:
             bglogger.stop()
