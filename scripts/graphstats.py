@@ -51,7 +51,6 @@ def parse_log(logname, mcu):
             continue
         keyparts['#sampletime'] = float(parts[1][:-1])
         out.append(keyparts)
-
     f.close()
     return out
 
