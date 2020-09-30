@@ -40,10 +40,11 @@ if not TESTING:
 class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     # Property for controlling the state as shown in the statusbar.
-    state = OptionProperty("initializing", options=[
+    state = OptionProperty("startup", options=[
         # Every string set has to be in this list
-        "initializing",
         "ready",
+        "startup",
+        "shutdown",
         "error",
         "error disconnected"
         ])

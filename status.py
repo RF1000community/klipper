@@ -19,7 +19,7 @@ class StatusBar(BoxLayout):
 
     animation_pos = NumericProperty(0)
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs):#TODO fix
         app = App.get_running_app()
         app.bind(state=self.update_animation, print_state=self.update_animation)
         self.scheduled_updating = None
@@ -27,7 +27,7 @@ class StatusBar(BoxLayout):
         super().__init__(**kwargs)
 
     def update_animation(self, instance, value):
-        if value in ('initializing', 'pausing', 'stopping'):
+        if value in ('startup', 'pausing', 'stopping'):
             self.animation_pos = 0
             self.scheduled_updating = Clock.schedule_interval(self.update_animation_pos, 0.02)
         else:
