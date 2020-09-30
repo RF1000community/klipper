@@ -69,8 +69,8 @@ class Printjob:
             self.set_state('printing')
         elif self.state == 'paused':
             if self.saved_pause_state:
-                self.gcode.cmd_RESTORE_GCODE_STATE({'NAME':"PAUSE_STATE", 'MOVE':1})
                 self.saved_pause_state = False
+                self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1")
             self.set_state('printing')
             self.start_stop_times.append([self.toolhead.mcu.estimated_print_time(self.reactor.monotonic()), None])
             self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
@@ -84,11 +84,11 @@ class Printjob:
             self.set_state('stopping')
             # turn off heaters so stopping doesn't wait for temperature requests
             self.reactor.pause(self.reactor.monotonic() + 0.100)
-            self.heater_manager.cmd_TURN_OFF_HEATERS({})
+            self.heater_manager.cmd_TURN_OFF_HEATERS(None)
         else: # in case it is paused we need to do all stopping actions here
             self.set_state('stopped')
             self.file_obj.close()
-            self.heater_manager.cmd_TURN_OFF_HEATERS({})
+            self.heater_manager.cmd_TURN_OFF_HEATERS(None)
             self.manager.check_queue()
 
     def work_handler(self, eventtime):
@@ -144,13 +144,13 @@ class Printjob:
         # Finish stopping or pausing actions
         if self.state == 'pausing':
             self.set_state('paused')
-            self.gcode.cmd_SAVE_GCODE_STATE({'NAME': "PAUSE_STATE"})
+            self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
             self.saved_pause_state = True
         else:
             if self.state == 'stopping':
                 self.set_state('stopped')
             self.file_obj.close()
-            self.heater_manager.cmd_TURN_OFF_HEATERS({})
+            self.heater_manager.cmd_TURN_OFF_HEATERS(None)
             self.manager.check_queue()
         return self.reactor.NEVER
 
@@ -224,9 +224,8 @@ class PrintjobManager:
             except:
                 logging.exception("virtual_sdcard shutdown read")
                 return
-            logging.info("Virtual sdcard (%d): %s\nUpcoming (%d): %s",
-                         readpos, repr(data[:readcount]),
-                         self.jobs[0].file_position, repr(data[readcount:]))
+            logging.info(f"Virtual sdcard ({readpos}): { repr(data[:readcount]) }\n\
+                           Upcoming ({self.jobs[0].file_position}): { repr(data[readcount:]) }")
 
     def stats(self, eventtime):
         if len(self.jobs) and self.jobs[0].state in ('printing', 'pausing', 'stopping'):
