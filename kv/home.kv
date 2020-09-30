@@ -915,29 +915,29 @@
 
 <-FilamentSlider>:
     size_hint: None, None
-    size: p.screen_width - 2*p.small_padding, 100
-    px: self.x + p.padding
+    size: p.screen_width - 2*p.small_padding -2*p.padding, 100
+    px: self.x
     canvas:
         Color:
-            rgba: p.medium_gray if self.pressed else self.filament_color
+            rgba: self.filament_color
         RoundedRectangle:
-            size: self.width - 2*p.padding, self.height
-            pos: self.x + p.padding, self.y
+            size: self.width, self.height
+            pos: self.x, self.y
             radius: (p.radius,)
         Color:
-            rgba: (0,0,0,0) if self.pressed else p.popup
+            rgba: p.popup
         Rectangle:
-            size: self.right - p.padding - self.px, self.height
+            size: self.right - self.px, self.height
             pos: self.px, self.y
         Color:
-            rgba: (1,1,1,0.3) if self.pressed else p.btn_outline
+            rgba: p.btn_outline
         Line:
             width: 1
-            rounded_rectangle: (self.x + p.padding, self.y, self.width - 2*p.padding, self.height, p.radius)
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
         Color:
-            rgba: p.btn_outline if not self.active else (0,0,0,0) if self.pressed else (1,1,1,1)
+            rgba: p.btn_outline if not self.active else (1,1,1,1)
         Line:
-            width: 4 if self.active else 1
+            width: 1 if not self.active else 5 if self.pressed else 4
             points: self.px, self.y, self.px, self.top
     Label:
         id: value_label
