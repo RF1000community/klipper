@@ -172,13 +172,14 @@ class NetworkManager(EventDispatcher, Thread):
         Called whenever the active wifi connection changes.
         Sets the ssid of the currently connected wifi connection.
         If no wifi connection currently exists, set "".
+
+        active_path references the AccessPoint object currently in use.
         """
         if active_path == "/":
             # There is no wifi connection right now
             self.connected_ssid = ""
         else:
             active = self.bus.get(_NM, active_path)
-            # The id which isn't guaranteed to be, but by default is the ssid
             self.connected_ssid = _bytes_to_string(active.Ssid)
 
 
