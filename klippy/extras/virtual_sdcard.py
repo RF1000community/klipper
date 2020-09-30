@@ -286,8 +286,6 @@ class VirtualSD(PrintjobManager):
             raise gcmd.error("Unable to extract filename")
         if filename.startswith('/'):
             filename = filename[1:]
-        self._load_file(gcmd, filename)
-    def _load_file(self, gcmd, filename, check_subdirs=False):
         files = self.get_file_list(check_subdirs)
         files_by_lower = { fname.lower(): fname for fname, fsize in files }
         filename = files_by_lower[filename.lower()]
