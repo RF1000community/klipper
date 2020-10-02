@@ -109,7 +109,7 @@ class TempSlider(UltraSlider):
                         material_type = fm.get_info(material['guid'], "./m:metadata/m:name/m:material", "")
                         bed_temp = fm.get_info(material['guid'], "./m:settings/m:setting[@key='heated bed temperature']", 0)
                         if bed_temp:
-                            self.buttons.append([int(bed_temp), 0, material_type, None])
+                            self.buttons.append([int(float(bed_temp)), 0, material_type, None]) # we need int(float()) because python sucks
             else: # show some generic temperatures
                 self.buttons = [
                     [0,0,"Off",None],
@@ -126,7 +126,7 @@ class TempSlider(UltraSlider):
                     material_type = fm.get_info(loaded_material[tool_idx]['guid'], "./m:metadata/m:name/m:material", "")
                     ext_temp = fm.get_info(loaded_material[tool_idx]['guid'],"./m:settings/m:setting[@key='print temperature']", 0)
                     if ext_temp:
-                        self.buttons.append([int(ext_temp), 0, material_type, None])
+                        self.buttons.append([int(float(ext_temp)), 0, material_type, None])
             else:
                 self.buttons = [
                     [0,14,"Off",None],
