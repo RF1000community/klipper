@@ -49,12 +49,12 @@ static const struct spi_info spi_bus[] = {
 #endif
 };
 
+
 struct spi_config
 spi_setup(uint32_t bus, uint8_t mode, uint32_t rate)
 {
     if (bus >= ARRAY_SIZE(spi_bus))
         shutdown("Invalid spi bus");
-
     // Enable SPI
     SPI_TypeDef *spi = spi_bus[bus].spi;
     if (!is_enabled_pclock((uint32_t)spi)) {
@@ -62,7 +62,6 @@ spi_setup(uint32_t bus, uint8_t mode, uint32_t rate)
         gpio_peripheral(spi_bus[bus].miso_pin, spi_bus[bus].function, 1);
         gpio_peripheral(spi_bus[bus].mosi_pin, spi_bus[bus].function, 0);
         gpio_peripheral(spi_bus[bus].sck_pin, spi_bus[bus].function, 0);
-
         // Configure CR2 on stm32f0
 #if CONFIG_MACH_STM32F0
         spi->CR2 = SPI_CR2_FRXTH | (7 << SPI_CR2_DS_Pos);
@@ -74,11 +73,18 @@ spi_setup(uint32_t bus, uint8_t mode, uint32_t rate)
     uint32_t div = 0;
     while ((pclk >> (div + 1)) > rate && div < 7)
         div++;
+
+#if CONFIG_MACH_STM32H7
+    uint32_t cr1 = (SPI_CR1_SPE | SPI_CR1_SSI);
+    spi->CFG1 |= (div << SPI_CFG1_MBR_Pos);
+    spi->CFG2 |= ((mode << SPI_CFG2_CPHA_Pos) | SPI_CFG2_MASTER | SPI_CFG2_SSM);
+#else
     uint32_t cr1 = ((mode << SPI_CR1_CPHA_Pos) | (div << SPI_CR1_BR_Pos)
                     | SPI_CR1_SPE | SPI_CR1_MSTR | SPI_CR1_SSM | SPI_CR1_SSI);
-
+#endif
     return (struct spi_config){ .spi = spi, .spi_cr1 = cr1 };
 }
+
 
 void
 spi_prepare(struct spi_config config)
@@ -93,10 +99,17 @@ spi_transfer(struct spi_config config, uint8_t receive_data,
 {
     SPI_TypeDef *spi = config.spi;
     while (len--) {
+#if CONFIG_MACH_STM32H7
+        writeb((void *)&spi->TXDR, *data);
+        while (!(spi->SR & SPI_SR_RXWNE))
+            ;
+        uint8_t rdata = readb((void *)&spi->RXDR);
+#else
         writeb((void *)&spi->DR, *data);
         while (!(spi->SR & SPI_SR_RXNE))
             ;
         uint8_t rdata = readb((void *)&spi->DR);
+#endif
         if (receive_data)
             *data = rdata;
         data++;
