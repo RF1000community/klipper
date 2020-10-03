@@ -3,5 +3,5 @@
 	url = https://github.com/D4SK/kgui
 	branch = master
 [submodule "klippy/extras/klipper-cura-connection"]
-	path = klippy/extras/klipper-cura-connection
+	path = klippy/extras/klipper_cura_connection
 	url = https://github.com/Gobbel2000/klipper-cura-connection
