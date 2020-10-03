@@ -72,7 +72,13 @@ lib/hidflash/hid-flash:
 flash: $(OUT)klipper.bin lib/hidflash/hid-flash
 	@echo "  Flashing $< to $(FLASH_DEVICE)"
 	$(Q)$(PYTHON) ./scripts/flash_usb.py -t $(CONFIG_MCU) -d "$(FLASH_DEVICE)" -s "$(CONFIG_FLASH_START)" $(if $(NOSUDO),--no-sudo) $(OUT)klipper.bin
-# flash with 115200 baud rate for stm32h750 TODO fix for other mcus
+
+# STM32H7 bootloader needs 115200 baud rate
+CONFIG_MACH_STM32H7
+BAUD_RATE = 115200
+else
+BAUD_RATE = 57600
+endif
 serialflash: $(OUT)klipper.bin
 	@echo "  Flashing $< to $(FLASH_DEVICE) via stm32flash"
-	$(Q)stm32flash -w $< -v -b 115200 -g 0 $(FLASH_DEVICE)
+	$(Q)stm32flash -w $< -v -b $(BAUD_RATE) -g 0 $(FLASH_DEVICE)

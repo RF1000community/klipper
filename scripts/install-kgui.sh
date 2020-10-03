@@ -19,8 +19,9 @@ install_packages()
     # AVR chip installation and building
     PKGLIST="${PKGLIST} avrdude gcc-avr binutils-avr avr-libc"
     # ARM chip installation and building
-    PKGLIST="${PKGLIST} stm32flash dfu-util libnewlib-arm-none-eabi"
+    PKGLIST="${PKGLIST} dfu-util libnewlib-arm-none-eabi"
     PKGLIST="${PKGLIST} gcc-arm-none-eabi binutils-arm-none-eabi"
+    # PKGLIST="${PKGLIST} stm32flash" has to be installed from source to inclde latest MCUs
 
     # Kivy https://github.com/kivy/kivy/doc/sources/installation/installation-rpi.rst
     PKGLIST="${PKGLIST} \
@@ -96,6 +97,15 @@ install_packages()
     # Install desired packages
     report_status "Installing packages..."
     sudo apt-get install -qq --yes ${PKGLIST}
+
+    # Install stm32flash from source
+    report_status "Installing stm32flash from source..."
+    cd ~
+    rm -rf stm32flash-code
+    git clone https://git.code.sf.net/p/stm32flash/code stm32flash-code
+    cd stm32flash-code
+    make
+    sudo make install
 
     report_status "Adjusting configurations..."
     # Networking
