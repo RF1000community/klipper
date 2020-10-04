@@ -24,8 +24,9 @@ sudo raspi-config
    - Advanced Options -> Memory Split to `256`
    - Advanced Options -> GL Driver to `GL (Fake KMS)`
    - Boot Options -> Desktop/CLI to `Console Autologin`
+   - Interfacing Options -> Camera to `enabled` (If you plan to use a raspi-cam)
 
-### Install Octoprint if required <br> (it is recommended to use the [klipper-cura-connection](https://github.com/Gobbel2000/klipper_cura_connection) plugin instead of a webinterface)
+### Install Octoprint if required <br> (it is recommended to use the [klipper_cura_connection](https://github.com/Gobbel2000/klipper_cura_connection) plugin instead of a webinterface)
 ```bash
 sudo apt install virtualenv  
 cd
