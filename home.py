@@ -150,15 +150,13 @@ class TempSlider(UltraSlider):
 
     def get_disp_from_val(self, val):
         if self.val == 0:
-            s = "Off"
+            return "Off"
         else:
-            s = f"{self.val}°C"
-        return s
+            return f"{self.val:.0f}°C"
 
     def get_px_from_val(self, val):
         x = ((val-self.val_min)/(self.val_max-self.val_min))*self.width + self.x
-        x = max(self.x, x)
-        return x
+        return max(self.x, x)
 
 class BtnTriple(Widget):
     filament_amount = NumericProperty()
