@@ -15,4 +15,4 @@ kivy==2.0.0rc3
 pydbus
 
 #Cura connection
-zeroconf==0.19.1
+zeroconf==0.28.5
