@@ -121,16 +121,16 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 except: self.extruder_count = i; break
             # register event handlers
             self.printer.register_event_handler("klippy:connect", self.handle_connect) # printer_objects are available
-            self.printer.register_event_handler("klippy:ready", self.handle_ready) # connect handlers have run
-            self.printer.register_event_handler("klippy:disconnect", self.handle_disconnect)
-            self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
-            self.printer.register_event_handler("klippy:critical_error", self.handle_critical_error)
-            self.printer.register_event_handler("klippy:error", self.handle_error)
-            self.printer.register_event_handler("homing:home_rails_end", self.handle_homed)
-            self.printer.register_event_handler("virtual_sdcard:printjob_start", self.handle_printjob_start)
-            self.printer.register_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
-            self.printer.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
-            self.printer.register_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
+            self.register_ui_event_handler("klippy:ready", self.handle_ready) # connect handlers have run
+            self.register_ui_event_handler("klippy:disconnect", self.handle_disconnect)
+            self.register_ui_event_handler("klippy:shutdown", self.handle_shutdown)
+            self.register_ui_event_handler("klippy:critical_error", self.handle_critical_error)
+            self.register_ui_event_handler("klippy:error", self.handle_error)
+            self.register_ui_event_handler("homing:home_rails_end", self.handle_homed)
+            self.register_ui_event_handler("virtual_sdcard:printjob_start", self.handle_printjob_start)
+            self.register_ui_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
+            self.register_ui_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
+            self.register_ui_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
         else:
             site.addsitedir(dirname(p.kgui_dir))
             import filament_manager
@@ -168,9 +168,15 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         for i in range(self.extruder_count):
             self.heaters[f"T{i}"] = self.heater_manager.heaters[f"extruder{'' if i==0 else i}"]
             self.extruders.append(self.printer.lookup_object(f"extruder{'' if i==0 else i}"))
-        self.printer_objects_available = True
+        def set_printer_objects_available(dt):
+            self.printer_objects_available = True
+        Clock.schedule_once(set_printer_objects_available, 0)
         Clock.schedule_once(self.bind_updating, 0)
         Clock.schedule_once(self.control_updating, 0)
+
+# KLIPPY THREAD ^
+########################################################################################
+# KGUI   THREAD v
 
     def handle_ready(self):
         self.state = "ready"
@@ -181,16 +187,15 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def handle_shutdown(self):
         self.state = "error"
 
-    def handle_critical_error(self, message):
-        self.state = "error"
-        # avoid weird behaviour (misplaced widgets etc.) when opeining the popup in Klippy thread
-        Clock.schedule_once(lambda dt: CriticalErrorPopup(message = message).open(), 0)
-
-    def handle_error(self, message):
-        Clock.schedule_once(lambda dt: ErrorPopup(message = message).open(), 0)
-
     def handle_disconnect(self):
         self.state = "error disconnected"
+
+    def handle_critical_error(self, message):
+        self.state = "error"
+        CriticalErrorPopup(message = message).open()
+
+    def handle_error(self, message):
+        ErrorPopup(message = message).open()
 
     def handle_homed(self, rails):
         for rail in rails:
@@ -201,13 +206,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             - the configuration of printjobs
             - the state of 1. printjob
             due to pass-by-reference states may be skipped """
-        def update_printjob(dt):
-            if len(jobs): # update print_state, unless there's no printjob
-                self.print_state = jobs[0].state
-            elif len(self.jobs): # if the job is already removed we still want to update state
-                self.print_state = self.jobs[0].state
-            self.jobs = jobs
-        Clock.schedule_once(update_printjob, 0)
+        if len(jobs): # update print_state, unless there's no printjob
+            self.print_state = jobs[0].state
+        elif len(self.jobs): # if the job is already removed we still want to update state
+            self.print_state = self.jobs[0].state
+        self.jobs = jobs
 
     def handle_printjob_added(self, job):
         self.notify.show("Added Printjob", f"Added {job.name} to print Queue", delay=4)
@@ -225,7 +228,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.print_time = "finished in " + self.format_time(job.get_printed_time())
             Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 3600) # show finished job for 1h
         else:
-            Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 0)
+            self.hide_printjob(job.name)
 
     def hide_printjob(self, name):
         if not self.jobs and self.print_title == name:
@@ -235,10 +238,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.progress = 0
             self.print_state = "no printjob"
             self.reset_tuning() # tuning values are only reset once print_queue has run out
-
-# KLIPPY THREAD ^
-########################################################################################
-# KGUI   THREAD v
 
     def run(self):
         logging.info("Kivy app.run")
@@ -575,6 +574,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
         self.reactor.register_async_callback(lambda e: self.printer.request_exit("exit"), 0)
+
+    # using lambdaception to register klipper event handlers to run in the UI thread
+    def register_ui_event_handler(self, event_name, event_handler):
+        self.printer.register_event_handler(event_name, lambda *args, **kwargs: Clock.schedule_once(lambda dt: event_handler(*args, **kwargs), 0))
 
 ########################################################################################
 # KLIPPY THREAD v

@@ -164,7 +164,7 @@ class Notifications(FloatLayout):
 
     def __init__(self):
         # Initialize update_clock as a ClockEvent in case it gets canceled first
-        self.update_clock = Clock.schedule_once(lambda x: 0, -1)
+        self.update_clock = Clock.schedule_once(lambda dt: 0, -1)
         self.active = False
         # Use a queue to save notifications to show after each other
         # Deletes oldest notifications when queuing more than ten
