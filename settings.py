@@ -1,6 +1,8 @@
 # coding: utf-8
 import logging
 import os
+import re
+import subprocess
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -13,6 +15,7 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 from kivy.uix.tabbedpanel import TabbedPanelItem
+from kivy.uix.textinput import TextInput
 
 from .elements import Divider, BaseButton, BasePopup
 from . import parameters as p
@@ -286,3 +289,43 @@ class TimezoneRVItem(RecycleDataViewBehavior, Label):
     def apply_selection(self, rv, index, is_selected):
         # Respond to the selection of items in the view
         self.selected = is_selected
+
+class HostnamePopup(BasePopup):
+    """
+    Popup for changing the hostname.
+    """
+
+    txt_input = ObjectProperty(None)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.txt_input.bind(on_text_validate=self.confirm)
+
+    def confirm(self, *args):
+        text = self.txt_input.text
+        cmd = ["sudo", "hostnamectl", "set-hostname", text]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            app = App.get_running_app()
+            app.notify("Failed to set hostname",
+                       "hostnamectl finished with exit-code "
+                       + str(proc.returncode),
+                       level="error",
+                       delay=30)
+            logging.warning("hostnamectl: " + proc.stdout + " " + proc.stderr)            
+        else:
+            self.dismiss()
+
+class HostnameTextInput(TextInput):
+    """
+    Modify TextInput to only input lower- and uppercase ASCII letters,
+    digits and hyphens, and not more than 64 characters in total.
+    """
+
+    pat = re.compile(r"[^-a-zA-Z0-9]")
+
+    def insert_text(self, substring, from_undo=False):
+        filtered = re.sub(self.pat, "", substring)
+        max_len = 64 - len(self.text)
+        limited = filtered[:max_len]
+        return super().insert_text(limited, from_undo=from_undo)

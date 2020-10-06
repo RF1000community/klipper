@@ -1,5 +1,6 @@
 #:kivy 1.8.0
 
+#:import platform platform
 #:import Factory kivy.factory.Factory
 #:import screenmanager kivy.uix.screenmanager
 #:import p parameters
@@ -71,6 +72,10 @@
             SetItem:
                 left_title: "Flash Klipper Firmware to Printer"
                 on_release: root.manager.current = "FlashScreen"
+            SetItem:
+                left_title: "Change Hostname"
+                right_title: platform.node()
+                on_release: Factory.HostnamePopup().open()
 
 <WifiScreen>:
     name: 'WifiScreen'
@@ -694,3 +699,29 @@
             width: root.width/2
             pos: btn_cancel.right, p.mars
             on_release: app.reboot()
+
+<HostnamePopup>:
+    txt_input: hostname_input
+    size_hint: 0.87, 0.32
+    title: "Change Hostname"
+    FloatLayout:
+        HostnameTextInput:
+            id: hostname_input
+            multiline: False
+            font_size: p.normal_font
+            foreground_color: (1,1,1,1)
+            padding: (15,12,25,12)
+            height: self.minimum_height
+            background_color: p.medium_gray
+            cursor_color: (1,1,1,1)
+            size_hint: 0.8, None
+            pos_hint: {'center_x': 0.5, 'center_y': 0.63}
+        BtnPCancel:
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: len(hostname_input.text) >= 1
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.confirm()
