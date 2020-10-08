@@ -237,7 +237,7 @@ class MCU_pwm:
                self._mcu.seconds_to_clock(self._max_duration)))
         curtime = self._mcu.get_printer().get_reactor().monotonic()
         printtime = self._mcu.estimated_print_time(curtime)
-        self._last_clock = self._mcu.print_time_to_clock(printtime + 0.100)
+        self._last_clock = self._mcu.print_time_to_clock(printtime + 1.00)
         svalue = int(self._start_value * self._pwm_max + 0.5)
         self._mcu.add_config_cmd(
             "schedule_soft_pwm_out oid=%d clock=%d on_ticks=%d"
