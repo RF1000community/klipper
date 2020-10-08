@@ -201,6 +201,7 @@ class BtnTriple(Widget):
         else:
             self.title = "Load Material"
             self.filament_color = (0,0,0,0)
+            self.filament_amount = 0
 
     def load_unload(self):
         if not self.material['guid']:
@@ -313,6 +314,8 @@ class FilamentChooserPopup(BasePopup):
             self.ids.btn_confirm.enabled = True
 
     def on_tab_2(self, instance, tab_2):
+        self.ids.option_stack.clear_widgets() # tab1 only adaptively clears its 'own' widgets
+        self.widgets = [[], [], []]
         if tab_2:
             self.draw_options_2()
         else:

@@ -59,7 +59,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         "stopped",
         "done",
         ])
-    homed = DictProperty({}) #updated by handle_homed event handler
+    homed = DictProperty({}) #updated by handle_home_end/start event handler
     temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
     printer_objects_available = BooleanProperty(False) #updated with handle_connect
     jobs = ListProperty()
@@ -126,7 +126,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.register_ui_event_handler("klippy:shutdown", self.handle_shutdown)
             self.register_ui_event_handler("klippy:critical_error", self.handle_critical_error)
             self.register_ui_event_handler("klippy:error", self.handle_error)
-            self.register_ui_event_handler("homing:home_rails_end", self.handle_homed)
+            self.register_ui_event_handler("homing:home_rails_start", self.handle_home_start)
+            self.register_ui_event_handler("homing:home_rails_end", self.handle_home_end)
             self.register_ui_event_handler("virtual_sdcard:printjob_start", self.handle_printjob_start)
             self.register_ui_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
             self.register_ui_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
@@ -196,8 +197,12 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def handle_error(self, message):
         ErrorPopup(message = message).open()
+    # this ensures that during homing homed=False, crucially disabling manual movement (buttons), and z-tuning moves
+    def handle_home_start(self, rails):
+        for rail in rails:
+            self.homed[rail.steppers[0].get_name(short=True)] = False
 
-    def handle_homed(self, rails):
+    def handle_home_end(self, rails):
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
@@ -347,7 +352,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.gcode_move.homing_position[2] = offset
             #Move to offset
             self.gcode_move.last_position[2] += delta
-            if 'z' in self.toolhead.get_status(self.reactor.monotonic())['homed_axes']:
+            if self.homed['z']: #if this runs during homing it will crash
                 self.gcode_move.move_with_transform(self.gcode_move.last_position, 5) #sets speed for adjustment move
         self.reactor.register_async_callback(set_z_offset)
 
@@ -584,12 +589,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
 # Catch KGUI exceptions and display popups
 class PopupExceptionHandler(ExceptionHandler):
-    logging.info("handle_exception")
     def handle_exception(self, exception):
         if not TESTING:
+            logging.info("UI-Exception, popup invoked")
             tr = ''.join(traceback.format_tb(exception.__traceback__))
             App.get_running_app().handle_critical_error(tr + "\n\n" + repr(exception))
-            logging.exception(exception)
             return ExceptionManager.PASS
 
 ExceptionManager.add_handler(PopupExceptionHandler())

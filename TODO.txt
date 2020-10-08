@@ -1,10 +1,11 @@
-Features
-    Updates
+Features to be implemented    
+    Updater
     microcontroller flashing (maybe dead)
     gcode console
-    Sommer/Winterzeit, oder abschaffen
+    custom gcode macro buttons
 
-Unwanted Features
-    pause_resume extrusion
-    timer to close error (on live move, homing, connect)
-    DripModeEndSignal during homing due to add. gcode move command or stop command
+Bugs
+    timer to close error (on live move, homing)
+    2. live_extrusion always crashes
+    extrusion when print paused, resuming crashes maybe related to above
+    DripModeEndSignal during homing due to additional gcode move command or stop command

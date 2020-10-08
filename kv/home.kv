@@ -380,7 +380,7 @@
         Line:
             points: self.x+self.w1+1+self.w2, self.y+p.btn_divider_padding, self.x+self.w1+1+self.w2, self.top-p.btn_divider_padding
         Color:
-            rgba: p.btn_outline if self.material else (0,0,0,0)
+            rgba: p.btn_outline if self.filament_amount else (0,0,0,0)
         Line:
             points: self.x + self.filament_amount * self.width, self.y+p.btn_divider_padding, self.x + self.filament_amount * self.width, self.top-p.btn_divider_padding
     BaseButton:
