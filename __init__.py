@@ -594,6 +594,7 @@ class PopupExceptionHandler(ExceptionHandler):
             logging.info("UI-Exception, popup invoked")
             tr = ''.join(traceback.format_tb(exception.__traceback__))
             App.get_running_app().handle_critical_error(tr + "\n\n" + repr(exception))
+            logging.exception(exception)
             return ExceptionManager.PASS
 
 ExceptionManager.add_handler(PopupExceptionHandler())
