@@ -104,7 +104,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.klipper_config = self.klipper_config_manager.read_main_config()
             # read config
             self.z_speed = self.kgui_config.getfloat('manual_z_speed', 3)
-            self.ext_speed = self.kgui_config.getfloat('manual_extrusion_speed', 1)
+            self.ext_speed = self.kgui_config.getfloat('manual_extrusion_speed', 2)
             self.invert_z_controls = self.kgui_config.getboolean('invert_z_controls', False)
             self.xy_homing_controls = self.kgui_config.getboolean('xy_homing_controls', True)
             stepper_config = {'x': self.klipper_config.getsection('stepper_x'),
@@ -540,7 +540,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 pos[3] += 49 * direction
                 self.ext_move_completion = ReactorCompletion(self.reactor)
                 self.toolhead.dwell(0.010)
-                self.toolhead.drip_move(pos, self.z_speed, self.ext_move_completion)
+                self.toolhead.drip_move(pos, self.ext_speed, self.ext_move_completion)
             self.reactor.register_async_callback(start_e)
 
     def send_extrude_stop(self):
@@ -575,7 +575,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         """Stop klipper and GUI, returns to tty"""
         self.reactor.register_async_callback(lambda e: self.printer.request_exit("exit"), 0)
 
-    # using lambdaception to register klipper event handlers to run in the UI thread
+    # using lambdaception to register klippy event handlers to run in the UI thread
     def register_ui_event_handler(self, event_name, event_handler):
         self.printer.register_event_handler(event_name, lambda *args, **kwargs: Clock.schedule_once(lambda dt: event_handler(*args, **kwargs), 0))
 

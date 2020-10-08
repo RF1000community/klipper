@@ -238,7 +238,7 @@
         BtnTemp:
             id: acceleration
             on_release: Factory.AccPopup(val=app.acceleration).open()
-            large_value: "{:5.0f}mm/s²".format(app.acceleration)
+            large_value: "{:6.0f}mm/s²".format(app.acceleration)
             small_value: "Acceleration"
             right: p.screen_width - p.h_padding
             center_y: pressure_advance.center_y + p.btn_spacing
@@ -252,7 +252,7 @@
         BtnTemp:
             id: flow
             on_release: Factory.FlowPopup(val=app.flow).open()
-            large_value: "{:3.0f}%".format(app.flow)
+            large_value: "{:3.0f}%".format(app.flow-0.00001) # always round down
             small_value: "Material Flow"
             x: p.h_padding
             center_y: pressure_advance.center_y

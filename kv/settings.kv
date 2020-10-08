@@ -51,7 +51,7 @@
                 pos_hint: {'center_x':0.5}
             SetItem:
                 left_title: "Max. printhead Acceleration"
-                right_title: str(app.default_acceleration)+"mm/s²"
+                right_title: "{:6.0f}mm/s²".format(app.default_acceleration)
                 on_release: Factory.AccConfPopup(val=app.default_acceleration).open()
             SetItem:
                 left_title: "Pressure Advance"
