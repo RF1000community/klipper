@@ -51,12 +51,12 @@
                 pos_hint: {'center_x':0.5}
             SetItem:
                 left_title: "Max. printhead Acceleration"
-                right_title: "{:6.0f}mm/s²".format(app.default_acceleration)
-                on_release: Factory.AccConfPopup(val=app.default_acceleration).open()
+                right_title: "{:6.0f}mm/s²".format(app.config_acceleration)
+                on_release: Factory.AccConfPopup(val=app.config_acceleration).open()
             SetItem:
                 left_title: "Pressure Advance"
-                right_title: "{:4.3f}s".format(app.default_pressure_advance)
-                on_release: Factory.PressureAdvanceConfPopup(val=app.default_pressure_advance).open()
+                right_title: "{:4.3f}s".format(app.config_pressure_advance)
+                on_release: Factory.PressureAdvanceConfPopup(val=app.config_pressure_advance).open()
             SIWifi:
                 left_title: "Wifi"
                 enabled: self.network_manager.available

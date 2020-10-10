@@ -76,8 +76,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     acceleration = NumericProperty(2000)
     pressure_advance = NumericProperty(0)
     #config
-    default_pressure_advance = NumericProperty(0)
-    default_acceleration = NumericProperty(2000)
+    config_pressure_advance = NumericProperty(0)
+    config_acceleration = NumericProperty(2000)
 
     def __init__(self, config = None, **kwargs):
         logging.info("Kivy app initializing...")
@@ -296,8 +296,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_fan()
 
     def update_setting(self, *args):
-        self.get_config('extruder', 'pressure_advance', 'default_pressure_advance', 'float')
-        self.get_config('printer', 'max_accel', 'default_acceleration', 'float')
+        self.get_config('extruder', 'pressure_advance', 'config_pressure_advance', 'float')
+        self.get_config('printer', 'max_accel', 'config_acceleration', 'float')
 
     def format_time(self, seconds):
         minutes = int((seconds % 3600) // 60)
@@ -584,9 +584,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def register_ui_event_handler(self, event_name, event_handler):
         self.printer.register_event_handler(event_name, lambda *args, **kwargs: Clock.schedule_once(lambda dt: event_handler(*args, **kwargs), 0))
 
-########################################################################################
-# KLIPPY THREAD v
-
 # Catch KGUI exceptions and display popups
 class PopupExceptionHandler(ExceptionHandler):
     def handle_exception(self, exception):
@@ -596,6 +593,9 @@ class PopupExceptionHandler(ExceptionHandler):
             App.get_running_app().handle_critical_error(tr + "\n\n" + repr(exception))
             logging.exception(exception)
             return ExceptionManager.PASS
+
+########################################################################################
+# KLIPPY THREAD v
 
 ExceptionManager.add_handler(PopupExceptionHandler())
 
