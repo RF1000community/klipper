@@ -11,7 +11,7 @@
 #include "internal.h" // enable_pclock
 #include "sched.h" // DECL_INIT
 
-//TODO pins for stm32h7
+// USART6 (STM32H7) is not implemented yet
 // Select the configured serial port
 #if CONFIG_SERIAL_PORT == 1
   DECL_CONSTANT_STR("RESERVE_PINS_serial", "PA10,PA9");

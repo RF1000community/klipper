@@ -1,4 +1,5 @@
-// Code to setup clocks and gpio on stm32h7
+// Code to setup clocks and gpio on stm32h7 
+// No support for usb connectivity!
 //
 // Copyright (C) 2020 Konstantin Vogel <konstantin.vogel@gmx.net>
 //
@@ -8,13 +9,11 @@
 #include "autoconf.h" // CONFIG_CLOCK_REF_FREQ
 #include "board/armcm_boot.h" // VectorTable
 #include "board/irq.h" // irq_disable
-#include "board/usb_cdc.h" // usb_request_bootloader
 #include "command.h" // DECL_CONSTANT_STR
 #include "internal.h" // enable_pclock
 #include "sched.h" // sched_main
 
 #define FREQ_PERIPH (CONFIG_CLOCK_FREQ / 4)
-#define FREQ_USB 48000000
 
 // Enable a peripheral clock
 void
@@ -97,7 +96,6 @@ get_pclock_frequency(uint32_t periph_base)
 }
 
 // Enable a GPIO peripheral clock
-// TODO test this
 void
 gpio_clock_enable(GPIO_TypeDef *regs)
 {
@@ -127,17 +125,6 @@ gpio_peripheral(uint32_t gpio, uint32_t mode, int pullup)
     regs->OSPEEDR = (regs->OSPEEDR & ~m_msk) | (0x02 << m_shift);
 }
 
-#define USB_BOOT_FLAG_ADDR (CONFIG_RAM_START + CONFIG_RAM_SIZE - 4096)
-#define USB_BOOT_FLAG 0x55534220424f4f54 // "USB BOOT"
-
-// Handle USB reboot requests
-void
-usb_request_bootloader(void)
-{
-    irq_disable();
-    *(uint64_t*)USB_BOOT_FLAG_ADDR = USB_BOOT_FLAG;
-    NVIC_SystemReset();
-}
 
 #if !CONFIG_STM32_CLOCK_REF_INTERNAL
 DECL_CONSTANT_STR("RESERVE_PINS_crystal", "PH0,PH1");
@@ -147,8 +134,8 @@ DECL_CONSTANT_STR("RESERVE_PINS_crystal", "PH0,PH1");
 static void
 clock_setup(void)
 {
-    uint32_t pll_base = 2000000;//TODO
-    uint32_t pll_freq = CONFIG_CLOCK_FREQ * 2;
+    uint32_t pll_base = 5000000; //  HSE(25mhz) /=DIVM1(5) -pll_base(5Mhz)-> *=DIVN1(192) -pll_freq-> /=DIVP1(2) -> SYSCLK(400/480mhz)
+    uint32_t pll_freq = CONFIG_CLOCK_FREQ * 2; // only even dividers (DIVP1) are allowed
     if (!CONFIG_STM32_CLOCK_REF_INTERNAL) {
         // Configure PLL from external crystal (HSE)
         RCC->CR |= RCC_CR_HSEON; // enable HSE input
@@ -159,10 +146,9 @@ clock_setup(void)
         MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_NONE, RCC_PLLCKSELR_PLLSRC_HSI); // choose HSI as clock source
         MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1, (64000000 / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
     }
-    RCC->PLL1DIVR = (((pll_freq/pll_base) << RCC_PLL1DIVR_N1_Pos)
-                    | (0 << RCC_PLL1DIVR_P1_Pos)
-                    | ((pll_freq/FREQ_USB) << RCC_PLL1DIVR_Q1_Pos));
-    RCC->CR |= RCC_CR_PLLON; //when configuration is done turn on the PLL
+    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1RGE_Msk, 2); // set frequency range of PLL1 according to pll_base (3=8-16Mhz, 2=4-8Mhz)
+    RCC->PLL1DIVR = (((pll_freq/pll_base) << RCC_PLL1DIVR_N1_Pos) | (((pll_freq/CONFIG_CLOCK_FREQ)-1) << RCC_PLL1DIVR_P1_Pos)); // set multiplier DIVN1 and post divider DIVP1 (here 001 = /2, 011 = not allowed, 0011 = /4...)
+    RCC->CR |= RCC_CR_PLLON; //when configuration is done turn on the PLL TODO maybe wait for HSE to stabilize?
 
 
     // Set flash latency
@@ -188,13 +174,6 @@ clock_setup(void)
 void
 armcm_main(void)
 {
-    if (CONFIG_USBSERIAL && *(uint64_t*)USB_BOOT_FLAG_ADDR == USB_BOOT_FLAG) {
-        *(uint64_t*)USB_BOOT_FLAG_ADDR = 0;
-        uint32_t *sysbase = (uint32_t*)0x1fff0000;
-        asm volatile("mov sp, %0\n bx %1"
-                     : : "r"(sysbase[0]), "r"(sysbase[1]));
-    }
-
     // Run SystemInit() and then restore VTOR
     SystemInit();
     SCB->VTOR = (uint32_t)VectorTable;
