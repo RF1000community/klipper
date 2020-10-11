@@ -5,6 +5,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import sys, os, optparse, logging, time, threading, collections, importlib
+import signal
 import util, reactor, queuelogger, msgproto, homing
 import gcode, configfile, pins, mcu, toolhead, webhooks, traceback
 from subprocess import Popen
@@ -50,6 +51,7 @@ class Printer:
     config_error = configfile.error
     command_error = homing.CommandError
     def __init__(self, bglogger, start_args):
+        signal.signal(signal.SIGTERM, self._terminate)
         self.bglogger = bglogger
         self.start_args = start_args
         self.reactor = reactor.Reactor()
@@ -240,6 +242,10 @@ class Printer:
         if self.run_result is None:
             self.run_result = result
         self.reactor.end()
+    def _terminate(self, signalnum, frame):
+        """Called on SIGTERM"""
+        logging.info("Received SIGTERM, shutting down...")
+        self.request_exit("Terminated")
 
 
 ######################################################################
@@ -329,6 +335,8 @@ def main():
             Popen(['sudo', 'systemctl', 'restart', 'klipper.service']).wait()
         elif res == 'exit':
             Popen(['sudo', 'systemctl', 'stop', 'klipper.service']).wait()
+        elif res == 'Terminated':
+            break
 
 
 
