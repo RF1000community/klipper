@@ -187,9 +187,11 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     # or to fully exit afterwards
     def handle_shutdown(self):
         self.state = "error"
+        self.stop()
 
     def handle_disconnect(self):
-        self.state = "error disconnected"
+        self.state = "disconnected"
+        self.stop()
 
     def handle_critical_error(self, message):
         self.state = "error"
@@ -197,6 +199,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def handle_error(self, message):
         ErrorPopup(message = message).open()
+
     # this ensures that during homing homed=False, crucially disabling manual movement (buttons), and z-tuning moves
     def handle_home_start(self, rails):
         for rail in rails:
