@@ -142,21 +142,35 @@ install_klipper_service()
     report_status "Installing systemd service klipper.service..."
     sudo /bin/sh -c "cat > /etc/systemd/system/klipper.service" <<EOF
 [Unit]
-Description="Klipper with GUI running in Xorg"
-Requires=multi-user.target
+Description="Klipper with GUI"
+Requires=start_xorg.service
+
 [Service]
 Type=simple
 User=$USER
-Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/bin/bash -c "/usr/bin/startx ${PYTHONDIR}/bin/python3 ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -v -l /tmp/klippy.log"
+Environment=DISPLAY=:0
+ExecStart=$PYTHONDIR/bin/python3 $SRCDIR/klippy/klippy.py $HOME/printer.cfg -v -l /tmp/klippy.log
 Nice=-19
 Restart=always
 RestartSec=10
+
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
+EOF
+    sudo /bin/sh -c "cat > /etc/systemd/system/start_xorg.service" <<EOF
+[Unit]
+Description="Starts Xorg"
+Requires=multi-user.target
+
+[Service]
+Type=simple
+User=$USER
+ExecStart=startx
+
+[Install]
+WantedBy=multi-user.target
 EOF
     # -v option in ExecStart is for debugging information
-    sudo chmod +x /etc/systemd/system/klipper.service
     sudo systemctl daemon-reload
     sudo systemctl enable klipper.service
 }
