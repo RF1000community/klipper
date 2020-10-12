@@ -8,7 +8,6 @@ import sys, os, optparse, logging, time, threading, collections, importlib
 import signal
 import util, reactor, queuelogger, msgproto, homing
 import gcode, configfile, pins, mcu, toolhead, webhooks, traceback
-from subprocess import Popen
 
 message_ready = "Printer is ready"
 
@@ -319,25 +318,14 @@ def main():
                         " Severe timing issues may result!")
 
     # Start Printer() class
-    while 1:
-        if bglogger is not None:
-            bglogger.clear_rollover_info()
-            bglogger.set_rollover_info('versions', versions)
+    if bglogger is not None:
+        bglogger.clear_rollover_info()
+        bglogger.set_rollover_info('versions', versions)
 
-        res = Printer(bglogger, start_args).run()
+    Printer(bglogger, start_args).run()
 
-        if bglogger is not None:
-            bglogger.stop()
-
-        if res in ('restart', 'firmware_restart'):
-            time.sleep(1.)
-            # Restart Systemd service if it exists otherwise restart with while loop
-            Popen(['sudo', 'systemctl', 'restart', 'klipper.service']).wait()
-        elif res == 'exit':
-            Popen(['sudo', 'systemctl', 'stop', 'klipper.service']).wait()
-        elif res == 'Terminated':
-            break
-
+    if bglogger is not None:
+        bglogger.stop()
 
 
 if __name__ == '__main__':
