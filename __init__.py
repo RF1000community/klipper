@@ -186,11 +186,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     # to halt so the user can see what he did wrong
     # or to fully exit afterwards
     def handle_shutdown(self):
-        self.state = "error"
         self.stop()
 
     def handle_disconnect(self):
-        self.state = "disconnected"
         self.stop()
 
     def handle_critical_error(self, message):
@@ -578,10 +576,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         Popen(['sudo','systemctl', 'reboot']) 
     def restart_klipper(self):
         """Quit and restart klipper and GUI"""
-        self.reactor.register_async_callback(lambda e: self.printer.request_exit('firmware_restart') , 0)
+        Popen(['sudo','systemctl', 'restart', 'klipper.service'])
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
-        self.reactor.register_async_callback(lambda e: self.printer.request_exit("exit"), 0)
+        Popen(['sudo','systemctl', 'stop', 'klipper.service'])
 
     # using lambdaception to register klippy event handlers to run in the UI thread
     def register_ui_event_handler(self, event_name, event_handler):
