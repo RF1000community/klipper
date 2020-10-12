@@ -13,6 +13,3 @@ requests
 kivy==2.0.0rc3
 #Wifi
 pydbus
-
-#Cura connection
-zeroconf==0.28.5
