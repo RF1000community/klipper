@@ -322,10 +322,12 @@ def main():
         bglogger.clear_rollover_info()
         bglogger.set_rollover_info('versions', versions)
 
-    Printer(bglogger, start_args).run()
+    res = Printer(bglogger, start_args).run()
 
     if bglogger is not None:
         bglogger.stop()
+    if res == "firmware_restart":
+        Popen('sudo', 'systemctl', 'restart', 'klipper')
 
 
 if __name__ == '__main__':
