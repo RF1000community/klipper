@@ -174,8 +174,11 @@ clock_setup(void)
 void
 armcm_main(void)
 {
+    //while(1){};
+
     // Run SystemInit() and then restore VTOR
     SystemInit();
+
     SCB->VTOR = (uint32_t)VectorTable;
 
     clock_setup();
