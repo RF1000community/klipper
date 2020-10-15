@@ -1,10 +1,11 @@
 // Code to setup clocks and gpio on stm32h7 
-// No support for usb connectivity!
 //
 // Copyright (C) 2020 Konstantin Vogel <konstantin.vogel@gmx.net>
 //
 // This file may be distributed under the terms of the GNU GPLv3 license.
 
+
+// USB AND I2C NOT SUPPORTED!!
 
 #include "autoconf.h" // CONFIG_CLOCK_REF_FREQ
 #include "board/armcm_boot.h" // VectorTable
@@ -164,24 +165,24 @@ clock_setup(void)
     MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE1, RCC_D2CFGR_D2PPRE1_DIV2);
     MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE2, RCC_D2CFGR_D2PPRE2_DIV2);
     MODIFY_REG(RCC->D3CFGR, RCC_D3CFGR_D3PPRE, RCC_D3CFGR_D3PPRE_DIV2);
-
+    
     // Wait for PLL1 to be selected
-    while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL1)
-        ;
+    // while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL1)
+    //     ;
 }
 
 // Main entry point - called from armcm_boot.c:ResetHandler()
 void
 armcm_main(void)
 {
-    //while(1){};
-
     // Run SystemInit() and then restore VTOR
+
     SystemInit();
 
     SCB->VTOR = (uint32_t)VectorTable;
 
     clock_setup();
+    //while(1){};
 
     sched_main();
 }

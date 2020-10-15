@@ -105,7 +105,7 @@ config RAM_SIZE
     default 0x5000 if MACH_STM32F103 # Ram size of stm32f103x8 (20KiB)
     default 0x20000 if MACH_STM32F207
     default 0x20000 if MACH_STM32F4
-    default 0xD8000 if MACH_STM32H7 # TODO check if this correct, 864KiB is SRAM size, total is 1MB
+    default 0x20000 if MACH_STM32H7 # TODO check if this correct, 864KiB is SRAM size, total is 1MB
 
 config STACK_SIZE
     int
