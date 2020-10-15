@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # Main code for host side printer firmware
 #
-# Copyright (C) 2016-2018  Kevin O'Connor <kevin@koconnor.net>
+# Copyright (C) 2016-2020  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import sys, os, optparse, logging, time, threading, collections, importlib
-import signal
-import util, reactor, queuelogger, msgproto, homing
+import sys, os, gc, optparse, logging, time, threading, collections, importlib
+import util, reactor, queuelogger, msgproto, homing, signal
 import gcode, configfile, pins, mcu, toolhead, webhooks, traceback
 
 message_ready = "Printer is ready"
@@ -49,11 +48,11 @@ Printer is shutdown
 class Printer:
     config_error = configfile.error
     command_error = homing.CommandError
-    def __init__(self, bglogger, start_args):
+    def __init__(self, main_reactor, bglogger, start_args):
         signal.signal(signal.SIGTERM, self._terminate)
         self.bglogger = bglogger
         self.start_args = start_args
-        self.reactor = reactor.Reactor()
+        self.reactor = main_reactor
         self.reactor.register_callback(self._connect)
         self.state_message = message_startup
         self.in_shutdown_state = False
@@ -182,7 +181,8 @@ class Printer:
                 cb()
         except Exception as e:
             logging.exception("Unhandled exception during ready callback")
-            self.invoke_shutdown("Internal error during ready callback: %s" % (str(e),))
+            self.invoke_shutdown("Internal error during ready callback: %s"
+                                 % (str(e),))
     def run(self):
         systime = time.time()
         monotime = self.reactor.monotonic()
@@ -230,6 +230,8 @@ class Printer:
                 cb()
             except:
                 logging.exception("Exception during shutdown handler")
+        logging.info("Reactor garbage collection: %s",
+                     self.reactor.get_gc_stats())
     def invoke_async_shutdown(self, msg):
         self.reactor.register_async_callback(
             (lambda e: self.invoke_shutdown(msg)))
@@ -316,13 +318,15 @@ def main():
     elif not options.debugoutput:
         logging.warning("No log file specified!"
                         " Severe timing issues may result!")
+    gc.disable()
 
     # Start Printer() class
     if bglogger is not None:
         bglogger.clear_rollover_info()
         bglogger.set_rollover_info('versions', versions)
-
-    res = Printer(bglogger, start_args).run()
+    gc.collect()
+    main_reactor = reactor.Reactor(gc_checking=True)
+    res = Printer(main_reactor, bglogger, start_args).run()
 
     if bglogger is not None:
         bglogger.stop()
