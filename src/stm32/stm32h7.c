@@ -159,7 +159,7 @@ clock_setup(void)
         ;
 
     // Switch system clock source (SYSCLK) to PLL1
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW_PLL1);
+    MODIFY_REG(RCC->CFGR, RCC_CFGR_SW_Msk, RCC_CFGR_SW_PLL1);
     // Set D1PPRE, D2PPRE, D2PPRE2, D3PPRE 
     MODIFY_REG(RCC->D1CFGR, RCC_D1CFGR_D1PPRE, RCC_D1CFGR_D1PPRE_DIV2);
     MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE1, RCC_D2CFGR_D2PPRE1_DIV2);
@@ -167,8 +167,8 @@ clock_setup(void)
     MODIFY_REG(RCC->D3CFGR, RCC_D3CFGR_D3PPRE, RCC_D3CFGR_D3PPRE_DIV2);
     
     // Wait for PLL1 to be selected
-    // while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL1)
-    //     ;
+    while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL1)
+        ;
 }
 
 // Main entry point - called from armcm_boot.c:ResetHandler()

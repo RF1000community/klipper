@@ -19,7 +19,7 @@ CFLAGS-$(CONFIG_MACH_STM32F2) += -mcpu=cortex-m3 -Ilib/stm32f2/include
 CFLAGS-$(CONFIG_MACH_STM32F4) += -mcpu=cortex-m4 -Ilib/stm32f4/include
 CFLAGS-$(CONFIG_MACH_STM32F4) += -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 CFLAGS-$(CONFIG_MACH_STM32H7) += -mcpu=cortex-m7 -Ilib/stm32h7/include
-CFLAGS-$(CONFIG_MACH_STM32H7) += -mfloat-abi=soft
+# CFLAGS-$(CONFIG_MACH_STM32H7) += -mfloat-abi=soft
 # TODO maybe add more for stm32h7 like stm32f4
 CFLAGS += $(CFLAGS-y) -D$(MCU_UPPER) -mthumb -Ilib/cmsis-core -Ilib/fast-hash
 
