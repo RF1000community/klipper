@@ -80,6 +80,17 @@ BAUD_RATE = 115200
 else
 BAUD_RATE = 57600
 endif
+
+# Use a GPIO Pin reset sequence if pins are specified. E.g. RST=27 BOOT0=17 when the mcu's RESET is connected to GPIO 27 of the host...
+RST = ""
+BOOT0 = ""
+ifneq ($(RST), "")
+RESET_SEQUENCE = -R -i $(BOOT0),$(RST),-$(RST),$(RST),$(RST),$(RST):-$(BOOT0),-$(RST),$(RST)
+# BOOT0 is driven high for entering bootloader (setting it 4x gives it 300ms to boot before attempting a connection)
+else
+RESET_SEQUENCE = ""
+endif
+
 serialflash: $(OUT)klipper.bin
 	@echo "  Flashing $< to $(FLASH_DEVICE) with $(BAUD_RATE) baud via stm32flash"
-	$(Q)stm32flash -w $< -v -b $(BAUD_RATE) -g 0 $(FLASH_DEVICE)
+	$(Q)stm32flash -w $< -v -b $(BAUD_RATE) $(RESET_SEQUENCE) -g 0 $(FLASH_DEVICE)
