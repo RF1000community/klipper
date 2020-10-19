@@ -125,7 +125,13 @@ gpio_peripheral(uint32_t gpio, uint32_t mode, int pullup)
     regs->OTYPER = (regs->OTYPER & ~(1 << pos)) | (od << pos);
     regs->OSPEEDR = (regs->OSPEEDR & ~m_msk) | (0x02 << m_shift);
 }
-
+void
+wait(void)
+{
+    int i;
+    for(i=0;i<50000;i++)
+    {};
+}
 
 #if !CONFIG_STM32_CLOCK_REF_INTERNAL
 DECL_CONSTANT_STR("RESERVE_PINS_crystal", "PH0,PH1");
@@ -140,31 +146,32 @@ clock_setup(void)
     if (!CONFIG_STM32_CLOCK_REF_INTERNAL) {
         // Configure PLL from external crystal (HSE)
         RCC->CR |= RCC_CR_HSEON; // enable HSE input
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_NONE, RCC_PLLCKSELR_PLLSRC_HSE); // choose HSE as clock source
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1, (CONFIG_CLOCK_REF_FREQ / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk, RCC_PLLCKSELR_PLLSRC_HSE); // choose HSE as clock source
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk, (CONFIG_CLOCK_REF_FREQ / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
     } else {
         // Configure PLL from internal 64Mhz oscillator (HSI)
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_NONE, RCC_PLLCKSELR_PLLSRC_HSI); // choose HSI as clock source
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1, (64000000 / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk, RCC_PLLCKSELR_PLLSRC_HSI); // choose HSI as clock source
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk, (64000000 / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
     }
-    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1RGE_Msk, 2); // set frequency range of PLL1 according to pll_base (3=8-16Mhz, 2=4-8Mhz)
+    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1RGE_Msk, RCC_PLLCFGR_PLL1RGE_2); // set frequency range of PLL1 according to pll_base (3=8-16Mhz, 2=4-8Mhz)
     RCC->PLL1DIVR = (((pll_freq/pll_base) << RCC_PLL1DIVR_N1_Pos) | (((pll_freq/CONFIG_CLOCK_FREQ)-1) << RCC_PLL1DIVR_P1_Pos)); // set multiplier DIVN1 and post divider DIVP1 (here 001 = /2, 011 = not allowed, 0011 = /4...)
+    wait();
     RCC->CR |= RCC_CR_PLLON; //when configuration is done turn on the PLL TODO maybe wait for HSE to stabilize?
 
 
     // Set flash latency
-    MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, (uint32_t)(FLASH_ACR_LATENCY_7WS)); // 5 should also work
+    //MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY_Msk, FLASH_ACR_LATENCY_5WS);
     // Wait for PLL lock
     while (!(RCC->CR & RCC_CR_PLLRDY))
         ;
 
     // Switch system clock source (SYSCLK) to PLL1
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_SW_Msk, RCC_CFGR_SW_PLL1);
+    MODIFY_REG(RCC->CFGR,   RCC_CFGR_SW_Msk,        RCC_CFGR_SW_PLL1);
     // Set D1PPRE, D2PPRE, D2PPRE2, D3PPRE 
-    MODIFY_REG(RCC->D1CFGR, RCC_D1CFGR_D1PPRE, RCC_D1CFGR_D1PPRE_DIV2);
-    MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE1, RCC_D2CFGR_D2PPRE1_DIV2);
-    MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE2, RCC_D2CFGR_D2PPRE2_DIV2);
-    MODIFY_REG(RCC->D3CFGR, RCC_D3CFGR_D3PPRE, RCC_D3CFGR_D3PPRE_DIV2);
+    MODIFY_REG(RCC->D1CFGR, RCC_D1CFGR_D1PPRE_Msk,  RCC_D1CFGR_D1PPRE_DIV2);
+    MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE1_Msk, RCC_D2CFGR_D2PPRE1_DIV2);
+    MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE2_Msk, RCC_D2CFGR_D2PPRE2_DIV2);
+    MODIFY_REG(RCC->D3CFGR, RCC_D3CFGR_D3PPRE_Msk,  RCC_D3CFGR_D3PPRE_DIV2);
     
     // Wait for PLL1 to be selected
     while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL1)
@@ -176,13 +183,11 @@ void
 armcm_main(void)
 {
     // Run SystemInit() and then restore VTOR
-
     SystemInit();
 
     SCB->VTOR = (uint32_t)VectorTable;
 
     clock_setup();
-    //while(1){};
 
     sched_main();
 }
