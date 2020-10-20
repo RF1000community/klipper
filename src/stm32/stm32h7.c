@@ -129,7 +129,7 @@ void
 wait(void)
 {
     int i;
-    for(i=0;i<50000;i++)
+    for(i=0;i<500;i++)
     {};
 }
 
@@ -154,7 +154,7 @@ clock_setup(void)
         MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk, (64000000 / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
     }
     MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1RGE_Msk, RCC_PLLCFGR_PLL1RGE_2); // set frequency range of PLL1 according to pll_base (3=8-16Mhz, 2=4-8Mhz)
-    RCC->PLL1DIVR = (((pll_freq/pll_base) << RCC_PLL1DIVR_N1_Pos) | (((pll_freq/CONFIG_CLOCK_FREQ)-1) << RCC_PLL1DIVR_P1_Pos)); // set multiplier DIVN1 and post divider DIVP1 (here 001 = /2, 011 = not allowed, 0011 = /4...)
+    RCC->PLL1DIVR = ((((pll_freq/pll_base)-1) << RCC_PLL1DIVR_N1_Pos) | (((uint32_t)(pll_freq/CONFIG_CLOCK_FREQ)-1) << RCC_PLL1DIVR_P1_Pos)); // set multiplier DIVN1 and post divider DIVP1 (here 001 = /2, 011 = not allowed, 0011 = /4...)
     wait();
     RCC->CR |= RCC_CR_PLLON; //when configuration is done turn on the PLL TODO maybe wait for HSE to stabilize?
 
