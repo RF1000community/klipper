@@ -15,7 +15,7 @@
 #include "sched.h" // sched_main
 
 #define FREQ_PERIPH (CONFIG_CLOCK_FREQ / 4)
-
+#define update_reg(register, reset_mask, new_value) (register = ((register & ~reset_mask) | new_value))
 // Enable a peripheral clock
 void
 enable_pclock(uint32_t periph_base)
@@ -125,11 +125,12 @@ gpio_peripheral(uint32_t gpio, uint32_t mode, int pullup)
     regs->OTYPER = (regs->OTYPER & ~(1 << pos)) | (od << pos);
     regs->OSPEEDR = (regs->OSPEEDR & ~m_msk) | (0x02 << m_shift);
 }
+
 void
-wait(void)
+wait()
 {
     int i;
-    for(i=0;i<500;i++)
+    for(i=0;i<100000;i++)
     {};
 }
 
@@ -146,33 +147,55 @@ clock_setup(void)
     if (!CONFIG_STM32_CLOCK_REF_INTERNAL) {
         // Configure PLL from external crystal (HSE)
         RCC->CR |= RCC_CR_HSEON; // enable HSE input
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk, RCC_PLLCKSELR_PLLSRC_HSE); // choose HSE as clock source
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk, (CONFIG_CLOCK_REF_FREQ / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
+        while(!(RCC->CR & RCC_CR_HSERDY))
+            ;
+        update_reg(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk, RCC_PLLCKSELR_PLLSRC_HSE); // choose HSE as clock source
+        update_reg(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk, (CONFIG_CLOCK_REF_FREQ / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
     } else {
         // Configure PLL from internal 64Mhz oscillator (HSI)
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk, RCC_PLLCKSELR_PLLSRC_HSI); // choose HSI as clock source
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk, (64000000 / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
+        pll_base = 4000000; //64mhz is integer divisible with 4mhz
+        update_reg(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk, RCC_PLLCKSELR_PLLSRC_HSI); // choose HSI as clock source
+        update_reg(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk, (64000000 / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);// set pre divider DIVM1
     }
-    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1RGE_Msk, RCC_PLLCFGR_PLL1RGE_2); // set frequency range of PLL1 according to pll_base (3=8-16Mhz, 2=4-8Mhz)
-    RCC->PLL1DIVR = ((((pll_freq/pll_base)-1) << RCC_PLL1DIVR_N1_Pos) | (((uint32_t)(pll_freq/CONFIG_CLOCK_FREQ)-1) << RCC_PLL1DIVR_P1_Pos)); // set multiplier DIVN1 and post divider DIVP1 (here 001 = /2, 011 = not allowed, 0011 = /4...)
+    update_reg(RCC->PLLCFGR, RCC_PLLCFGR_PLL1FRACEN, 0); // Default should already be 0
+    update_reg(RCC->PLLCFGR, RCC_PLLCFGR_PLL1VCOSEL_Msk, 0); // Default should already be 0
+    update_reg(RCC->PLLCFGR, RCC_PLLCFGR_PLL1RGE_Msk, RCC_PLLCFGR_PLL1RGE_2); // set frequency range of PLL1 according to pll_base (3=8-16Mhz, 2=4-8Mhz)
+    update_reg(RCC->PLLCFGR, RCC_PLLCFGR_DIVR1EN_Msk, 0); // Disable unused outputs
+    update_reg(RCC->PLLCFGR, RCC_PLLCFGR_DIVQ1EN_Msk, 0);
+
+    update_reg(RCC->PLL1DIVR, RCC_PLL1DIVR_N1_Msk, (((pll_freq/pll_base)-1)          << RCC_PLL1DIVR_N1_Pos)); // Set multiplier DIVN1
+    update_reg(RCC->PLL1DIVR, RCC_PLL1DIVR_P1_Msk, (((pll_freq/CONFIG_CLOCK_FREQ)-1) << RCC_PLL1DIVR_P1_Pos)); // Set post divider DIVP1 (here 001 = /2, 011 = not allowed, 0011 = /4...)
+
+
+    enable_pclock(PWR_BASE);//test
+
+    // Crank up Vcore
+    update_reg(PWR->D3CR, PWR_D3CR_VOS_Msk, PWR_D3CR_VOS);
     wait();
-    RCC->CR |= RCC_CR_PLLON; //when configuration is done turn on the PLL TODO maybe wait for HSE to stabilize?
-
-
-    // Set flash latency
-    //MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY_Msk, FLASH_ACR_LATENCY_5WS);
-    // Wait for PLL lock
-    while (!(RCC->CR & RCC_CR_PLLRDY))
+    while (!(PWR->D3CR & PWR_D3CR_VOSRDY))
+        ;
+    RCC->APB4ENR |= RCC_APB4ENR_SYSCFGEN; 
+    SYSCFG->PWRCR |= SYSCFG_PWRCR_ODEN; // enable overdrive
+    wait();
+    while (!(PWR->D3CR & PWR_D3CR_VOSRDY))
         ;
 
-    // Switch system clock source (SYSCLK) to PLL1
-    MODIFY_REG(RCC->CFGR,   RCC_CFGR_SW_Msk,        RCC_CFGR_SW_PLL1);
+    // Set flash latency
+    //update_reg(FLASH->ACR, FLASH_ACR_LATENCY_Msk, FLASH_ACR_LATENCY_5WS);
+
+    RCC->CR |= RCC_CR_PLL1ON;
+    while (!(RCC->CR & RCC_CR_PLL1RDY))// Wait for PLL lock
+        ;
+
+    update_reg(RCC->D1CFGR, RCC_D1CFGR_HPRE_Msk,    RCC_D1CFGR_HPRE_DIV2);
     // Set D1PPRE, D2PPRE, D2PPRE2, D3PPRE 
-    MODIFY_REG(RCC->D1CFGR, RCC_D1CFGR_D1PPRE_Msk,  RCC_D1CFGR_D1PPRE_DIV2);
-    MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE1_Msk, RCC_D2CFGR_D2PPRE1_DIV2);
-    MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE2_Msk, RCC_D2CFGR_D2PPRE2_DIV2);
-    MODIFY_REG(RCC->D3CFGR, RCC_D3CFGR_D3PPRE_Msk,  RCC_D3CFGR_D3PPRE_DIV2);
-    
+    update_reg(RCC->D1CFGR, RCC_D1CFGR_D1PPRE_Msk,  RCC_D1CFGR_D1PPRE_DIV2);
+    update_reg(RCC->D2CFGR, RCC_D2CFGR_D2PPRE1_Msk, RCC_D2CFGR_D2PPRE1_DIV2);
+    update_reg(RCC->D2CFGR, RCC_D2CFGR_D2PPRE2_Msk, RCC_D2CFGR_D2PPRE2_DIV2);
+    update_reg(RCC->D3CFGR, RCC_D3CFGR_D3PPRE_Msk,  RCC_D3CFGR_D3PPRE_DIV2);
+
+    // Switch system clock source (SYSCLK) to PLL1
+    update_reg(RCC->CFGR, RCC_CFGR_SW_Msk, RCC_CFGR_SW_PLL1);
     // Wait for PLL1 to be selected
     while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL1)
         ;
