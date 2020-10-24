@@ -13,8 +13,6 @@
 #include "internal.h" // GPIO
 #include "sched.h" // sched_shutdown
 
-#define update_reg(register, reset_mask, new_value)  (register = (register & ~reset_mask) | new_value)
-
 
 DECL_CONSTANT("ADC_MAX", 65.535);
 
@@ -65,13 +63,13 @@ gpio_adc_setup(uint32_t pin)
         // Enable clock source for ADC
         enable_pclock(adc_base);
         // Calibrate the ADC
-        update_reg(adc->CR, ADC_CR_DEEPPWD, 0); // Ensure that we are not in Deep-power-down
-        update_reg(adc->CR, ADC_CR_ADVREGEN, ADC_CR_ADVREGEN); // Ensure that ADC Voltage regulator is on
+        MODIFY_REG(adc->CR, ADC_CR_DEEPPWD, 0); // Ensure that we are not in Deep-power-down
+        MODIFY_REG(adc->CR, ADC_CR_ADVREGEN, ADC_CR_ADVREGEN); // Ensure that ADC Voltage regulator is on
         // while(!(adc->CR & ADC_CR_ADRDY)) // maybe wait until ADC is ready this should check LDORDY (doesn't exist) pg.932
         //     ;
-        update_reg(adc->CR, ADC_CR_ADCALDIF, 0); // Set calibration mode to Single ended (not differential)
-        update_reg(adc->CR, ADC_CR_ADCALLIN, ADC_CR_ADCALLIN); // Enable linearity calibration
-        update_reg(adc->CR, ADC_CR_ADCAL,    ADC_CR_ADCAL); // Start the calibration
+        MODIFY_REG(adc->CR, ADC_CR_ADCALDIF, 0); // Set calibration mode to Single ended (not differential)
+        MODIFY_REG(adc->CR, ADC_CR_ADCALLIN, ADC_CR_ADCALLIN); // Enable linearity calibration
+        MODIFY_REG(adc->CR, ADC_CR_ADCAL,    ADC_CR_ADCAL); // Start the calibration
         while(adc->CR & ADC_CR_ADCAL) // wait for the calibration
             ;
         uint32_t aticks = 0b010; // Set 8.5 ADC clock cycles sample time for every channel (Reference manual pg.940)
@@ -84,7 +82,7 @@ gpio_adc_setup(uint32_t pin)
                    | (aticks << 18) | (aticks << 21) | (aticks << 24)
                    | (aticks << 27));
 
-        update_reg(adc->CFGR, ADC_CFGR_CONT, 0); // Disable Continuous Mode
+        MODIFY_REG(adc->CFGR, ADC_CFGR_CONT, 0); // Disable Continuous Mode
         adc->CR |= ADC_CR_ADEN; // Enable ADC
     }
 
