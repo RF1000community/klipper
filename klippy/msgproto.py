@@ -366,7 +366,7 @@ class MessageParser:
             if decompress:
                 data = zlib.decompress(data)
             self.raw_identify_data = data
-            data = json.loads(data.decode('ISO-8859-1', 'strict'))
+            data = json.loads(data)
             self._fill_enumerations(data.get('enumerations', {}))
             commands = data.get('commands')
             responses = data.get('responses')

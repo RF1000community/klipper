@@ -112,7 +112,7 @@ def get_cpu_info():
 def get_version_from_file(klippy_src):
     try:
         with open(os.path.join(klippy_src, '.version')) as h:
-            return h.read().decode().rstrip()
+            return h.read().rstrip()
     except IOError:
         pass
     return "?"
