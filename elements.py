@@ -1,5 +1,6 @@
 # coding: utf-8
 from os.path import join, basename
+from os import remove
 import shutil
 from time import time
 
@@ -131,6 +132,29 @@ class PrintPopup(BasePopup):
         app.send_print(new_path)
         tabs = app.root.ids.tabs
         tabs.switch_to(tabs.ids.home_tab)
+
+class DeletePopup(BasePopup):
+    """Popup to confirm file deletion"""
+    def __init__(self, path, filechooser=None, timeline=None, **kwargs):
+        self.path = path
+        self.filechooser = filechooser
+        self.timeline = timeline
+        super().__init__(**kwargs)
+
+    def confirm(self):
+        """Deletes the file and closes the popup"""
+        remove(self.path)
+        app = App.get_running_app()
+
+        # Update the files in the filechooser instance
+        if app.history:
+            app.history.trim_history()
+        if self.timeline:
+            self.timeline.load_all(in_background=False)
+        elif self.filechooser:
+            self.filechooser.load_files(in_background=True)
+        self.dismiss()
+        app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)
 
 class UltraSlider(Widget):
     """

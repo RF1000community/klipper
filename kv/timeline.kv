@@ -31,27 +31,27 @@
             pos: 0, p.tab_height
         BtnPrint:
             id: btn_print
-            right: p.screen_width - p.h_padding + 10
+            right: p.screen_width - p.h_padding + 12
             y: p.tab_height + p.padding
-            on_release: Factory.PrintPopup(tl.selected.path).open()
-            enabled: tl.selected is not None and tl.selected.state in ('done', 'stopped')
+            on_release: Factory.PrintPopup(tl.ids.tl_box.selected_object.path).open()
+            enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state in ('done', 'stopped')
         BtnQX:
             id: q_x
-            right: p.screen_width - p.h_padding + 10
+            right: p.screen_width - p.h_padding + 12
             y: p.tab_height + p.padding
             on_release: tl.remove()
-            enabled: tl.selected is not None and tl.selected.state in ("queued", "printing")
+            enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state in ("queued", "printing")
         BtnQUp:
             id: q_up
-            right: q_x.x - p.h_padding  + 10
+            right: q_x.x - p.h_padding  + 12
             y: p.tab_height + p.padding
-            on_release: tl.move_up()
-            enabled: tl.selected is not None and tl.selected.state == "queued"
+            on_release: tl.move(1)
+            enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state == "queued"
         BtnQDown:
-            right: q_up.x - p.h_padding  + 10
+            right: q_up.x - p.h_padding  + 12
             y: p.tab_height + p.padding
-            on_release: tl.move_down()
-            enabled: tl.selected is not None and tl.selected.state == "queued"
+            on_release: tl.move(-1)
+            enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state == "queued"
 
 <Timeline>:
     TimelineBox:
@@ -63,6 +63,7 @@
         orientation: 'vertical'
         multiselect: False
         touch_multiselect: False
+        touch_deselect_last: True
 
 <TimelineItem>:
     canvas:
@@ -107,7 +108,8 @@
 
 # BUTTONS
 
-#:set pad 24
+#:set pad 25
+#:set pad_x pad*p.disp_vertical_stretch
 <BtnPrint@FloatingButton>:
     id: btn_print
     btn_color: p.accent
@@ -115,7 +117,7 @@
         Color:
             rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
         Triangle:
-            points: self.x+pad+4, self.y+pad-4,  self.x+pad+4, self.top-pad+4,   self.right-pad+4, self.center_y
+            points: self.x+pad_x+4, self.y+pad-4,  self.x+pad_x+4, self.top-pad+4,   self.right-pad_x+4, self.center_y
 
 <BtnQUp@FloatingButton>:
     id: q_up
@@ -124,7 +126,7 @@
         Color:
             rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
         Triangle:
-            points: self.x+pad-4, self.y+pad+4,  self.right-pad+4, self.y+pad+4,  self.center_x, self.top-pad
+            points: self.x+pad_x-4, self.y+pad+4,  self.right-pad_x+4, self.y+pad+4,  self.center_x, self.top-pad
 
 <BtnQDown@FloatingButton>:
     btn_color: p.accent
@@ -132,7 +134,7 @@
         Color:
             rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
         Triangle:
-            points: self.x+pad-4, self.top-pad-4,  self.right-pad+4, self.top-pad-4,  self.center_x, self.y+pad
+            points: self.x+pad_x-4, self.top-pad-4,  self.right-pad_x+4, self.top-pad-4,  self.center_x, self.y+pad
 
 <BtnQX@FloatingButton>:
     btn_color: p.accent
@@ -140,10 +142,10 @@
         Color:
             rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
         Line:
-            points: self.x+pad, self.top-pad,  self.right-pad, self.y+pad
-            width: 5
+            points: self.x+pad_x, self.top-pad,  self.right-pad_x, self.y+pad
+            width: 4
             cap: 'none'
         Line:
-            points: self.x+pad, self.y+pad,  self.right-pad, self.top-pad
-            width: 5
+            points: self.x+pad_x, self.y+pad,  self.right-pad_x, self.top-pad
+            width: 4
             cap: 'none'

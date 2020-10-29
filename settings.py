@@ -6,7 +6,7 @@ import subprocess
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.properties import ListProperty, ObjectProperty, StringProperty, BooleanProperty
+from kivy.properties import ObjectProperty, StringProperty, BooleanProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
@@ -17,7 +17,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.tabbedpanel import TabbedPanelItem
 from kivy.uix.textinput import TextInput
 
-from .elements import Divider, BaseButton, BasePopup
+from .elements import BaseButton, BasePopup
 from . import parameters as p
 
 

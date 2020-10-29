@@ -89,32 +89,3 @@
         text_size: self.size
         font_size: p.normal_font - 3
         color: (1,1,1,1)
-
-
-# POPUPS
-
-<DelPopup>:
-    title: 'Delete'
-    title_size: p.large_font
-    size_hint: 0.8, 0.3
-    FloatLayout:
-        Label:
-            text: basename(root.path)
-            halign: 'center'
-            valign: 'middle'
-            max_lines: 2
-            size_hint: 0.9, 0.5
-            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.2}
-            text_size: self.size
-            font_size: p.large_font
-            color: p.light_gray
-        BtnPCancel:
-            width: root.width/2
-            pos: root.pos
-            on_release: root.dismiss()
-        BtnPConfirm:
-            text: 'Delete'
-            width: root.width/2
-            enabled: True
-            pos: root.center_x, root.y
-            on_release: root.confirm()

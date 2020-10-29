@@ -2,14 +2,14 @@ import os
 from os.path import dirname
 
 from .kconfiglib import (Kconfig,
-                       Symbol, MENU, COMMENT,
-                       BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN,
-                       expr_value,
-                       TRI_TO_STR,
-                       Choice, MenuNode, AND, OR,
-                       expr_str, split_expr,
-                       standard_sc_expr_str, TYPE_TO_STR,
-                       standard_kconfig, standard_config_filename)
+    Symbol, MENU, COMMENT,
+    BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN,
+    expr_value,
+    TRI_TO_STR,
+    Choice, MenuNode, AND, OR,
+    expr_str, split_expr,
+    standard_sc_expr_str, TYPE_TO_STR,
+    standard_kconfig, standard_config_filename)
 from kivy.clock import Clock
 from kivy.properties import NumericProperty, BooleanProperty, StringProperty
 from kivy.uix.screenmanager import Screen
@@ -84,7 +84,6 @@ class CI_Tristate(Label):
         self.node = node
     def on_release(self):
         self.state = (self.state + 1) % self.states #cycle through states
-        
 
 class CI_Radio(Label):
     selected = BooleanProperty(False)

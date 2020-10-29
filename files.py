@@ -210,26 +210,3 @@ class FilechooserItem(RecycleDataViewBehavior, Label):
     def apply_selection(self, rv, index, is_selected):
         # Respond to the selection of items in the view
         self.selected = is_selected
-
-class DeletePopup(BasePopup):
-    """Popup to confirm file deletion"""
-    def __init__(self, path, filechooser=None, timeline=None, **kwargs):
-        self.path = path
-        self.filechooser = filechooser
-        self.timeline = timeline
-        super().__init__(**kwargs)
-
-    def confirm(self):
-        """Deletes the file and closes the popup"""
-        os.remove(self.path)
-        app = App.get_running_app()
-
-        # Update the files in the filechooser instance
-        if app.history:
-            app.history.trim_history()
-        if self.timeline:
-            self.timeline.load_all(in_background=False)
-        elif self.filechooser:
-            self.filechooser.load_files(in_background=True)
-        self.dismiss()
-        app.notify.show("File deleted", "Deleted " + os.path.basename(self.path), delay=4)

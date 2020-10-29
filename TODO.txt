@@ -3,9 +3,15 @@ Features to be implemented
     microcontroller flashing (maybe dead)
     gcode console
     custom gcode macro buttons
+    config chooser
+    config editor
+    better error handling (klipper)
+
 
 Bugs
     timer to close error (on live move, homing)
-    2. live_extrusion always crashes
+    live_extrusion leaves inconsistent state
     extrusion when print paused, resuming crashes maybe related to above
     DripModeEndSignal during homing due to additional gcode move command or stop command
+    uploading large gcode during printing with klipper_cura_connection -> timer too close
+    cura showing old printjobs after klipper restart

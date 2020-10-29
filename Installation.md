@@ -1,10 +1,10 @@
 Installation Guide
 ==================
 
-##### This is still in development and may have bugs. E.g. connecting to a printer or homing moves sometimes fail with a "Timer too close" error (see bugs in TODO.txt) #####
+##### This is still in development and may have bugs. (see bugs in TODO.txt) #####
 
 ### Requirements
-* Raspberry pi 4 (raspberry pi 3 is not fast enough to run the UI properly and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
+* Raspberry pi 4 (raspberry pi 3 is not fast enough to meet real time requirements of Klipper with the added load, and likely requires different GL driver settings  in kgui/\_\_init\_\_.py)
 * 7" LCD Touch screen with 1024\*600 resolution (lower resolutions are not supported at the moment)
 These screens can be purchased for around 35$ on [Aliexpress](https://s.click.aliexpress.com/e/_d78tnDk), Ebay, or Banggood. 
 Make sure to get one with an IPS panel (much better image quality)
