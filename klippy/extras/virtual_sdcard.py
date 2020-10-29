@@ -24,30 +24,27 @@ class Printjob:
         self.saved_pause_state = False
         self.start_stop_times = []
         self.name, ext = os.path.splitext(os.path.basename(path))
-        if ext in ('.gco', '.gcode'):
-            self.thumbnail_path = None
-            try:
+        try: # opening the file, with on the fly decompression in case of .ufp file
+            if ext in ('.gco', '.gcode'):
+                self.thumbnail_path = None
                 self.file_obj = open(self.path, 'rb')
                 self.file_obj.seek(0, os.SEEK_END)
                 self.file_size = self.file_obj.tell()
                 self.file_obj.seek(0)
-            except Exception as e:
-                logging.warning(f"printjob_manager: failed opening file {self.path}, with exception {e}")
-                self.set_state('stopped')
-                self.manager.check_queue()
-        elif ext == '.ufp':
-            try:
+            elif ext == '.ufp':
                 zip_obj = ZipFile(path)
                 self.thumbnail_path = path.replace('.ufp', '.png')
                 with open(self.thumbnail_path, 'wb') as thumbnail:
                     thumbnail.write(zip_obj.read("/Metadata/thumbnail.png"))
-                    self.file_obj = zip_obj.open("/3D/model.gcode", 'r')
-                    self.file_obj.seek(0, os.SEEK_END)
-                    self.file_size = self.file_obj.tell()
-                    self.file_obj.seek(0)
-            except Exception as e:
-                logging.warning(f"printjob_manager: failed opening compressed file {self.path}, with exception {e}")
-                self.set_state('stopped')
+                self.file_obj = zip_obj.open("/3D/model.gcode", 'r')
+                self.file_obj.seek(0, os.SEEK_END)
+                self.file_size = self.file_obj.tell()
+                self.file_obj.seek(0)
+        except:
+            self.printer.send_event("klippy:error", f"Failed opening file {self.path}")
+            logging.exception(f"Failed opening {ext} file")
+            self.set_state('stopped')
+            self.manager.check_queue()
 
     def set_state(self, state):
         if self.state != state:
@@ -112,6 +109,7 @@ class Printjob:
                 except:
                     self.set_state('stopping')
                     logging.exception("virtual_sdcard read")
+                    self.printer.send_event("klippy:error", "Error reading File")
                     self.gcode.respond_error("Error on virtual sdcard read")
                     break
                 if not data:
@@ -192,6 +190,10 @@ class PrintjobManager:
 
     def resume_printjob(self, *args):
         self.jobs[0].resume()
+
+    def queue_modified(self):
+        self.check_queue()
+        self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
 
     def clear_queue(self):
         """ remove everything but the first element wich is currently being printed """

@@ -228,9 +228,9 @@ class ToolHead:
         self.buffer_time_high = config.getfloat(
             'buffer_time_high', 2.000, above=self.buffer_time_low)
         self.buffer_time_start = config.getfloat(
-            'buffer_time_start', 0.250, above=0.)
+            'buffer_time_start', 0.300, above=0.)
         self.move_flush_time = config.getfloat(
-            'move_flush_time', 0.050, above=0.)
+            'move_flush_time', 0.100, above=0.)
         self.print_time = 0.
         self.special_queuing_state = "Flushed"
         self.need_check_stall = -1.
