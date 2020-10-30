@@ -458,7 +458,7 @@ class ToolHead:
                 continue
             npt = min(self.print_time + DRIP_SEGMENT_TIME, next_print_time)
             self._update_move_time(npt)
-    def drip_move(self, newpos, speed, drip_completion):
+    def drip_move(self, newpos, speed, drip_completion, force=False):
         # Transition from "Flushed"/"Priming"/main state to "Drip" state
         self.move_queue.flush()
         self.special_queuing_state = "Drip"
@@ -469,7 +469,7 @@ class ToolHead:
         self.drip_completion = drip_completion
         # Submit move
         try:
-            self.move(newpos, speed)
+            self.move(newpos, speed, force)
         except self.printer.command_error as e:
             self.flush_step_generation()
             raise
