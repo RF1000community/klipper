@@ -172,7 +172,6 @@
         BtnTripleZ:
             id: btn_tr_Z
             height: xy_field.height
-            z_pos: xy_field.ids.z_pos
             h1: self.height/3
             h2: self.height/3
             h3: self.height/3
@@ -295,7 +294,7 @@
             size: (self.point_radius*2, self.point_radius*2)
     Label:
         id: xy_pos
-        text: "X:{:.0f} Y:{:.0f} ".format(root.mm[0], root.mm[1])
+        text: "X{:.1f} Y{:.1f} ".format(root.mm[0], root.mm[1])
         size_hint: None, None
         size: self.texture_size
         pos: root.x + 7, root.y + 4
@@ -303,12 +302,20 @@
         color: (1,1,1,1) if root.pressed else p.nozzle
     Label:
         id: z_pos
-        text: "Z:{:.0f}".format(root.mm[2])
+        text: "Z{:.1f} ".format(root.mm[2])
         size_hint: None, None
         size: self.texture_size
         pos: xy_pos.right, xy_pos.y
         font_size: p.normal_font
-        color: p.nozzle
+        color: (1,1,1,1) if app.z_move_completion else p.nozzle
+    Label:
+        id: ext_pos
+        text: "E{:.1f}".format(app.pos[3])
+        size_hint: None, None
+        size: self.texture_size
+        pos: z_pos.right, xy_pos.y
+        font_size: p.normal_font
+        color: (1,1,1,1) if app.ext_move_completion else p.nozzle
 
 <PrintProgressBar@Widget>:
     canvas:
@@ -450,9 +457,9 @@
     #:set t 9.5
     #:set u 19 #Triangle has this size x2
     BaseButton:
-        on_press: app.send_z_up(); root.z_pos.highlighted = True if app.invert_z_controls else app.send_z_up(-1); root.z_pos.highlighted = True
-        on_release: app.send_z_stop(); root.z_pos.highlighted = False
-        enabled: app.homed['z']
+        on_press: app.send_z_go(up=app.invert_z_controls)
+        on_release: app.send_z_stop()
+        enabled: app.printer_objects_available and not app.ongoing_drip_move
         size: root.width, root.h1
         pos: root.x, root.y
         canvas.before:
@@ -478,9 +485,9 @@
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: app.send_z_up(-1); root.z_pos.highlighted = True if app.invert_z_controls else app.send_z_up(); root.z_pos.highlighted = True
-        on_release: app.send_z_stop(); root.z_pos.highlighted = False
-        enabled: app.homed['z']
+        on_press: app.send_z_go(up = not app.invert_z_controls)
+        on_release: app.send_z_stop()
+        enabled: app.printer_objects_available and not app.ongoing_drip_move
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
         canvas.before:

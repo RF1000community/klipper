@@ -11,7 +11,6 @@ Features to be implemented
 Bugs
     timer to close error (on live move, homing)
     live_extrusion leaves inconsistent state
-    extrusion when print paused, resuming crashes maybe related to above
-    DripModeEndSignal during homing due to additional gcode move command or stop command
+    DripModeEndSignal during homing due stop command
     uploading large gcode during printing with klipper_cura_connection -> timer too close
     cura showing old printjobs after klipper restart
