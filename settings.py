@@ -54,6 +54,40 @@ class SIWifi(SetItem):
             self.right_title = "not available"
 
 
+class ConsoleScreen(Screen):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        app = App.get_running_app()
+        # should hopefully be thread safe
+        self.fd = app.printer.get_start_args().get("gcode_fd")
+        self.reactor = app.reactor
+        Clock.schedule_once(self.init_drawing, 0)
+
+    def init_drawing(self, *args):
+        self.ids.console_input.bind(on_text_validate=self.confirm)
+
+    def on_pre_enter(self):
+        self.ids.console_input.focus = True
+        self.ids.console_scroll.scroll_y = 0
+        self.scheduled_polling = Clock.schedule_interval(self.poll, 1)
+
+    def on_leave(self):
+        Clock.unschedule(self.scheduled_polling)
+
+    def poll(self, dt):
+        while 1:
+            try:
+                newdata = os.read(self.fd, 4096).decode()
+            except BlockingIOError:
+                newdata = "..."
+            if not newdata:
+                break
+            self.ids.console_scroll.ids.console_label.text += newdata
+
+    def confirm(self, *args):
+        os.write(self.fd, self.ids.console_input.text.encode())
+
+
 class WifiScreen(Screen):
 
     def on_pre_enter(self):

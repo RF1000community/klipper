@@ -59,9 +59,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         "stopped",
         "done",
         ])
-    homed = DictProperty({}) #updated by handle_home_end/start event handler
-    temp = DictProperty({}) #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
-    printer_objects_available = BooleanProperty(False) #updated with handle_connect
+    homed = DictProperty() #updated by handle_home_end/start event handler
+    temp = DictProperty() #{'B':[setpoint, current], 'T0': ...} updated by scheduled update_home -> get_temp
+    connected = BooleanProperty(False) #updated with handle_connect
     jobs = ListProperty()
     print_title = StringProperty()
     print_time = StringProperty() #updated by get_printjob_progress
@@ -89,18 +89,13 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.temp = {'T0':[0,0], 'T1':[0,0], 'B':[0,0]}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.warned_not_homed = {'x':False, 'y':False, 'z':False}
-        self.ongoing_drip_move = False
         self.scheduled_updating = None
-        self.z_timer = None
-        self.extrude_timer = None
         self.filament_manager = None
         self.curaconnection = None
         self.bed_mesh = True # initialize as True so it shows up on load, maybe dissapears after handle_connect
         self.sdcard = None
         self.history = None
         self.printjob_progress = None
-        self.z_move_completion = None
-        self.ext_move_completion = None
         if not TESTING:
             self.clean()
             self.kgui_config = config
@@ -175,15 +170,17 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         for i in range(self.extruder_count):
             self.heaters[f"T{i}"] = self.heater_manager.heaters[f"extruder{'' if i==0 else i}"]
             self.extruders.append(self.printer.lookup_object(f"extruder{'' if i==0 else i}"))
-        def set_printer_objects_available(dt):
-            self.printer_objects_available = True
-        Clock.schedule_once(set_printer_objects_available, 0)
-        Clock.schedule_once(self.bind_updating, 0)
-        Clock.schedule_once(self.control_updating, 0)
+        Clock.schedule_once(self.ui_handle_connect, 0)
 
 # KLIPPY THREAD ^
 ########################################################################################
 # KGUI   THREAD v
+
+    def ui_handle_connect(self, dt):
+        self.connected = True
+        self.root.ids.tabs.bind(current_tab=self.control_updating)
+        self.root.ids.tabs.ids.home_tab.ids.hs_manager.bind(current=self.control_updating)
+        self.control_updating()
 
     def handle_ready(self):
         self.state = "ready"
@@ -195,6 +192,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         pass
 
     def handle_disconnect(self):
+        self.connected = False
         self.stop()
 
     def handle_critical_error(self, message):
@@ -204,7 +202,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def handle_error(self, message):
         ErrorPopup(message = message).open()
 
-    # this ensures that during homing homed=False, crucially disabling manual movement (buttons), and z-tuning moves
+    # this ensures disabling manual movement (buttons), and z-tuning moves during drip-move
     def handle_home_start(self, rails):
         self.ongoing_drip_move = True
 
@@ -266,10 +264,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def on_stop(self, *args):
         # Stop networking dbus event loop
         self.network_manager.loop.quit()
-
-    def bind_updating(self, *args):
-        self.root.ids.tabs.bind(current_tab=self.control_updating)
-        self.root.ids.tabs.ids.home_tab.ids.hs_manager.bind(current=self.control_updating)
 
     def control_updating(self, *args):
         tab = self.root.ids.tabs.current_tab
@@ -359,7 +353,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.gcode_move.homing_position[2] = offset
             #Move to offset
             self.gcode_move.last_position[2] += delta
-            if self.homed['z']: #if this runs during homing it will crash
+            if self.homed['z'] and not self.ongoing_drip_move: #if this runs during homing it will crash
                 self.gcode_move.move_with_transform(self.gcode_move.last_position, 5) #sets speed for adjustment move
         self.reactor.register_async_callback(set_z_offset)
 
@@ -389,7 +383,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.fan_speed = self.fan_manager.fan.last_fan_value * 100 / self.fan_manager.fan.max_power
     def send_fan(self, speed):
         self.fan_speed = speed
-        self.reactor.register_async_callback(lambda e: self.fan_manager.fan.set_speed(self.toolhead.get_last_move_time(), speed/100))
+        self.reactor.register_async_callback(lambda e: self.fan_manager.fan.set_speed_from_command(speed/100))
  
     def get_pressure_advance(self):#gives pressure_advance value of 1. extruder for now
         self.pressure_advance = self.extruders[0].get_status(self.reactor.monotonic())['pressure_advance']
@@ -596,12 +590,12 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         Popen(['sudo','systemctl', 'reboot']) 
     def restart_klipper(self):
         """Quit and restart klipper and GUI"""
-        self.reactor.register_async_callback(lambda e: self.printer.request_exit('firmware_restart') , 0)	
+        self.reactor.register_async_callback(lambda e: self.printer.request_exit('firmware_restart'), 0)	
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
         self.reactor.register_async_callback(lambda e: self.printer.request_exit("exit"), 0)
-    # using lambdaception to register klippy event handlers to run in the UI thread
     def register_ui_event_handler(self, event_name, event_handler):
+        """using lambdaception to register klippy event handlers to run in the UI thread"""
         self.printer.register_event_handler(event_name, lambda *args, **kwargs: Clock.schedule_once(lambda dt: event_handler(*args, **kwargs), 0))
 
 # Catch KGUI exceptions and display popups

@@ -1,7 +1,6 @@
 Features to be implemented    
     Updater
     microcontroller flashing (maybe dead)
-    gcode console
     custom gcode macro buttons
     config chooser
     config editor

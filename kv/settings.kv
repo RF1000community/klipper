@@ -16,7 +16,7 @@
     BoxLayout:
         orientation: 'vertical'
         TitleBar:
-            title: {'SettingScreen': "Settings", 'WifiScreen': "Wifi", 'UpdateScreen': "System Update", 'FlashScreen': "Flash Klipper Firmware"}[screen_man.current]
+            title: {'SettingScreen': "Settings", 'ConsoleScreen':"Gcode Console", 'WifiScreen': "Wifi", 'UpdateScreen': "System Update", 'FlashScreen': "Flash Klipper Firmware"}[screen_man.current]
             enabled: screen_man.current != 'SettingScreen'
             on_release: screen_man.current = 'SettingScreen'
             pos_hint: {'x':0, 'top':1}
@@ -26,6 +26,8 @@
             transition: screenmanager.NoTransition()
             SettingScreen:
                 id: setting_screen
+            ConsoleScreen:
+                id: console_screen
             WifiScreen:
                 id: wifi_screen
             UpdateScreen:
@@ -49,6 +51,9 @@
             size_hint_y: None
             Divider:
                 pos_hint: {'center_x':0.5}
+            SetItem:
+                left_title: "Gcode Console"
+                on_release: root.manager.current = "ConsoleScreen"
             SetItem:
                 left_title: "Max. printhead Acceleration"
                 right_title: "{:6.0f}mm/s²".format(app.config_acceleration)
@@ -76,6 +81,42 @@
                 left_title: "Change Hostname"
                 right_title: platform.node()
                 on_release: Factory.HostnamePopup().open()
+
+<ConsoleScreen>:
+    name: 'ConsoleScreen'
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0,0 # screens are relative layouts
+            size: self.size
+    ScrollView:
+        id: console_scroll
+        Label:
+            id: console_label
+            text: ""
+            font_size: p.normal_font
+            text_size: self.size
+            size_hint: 1, 0.55
+            valign: 'bottom'
+            halign: 'left'
+            padding_x: p.padding
+            padding_y: p.padding - 10
+            pos_hint: {'x':0, 'top':1}
+            color: p.medium_light_gray
+    TextInput:
+        id: console_input
+        multiline: False
+        text_validate_unfocus: False
+        font_size: p.normal_font
+        foreground_color: (1,1,1,1)
+        padding: (15,12,25,12)
+        height: self.minimum_height
+        background_color: p.medium_gray
+        cursor_color: (1,1,1,1)
+        size_hint: None, None
+        width: root.width - 2*p.padding
+        pos_hint: {'center_x': 0.5, 'top': 0.55}
 
 <WifiScreen>:
     name: 'WifiScreen'
