@@ -7,6 +7,9 @@
 import math, logging
 from . import bus
 
+GAIN_OPTIONS = { 5:0, 10:1, 20:2, 40:3 }
+USTEP_OPTIONS = { 1:0, 2:1, 4:2, 8:3, 16:4, 32:5, 64:6, 128:7, 256:8 }
+
 class DRV8711:
   def __init__(self, config):
     self.printer = config.get_printer()
@@ -14,8 +17,11 @@ class DRV8711:
     self.spi = bus.MCU_SPI_from_config(config, 0, default_speed=1000000)
     self.printer.register_event_handler("klippy:connect", self.handle_connect)
 
-    self.microsteps = 32
-    self.current = 110
+    self.microsteps = USTEP_OPTIONS[config.getint('microsteps', 32)]
+    gain = config.getint('isgain', 20)
+    self.isgain = GAIN_OPTIONS[gain]
+    shunt = config.getfloat('shunt', 0.033)
+    self.current = int( config.getfloat('current', 1.75)/2.75 * 256 * gain * shunt )
 
     #ppins = self.printer.lookup_object('pins')
     #self.pin_reset = ppins.setup_pin('digital_out', config.get('reset_pin', ''))
@@ -23,11 +29,11 @@ class DRV8711:
   def handle_connect(self):
     #print_time = self.printer.lookup_object('toolhead').get_last_move_time()
     #self.pin_reset.set_digital(print_time, 0)
-    logging.info("DRV8711 init "+str(self.name))
+    logging.info("DRV8711 init "+str(self.name)+ " usteps:"+str(self.microsteps)+" current:"+str(self.current)+ " isgain:"+str(self.isgain))
       
     # See: http://www.ti.com/product/DRV8711/datasheet/detailed-description#SLVSC405764
-    reg0 = 0xE01;  # 1110 0XXX X001: ENBL = 1, RDIR = 0, RSTEP = 0, MODE = XXXX, EXSTALL = 0, ISGAIN = 10, DTIME = 11
-    reg0 = reg0 + ( (int(round(math.log(self.microsteps,2))) & 0xF) << 3 )
+    reg0 = 0xC01;  # 11YY 0XXX X001: ENBL = 1, RDIR = 0, RSTEP = 0, MODE = XXXX, EXSTALL = 0, ISGAIN = YY, DTIME = 11
+    reg0 = reg0 | (self.microsteps << 3) | (self.isgain << 8)
 
     reg1 = 0x100 + max(min(self.current, 255), 0);
     
