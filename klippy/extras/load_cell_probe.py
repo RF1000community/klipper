@@ -85,7 +85,6 @@ class LoadCellProbe:
           self._lower_to_threshold()
           self._move_z_relative(self.step_size*2)
           new_offset = self._average_force()
-          self._move_z_relative(-self.step_size*2)
           logging.info("force_offset = %d, new_offset = %d" % (self.force_offset, new_offset))
           if(abs(new_offset-self.force_offset) < self.threshold):
             logging.info("Fast approach found contact.")
