@@ -117,7 +117,7 @@ class LoadCellProbe:
             # we have contact, need to move to positive Z
             if current_step_size > 0:
               # already moving to positive Z: increase step size
-              current_step_size = min(self.step_size, 2*current_step_size)
+              current_step_size = +min(self.step_size, abs(2*current_step_size))
             else :
               # previously moving to negative Z: decrease step size and change direction
               current_step_size = -current_step_size/2
@@ -125,7 +125,7 @@ class LoadCellProbe:
             # we have no contact, need to move to negative Z
             if current_step_size < 0:
               # already moving to negative Z: increase step size
-              current_step_size = min(self.step_size, 2*current_step_size)
+              current_step_size = -min(self.step_size, abs(2*current_step_size))
             else :
               # previously moving to positive Z: decrease step size and change direction
               current_step_size = -current_step_size/2
