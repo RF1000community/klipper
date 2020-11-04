@@ -4,7 +4,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import logging, struct
+import logging, struct, time, datetime
 from . import bus
 
 ADS1100_CHIP_ADDR=0x49
@@ -21,6 +21,7 @@ class MCU_ADS1100:
         self.mcu = main.mcu
         self.report_time = main.report_time
         self._last_value = 0.
+        self._last_time = datetime.datetime.now()
         self.sample_timer = self.reactor.register_timer(self._sample_ads1100)
         main.printer.add_object("ads1100 " + main.name, self)
         main.printer.register_event_handler("klippy:ready", self._handle_ready)
@@ -31,6 +32,7 @@ class MCU_ADS1100:
         self._callback = None
 
     def setup_adc_callback(self, report_time, callback):
+        self.reactor.update_timer(self.sample_timer, self.reactor.NOW)
         self._callback = callback
 
     def setup_minmax(self, sample_time, sample_count, minval, maxval, range_check_count):
@@ -39,11 +41,20 @@ class MCU_ADS1100:
     def get_last_value(self):
         return self._last_value
 
+    def read_current_value(self):
+        # wait until sample is ready, in case the last this is called more frequently than the sampling rate
+        dT = (datetime.datetime.now() - self._last_time).total_seconds()
+        if dT < self.report_time :
+          time.sleep(self.report_time - dT)
+        self._last_time = datetime.datetime.now()
+        # obtain sample and return value
+        self._last_value = self._read_result()
+        return self._last_value
+
     def _handle_ready(self):
         # ADS1100 configuration: continuous conversion, 8 SPS, gain = 1
         logging.info("ads1100: _handle_ready")
         self._write_configuration(0x8C)
-        self.reactor.update_timer(self.sample_timer, self.reactor.NOW)
 
     def _sample_ads1100(self, eventtime):
         try:
@@ -55,15 +66,15 @@ class MCU_ADS1100:
             return self.reactor.NEVER
 
         measured_time = self.reactor.monotonic()
-        self._callback(self.mcu.estimated_print_time(measured_time), self._last_value)
+        if self._callback != None :
+          self._callback(self.mcu.estimated_print_time(measured_time), self._last_value)
         return measured_time + self.report_time
 
     def _read_result(self):
         # read two bytes containing the conversion result
         result = self.i2c.i2c_read([], 2)
-        logging.info("ads1100: _read_result: " + str(result))
         response = bytearray(result['response'])
-        return struct.unpack('>h', response)
+        return struct.unpack('>h', response)[0]
         
 
     def _write_configuration(self, data):
