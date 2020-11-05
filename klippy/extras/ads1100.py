@@ -39,7 +39,7 @@ class MCU_ADS1100:
         pass
 
     def get_last_value(self):
-        return self._last_value
+        return self._last_value, self.measured_time
 
     def read_current_value(self):
         # wait until sample is ready, in case the last this is called more frequently than the sampling rate
@@ -65,10 +65,10 @@ class MCU_ADS1100:
             self._last_value = 0
             return self.reactor.NEVER
 
-        measured_time = self.reactor.monotonic()
+        self.measured_time = self.reactor.monotonic()
         if self._callback != None :
           self._callback(self.mcu.estimated_print_time(measured_time), self._last_value)
-        return measured_time + self.report_time
+        return self.measured_time + self.report_time
 
     def _read_result(self):
         # read two bytes containing the conversion result
