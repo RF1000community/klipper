@@ -4,7 +4,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import logging
+import logging, time
 
 class LoadCellProbe:
     def __init__(self, config):
@@ -26,6 +26,7 @@ class LoadCellProbe:
         self.precision_goal = config.getfloat('precision_goal', 0.002, above=0.)
         self.max_variance = config.getint('max_variance', 15, minval=0)
         self.delay_exceeding_max_variance = config.getfloat('delay_exceeding_max_variance', 0.1, above=0.)
+        self.max_retry = config.getint('max_retry', 100, minval=0)
         self.force_offset = 0
 
         # Infer Z position to move to during a probe
@@ -58,6 +59,7 @@ class LoadCellProbe:
         # discard one values, because the ADC sampling is asynchronous to the movement. The readout is asynchronous to
         # the ADC sampling, but it is synchronised to the movement, hence we do not need to discard another value.
         self.mcu_adc.read_current_value()
+        attempt = 0
         while True:
           force = 0.
           min_force = +1e6
@@ -71,12 +73,14 @@ class LoadCellProbe:
           if max_force - min_force < self.max_variance:
             return force / self.adc_n_average
 
-          gcmd.respond_info("Unstable force reading, retrying...")
           time.sleep(self.delay_exceeding_max_variance)
+          
+          attempt = attempt+1
+          if attempt > self.max_retry :
+            raise gcmd.error("Unstable force reading, maximum retries exceeded.")
     
     def _lower_to_threshold(self, gcmd):
         # Lower the tool head until the force threshold is exceeded
-        gcmd.respond_info("_lower_to_threshold force_offset = %d" % self.force_offset)
         while True:
           self._move_z_relative(-self.step_size)
           force = self._average_force(gcmd) - self.force_offset
@@ -90,16 +94,25 @@ class LoadCellProbe:
         # the search is continued with the new offset.
         gcmd.respond_info("Commencing fast approach.")
         self.force_offset = self._average_force(gcmd)
+        attempt = 0
+        attempt_start_pos = self.tool.get_position()[2]
         while True:
           self._lower_to_threshold(gcmd)
           self._move_z_relative(self.step_size)
           new_offset = self._average_force(gcmd)
-          gcmd.respond_info("force_offset = %d, new_offset = %d" % (self.force_offset, new_offset))
+          #gcmd.respond_info("force_offset = %d, new_offset = %d" % (self.force_offset, new_offset))
           if(abs(new_offset-self.force_offset) < self.threshold_low):
             gcmd.respond_info("Fast approach found contact.")
             return
           self.force_offset = new_offset
-          gcmd.respond_info("Continue search with new_offset.")
+          #gcmd.respond_info("Continue search with new_offset.")
+          if attempt_start_pos - self.tool.get_position()[2] < 2*self.step_size :
+            attempt = attempt + 1
+            if attempt > self.max_retry :
+              raise gcmd.error("Force reading drifting too much, maximum retries exceeded.")
+          else :
+            attempt = 0
+            attempt_start_pos = self.tool.get_position()[2]
 
     def _iterative_search(self, gcmd):
         # Strategy for iterative search: take series of measurements. If a measurement shows a force above the threshold
@@ -112,6 +125,8 @@ class LoadCellProbe:
         gcmd.respond_info("Commencing iterative search.")
         current_step_size = +self.step_size   # sign determines direction
         same_direction_counter = 0
+        attempt = 0
+        attempt_start_step_size = current_step_size
         while True:
           # take compensated measurement
           force_in = self._average_force(gcmd)
@@ -153,6 +168,15 @@ class LoadCellProbe:
             gcmd.respond_info("Search completed.")
             # return Z position before compensation step
             return self.tool.get_position()[2] - self.step_size
+          
+          # check failure condition
+          if abs(current_step_size) >= abs(attempt_start_step_size) :
+            attempt = attempt + 1
+            if attempt > self.max_retry :
+              raise gcmd.error("Iterative search does not converge.")
+          else :
+            attempt = 0
+            attempt_start_step_size = current_step_size
 
           # move to new position (incl. reverse compensation step)
           self._move_z_relative(-self.step_size + current_step_size)
