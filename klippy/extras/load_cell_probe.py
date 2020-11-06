@@ -18,7 +18,8 @@ class LoadCellProbe:
 
         self.speed = config.getfloat('speed', 5.0, above=0.)
         self.lift_speed = config.getfloat('lift_speed', self.speed, above=0.)
-        self.threshold = config.getint('threshold', 10)
+        self.threshold_low = config.getint('threshold_low', 8)
+        self.threshold_high = config.getint('threshold_high', 12)
         self.step_size = config.getfloat('step_size', 0.05, above=0.)
         self.precision_goal = config.getfloat('precision_goal', 0.002, above=0.)
         self.force_offset = 0
@@ -77,7 +78,7 @@ class LoadCellProbe:
           self._move_z_relative(-self.step_size)
           force = self._average_force(gcmd) - self.force_offset
           gcmd.respond_info("z = %f, force = %d" % (self.tool.get_position()[2], force))
-          if(abs(force) > self.threshold):
+          if(abs(force) > self.threshold_high):
             break
 
     def _fast_approach(self, gcmd):
@@ -88,10 +89,10 @@ class LoadCellProbe:
         self.force_offset = self._average_force(gcmd)
         while True:
           self._lower_to_threshold(gcmd)
-          self._move_z_relative(self.step_size*2)
+          self._move_z_relative(self.step_size)
           new_offset = self._average_force(gcmd)
           gcmd.respond_info("force_offset = %d, new_offset = %d" % (self.force_offset, new_offset))
-          if(abs(new_offset-self.force_offset) < self.threshold):
+          if(abs(new_offset-self.force_offset) < self.threshold_low):
             gcmd.respond_info("Fast approach found contact.")
             return
           self.force_offset = new_offset
@@ -119,28 +120,28 @@ class LoadCellProbe:
           gcmd.respond_info("z = %f, step size %f, force = %d" % (self.tool.get_position()[2]-self.step_size, current_step_size, force))
           
           # decide next action
-          if(abs(force) > self.threshold):
-            # we have contact, need to move to positive Z
-            if current_step_size > 0:
-              # already moving to positive Z: increase step size, if same_direction_counter > 2
-              same_direction_counter = same_direction_counter+1
-              if same_direction_counter > 2 :
-                current_step_size = +min(self.step_size, abs(2*current_step_size))
-            else :
-              # previously moving to negative Z: decrease step size and change direction
+          if current_step_size < 0:
+            # currently moving to negative Z
+            if(abs(force) > self.threshold_high):
+              # found contact: decrease step size and change direction
               same_direction_counter = 0
               current_step_size = -current_step_size/2
-          else :
-            # we have no contact, need to move to negative Z
-            if current_step_size < 0:
-              # already moving to negative Z: increase step size, if same_direction_counter > 2
+            else :
+              # still no contact: increase step size, if same_direction_counter > 2
               same_direction_counter = same_direction_counter+1
               if same_direction_counter > 2 :
                 current_step_size = -min(self.step_size, abs(2*current_step_size))
-            else :
-              # previously moving to positive Z: decrease step size and change direction
+          else :
+            # currently moving to positive Z
+            if(abs(force) < self.threshold_low):
+              # lost contact: decrease step size and change direction
               same_direction_counter = 0
               current_step_size = -current_step_size/2
+            else :
+              # we still have contact: increase step size, if same_direction_counter > 2
+              same_direction_counter = same_direction_counter+1
+              if same_direction_counter > 2 :
+                current_step_size = +min(self.step_size, abs(2*current_step_size))
           
           # check abort condition
           if abs(current_step_size) < self.precision_goal :
