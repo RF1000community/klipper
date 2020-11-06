@@ -51,9 +51,8 @@ class LoadCellProbe:
         self.tool.manual_move([pos[0],pos[1],pos[2]+length], self.speed)
         
     def _average_force(self, gcmd):
-        # discard two values, because both the ADC sampling is asynchronous to the movement and the readout is
-        # asynchronous to the ADC sampling.
-        self.mcu_adc.read_current_value()
+        # discard one values, because the ADC sampling is asynchronous to the movement. The readout is asynchronous to
+        # the ADC sampling, but it is synchronised to the movement, hence we do not need to discard another value.
         self.mcu_adc.read_current_value()
         nAverage = 2
         while True:
