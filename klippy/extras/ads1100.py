@@ -9,8 +9,9 @@ from . import bus
 
 ADS1100_CHIP_ADDR=0x49
 ADS1100_I2C_SPEED=3000000
-ADS1100_REPORT_TIME=0.125
-ADS1100_MIN_REPORT_TIME=0.125
+
+ADS1100_SAMPLE_RATE_TABLE={ 8:3, 16:2, 32:1, 128:0 }
+ADS1100_GAIN_TABLE={ 1:0, 2:1, 4:2, 8:3 }
 
 class MCU_ADS1100:
 
@@ -20,6 +21,8 @@ class MCU_ADS1100:
         self.i2c = main.i2c
         self.mcu = main.mcu
         self.report_time = main.report_time
+        self.rate = main.rate
+        self.gain = main.gain
         self._last_value = 0.
         self._last_time = datetime.datetime.now()
         self.sample_timer = self.reactor.register_timer(self._sample_ads1100)
@@ -52,9 +55,8 @@ class MCU_ADS1100:
         return self._last_value
 
     def _handle_ready(self):
-        # ADS1100 configuration: continuous conversion, 8 SPS, gain = 1
-        logging.info("ads1100: _handle_ready")
-        self._write_configuration(0x8C)
+        # ADS1100 configuration: continuous conversion (no SC bit set), selected gain and SPS
+        self._write_configuration(ADS1100_SAMPLE_RATE_TABLE[self.rate] << 2 | ADS1100_GAIN_TABLE[self.gain])
 
     def _sample_ads1100(self, eventtime):
         try:
@@ -87,17 +89,15 @@ class PrinterADS1100:
     def __init__(self, config):
         self.printer = config.get_printer()
         self.name = config.get_name().split()[1]
-        self.i2c = bus.MCU_I2C_from_config(
-            config,
-            default_addr=ADS1100_CHIP_ADDR,
-            default_speed=ADS1100_I2C_SPEED
-        )
+        self.i2c = bus.MCU_I2C_from_config(config, default_addr=ADS1100_CHIP_ADDR, default_speed=ADS1100_I2C_SPEED)
         self.mcu = self.i2c.get_mcu()
-        self.report_time = config.getint(
-            'ads1100_report_time',
-            ADS1100_REPORT_TIME,
-            minval=ADS1100_MIN_REPORT_TIME
-        )
+        self.rate = config.getint('rate', 8)
+        if self.rate not in ADS1100_SAMPLE_RATE_TABLE :
+          raise self.printer.config_error("ADS1100 does not support the selected sampling rate: %d" % self.rate)
+        self.report_time = 1./self.rate
+        self.gain = config.getint('gain', 1, minval=1)
+        if self.gain not in ADS1100_GAIN_TABLE :
+          raise self.printer.config_error("ADS1100 does not support the selected gain: %d" % self.gain)
         # Register setup_pin
         ppins = self.printer.lookup_object('pins')
         ppins.register_chip(self.name, self)
@@ -106,7 +106,6 @@ class PrinterADS1100:
         if pin_type != 'adc':
             raise self.printer.config_error("ADS1100 only supports adc pins")
         return MCU_ADS1100(self)
-
 
 
 def load_config_prefix(config):

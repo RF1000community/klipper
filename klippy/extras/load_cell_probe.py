@@ -14,14 +14,18 @@ class LoadCellProbe:
         pin_name = config.get('adc')
         ppins = self.printer.lookup_object('pins')
         self.mcu_adc = ppins.setup_pin('adc', pin_name)
-        logging.info("LoadCellProbe HIER1")
 
         self.speed = config.getfloat('speed', 5.0, above=0.)
         self.lift_speed = config.getfloat('lift_speed', self.speed, above=0.)
-        self.threshold_low = config.getint('threshold_low', 8)
-        self.threshold_high = config.getint('threshold_high', 12)
+        self.adc_n_average = config.getint('adc_n_average', 2, minval=1)
+        self.threshold_low = config.getint('threshold_low', 8, minval=1)
+        self.threshold_high = config.getint('threshold_high', 12, minval=1)
+        self.threshold_avg = (self.threshold_low+self.threshold_high)/2
         self.step_size = config.getfloat('step_size', 0.05, above=0.)
+        self.incr_step_after_n_same_dir = config.getint('incr_step_after_n_same_dir', 1, minval=1)
         self.precision_goal = config.getfloat('precision_goal', 0.002, above=0.)
+        self.max_variance = config.getint('max_variance', 15, minval=0)
+        self.delay_exceeding_max_variance = config.getfloat('delay_exceeding_max_variance', 0.1, above=0.)
         self.force_offset = 0
 
         # Infer Z position to move to during a probe
@@ -54,21 +58,21 @@ class LoadCellProbe:
         # discard one values, because the ADC sampling is asynchronous to the movement. The readout is asynchronous to
         # the ADC sampling, but it is synchronised to the movement, hence we do not need to discard another value.
         self.mcu_adc.read_current_value()
-        nAverage = 2
         while True:
           force = 0.
           min_force = +1e6
           max_force = -1e6
-          for i in range(0,nAverage) :
+          for i in range(0, self.adc_n_average) :
             val = self.mcu_adc.read_current_value()
             force = force + val
             min_force = min(val,min_force)
             max_force = max(val,max_force)
             
-          if max_force - min_force < 15:
-            return force / nAverage
+          if max_force - min_force < self.max_variance:
+            return force / self.adc_n_average
 
           gcmd.respond_info("Unstable force reading, retrying...")
+          time.sleep(self.delay_exceeding_max_variance)
     
     def _lower_to_threshold(self, gcmd):
         # Lower the tool head until the force threshold is exceeded
@@ -119,27 +123,29 @@ class LoadCellProbe:
           gcmd.respond_info("z = %f, step size %f, force = %d" % (self.tool.get_position()[2]-self.step_size, current_step_size, force))
           
           # decide next action
+          # no hysteresis is used for the force threshold here, because it will fail to converge if the force is
+          # changing only slightly when the step size is very small
           if current_step_size < 0:
             # currently moving to negative Z
-            if(abs(force) > self.threshold_high):
+            if(abs(force) > self.threshold_avg):
               # found contact: decrease step size and change direction
               same_direction_counter = 0
               current_step_size = -current_step_size/2
             else :
               # still no contact: increase step size, if same_direction_counter > 2
               same_direction_counter = same_direction_counter+1
-              if same_direction_counter > 2 :
+              if same_direction_counter > self.incr_step_after_n_same_dir :
                 current_step_size = -min(self.step_size, abs(2*current_step_size))
           else :
             # currently moving to positive Z
-            if(abs(force) < self.threshold_low):
+            if(abs(force) < self.threshold_avg):
               # lost contact: decrease step size and change direction
               same_direction_counter = 0
               current_step_size = -current_step_size/2
             else :
               # we still have contact: increase step size, if same_direction_counter > 2
               same_direction_counter = same_direction_counter+1
-              if same_direction_counter > 2 :
+              if same_direction_counter > self.incr_step_after_n_same_dir :
                 current_step_size = +min(self.step_size, abs(2*current_step_size))
           
           # check abort condition
