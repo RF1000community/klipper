@@ -34,7 +34,13 @@ class MCU_ADS1100:
         query_adc.register_adc(qname, self)
         self._callback = None
 
+        # configuration byte: continuous conversion (no SC bit set), selected gain and SPS
+        self.config_contiuous = ADS1100_SAMPLE_RATE_TABLE[self.rate] << 2 | ADS1100_GAIN_TABLE[self.gain]
+        # same with SC and ST bits set (single conversion and start conversion)
+        self.config_single = self.config_contiuous | 1 << 4 | 1 << 7
+
     def setup_adc_callback(self, report_time, callback):
+        self._write_configuration(self.config_contiuous)
         self.reactor.update_timer(self.sample_timer, self.reactor.NOW)
         self._callback = callback
 
@@ -45,18 +51,27 @@ class MCU_ADS1100:
         return self._last_value, self.measured_time
 
     def read_current_value(self):
+        # start conversion
+        self._write_configuration(self.config_single)
+        # wait until conversion is ready
+        while True :
+          result = self.i2c.i2c_read([], 3)
+          response = bytearray(result['response'])
+          if response[2] & 1<<7 == 0 :
+            # busy bit cleared
+            return struct.unpack('>h', response[0:2])[0]
+        
         # wait until sample is ready, in case the last this is called more frequently than the sampling rate
-        dT = (datetime.datetime.now() - self._last_time).total_seconds()
-        if dT < self.report_time :
-          time.sleep(self.report_time - dT)
-        self._last_time = datetime.datetime.now()
-        # obtain sample and return value
-        self._last_value = self._read_result()
-        return self._last_value
+        #dT = (datetime.datetime.now() - self._last_time).total_seconds()
+        #if dT < self.report_time :
+        #  time.sleep(self.report_time - dT)
+        #self._last_time = datetime.datetime.now()
+        ## obtain sample and return value
+        #self._last_value = self._read_result()
+        #return self._last_value
 
     def _handle_ready(self):
-        # ADS1100 configuration: continuous conversion (no SC bit set), selected gain and SPS
-        self._write_configuration(ADS1100_SAMPLE_RATE_TABLE[self.rate] << 2 | ADS1100_GAIN_TABLE[self.gain])
+        pass
 
     def _sample_ads1100(self, eventtime):
         try:

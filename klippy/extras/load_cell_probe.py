@@ -22,11 +22,14 @@ class LoadCellProbe:
         self.threshold_high = config.getint('threshold_high', 12, minval=1)
         self.threshold_avg = (self.threshold_low+self.threshold_high)/2
         self.step_size = config.getfloat('step_size', 0.05, above=0.)
-        self.incr_step_after_n_same_dir = config.getint('incr_step_after_n_same_dir', 1, minval=1)
+        self.incr_step_after_n_same_dir = config.getint('incr_step_after_n_same_dir', 2, minval=1)
         self.precision_goal = config.getfloat('precision_goal', 0.002, above=0.)
         self.max_variance = config.getint('max_variance', 15, minval=0)
         self.delay_exceeding_max_variance = config.getfloat('delay_exceeding_max_variance', 0.1, above=0.)
         self.max_retry = config.getint('max_retry', 100, minval=0)
+        self.compensation_z_lift = config.getfloat('compensation_z_lift', 0.2, minval=self.step_size)
+        self.delay_compensation_lift = config.getfloat('delay_compensation_lift', 0.1, above=0.)
+        self.max_abs_force = config.getint('max_abs_force', 5000, minval=self.threshold_high+1)
         self.force_offset = 0
 
         # Infer Z position to move to during a probe
@@ -71,7 +74,12 @@ class LoadCellProbe:
             max_force = max(val,max_force)
             
           if max_force - min_force < self.max_variance:
-            return force / self.adc_n_average
+            force = force / self.adc_n_average
+            if abs(force) > self.max_abs_force :
+              # lift tool head to prevent permament strong force applied to head and bed
+              self._move_z_relative(self.compensation_z_lift)
+              raise gcmd.error("Maximum absolute force exceeded.")
+            return force
 
           time.sleep(self.delay_exceeding_max_variance)
           
@@ -82,11 +90,12 @@ class LoadCellProbe:
     def _lower_to_threshold(self, gcmd):
         # Lower the tool head until the force threshold is exceeded
         while True:
-          self._move_z_relative(-self.step_size)
+          # Check threshold before first movement, to prevent doing an unchecked step after a retry
           force = self._average_force(gcmd) - self.force_offset
           gcmd.respond_info("z = %f, force = %d" % (self.tool.get_position()[2], force))
           if(abs(force) > self.threshold_high):
             break
+          self._move_z_relative(-self.step_size)
 
     def _fast_approach(self, gcmd):
         # Strategy for fast approach: lower tool head until exceeding threshold, then lift head a bit and compare force
@@ -97,15 +106,25 @@ class LoadCellProbe:
         attempt = 0
         attempt_start_pos = self.tool.get_position()[2]
         while True:
+        
+          # lower tool head until force threshold is exceeded
           self._lower_to_threshold(gcmd)
-          self._move_z_relative(self.step_size)
-          new_offset = self._average_force(gcmd)
-          #gcmd.respond_info("force_offset = %d, new_offset = %d" % (self.force_offset, new_offset))
-          if(abs(new_offset-self.force_offset) < self.threshold_low):
+          
+          # confirm contact with new offset measured after compensation lift
+          self._move_z_relative(self.compensation_z_lift)
+          time.sleep(self.delay_compensation_lift)
+          self.force_offset = self._average_force(gcmd)
+          self._move_z_relative(-self.compensation_z_lift)
+          time.sleep(self.delay_compensation_lift)
+          force = self._average_force(gcmd) - self.force_offset
+          
+          # if contact is confirmed with new measurement, terminate fast approach
+          if(abs(force) > self.threshold_high):
+            # stay at slightly z-lifted position without contact when returning
             gcmd.respond_info("Fast approach found contact.")
             return
-          self.force_offset = new_offset
-          #gcmd.respond_info("Continue search with new_offset.")
+          
+          # check for failure condition
           if attempt_start_pos - self.tool.get_position()[2] < 2*self.step_size :
             attempt = attempt + 1
             if attempt > self.max_retry :
@@ -127,10 +146,16 @@ class LoadCellProbe:
         same_direction_counter = 0
         attempt = 0
         attempt_start_step_size = current_step_size
+        
+        # lift tool head a bit to make sure the search starts without contact to the bed
+        self._move_z_relative(self.compensation_z_lift)
+
         while True:
           # take compensated measurement
+          time.sleep(self.delay_compensation_lift)
           force_in = self._average_force(gcmd)
-          self._move_z_relative(self.step_size)
+          self._move_z_relative(self.compensation_z_lift)
+          time.sleep(self.delay_compensation_lift)
           force_out = self._average_force(gcmd)
           force = force_in - force_out
           
@@ -179,9 +204,12 @@ class LoadCellProbe:
             attempt_start_step_size = current_step_size
 
           # move to new position (incl. reverse compensation step)
-          self._move_z_relative(-self.step_size + current_step_size)
+          self._move_z_relative(-self.compensation_z_lift + current_step_size)
 
     def run_probe(self, gcmd):
+        v = self.mcu_adc.read_current_value()
+        gcmd.respond_info("ADC value %d" % v)
+
         self.tool = self.printer.lookup_object('toolhead')
         
         # wait until toolhead is in position
