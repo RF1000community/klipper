@@ -13,3 +13,5 @@ Bugs
     DripModeEndSignal during homing due stop command
     uploading large gcode during printing with klipper_cura_connection -> timer too close
     cura showing old printjobs after klipper restart
+    maybe prevent starting print during filament loading
+    z offset before print homing when already homed

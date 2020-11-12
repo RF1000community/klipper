@@ -92,17 +92,20 @@
             size: self.size
     ScrollView:
         id: console_scroll
+        pos: 0, console_input.top
+        size_hint: 1, None
+        height: root.height - console_input.top
         Label:
             id: console_label
-            text: ""
+            text: "Test text from kv\nll"
             font_size: p.normal_font
-            text_size: self.size
-            size_hint: 1, 0.55
+            size: self.texture_size
+            size_hint: 1, None
             valign: 'bottom'
             halign: 'left'
             padding_x: p.padding
             padding_y: p.padding - 10
-            pos_hint: {'x':0, 'top':1}
+            pos_hint: {'x':0, 'y':0}
             color: p.medium_light_gray
     TextInput:
         id: console_input
@@ -116,7 +119,8 @@
         cursor_color: (1,1,1,1)
         size_hint: None, None
         width: root.width - 2*p.padding
-        pos_hint: {'center_x': 0.5, 'top': 0.55}
+        pos_hint: {'center_x': 0.5}
+        y: (0.34-0.02)*p.screen_height - p.tab_height + p.padding # Keyboard height is 0.34 (style.kv)
 
 <WifiScreen>:
     name: 'WifiScreen'
@@ -303,7 +307,7 @@
         text_size: self.size
         valign: 'middle'
         halign: 'center'
-       
+
 <CITristate>:
     size: p.screen_width, 80
     size_hint: None, None
