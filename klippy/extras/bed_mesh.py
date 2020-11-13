@@ -1024,4 +1024,6 @@ class ProfileManager:
 
 
 def load_config(config):
-    return BedMesh(config)
+    bed_mesh =  BedMesh(config)
+    config.printer.add_object('bed_mesh', bed_mesh)
+    return bed_mesh
