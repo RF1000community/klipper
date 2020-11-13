@@ -206,8 +206,6 @@ class LoadCellProbe:
 
     def run_probe(self, gcmd):
         v = self.mcu_adc.read_current_value()
-        gcmd.respond_info("ADC value %d" % v)
-
         self.tool = self.printer.lookup_object('toolhead')
         
         # wait until toolhead is in position
