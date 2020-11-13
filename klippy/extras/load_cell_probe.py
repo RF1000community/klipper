@@ -15,12 +15,10 @@ class LoadCellProbe:
         ppins = self.printer.lookup_object('pins')
         self.mcu_adc = ppins.setup_pin('adc', pin_name)
 
-        self.speed = config.getfloat('speed', 5.0, above=0.)
+        self.speed = config.getfloat('speed', 50.0, above=0.)
         self.lift_speed = config.getfloat('lift_speed', self.speed, above=0.)
         self.adc_n_average = config.getint('adc_n_average', 2, minval=1)
-        self.threshold_low = config.getint('threshold_low', 8, minval=1)
-        self.threshold_high = config.getint('threshold_high', 12, minval=1)
-        self.threshold_avg = (self.threshold_low+self.threshold_high)/2
+        self.threshold = config.getint('threshold', 12, minval=1)
         self.step_size = config.getfloat('step_size', 0.05, above=0.)
         self.incr_step_after_n_same_dir = config.getint('incr_step_after_n_same_dir', 2, minval=1)
         self.precision_goal = config.getfloat('precision_goal', 0.002, above=0.)
@@ -29,7 +27,7 @@ class LoadCellProbe:
         self.max_retry = config.getint('max_retry', 100, minval=0)
         self.compensation_z_lift = config.getfloat('compensation_z_lift', 0.2, minval=self.step_size)
         self.delay_compensation_lift = config.getfloat('delay_compensation_lift', 0.1, above=0.)
-        self.max_abs_force = config.getint('max_abs_force', 5000, minval=self.threshold_high+1)
+        self.max_abs_force = config.getint('max_abs_force', 5000, minval=self.threshold+1)
         self.force_offset = 0
 
         # Infer Z position to move to during a probe
@@ -93,7 +91,7 @@ class LoadCellProbe:
           # Check threshold before first movement, to prevent doing an unchecked step after a retry
           force = self._average_force(gcmd) - self.force_offset
           gcmd.respond_info("z = %f, force = %d" % (self.tool.get_position()[2], force))
-          if(abs(force) > self.threshold_high):
+          if(abs(force) > self.threshold):
             break
           self._move_z_relative(-self.step_size)
 
@@ -119,7 +117,7 @@ class LoadCellProbe:
           force = self._average_force(gcmd) - self.force_offset
           
           # if contact is confirmed with new measurement, terminate fast approach
-          if(abs(force) > self.threshold_high):
+          if(abs(force) > self.threshold):
             # stay at slightly z-lifted position without contact when returning
             gcmd.respond_info("Fast approach found contact.")
             return
@@ -167,7 +165,7 @@ class LoadCellProbe:
           # changing only slightly when the step size is very small
           if current_step_size < 0:
             # currently moving to negative Z
-            if(abs(force) > self.threshold_avg):
+            if(abs(force) > self.threshold):
               # found contact: decrease step size and change direction
               same_direction_counter = 0
               current_step_size = -current_step_size/2
@@ -178,7 +176,7 @@ class LoadCellProbe:
                 current_step_size = -min(self.step_size, abs(2*current_step_size))
           else :
             # currently moving to positive Z
-            if(abs(force) < self.threshold_avg):
+            if(abs(force) < self.threshold):
               # lost contact: decrease step size and change direction
               same_direction_counter = 0
               current_step_size = -current_step_size/2
