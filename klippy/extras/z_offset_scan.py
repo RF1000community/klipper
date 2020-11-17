@@ -11,7 +11,6 @@ class ZOffsetScan:
         self.name = config.get_name()
         self.printer = config.get_printer()
 
-        self.horizontal_move_z = config.getfloat('horizontal_move_z', 5.)
         self.speed = config.getfloat('speed', 5., above=0.)
 
         self.gcode = self.printer.lookup_object('gcode')
