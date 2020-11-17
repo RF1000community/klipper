@@ -34,8 +34,10 @@ class MCU_ADS1100:
         query_adc.register_adc(qname, self)
         self._callback = None
 
-        # configuration byte: continuous conversion (no SC bit set), selected gain and SPS
-        self.config_contiuous = ADS1100_SAMPLE_RATE_TABLE[self.rate] << 2 | ADS1100_GAIN_TABLE[self.gain]
+        # configuration byte: continuous conversion (no SC bit set), selected
+        # gain and SPS
+        self.config_contiuous = ADS1100_SAMPLE_RATE_TABLE[self.rate] << 2 \
+            | ADS1100_GAIN_TABLE[self.gain]
         # same with SC and ST bits set (single conversion and start conversion)
         self.config_single = self.config_contiuous | 1 << 4 | 1 << 7
 
@@ -44,7 +46,8 @@ class MCU_ADS1100:
         self.reactor.update_timer(self.sample_timer, self.reactor.NOW)
         self._callback = callback
 
-    def setup_minmax(self, sample_time, sample_count, minval, maxval, range_check_count):
+    def setup_minmax(self, sample_time, sample_count, minval, maxval,
+                     range_check_count):
         pass
 
     def get_last_value(self):
@@ -61,7 +64,8 @@ class MCU_ADS1100:
             # busy bit cleared
             return struct.unpack('>h', response[0:2])[0]
         
-        # wait until sample is ready, in case the last this is called more frequently than the sampling rate
+        # wait until sample is ready, in case the last this is called more
+        # frequently than the sampling rate
         #dT = (datetime.datetime.now() - self._last_time).total_seconds()
         #if dT < self.report_time :
         #  time.sleep(self.report_time - dT)
@@ -84,7 +88,8 @@ class MCU_ADS1100:
 
         self.measured_time = self.reactor.monotonic()
         if self._callback != None :
-          self._callback(self.mcu.estimated_print_time(measured_time), self._last_value)
+          self._callback(self.mcu.estimated_print_time(measured_time),
+              self._last_value)
         return self.measured_time + self.report_time
 
     def _read_result(self):
@@ -104,15 +109,18 @@ class PrinterADS1100:
     def __init__(self, config):
         self.printer = config.get_printer()
         self.name = config.get_name().split()[1]
-        self.i2c = bus.MCU_I2C_from_config(config, default_addr=ADS1100_CHIP_ADDR, default_speed=ADS1100_I2C_SPEED)
+        self.i2c = bus.MCU_I2C_from_config(config,
+            default_addr=ADS1100_CHIP_ADDR, default_speed=ADS1100_I2C_SPEED)
         self.mcu = self.i2c.get_mcu()
         self.rate = config.getint('rate', 8)
         if self.rate not in ADS1100_SAMPLE_RATE_TABLE :
-          raise self.printer.config_error("ADS1100 does not support the selected sampling rate: %d" % self.rate)
+          raise self.printer.config_error("ADS1100 does not support the "
+              "selected sampling rate: %d" % self.rate)
         self.report_time = 1./self.rate
         self.gain = config.getint('gain', 1, minval=1)
         if self.gain not in ADS1100_GAIN_TABLE :
-          raise self.printer.config_error("ADS1100 does not support the selected gain: %d" % self.gain)
+          raise self.printer.config_error("ADS1100 does not support the "
+              "selected gain: %d" % self.gain)
         # Register setup_pin
         ppins = self.printer.lookup_object('pins')
         ppins.register_chip(self.name, self)
