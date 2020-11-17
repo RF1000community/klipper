@@ -24,12 +24,7 @@ class DRV8711:
     self.current = \
         int( config.getfloat('current', 1.75)/2.75 * 256 * gain * shunt )
 
-    #ppins = self.printer.lookup_object('pins')
-    #self.pin_reset = ppins.setup_pin('digital_out', config.get('reset_pin', ''))
-
   def handle_connect(self):
-    #print_time = self.printer.lookup_object('toolhead').get_last_move_time()
-    #self.pin_reset.set_digital(print_time, 0)
     logging.info("DRV8711 init "+str(self.name)+ " usteps:"+
         str(self.microsteps)+" current:"+str(self.current)+ " isgain:"+
         str(self.isgain))
