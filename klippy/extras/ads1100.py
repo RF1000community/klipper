@@ -63,16 +63,6 @@ class MCU_ADS1100:
           if response[2] & 1<<7 == 0 :
             # busy bit cleared
             return struct.unpack('>h', response[0:2])[0]
-        
-        # wait until sample is ready, in case the last this is called more
-        # frequently than the sampling rate
-        #dT = (datetime.datetime.now() - self._last_time).total_seconds()
-        #if dT < self.report_time :
-        #  time.sleep(self.report_time - dT)
-        #self._last_time = datetime.datetime.now()
-        ## obtain sample and return value
-        #self._last_value = self._read_result()
-        #return self._last_value
 
     def _handle_ready(self):
         pass
