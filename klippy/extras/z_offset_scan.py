@@ -11,7 +11,6 @@ class ZOffsetScan:
         self.name = config.get_name()
         self.printer = config.get_printer()
 
-        self.horizontal_move_z = config.getfloat('horizontal_move_z', 5.)
         self.speed = config.getfloat('speed', 5., above=0.)
 
         self.gcode = self.printer.lookup_object('gcode')
@@ -25,7 +24,8 @@ class ZOffsetScan:
         gcode_move = self.printer.load_object(config, 'gcode_move')
         self.normal_transform = gcode_move.set_move_transform(self, force=True)
 
-    cmd_BED_MESH_RELEVEL_help = "Re-level bed mesh by re-measuring a single point"
+    cmd_BED_MESH_RELEVEL_help = "Re-level bed mesh by re-measuring a " \
+                                "single point"
 
     def cmd_BED_MESH_RELEVEL(self, gcmd):
         toolhead = self.printer.lookup_object('toolhead')
@@ -40,15 +40,16 @@ class ZOffsetScan:
         # obtain current position
         x, y, z, e = toolhead.get_position()
 
-        # subtract bed mesh value at the measurement position (otherwise we get the bed mesh correction twice)
+        # subtract bed mesh value at the measurement position (otherwise we get
+        # the bed mesh correction twice)
         corr = bed_mesh.get_mesh().calc_z(x,y) + bed_mesh.get_mesh().mesh_offset
         self.z_offset -= corr
 
         # update config file
         configfile.set(self.name, 'z_offset', self.z_offset)
         gcmd.respond_info("New z_offset: %f\n"
-                          "The SAVE_CONFIG command will update the printer config\n"
-                          "file and restart the printer" % (self.z_offset))
+                  "The SAVE_CONFIG command will update the printer config\n"
+                  "file and restart the printer" % (self.z_offset))
 
         # lift toolhead
         toolhead.move([x, y, z+5, e], self.speed)
