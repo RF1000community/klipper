@@ -15,8 +15,8 @@ class ZOffsetScan:
 
         self.gcode = self.printer.lookup_object('gcode')
         self.gcode.register_command('Z_OFFSET_SCAN',
-            self.cmd_BED_MESH_RELEVEL,
-            desc=self.cmd_BED_MESH_RELEVEL_help)
+            self.cmd_Z_OFFSET_SCAN,
+            desc=self.cmd_Z_OFFSET_SCAN_help)
 
         self.z_offset = config.getfloat('z_offset', 0.)
 
@@ -24,10 +24,10 @@ class ZOffsetScan:
         gcode_move = self.printer.load_object(config, 'gcode_move')
         self.normal_transform = gcode_move.set_move_transform(self, force=True)
 
-    cmd_BED_MESH_RELEVEL_help = "Re-level bed mesh by re-measuring a " \
+    cmd_Z_OFFSET_SCAN_help = "Re-level bed mesh by re-measuring a " \
                                 "single point"
 
-    def cmd_BED_MESH_RELEVEL(self, gcmd):
+    def cmd_Z_OFFSET_SCAN(self, gcmd):
         toolhead = self.printer.lookup_object('toolhead')
         probe = self.printer.lookup_object('probe')
         bed_mesh = self.printer.lookup_object('bed_mesh')

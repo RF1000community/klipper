@@ -1,7 +1,7 @@
 # Support for bed level probes featuring a load cell at which the hotend is
 # suspended.
 #
-# Copyright (C) 2020  Martin Hierholzer <martin@hierholzer.info>
+# Copyright (C) 2020 Martin Hierholzer <martin@hierholzer.info>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
@@ -36,6 +36,10 @@ class LoadCellProbe:
             config.getint('max_abs_force', 5000, minval=self.threshold+1)
         self.force_offset = 0
 
+        self.force_subscribers = []
+
+        self.printer.register_event_handler("klippy:ready", self._handle_ready)
+
         # Infer Z position to move to during a probe
         if config.has_section('stepper_z'):
             zconfig = config.getsection('stepper_z')
@@ -43,6 +47,12 @@ class LoadCellProbe:
         else:
             pconfig = config.getsection('printer')
             self.z_position = pconfig.getfloat('minimum_z_position', 0.)
+
+    def _handle_ready(self):
+        self.mcu_adc.setup_adc_callback(None, self._adc_callback)
+
+    def subscribe_force(self, callback):
+        self.force_subscribers.append(callback)
 
     def get_lift_speed(self, gcmd=None):
         if gcmd is not None:
@@ -58,6 +68,10 @@ class LoadCellProbe:
     def multi_probe_end(self):
         pass
 
+    def _adc_callback(self, time, value):
+        for sub in self.force_subscribers :
+            sub(value)
+
     def _move_z_relative(self, length):
         pos = self.tool.get_position()
         self.tool.manual_move([pos[0],pos[1],pos[2]+length], self.speed)
@@ -67,14 +81,14 @@ class LoadCellProbe:
         # movement. The readout is asynchronous to the ADC sampling, but it is
         # synchronised to the movement, hence we do not need to discard another
         # value.
-        self.mcu_adc.read_current_value()
+        self.mcu_adc.read_single_value()
         attempt = 0
         while True:
           force = 0.
           min_force = +1e6
           max_force = -1e6
           for i in range(0, self.adc_n_average) :
-            val = self.mcu_adc.read_current_value()
+            val = self.mcu_adc.read_single_value()
             force = force + val
             min_force = min(val,min_force)
             max_force = max(val,max_force)
@@ -233,17 +247,22 @@ class LoadCellProbe:
           self._move_z_relative(-self.compensation_z_lift + current_step_size)
 
     def run_probe(self, gcmd):
-        v = self.mcu_adc.read_current_value()
         self.tool = self.printer.lookup_object('toolhead')
 
         # wait until toolhead is in position
         self.tool.wait_moves()
+
+        # make sure ADC is in sigle value mode
+        v = self.mcu_adc.read_single_value()
 
         # fast, coarse approach
         self._fast_approach(gcmd)
 
         # precise interative search
         result = self._iterative_search(gcmd)
+
+        # continue contiuous ADC readout
+        self.mcu_adc.continue_contiuous_reading()
 
         pos = self.tool.get_position()
         gcmd.respond_info("FINISHED z = %f" % result)
@@ -252,4 +271,5 @@ class LoadCellProbe:
 def load_config(config):
     probe = LoadCellProbe(config)
     config.printer.add_object('probe', probe)
+    config.printer.add_object('load_cell', probe)
     return probe

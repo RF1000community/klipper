@@ -1,6 +1,6 @@
 # Support for ADS1100 ADC chip connected via I2C
 #
-# Copyright (C) 2020  Martin Hierholzer <martin@hierholzer.info>
+# Copyright (C) 2020 Martin Hierholzer <martin@hierholzer.info>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
@@ -25,7 +25,7 @@ class MCU_ADS1100:
         self.gain = main.gain
         self._last_value = 0.
         self._last_time = datetime.datetime.now()
-        self.sample_timer = self.reactor.register_timer(self._sample_ads1100)
+        self.sample_timer = None
         main.printer.add_object("ads1100 " + main.name, self)
         main.printer.register_event_handler("klippy:ready", self._handle_ready)
 
@@ -33,6 +33,8 @@ class MCU_ADS1100:
         qname = main.name
         query_adc.register_adc(qname, self)
         self._callback = None
+
+        self._is_continuous = False
 
         # configuration byte: continuous conversion (no SC bit set), selected
         # gain and SPS
@@ -42,9 +44,10 @@ class MCU_ADS1100:
         self.config_single = self.config_contiuous | 1 << 4 | 1 << 7
 
     def setup_adc_callback(self, report_time, callback):
-        self._write_configuration(self.config_contiuous)
-        self.reactor.update_timer(self.sample_timer, self.reactor.NOW)
+        if report_time is not None:
+          self.report_time = report_time
         self._callback = callback
+        self.continue_contiuous_reading()
 
     def setup_minmax(self, sample_time, sample_count, minval, maxval,
                      range_check_count):
@@ -53,24 +56,43 @@ class MCU_ADS1100:
     def get_last_value(self):
         return self._last_value, self.measured_time
 
-    def read_current_value(self):
+    def read_single_value(self):
+        if self._is_continuous :
+          self._is_continuous = False
+          self.reactor.unregister_timer(self.sample_timer)
+
         # start conversion
         self._write_configuration(self.config_single)
         # wait until conversion is ready
         while True :
           result = self.i2c.i2c_read([], 3)
           response = bytearray(result['response'])
+          if len(response) < 3:
+            logging.info("ADS1100: single conversion failed, trying again...")
+            self._write_configuration(self.config_single)
+            continue
           if response[2] & 1<<7 == 0 :
             # busy bit cleared
             return struct.unpack('>h', response[0:2])[0]
+
+    def continue_contiuous_reading(self):
+        if self._is_continuous or self._callback == None:
+          return
+        self._is_continuous = True
+        self._write_configuration(self.config_contiuous)
+        self.sample_timer = self.reactor.register_timer(self._sample_ads1100,
+            self.reactor.NOW)
 
     def _handle_ready(self):
         pass
 
     def _sample_ads1100(self, eventtime):
+        if not self._is_continuous :
+          return self.reactor.NEVER
         try:
             self._last_value = self._read_result()
-            logging.info("ads1100: _sample_ads1100: %d" % self._last_value)
+            if not self._is_continuous :
+              return self.reactor.NEVER
         except Exception:
             logging.exception("ads1100: Error reading data")
             self._last_value = 0
@@ -78,7 +100,7 @@ class MCU_ADS1100:
 
         self.measured_time = self.reactor.monotonic()
         if self._callback != None :
-          self._callback(self.mcu.estimated_print_time(measured_time),
+          self._callback(self.mcu.estimated_print_time(self.measured_time),
               self._last_value)
         return self.measured_time + self.report_time
 

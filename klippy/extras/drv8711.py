@@ -1,6 +1,6 @@
 # Support for DRV8711 stepper driver
 #
-# Copyright (C) 2020  Martin Hierholzer <martin@hierholzer.info>
+# Copyright (C) 2020 Martin Hierholzer <martin@hierholzer.info>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
