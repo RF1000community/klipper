@@ -5,7 +5,44 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import logging, time
+import logging, time, math
+
+
+def fit(X, Y):
+
+    def mean(Xs):
+        return sum(Xs) / len(Xs)
+    m_X = mean(X)
+    m_Y = mean(Y)
+
+    def std(Xs, m):
+        normalizer = len(Xs) - 1
+        return math.sqrt(sum((pow(x - m, 2) for x in Xs)) / normalizer)
+
+    def pearson_r(Xs, Ys):
+
+        sum_xy = 0
+        sum_sq_v_x = 0
+        sum_sq_v_y = 0
+
+        for (x, y) in zip(Xs, Ys):
+            var_x = x - m_X
+            var_y = y - m_Y
+            sum_xy += var_x * var_y
+            sum_sq_v_x += pow(var_x, 2)
+            sum_sq_v_y += pow(var_y, 2)
+        return sum_xy / math.sqrt(sum_sq_v_x * sum_sq_v_y)
+
+    r = pearson_r(X, Y)
+
+    b = r * (std(Y, m_Y) / std(X, m_X))
+    A = m_Y - b * m_X
+
+    def line(x):
+        return b * x + A
+    return line
+
+
 
 class LoadCellProbe:
     def __init__(self, config):
@@ -18,12 +55,16 @@ class LoadCellProbe:
 
         self.speed = config.getfloat('speed', 50.0, above=0.)
         self.lift_speed = config.getfloat('lift_speed', self.speed, above=0.)
+
         self.adc_n_average = config.getint('adc_n_average', 2, minval=1)
+        self.adc_n_average_precise = config.getint('adc_n_average_precise',
+          3, minval=self.adc_n_average)
+        
         self.threshold = config.getint('threshold', 12, minval=1)
         self.step_size = config.getfloat('step_size', 0.05, above=0.)
         self.incr_step_after_n_same_dir = \
             config.getint('incr_step_after_n_same_dir', 2, minval=1)
-        self.precision_goal = config.getfloat('precision_goal', 0.002, above=0.)
+        self.precision_goal = config.getfloat('precision_goal', 0.01, above=0.)
         self.max_variance = config.getint('max_variance', 15, minval=0)
         self.delay_exceeding_max_variance = \
             config.getfloat('delay_exceeding_max_variance', 0.1, above=0.)
@@ -31,14 +72,27 @@ class LoadCellProbe:
         self.compensation_z_lift = \
             config.getfloat('compensation_z_lift', 0.2, minval=self.step_size)
         self.delay_compensation_lift = \
-            config.getfloat('delay_compensation_lift', 0.1, above=0.)
+            config.getfloat('delay_compensation_lift', 0.5, above=0.)
         self.max_abs_force = \
             config.getint('max_abs_force', 5000, minval=self.threshold+1)
-        self.force_offset = 0
 
+        self.fit_z_veto = \
+            config.getint('fit_z_veto', 1.5*self.precision_goal, minval=0.)
+        self.additional_fit_points = config.getint('additional_fit_points', 10,
+            minval=2)
+        self.fit_step_size = config.getfloat('fit_step_size', 0.002, above=0.)
+
+        self.sample_retract_dist = config.getfloat('sample_retract_dist', 2.,
+                                                   above=0.)
+
+        self.force_offset = 0
         self.force_subscribers = []
 
         self.printer.register_event_handler("klippy:ready", self._handle_ready)
+
+        self.gcode = self.printer.lookup_object('gcode')
+        self.gcode.register_command('PROBE_ACCURACY', self.cmd_PROBE_ACCURACY,
+                                    desc=self.cmd_PROBE_ACCURACY_help)
 
         # Infer Z position to move to during a probe
         if config.has_section('stepper_z'):
@@ -48,40 +102,56 @@ class LoadCellProbe:
             pconfig = config.getsection('printer')
             self.z_position = pconfig.getfloat('minimum_z_position', 0.)
 
+
+    cmd_PROBE_ACCURACY_help = "Probe Z-height accuracy at current XY position"
+
+
     def _handle_ready(self):
         self.mcu_adc.setup_adc_callback(None, self._adc_callback)
 
+
     def subscribe_force(self, callback):
         self.force_subscribers.append(callback)
+
 
     def get_lift_speed(self, gcmd=None):
         if gcmd is not None:
             return gcmd.get_float("LIFT_SPEED", self.lift_speed, above=0.)
         return self.lift_speed
 
+
     def get_offsets(self):
         return 0, 0, 0
+
 
     def multi_probe_begin(self):
         pass
 
+
     def multi_probe_end(self):
         pass
+
 
     def _adc_callback(self, time, value):
         for sub in self.force_subscribers :
             sub(value)
 
+
     def _move_z_relative(self, length):
         pos = self.tool.get_position()
         self.tool.manual_move([pos[0],pos[1],pos[2]+length], self.speed)
 
-    def _average_force(self, gcmd):
+
+    def _average_force(self, gcmd, precise):
         # discard one values, because the ADC sampling is asynchronous to the
         # movement. The readout is asynchronous to the ADC sampling, but it is
         # synchronised to the movement, hence we do not need to discard another
         # value.
         self.mcu_adc.read_single_value()
+        # number of averaging values depends on precise mode
+        n_average = ( self.adc_n_average_precise if precise else
+            self.adc_n_average )
+        # start averaging
         attempt = 0
         while True:
           force = 0.
@@ -109,17 +179,19 @@ class LoadCellProbe:
             raise gcmd.error("Unstable force reading, maximum retries "
                 "exceeded.")
 
+
     def _lower_to_threshold(self, gcmd):
         # Lower the tool head until the force threshold is exceeded
         while True:
           # Check threshold before first movement, to prevent doing an unchecked
           # step after a retry
-          force = self._average_force(gcmd) - self.force_offset
+          force = self._average_force(gcmd,False) - self.force_offset
           gcmd.respond_info("z = %f, force = %d"
               % (self.tool.get_position()[2], force))
           if(abs(force) > self.threshold):
             break
           self._move_z_relative(-self.step_size)
+
 
     def _fast_approach(self, gcmd):
         # Strategy for fast approach: lower tool head until exceeding threshold,
@@ -127,7 +199,8 @@ class LoadCellProbe:
         # it matches, the contact is assumed. If not, the force_offset has
         # drifed and the search is continued with the new offset.
         gcmd.respond_info("Commencing fast approach.")
-        self.force_offset = self._average_force(gcmd)
+        time.sleep(self.delay_compensation_lift)
+        self.force_offset = self._average_force(gcmd,True)
         attempt = 0
         attempt_start_pos = self.tool.get_position()[2]
         while True:
@@ -138,10 +211,10 @@ class LoadCellProbe:
           # confirm contact with new offset measured after compensation lift
           self._move_z_relative(self.compensation_z_lift)
           time.sleep(self.delay_compensation_lift)
-          self.force_offset = self._average_force(gcmd)
+          self.force_offset = self._average_force(gcmd,True)
           self._move_z_relative(-self.compensation_z_lift)
           time.sleep(self.delay_compensation_lift)
-          force = self._average_force(gcmd) - self.force_offset
+          force = self._average_force(gcmd,True) - self.force_offset
 
           # if contact is confirmed with new measurement, terminate fast
           # approach
@@ -161,6 +234,27 @@ class LoadCellProbe:
             attempt = 0
             attempt_start_pos = self.tool.get_position()[2]
 
+
+    def _compensated_measurement(self, gcmd):
+        # take compensated measurement, will increase z position by
+        # self.compensation_z_lift
+        time.sleep(self.delay_compensation_lift)
+        force_in = self._average_force(gcmd,True)
+        self._move_z_relative(self.compensation_z_lift)
+        time.sleep(self.delay_compensation_lift)
+        force_out = self._average_force(gcmd,True)
+        force = force_in - force_out
+
+        # store and log result
+        self._data.append(
+          (self.tool.get_position()[2]-self.step_size, force))
+        gcmd.respond_info("z = %f, step size %f, force = %d" %
+            (self.tool.get_position()[2]-self.step_size,
+             self.current_step_size, force))
+
+        return force
+
+
     def _iterative_search(self, gcmd):
         # Strategy for iterative search: take series of measurements. If a
         # measurement shows a force above the threshold move tool head away from
@@ -174,77 +268,103 @@ class LoadCellProbe:
         # moved further away from the bed. This search is continued until the
         # step size is below our precision goal.
         gcmd.respond_info("Commencing iterative search.")
-        current_step_size = +self.step_size   # sign determines direction
+        self.current_step_size = +self.step_size   # sign determines direction
         same_direction_counter = 0
         attempt = 0
-        attempt_start_step_size = current_step_size
+        attempt_start_step_size = self.current_step_size
 
         # lift tool head a bit to make sure the search starts without contact to
         # the bed
         self._move_z_relative(self.compensation_z_lift)
 
-        while True:
-          # take compensated measurement
-          time.sleep(self.delay_compensation_lift)
-          force_in = self._average_force(gcmd)
-          self._move_z_relative(self.compensation_z_lift)
-          time.sleep(self.delay_compensation_lift)
-          force_out = self._average_force(gcmd)
-          force = force_in - force_out
+        # initialise array with measurement data
+        self._data = []
 
-          # log result
-          gcmd.respond_info("z = %f, step size %f, force = %d" % 
-              (self.tool.get_position()[2]-self.step_size,
-               current_step_size, force))
+        while True:
+          force = self._compensated_measurement(gcmd)
 
           # decide next action
           # no hysteresis is used for the force threshold here, because it will
           # fail to converge if the force is changing only slightly when the
           # step size is very small
-          if current_step_size < 0:
+          if self.current_step_size < 0:
             # currently moving to negative Z
             if(abs(force) > self.threshold):
               # found contact: decrease step size and change direction
               same_direction_counter = 0
-              current_step_size = -current_step_size/2
+              self.current_step_size = -self.current_step_size/2
             else :
               # still no contact:
               # increase step size, if same_direction_counter > 2
               same_direction_counter = same_direction_counter+1
               if same_direction_counter > self.incr_step_after_n_same_dir :
-                current_step_size = \
-                    -min(self.step_size, abs(2*current_step_size))
+                self.current_step_size = \
+                    -min(self.step_size, abs(2*self.current_step_size))
           else :
             # currently moving to positive Z
             if(abs(force) < self.threshold):
               # lost contact: decrease step size and change direction
               same_direction_counter = 0
-              current_step_size = -current_step_size/2
+              self.current_step_size = -self.current_step_size/2
             else :
               # we still have contact:
               # increase step size, if same_direction_counter > 2
               same_direction_counter = same_direction_counter+1
               if same_direction_counter > self.incr_step_after_n_same_dir :
-                current_step_size = \
-                    +min(self.step_size, abs(2*current_step_size))
+                self.current_step_size = \
+                    +min(self.step_size, abs(2*self.current_step_size))
 
           # check abort condition
-          if abs(current_step_size) < self.precision_goal :
+          if abs(self.current_step_size) < self.precision_goal :
             gcmd.respond_info("Search completed.")
             # return Z position before compensation step
             return self.tool.get_position()[2] - self.step_size
 
           # check failure condition
-          if abs(current_step_size) >= abs(attempt_start_step_size) :
+          if abs(self.current_step_size) >= abs(attempt_start_step_size) :
             attempt = attempt + 1
             if attempt > self.max_retry :
               raise gcmd.error("Iterative search does not converge.")
           else :
             attempt = 0
-            attempt_start_step_size = current_step_size
+            attempt_start_step_size = self.current_step_size
 
           # move to new position (incl. reverse compensation step)
-          self._move_z_relative(-self.compensation_z_lift + current_step_size)
+          self._move_z_relative(-self.compensation_z_lift +
+              self.current_step_size)
+
+
+    def _perform_fit(self, gcmd, split_point):
+        gcmd.respond_info("PERFORM FIT split_point = %f" % split_point)
+
+        # take additional measurements
+        self._move_z_relative(-self.fit_z_veto)
+        for i in range(0, self.additional_fit_points):
+          self._move_z_relative(-self.fit_step_size-self.compensation_z_lift)
+          self._compensated_measurement(gcmd)
+
+        # average measurements higher than the split point to get zero offset
+        force_offset = 0
+        n_force_offset = 0
+        for point in self._data:
+          if point[0] > split_point + self.fit_z_veto/2:
+            n_force_offset += 1
+            force_offset += point[1]
+
+        # prepare data for linear regression with measuerments below split point
+        forces = []
+        heights = []
+        for point in self._data:
+          if point[0] < split_point - self.fit_z_veto/2:
+            forces.append(point[1])
+            heights.append(point[0])
+
+        # perform linear fit
+        line = fit(forces,heights)
+
+        # return 0-force offset
+        return line(0)
+
 
     def run_probe(self, gcmd):
         self.tool = self.printer.lookup_object('toolhead')
@@ -252,21 +372,76 @@ class LoadCellProbe:
         # wait until toolhead is in position
         self.tool.wait_moves()
 
-        # make sure ADC is in sigle value mode
-        v = self.mcu_adc.read_single_value()
-
         # fast, coarse approach
         self._fast_approach(gcmd)
 
         # precise interative search
-        result = self._iterative_search(gcmd)
-
-        # continue contiuous ADC readout
-        self.mcu_adc.continue_contiuous_reading()
+        split_point = self._iterative_search(gcmd)
+        
+        # perform fit
+        result = self._perform_fit(gcmd, split_point)
 
         pos = self.tool.get_position()
         gcmd.respond_info("FINISHED z = %f" % result)
         return pos[0], pos[1], result
+
+
+    def cmd_PROBE_ACCURACY(self, gcmd):
+        lift_speed = self.get_lift_speed(gcmd)
+        sample_count = gcmd.get_int("SAMPLES", 10, minval=1)
+        sample_retract_dist = gcmd.get_float("SAMPLE_RETRACT_DIST",
+                                             self.sample_retract_dist, above=0.)
+        toolhead = self.printer.lookup_object('toolhead')
+        pos = toolhead.get_position()
+        gcmd.respond_info("PROBE_ACCURACY at X:%.3f Y:%.3f Z:%.3f"
+                          " (samples=%d retract=%.3f"
+                          " lift_speed=%.1f)\n"
+                          % (pos[0], pos[1], pos[2],
+                             sample_count, sample_retract_dist,
+                             lift_speed))
+        # Probe bed sample_count times
+        self.multi_probe_begin()
+        positions = []
+        while len(positions) < sample_count:
+            # Probe position
+            pos = self.run_probe(gcmd)
+            positions.append(pos)
+            # Retract
+            self._move_z_relative(sample_retract_dist)
+        self.multi_probe_end()
+        # Calculate maximum, minimum and average values
+        max_value = max([p[2] for p in positions])
+        min_value = min([p[2] for p in positions])
+        range_value = max_value - min_value
+        avg_value = self._calc_mean(positions)[2]
+        median = self._calc_median(positions)[2]
+        # calculate the standard deviation
+        deviation_sum = 0
+        for i in range(len(positions)):
+            deviation_sum += pow(positions[i][2] - avg_value, 2.)
+        sigma = (deviation_sum / len(positions)) ** 0.5
+        # Show information
+        gcmd.respond_info(
+            "probe accuracy results: maximum %.6f, minimum %.6f, range %.6f, "
+            "average %.6f, median %.6f, standard deviation %.6f" % (
+            max_value, min_value, range_value, avg_value, median, sigma))
+
+
+    def _calc_mean(self, positions):
+        count = float(len(positions))
+        return [sum([pos[i] for pos in positions]) / count
+                for i in range(3)]
+
+
+    def _calc_median(self, positions):
+        z_sorted = sorted(positions, key=(lambda p: p[2]))
+        middle = len(positions) // 2
+        if (len(positions) & 1) == 1:
+            # odd number of samples
+            return z_sorted[middle]
+        # even number of samples
+        return self._calc_mean(z_sorted[middle-1:middle+1])
+
 
 def load_config(config):
     probe = LoadCellProbe(config)
