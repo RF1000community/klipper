@@ -35,12 +35,10 @@ def fit(X, Y):
 
     r = pearson_r(X, Y)
 
-    b = r * (std(Y, m_Y) / std(X, m_X))
-    A = m_Y - b * m_X
+    m = r * (std(Y, m_Y) / std(X, m_X))
+    b = m_Y - m * m_X
 
-    def line(x):
-        return b * x + A
-    return line
+    return [m,b,r]
 
 
 
@@ -76,11 +74,13 @@ class LoadCellProbe:
         self.max_abs_force = \
             config.getint('max_abs_force', 5000, minval=self.threshold+1)
 
-        self.fit_z_veto = \
-            config.getint('fit_z_veto', 1.5*self.precision_goal, minval=0.)
+        self.fit_z_start_offset = \
+            config.getint('fit_z_start_offset', 0.015)
         self.additional_fit_points = config.getint('additional_fit_points', 10,
             minval=2)
         self.fit_step_size = config.getfloat('fit_step_size', 0.002, above=0.)
+        self.fit_min_quality = \
+            config.getfloat('fit_min_quality', 0.98, above=0.)
 
         self.sample_retract_dist = config.getfloat('sample_retract_dist', 2.,
                                                    above=0.)
@@ -140,6 +140,11 @@ class LoadCellProbe:
     def _move_z_relative(self, length):
         pos = self.tool.get_position()
         self.tool.manual_move([pos[0],pos[1],pos[2]+length], self.speed)
+
+
+    def _move_z_absolute(self, position):
+        pos = self.tool.get_position()
+        self.tool.manual_move([pos[0],pos[1],position], self.speed)
 
 
     def _average_force(self, gcmd, precise):
@@ -247,9 +252,9 @@ class LoadCellProbe:
 
         # store and log result
         self._data.append(
-          (self.tool.get_position()[2]-self.step_size, force))
+          (self.tool.get_position()[2]-self.compensation_z_lift, force))
         gcmd.respond_info("z = %f, step size %f, force = %d" %
-            (self.tool.get_position()[2]-self.step_size,
+            (self.tool.get_position()[2]-self.compensation_z_lift,
              self.current_step_size, force))
 
         return force
@@ -318,7 +323,8 @@ class LoadCellProbe:
           if abs(self.current_step_size) < self.precision_goal :
             gcmd.respond_info("Search completed.")
             # return Z position before compensation step
-            return self.tool.get_position()[2] - self.step_size
+            return self.tool.get_position()[2] - self.compensation_z_lift - \
+                self.current_step_size/2
 
           # check failure condition
           if abs(self.current_step_size) >= abs(attempt_start_step_size) :
@@ -337,33 +343,37 @@ class LoadCellProbe:
     def _perform_fit(self, gcmd, split_point):
         gcmd.respond_info("PERFORM FIT split_point = %f" % split_point)
 
-        # take additional measurements
-        self._move_z_relative(-self.fit_z_veto)
-        for i in range(0, self.additional_fit_points):
-          self._move_z_relative(-self.fit_step_size-self.compensation_z_lift)
-          self._compensated_measurement(gcmd)
+        # initialise array with measurement data
+        self._data = []
 
-        # average measurements higher than the split point to get zero offset
-        force_offset = 0
-        n_force_offset = 0
-        for point in self._data:
-          if point[0] > split_point + self.fit_z_veto/2:
-            n_force_offset += 1
-            force_offset += point[1]
+        # take additional measurements
+        self._move_z_absolute(split_point + self.fit_z_start_offset)
+        n = self.additional_fit_points
+        while n > 0:
+          force = self._compensated_measurement(gcmd)
+          if abs(force) > self.threshold :
+            n -= 1
+          self._move_z_relative(-self.fit_step_size-self.compensation_z_lift)
 
         # prepare data for linear regression with measuerments below split point
         forces = []
         heights = []
         for point in self._data:
-          if point[0] < split_point - self.fit_z_veto/2:
+          if abs(point[1]) > self.threshold :
             forces.append(point[1])
             heights.append(point[0])
 
         # perform linear fit
-        line = fit(forces,heights)
+        m,b,r = fit(forces,heights)
+        gcmd.respond_info("Fit result: m = %f, b = %f, r = %f" % (m,b,r))
+
+        # safety check: r must be big enough
+        if abs(r) < self.fit_min_quality :
+          raise gcmd.error("Fit failed, r too small: %f < %f" %
+              (abs(r), self.fit_min_quality))
 
         # return 0-force offset
-        return line(0)
+        return b
 
 
     def run_probe(self, gcmd):

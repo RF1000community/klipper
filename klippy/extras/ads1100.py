@@ -105,7 +105,6 @@ class MCU_ADS1100:
         self._last_value = struct.unpack('>h', response[0:2])[0]
         self._last_time = eventtime
         self._call_callback()
-        logging.info("ADS1100:_sample_timer %d" % self._last_value)
         return self._last_time + self.report_time
 
 
