@@ -15,7 +15,8 @@ class SensingZOffset:
     def __init__(self, config):
         self.name = config.get_name()
         self.printer = config.get_printer()
-        self.printer.register_event_handler("klippy:ready", self._handle_ready)
+        self.printer.register_event_handler("klippy:ready", 
+		  self._handle_ready)
 
         self.force_threshold = config.getint('force_threshold', minval=1.)
         self.max_z_offset = config.getfloat('max_z_offset', above=0.)
@@ -31,7 +32,7 @@ class SensingZOffset:
 
         self.load_cell = self.printer.lookup_object('load_cell')
         self.load_cell.subscribe_force(self.force_callback)
-        
+
         self.z_offset = 0.
         self.force_offset = 0
         self.force_offset_valid = False
@@ -42,11 +43,11 @@ class SensingZOffset:
         # Register transform
         gcode_move = self.printer.load_object(config, 'gcode_move')
         self.normal_transform = gcode_move.set_move_transform(self, force=True)
-        
+
         # Reset z offset and force offset when homing Z axis
         self.printer.register_event_handler("homing:home_rails_end",
                                             self._handle_home_rails_end)
-   
+
     def _handle_ready(self):
         self.tool = self.printer.lookup_object('toolhead')
 
@@ -67,7 +68,7 @@ class SensingZOffset:
         if not self.force_offset_valid :
           self.force_offset = force
           self.force_offset_valid = True
-    
+
         # check if still in first layer
         if self.tool.get_position()[2] > self.max_z_height:
           return
@@ -81,12 +82,12 @@ class SensingZOffset:
         logging.info("smoothed_force = %d" % smoothed_force)
         self.averaged_force *= self.smoothing
         self.i_average *= self.smoothing
-        
+
         # no action required if below threshold
         if smoothed_force < self.force_threshold:
           self.last_force = smoothed_force
           return
-          
+
         # check of extra tolerance is also exceeded
         exceed_tolerance = False
         if smoothed_force > self.force_threshold*(1+self.relative_tolerance) :
@@ -95,27 +96,27 @@ class SensingZOffset:
         # determine number of steps (of size self.step_size) to be done
         # start with default of 1
         n_steps = 1
-        
+
         if exceed_tolerance and smoothed_force >= self.last_force:
           # larger and increasing deviations require faster action
           ratio = smoothed_force / self.force_threshold - 1
           n_steps += min(ratio * self.acuteness, self.max_steps_at_once)
-          
+
           # the more offset we have already applied, the slower the additional
           # offset needs to be applied (to prevent overshooting)
           ratio = self.z_offset / self.max_z_offset
           n_steps -= (n_steps-1)*ratio
-        
+
         if not exceed_tolerance and smoothed_force < self.last_force:
           # small and decreasing devation does not require any action
           n_steps = 0
-        
+
         # apply offset
         self.z_offset = min(self.z_offset + n_steps*self.step_size,
             self.max_z_offset)
 
         logging.info("n_steps = %d  z_offset = %f" % (n_steps, self.z_offset) )
-        
+
 
 def load_config(config):
     return SensingZOffset(config)

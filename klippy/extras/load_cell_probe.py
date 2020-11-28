@@ -59,7 +59,7 @@ class LoadCellProbe:
         self.adc_n_average = config.getint('adc_n_average', 2, minval=1)
         self.adc_n_average_precise = config.getint('adc_n_average_precise',
           3, minval=self.adc_n_average)
-        
+
         self.threshold = config.getint('threshold', 12, minval=1)
         self.step_size = config.getfloat('step_size', 0.05, above=0.)
         self.incr_step_after_n_same_dir = \
@@ -377,7 +377,7 @@ class LoadCellProbe:
 
         # precise interative search
         split_point = self._iterative_search(gcmd)
-        
+
         # perform fit
         result = self._perform_fit(gcmd, split_point)
 
