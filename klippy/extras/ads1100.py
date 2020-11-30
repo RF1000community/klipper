@@ -64,10 +64,10 @@ class MCU_ADS1100:
 
 
     def read_single_value(self):
-
+        
         # wait until conversion is ready and the timer callback has been called
         self._wait_conversion_ready()
-
+        
         # extract and return result
         return self._last_value
 
@@ -105,6 +105,7 @@ class MCU_ADS1100:
         self._last_value = struct.unpack('>h', response[0:2])[0]
         self._last_time = eventtime
         self._call_callback()
+        logging.info("ADS1100:_sample_timer %d" % self._last_value)
         return self._last_time + self.report_time
 
 
@@ -118,7 +119,7 @@ class MCU_ADS1100:
         # configuration byte: continuous conversion (SC bit not set), selected
         # gain and SPS
         config = ADS1100_SAMPLE_RATE_TABLE[self.rate] << 2 \
-            | ADS1100_GAIN_TABLE[self.gain]
+            | ADS1100_GAIN_TABLE[self.gain] 
 
         # write the 8 bit configuration register
         self.i2c.i2c_write([config])
