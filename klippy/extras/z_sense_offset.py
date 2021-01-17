@@ -72,7 +72,7 @@ class SensingZOffset:
         self.tool = self.printer.lookup_object('toolhead')
         self.enable = False
 
-    def _handle_home_rails_end(self, rails):
+    def _handle_home_rails_end(self, homing_state, rails):
         self.force_offset_valid = False
         self.z_offset = 0.
         self.enable = False
