@@ -10,6 +10,6 @@ Jinja2==2.10.1
 #KGUI
 Cython==0.29.17
 requests
-kivy==2.0.0
+kivy==2.0.0rc3
 #Wifi
 pydbus
