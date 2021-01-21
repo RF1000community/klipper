@@ -7,7 +7,7 @@
 import sys, os, gc, optparse, logging, time, collections, importlib
 import util, reactor, queuelogger, msgproto
 import gcode, configfile, pins, mcu, toolhead, webhooks
-import signal
+import signal, traceback
 
 message_ready = "Printer is ready"
 
