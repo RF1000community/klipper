@@ -126,6 +126,9 @@ access it via the `[ ]` accessor - for example:
 
 The following are common printer attributes:
 - `printer.fan.speed`: The fan speed as a float between 0.0 and 1.0.
+  This is also available on "heater_fan", "fan_generic", and
+  "controller_fan" config sections (eg,
+  `printer["fan_generic my_fan"].speed`).
 - `printer.gcode_move.gcode_position`: The current position of the
   toolhead relative to the current G-Code origin. That is, positions
   that one might directly send to a `G1` command. It is possible to
@@ -163,6 +166,8 @@ The following are common printer attributes:
   <config_name>`.
 - `printer.<heater>.target`: The current target temperature (in
   Celsius as a float) for the given heater.
+- `printer.<heater>.power`: The last setting of the PWM pin (a value
+  between 0.0 and 1.0) associated with the heater.
 - `printer.idle_timeout.state`: The current state of the printer as
   tracked by the idle_timeout module. It is one of the following
   strings: "Idle", "Printing", "Ready".
@@ -182,6 +187,17 @@ The following are common printer attributes:
 - `printer.toolhead.homed_axes`: The current cartesian axes considered
   to be in a "homed" state. This is a string containing one or more of
   "x", "y", "z".
+- `printer.toolhead.axis_minimum`,
+  `printer.toolhead.axis_maximum`: The axis travel limits (mm) after homing.
+  It is possible to access the x, y, z components of this
+  limit value (eg, `printer.toolhead.axis_minimum.x`,
+  `printer.toolhead.axis_maximum.z`).
+- `printer.toolhead.max_velocity`, `printer.toolhead.max_accel`,
+  `printer.toolhead.max_accel_to_decel`,
+  `printer.toolhead.square_corner_velocity`: The current printing
+  limits that are in effect. This may differ from the config file
+  settings if a `SET_VELOCITY_LIMIT` (or `M204`) command alters them
+  at run-time.
 - `printer.heaters.available_heaters`: Returns a list of all currently
   available heaters by their full config section names,
   e.g. `["extruder", "heater_bed", "heater_generic my_custom_heater"]`.
@@ -204,6 +220,74 @@ The following are common printer attributes:
   not be reflected here.) All values are returned as strings (if math
   is to be performed on the value then it must be converted to a
   Python number).
+- `printer["gcode_macro <macro_name>"].<variable>`: The current value
+  of a [gcode_macro variable](#variables).
+- `printer.webhooks.state`: Returns a string indicating the current
+  Klipper state. Possible values are: "ready", "startup", "shutdown",
+  "error".
+- `printer.webhooks.state_message`: A human readable string giving
+  additional context on the current Klipper state.
+- `printer.display_status.progress`: The progress value of the last
+  `M73` G-Code command (or `printer.virtual_sdcard.progress` if no
+  recent `M73` received).
+- `printer.display_status.message`: The message contained in the last
+  `M117` G-Code command.
+- `printer["filament_switch_sensor <config_name>"].enabled`: Returns
+  True if the switch sensor is currently enabled.
+- `printer["filament_switch_sensor <config_name>"].filament_detected`:
+  Returns True if the sensor is in a triggered state.
+- `printer.virtual_sdcard.is_active`: Returns True if a print from
+  file is currently active.
+- `printer.virtual_sdcard.progress`: An estimate of the current print
+  progress (based of file size and file position).
+- `printer.virtual_sdcard.file_position`: The current position (in
+  bytes) of an active print.
+- `printer.print_stats.filename`,
+  `printer.print_stats.total_duration`,
+  `printer.print_stats.print_duration`,
+  `printer.print_stats.filament_used`, `printer.print_stats.state`,
+  `printer.print_stats.message`: Estimated information about the
+  current print when a virtual_sdcard print is active.
+- `printer.firmware_retraction.retract_length`,
+  `printer.firmware_retraction.retract_speed`,
+  `printer.firmware_retraction.unretract_extra_length`,
+  `printer.firmware_retraction.unretract_speed`: The current settings
+  for the firmware_retraction module. These settings may differ from
+  the config file if a `SET_RETRACTION` command alters them.
+- `printer["bme280 <sensor_name>"].temperature`,
+  `printer["bme280 <sensor_name>"].humidity`,
+  `printer["bme280 <sensor_name>"].pressure`: The last read values
+  from the sensor.
+- `printer["htu21d <sensor_name>"].temperature`,
+  `printer["htu21d <sensor_name>"].humidity`: The last read values
+  from the sensor.
+- `printer["lm75 <sensor_name>"].temperature`: The last read
+  temperature from the sensor.
+- `printer["rpi_temperature <sensor_name>"].temperature`: The last read
+  temperature from the sensor.
+- `printer["temperature_sensor <config_name>"].temperature`: The last read
+  temperature from the sensor.
+- `printer["temperature_sensor <config_name>"].measured_min_temp`,
+  `printer["temperature_sensor <config_name>"].measured_max_temp`: The
+  lowest and highest temperature seen by the sensor since the Klipper
+  host software was last restarted.
+- `printer["temperature_fan <config_name>"].temperature`: The last read
+  temperature from the sensor.
+- `printer["temperature_fan <config_name>"].target`: The target
+  temperature for the fan.
+- `printer["output_pin <config_name>"].value`: The "value" of the pin,
+  as set by a `SET_PIN` command.
+- `printer["servo <config_name>"].value`: The last setting of the PWM
+  pin (a value between 0.0 and 1.0) associated with the servo.
+- `printer.bed_mesh.profile_name`, `printer.bed_mesh.mesh_min`,
+  `printer.bed_mesh.mesh_max`, `printer.bed_mesh.probed_matrix`,
+  `printer.bed_mesh.mesh_matrix`: Information on the currently active
+  bed_mesh.
+- `printer.hall_filament_width_sensor.is_active`: Returns True if the
+  sensor is currently active.
+- `printer.hall_filament_width_sensor.Diameter`,
+  `printer.hall_filament_width_sensor.Raw`: The last read values from
+  the sensor.
 
 The above list is subject to change - if using an attribute be sure to
 review the [Config Changes document](Config_Changes.md) when upgrading
@@ -231,6 +315,10 @@ Available "action" commands:
 - `action_emergency_stop(msg)`: Transition the printer to a shutdown
   state. The `msg` parameter is optional, it may be useful to describe
   the reason for the shutdown.
+- `action_call_remote_method(method_name)`: Calls a method registered
+  by a remote client.  If the method takes parameters they should
+  be provided via keyword arguments, ie:
+  `action_call_remote_method("print_stuff", my_arg="hello_world")`
 
 ### Variables
 
@@ -317,3 +405,40 @@ gcode:
 ```
 UPDATE_DELAYED_GCODE ID=report_temp DURATION=0
 ```
+
+### Save Variables to disk
+<!-- {% raw %} -->
+
+If a
+[save_variables config section](Config_Reference.md#save_variables)
+has been enabled, `SAVE_VARIABLE VARIABLE=<name> VALUE=<value>` can be
+used to save the variable to disk so that it can be used across
+restarts. All stored variables are loaded into the
+`printer.save_variables.variables` dict at startup and can be used in
+gcode macros. to avoid overly long lines you can add the following at
+the top of the macro:
+```
+{% set svv = printer.save_variables.variables %}
+```
+
+As an example, it could be used to save the state of 2-in-1-out hotend
+and when starting a print ensure that the active extruder is used,
+instead of T0:
+
+```
+[gcode_macro T1]
+gcode:
+  ACTIVATE_EXTRUDER extruder=extruder1
+  SAVE_VARIABLE VARIABLE=currentextruder VALUE='"extruder1"'
+
+[gcode_macro T0]
+gcode:
+  ACTIVATE_EXTRUDER extruder=extruder
+  SAVE_VARIABLE VARIABLE=currentextruder VALUE='"extruder"'
+
+[gcode_macro START_GCODE]
+gcode:
+  {% set svv = printer.save_variables.variables %}
+  ACTIVATE_EXTRUDER extruder={svv.currentextruder}
+```
+<!-- {% endraw %} -->

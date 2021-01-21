@@ -4,9 +4,10 @@
 # Copyright (C) 2016-2020  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import sys, os, gc, optparse, logging, time, threading, collections, importlib
-import util, reactor, queuelogger, msgproto, homing, signal
-import gcode, configfile, pins, mcu, toolhead, webhooks, traceback
+import sys, os, gc, optparse, logging, time, collections, importlib
+import util, reactor, queuelogger, msgproto
+import gcode, configfile, pins, mcu, toolhead, webhooks
+import signal
 
 message_ready = "Printer is ready"
 
@@ -47,7 +48,7 @@ Printer is shutdown
 
 class Printer:
     config_error = configfile.error
-    command_error = homing.CommandError
+    command_error = gcode.CommandError
     def __init__(self, main_reactor, bglogger, start_args):
         signal.signal(signal.SIGTERM, self._terminate)
         self.bglogger = bglogger
