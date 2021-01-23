@@ -94,13 +94,13 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.curaconnection = None
         self.bed_mesh = True # initialize as True so it shows up on load, maybe dissapears after handle_connect
         self.sdcard = None
-        self.history = None
-        self.printjob_progress = None
+        self.print_stats = None
         if not TESTING:
             self.clean()
             self.kgui_config = config
             self.printer = config.get_printer()
             self.reactor = self.printer.get_reactor()
+            self.print_history = self.printer.load_object(config, 'print_history')
             self.klipper_config_manager = self.printer.objects['configfile']
             self.klipper_config = self.klipper_config_manager.read_main_config()
             # read config
@@ -156,8 +156,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.gcode = self.printer.lookup_object('gcode')
         self.gcode_move = self.printer.lookup_object('gcode_move')
         self.sdcard = self.printer.lookup_object('virtual_sdcard')
-        self.history = self.printer.lookup_object('printjob_history')
-        self.printjob_progress = self.printer.lookup_object('printjob_progress')
+        self.print_stats = self.printer.lookup_object('print_stats')
         self.toolhead = self.printer.lookup_object('toolhead')
         self.bed_mesh = self.printer.lookup_object('bed_mesh', None)
         self.filament_manager = self.printer.lookup_object('filament_manager', None)
@@ -310,7 +309,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def get_printjob_progress(self, *args):
         if self.print_state in ('printing', 'pausing', 'paused'):
-            est_remaining, progress = self.printjob_progress.get_print_time_prediction()
+            est_remaining, progress = self.print_stats.get_print_time_prediction()
             if progress is None: # no prediction could be made yet
                 self.progress = 0
                 self.print_time = ""

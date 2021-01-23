@@ -147,8 +147,8 @@ class DeletePopup(BasePopup):
         app = App.get_running_app()
 
         # Update the files in the filechooser instance
-        if app.history:
-            app.history.trim_history()
+        if app.print_history:
+            app.print_history.trim_history()
         if self.timeline:
             self.timeline.load_all(in_background=False)
         elif self.filechooser:

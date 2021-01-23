@@ -29,10 +29,10 @@ class Timeline(RecycleView):
             for job in reversed(self.app.jobs)]
 
         history = []
-        if self.app.history and self.app.history.history != []:
+        if self.app.print_history and self.app.print_history.history != []:
             # latest date in history
-            prev_date = date.fromtimestamp(self.app.history.history[0][2])
-            for job in self.app.history.history:
+            prev_date = date.fromtimestamp(self.app.print_history.history[0][2])
+            for job in self.app.print_history.history:
                 new_date = date.fromtimestamp(job[2])
                 # This print happened on a later day than the previous
                 if new_date != prev_date:
