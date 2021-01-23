@@ -12,6 +12,7 @@ class PrinterExtruder:
         self.name = config.get_name()
         self.untracked_extruded_length = 0
         shared_heater = config.get('shared_heater', None)
+        logging.info("loaded heaters")
         pheaters = self.printer.load_object(config, 'heaters')
         gcode_id = 'T%d' % (extruder_num,)
         if shared_heater is None:

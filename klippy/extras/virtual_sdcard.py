@@ -169,7 +169,9 @@ class PrintjobManager:
         self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object('gcode')
+        logging.info("loading heaters")
         self.heater_manager = self.printer.lookup_object('heaters')
+        self.printer.load_object(config, 'print_stats')
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
         self.jobs = [] # Printjobs, first is current
@@ -196,7 +198,7 @@ class PrintjobManager:
         self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
 
     def clear_queue(self):
-        """ remove everything but the first element wich is currently being printed """
+        """ remove everything but the first element which is currently being printed """
         self.jobs = self.jobs[:1]
         self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
 

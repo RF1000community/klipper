@@ -1,4 +1,4 @@
-# Persistant Printjob History for virtual_sdcard
+# Persistent Printjob History for virtual_sdcard
 #
 # Copyright (C) 2020  Gabriel Vogel
 #
@@ -7,7 +7,7 @@ import logging, time, json
 from os.path import expanduser, exists
 
 
-class PrintjobHistory:
+class PrintHistory:
     """
     Manage print history file
 
@@ -81,4 +81,4 @@ class PrintjobHistory:
         self.write(self.history)
 
 def load_config(config):
-    return PrintjobHistory(config)
+    return PrintHistory(config)
