@@ -11,7 +11,7 @@ Make sure to get one with an IPS panel (much better image quality)
 
 ### Prepare OS
 
-- flash [Raspian buster lite 2020-05-27](https://www.raspberrypi.org/downloads/raspbian) to SD-Card
+- flash [Raspian buster lite](https://www.raspberrypi.org/downloads/raspbian) 2021-01-11 to SD-Card
 - add new file named "ssh" (with no file extension) to the boot folder to enable ssh
 - Boot your pi and run the following commands via SSH
 
@@ -21,25 +21,12 @@ sudo apt install git
 sudo raspi-config
 ```
 - Set following settings:
-   - Advanced Options -> Memory Split to `256`
+   - Performance Options -> GPU Memory to `256`
    - Advanced Options -> GL Driver to `GL (Fake KMS)`
-   - Boot Options -> Desktop/CLI to `Console Autologin`
-   - Interfacing Options -> Camera to `enabled` (If you plan to use a raspi-cam)
-
-### Install Octoprint if required <br> (it is recommended to use the [klipper_cura_connection](https://github.com/Gobbel2000/klipper_cura_connection) plugin instead of a webinterface)
-```bash
-sudo apt install virtualenv  
-cd
-git clone https://github.com/foosel/OctoPrint.git
-cd Octoprint/
-virtualenv venv  
-./venv/bin/python setup.py install
-
-sudo cp ./scripts/octoprint.service /etc/systemd/system/octoprint.service
-sudo systemctl daemon-reload
-sudo systemctl enable octoprint
-#sudo journalctl -u octoprint
-```
+   - System Options -> Boot / Auto Login to `Console Autologin`
+   - Interface Options -> Camera to `enabled` (If you plan to use a raspi-cam)
+   - Localisation Options -> Locale to `en_GB.UTF8 UTF-8`
+- (If the Pi fails to boot, try briefly disconnecting the printer mainboards' USB cable)
 
 ### Install Klipper with KGUI
 
