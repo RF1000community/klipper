@@ -169,7 +169,6 @@ class PrintjobManager:
         self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object('gcode')
-        logging.info("loading heaters")
         self.heater_manager = self.printer.lookup_object('heaters')
         self.printer.load_object(config, 'print_stats')
         self.printer.register_event_handler("klippy:ready", self.handle_ready)

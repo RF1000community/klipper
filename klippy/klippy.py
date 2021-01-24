@@ -8,6 +8,7 @@ import sys, os, gc, optparse, logging, time, collections, importlib
 import util, reactor, queuelogger, msgproto
 import gcode, configfile, pins, mcu, toolhead, webhooks
 import signal, traceback
+from subprocess import Popen
 
 message_ready = "Printer is ready"
 
@@ -332,7 +333,7 @@ def main():
     if bglogger is not None:
         bglogger.stop()
     if res == "firmware_restart":
-        Popen('sudo', 'systemctl', 'restart', 'klipper')
+        Popen(['sudo', 'systemctl', 'restart', 'klipper'])
 
 
 if __name__ == '__main__':
