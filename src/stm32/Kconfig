@@ -8,10 +8,11 @@ config STM32_SELECT
     select HAVE_GPIO
     select HAVE_GPIO_ADC
     select HAVE_GPIO_I2C if ! MACH_STM32H7
-    select HAVE_GPIO_SPI
+    select HAVE_GPIO_SPI if ! MACH_STM32H7 
     select HAVE_GPIO_BITBANGING
     select HAVE_STRICT_TIMING
     select HAVE_CHIPID
+#TODO enable SPI
 
 config BOARD_DIRECTORY
     string

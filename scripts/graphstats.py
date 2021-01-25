@@ -27,11 +27,7 @@ def parse_log(logname, mcu):
     out = []
     for line in f:
         parts = line.split()
-        # remove brackets that are added to the log file for unknown reasons
-        for i in range(len(parts)):
-            parts[i].replace('[', '')
-            parts[i].replace(']', '')
-        if not parts or 'Stats' not in parts[0]:
+        if not parts or parts[0] not in ('Stats', 'INFO:root:Stats'):
             #if parts and parts[0] == 'INFO:root:shutdown:':
             #    break
             continue
@@ -273,9 +269,6 @@ def main():
     # Parse data
     data = parse_log(logname, options.mcu)
     if not data:
-        print("no data")
-        import time
-        time.sleep(10)
         return
 
     # Draw graph

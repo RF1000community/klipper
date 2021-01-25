@@ -130,10 +130,12 @@ gpio_peripheral(uint32_t gpio, uint32_t mode, int pullup)
 DECL_CONSTANT_STR("RESERVE_PINS_crystal", "PH0,PH1");
 #endif
 
-// Main clock setup called at chip startup
+// Main clock and power setup called at chip startup
 static void
 clock_setup(void)
 {
+    // see https://github.com/apache/incubator-nuttx/blob/cdd111a1faec9b40b707797e00c4afae4956fb3f/arch/arm/src/stm32h7/stm32h7x3xx_rcc.c
+    // and https://github.com/stm32-rs/stm32h7xx-hal/blob/master/src/pwr.rs
     // Set this despite defaults being correct. "The software has to program the supply configuration in PWR control register 3" (pg. 259)
     // Only a single write is allowed (pg. 304)
     //if (PWR->CR3 & PWR_CR3_SCUEN)
@@ -174,7 +176,6 @@ clock_setup(void)
     // Enable VOS0 (overdrive), only relevant for revision V or later @480mhz 
     RCC->APB4ENR |= RCC_APB4ENR_SYSCFGEN;
     SYSCFG->PWRCR |= SYSCFG_PWRCR_ODEN;
-    
     while (!(PWR->D3CR & PWR_D3CR_VOSRDY))
         ;
 

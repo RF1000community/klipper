@@ -61,7 +61,9 @@ def setup_bg_logging(filename, debuglevel):
     global MainQueueHandler
     ql = QueueListener(filename)
     MainQueueHandler = QueueHandler(ql.bg_queue)
-    root = logging.getLogger()
+    # add name to root logger so it can be reassigned to root when libraries mess with it (Kivy)
+    root = logging.getLogger("klippy")
+    logging.root = root
     root.addHandler(MainQueueHandler)
     root.setLevel(debuglevel)
     return ql

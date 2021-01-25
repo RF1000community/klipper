@@ -143,10 +143,12 @@ gpio_adc_read(struct gpio_adc g)
 // Cancel a sample that may have been started with gpio_adc_sample()
 void
 gpio_adc_cancel_sample(struct gpio_adc g)
-{
+{    
+    return;
+    /*
     ADC_TypeDef *adc = g.adc;
     irqstatus_t flag = irq_save();
     if (adc->CR & ADC_CR_ADSTART && adc->SQR1 == g.chan)// what is this used for the ADSTART is not as long true as SR_STRT on stm32f4
         gpio_adc_read(g);
-    irq_restore(flag);
+    irq_restore(flag);*/
 }
