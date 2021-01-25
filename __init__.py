@@ -22,7 +22,7 @@ from kivy.config import Config
 from kivy.lang import Builder
 from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
         NumericProperty, ListProperty, StringProperty, ObjectProperty)
-
+logging.root = logging.getLogger("klippy") # Kivy can fuck right off and not overwrite the root logger
 from .elements import UltraKeyboard, CriticalErrorPopup, ErrorPopup
 from .freedir import freedir
 from .nm_dbus import NetworkManager
