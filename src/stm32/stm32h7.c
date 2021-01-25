@@ -126,14 +126,6 @@ gpio_peripheral(uint32_t gpio, uint32_t mode, int pullup)
     regs->OSPEEDR = (regs->OSPEEDR & ~m_msk) | (0x02 << m_shift);
 }
 
-void
-wait()
-{
-    int i;
-    for(i=0;i<50000;i++)
-    {};
-}
-
 #if !CONFIG_STM32_CLOCK_REF_INTERNAL
 DECL_CONSTANT_STR("RESERVE_PINS_crystal", "PH0,PH1");
 #endif
@@ -142,6 +134,10 @@ DECL_CONSTANT_STR("RESERVE_PINS_crystal", "PH0,PH1");
 static void
 clock_setup(void)
 {
+    // Set this despite defaults being correct. "The software has to program the supply configuration in PWR control register 3" (pg. 259)
+    // Only a single write is allowed (pg. 304)
+    //if (PWR->CR3 & PWR_CR3_SCUEN)
+    PWR->CR3 = (PWR->CR3 | PWR_CR3_LDOEN) & ~(PWR_CR3_BYPASS | PWR_CR3_SCUEN);
     while (!(PWR->CSR1 & PWR_CSR1_ACTVOSRDY))
         ;
     // HSE(25mhz) /=DIVM1(5) -pll_base(5Mhz)-> *=DIVN1(192) -pll_freq-> /=DIVP1(2) -SYSCLK(480mhz)->
@@ -150,7 +146,6 @@ clock_setup(void)
     if (!CONFIG_STM32_CLOCK_REF_INTERNAL) {
         // Configure PLL from external crystal (HSE)
         RCC->CR |= RCC_CR_HSEON; // enable HSE input
-        wait();
         while(!(RCC->CR & RCC_CR_HSERDY))
             ;
         MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk, RCC_PLLCKSELR_PLLSRC_HSE);
@@ -174,13 +169,12 @@ clock_setup(void)
 
     // Crank up Vcore
     MODIFY_REG(PWR->D3CR, PWR_D3CR_VOS_Msk, PWR_D3CR_VOS);
-    wait();
     while (!(PWR->D3CR & PWR_D3CR_VOSRDY))
         ;
     // Enable VOS0 (overdrive), only relevant for revision V or later @480mhz 
     RCC->APB4ENR |= RCC_APB4ENR_SYSCFGEN;
     SYSCFG->PWRCR |= SYSCFG_PWRCR_ODEN;
-    wait();
+    
     while (!(PWR->D3CR & PWR_D3CR_VOSRDY))
         ;
 
@@ -192,7 +186,6 @@ clock_setup(void)
 
     // Switch on PLL1
     RCC->CR |= RCC_CR_PLL1ON;
-    wait();
     while (!(RCC->CR & RCC_CR_PLL1RDY))// Wait for PLL lock
         ;
 
@@ -206,7 +199,6 @@ clock_setup(void)
     // Switch system clock source (SYSCLK) to PLL1
     MODIFY_REG(RCC->CFGR, RCC_CFGR_SW_Msk, RCC_CFGR_SW_PLL1);
     // Wait for PLL1 to be selected
-    wait();
     while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL1)
         ;
 }
