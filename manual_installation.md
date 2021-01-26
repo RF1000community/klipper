@@ -22,7 +22,8 @@ sudo apt purge dhcpcd5
 
 ### Boot optimizations
 
-add `quiet disable_splash=1` to /boot/cmdline.txt  
+add `quiet logo.nologo` to /boot/cmdline.txt
+add `disable_splash=1` to /boot/config.txt
 
 ### Logs
 
