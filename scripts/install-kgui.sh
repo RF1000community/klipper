@@ -23,7 +23,7 @@ install_packages()
     PKGLIST="${PKGLIST} gcc-arm-none-eabi binutils-arm-none-eabi"
     # PKGLIST="${PKGLIST} stm32flash" has to be installed from source to inclde latest MCUs
 
-    # Kivy https://github.com/kivy/kivy/doc/sources/installation/installation-rpi.rst
+    # Kivy https://github.com/kivy/kivy/blob/master/doc/sources/installation/installation-rpi.rst
     PKGLIST="${PKGLIST} \
     pkg-config \
     libgl1-mesa-dev \
@@ -86,7 +86,7 @@ install_packages()
     # Kivy SDL2
     PKGLIST="${PKGLIST} libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev"
 
-    # Wifi
+    # Wifiecho
     PKGLIST="${PKGLIST} network-manager python3-gi"
     # Usb Stick Automounting
     PKGLIST="${PKGLIST} usbmount"
