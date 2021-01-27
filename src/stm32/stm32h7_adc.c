@@ -45,7 +45,7 @@ static const uint8_t adc_pins[] = {
 struct gpio_adc
 gpio_adc_setup(uint32_t pin)
 {
-    output("gpio_adc_setup");
+    //output("gpio_adc_setup");
     // Find pin in adc_pins table
     int chan;
     for (chan=0; ; chan++) {
@@ -98,7 +98,7 @@ gpio_adc_setup(uint32_t pin)
 uint32_t
 gpio_adc_sample(struct gpio_adc g)
 {
-    output("gpio_adc_sample");
+    //output("gpio_adc_sample");
     return 0;
 }
 /*
@@ -128,7 +128,7 @@ gpio_adc_sample(struct gpio_adc g)
 uint16_t
 gpio_adc_read(struct gpio_adc g)
 {
-    output("gpip_adc_read");
+    //output("gpip_adc_read");
     uint16_t resylt = 10;
     return resylt;
 }
@@ -147,7 +147,7 @@ gpio_adc_read(struct gpio_adc g)
 void
 gpio_adc_cancel_sample(struct gpio_adc g)
 {    
-    output("gpio_adc_cancel_sample");
+    //output("gpio_adc_cancel_sample");
     return;
     /*
     ADC_TypeDef *adc = g.adc;

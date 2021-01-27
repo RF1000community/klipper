@@ -86,7 +86,7 @@ install_packages()
     # Kivy SDL2
     PKGLIST="${PKGLIST} libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev"
 
-    # Wifiecho
+    # Wifi
     PKGLIST="${PKGLIST} network-manager python3-gi"
     # Usb Stick Automounting
     PKGLIST="${PKGLIST} usbmount"
@@ -104,6 +104,7 @@ install_packages()
     rm -rf stm32flash-code
     git clone https://git.code.sf.net/p/stm32flash/code stm32flash-code
     cd stm32flash-code
+    git checkout ee5b009
     make
     sudo make install
 
