@@ -162,6 +162,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.filament_manager = self.printer.lookup_object('filament_manager', None)
         self.heater_manager = self.printer.lookup_object('heaters', None)
         self.curaconnection = self.printer.lookup_object('klipper_cura_connection', None)
+        self.gcode_metadata = self.printer.lookup_object('gcode_metadata', None)
         self.heaters = {}
         self.extruders = []
         if 'heater_bed' in self.heater_manager.heaters: 
