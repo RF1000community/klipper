@@ -162,7 +162,7 @@ class GCodeDispatch:
             line = origline = line.strip()
             cpos = line.find(';')
             if cpos == 0: 
-                # the whole line is a comment send event for modules to read it
+                # The whole line is a comment, send event for modules to read it
                 print_time = self.printer.lookup_object('toolhead').get_last_move_time()
                 self.printer.send_event("gcode:read_metadata", print_time, line)
                 continue

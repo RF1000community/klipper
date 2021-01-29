@@ -21,7 +21,6 @@ class PrintHistory:
     """
     def __init__(self, config):
         self.printer = config.get_printer()
-        self.reactor = self.printer.get_reactor()
         self.history_path = expanduser("~/history.json")
         self.history = self.read()
         self.trim_history()
@@ -76,7 +75,7 @@ class PrintHistory:
             return
 
     def add(self, job):
-        """Add a new entry to the history with the path and state string specified"""
+        """Add a new entry to the history from the specified Printjob object"""
         self.history.append([job.path, job.state, time.time()])
         self.write(self.history)
 

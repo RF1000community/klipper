@@ -4,8 +4,8 @@
 # Copyright (C) 2020  Konstantin Vogel <konstantin.vogel@gmx.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import os, logging
-from zipfile import ZipFile
+import logging
+import os
 
 
 class Printjob:
@@ -16,6 +16,8 @@ class Printjob:
         self.gcode = manager.gcode
         self.printer = manager.printer
         self.heater_manager = manager.heater_manager
+        self.gcode_metadata = manager.gcode_metadata
+
         self.path = path
         self.state = None
         self.production_line_mode = production_line_mode # if True dont pause when starting the next job from q
@@ -24,25 +26,14 @@ class Printjob:
         self.saved_pause_state = False
         self.start_stop_times = []
         self.name, ext = os.path.splitext(os.path.basename(path))
-        try: # opening the file, with on the fly decompression in case of .ufp file
-            if ext in ('.gco', '.gcode'):
-                self.thumbnail_path = None
-                self.file_obj = open(self.path, 'rb')
-                self.file_obj.seek(0, os.SEEK_END)
-                self.file_size = self.file_obj.tell()
-                self.file_obj.seek(0)
-            elif ext == '.ufp':
-                zip_obj = ZipFile(path)
-                self.thumbnail_path = path.replace('.ufp', '.png')
-                with open(self.thumbnail_path, 'wb') as thumbnail:
-                    thumbnail.write(zip_obj.read("/Metadata/thumbnail.png"))
-                self.file_obj = zip_obj.open("/3D/model.gcode", 'r')
-                self.file_obj.seek(0, os.SEEK_END)
-                self.file_size = self.file_obj.tell()
-                self.file_obj.seek(0)
-        except:
+
+        try:
+            self.md = self.gcode_metadata.get_metadata(self.path)
+            self.file_obj = self.md.get_gcode_stream()
+            self.file_size = self.md.get_file_size()
+        except (ValueError, FileNotFoundError) as e:
             self.printer.send_event("klippy:error", f"Failed opening file {self.path}")
-            logging.exception(f"Failed opening {ext} file")
+            logging.exception(f"Failed opening {ext} file: {e}")
             self.set_state('stopped')
             self.manager.check_queue()
 
@@ -159,7 +150,7 @@ class Printjob:
             print_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
         printed_time = 0
         for time in self.start_stop_times:
-            printed_time += - time[0] + (time[1] if time[1] else print_time)
+            printed_time += (time[1] if time[1] else print_time) - time[0]
         return printed_time
 
 
@@ -170,6 +161,7 @@ class PrintjobManager:
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object('gcode')
         self.heater_manager = self.printer.lookup_object('heaters')
+        self.gcode_metadata = self.printer.lookup_object('gcode_metadata')
         self.printer.load_object(config, 'print_stats')
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
