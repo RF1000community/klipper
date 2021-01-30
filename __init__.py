@@ -202,10 +202,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         ErrorPopup(message = message).open()
 
     # this ensures disabling manual movement (buttons), and z-tuning moves during drip-move
-    def handle_home_start(self, rails):
+    def handle_home_start(self, homing_state, rails):
         self.ongoing_drip_move = True
 
-    def handle_home_end(self, rails):
+    def handle_home_end(self, homing_state, rails):
         self.ongoing_drip_move = False
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
@@ -401,7 +401,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def get_acceleration(self):
         self.acceleration = self.toolhead.max_accel
-    def send_acceleration(self, val):
+    def send_acceleration(self, val): # with dynamic acceleration control (M204) this becomes useless (sets limit)
         self.acceleration = val
         self.toolhead.max_accel = val
         self.reactor.register_async_callback(lambda e: self.toolhead._calc_junction_deviation())
