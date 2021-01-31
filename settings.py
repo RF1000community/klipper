@@ -58,7 +58,8 @@ class ConsoleScreen(Screen):
         super().__init__(*args, **kwargs)
         app = App.get_running_app()
         # should hopefully be thread safe
-        self.fd = app.printer.get_start_args().get("gcode_fd")
+        if app.printer:
+            self.fd = app.printer.get_start_args().get("gcode_fd")
         self.reactor = app.reactor
         Clock.schedule_once(self.init_drawing, 0)
 

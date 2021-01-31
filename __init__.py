@@ -143,6 +143,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.xy_homing_controls = True
             self.extruders = [None, None]
             self.extruder_count = 2
+            self.printer = self.reactor = self.print_history = self.gcode_metadata = None
         self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell the app class where the root kv file is
         super().__init__(**kwargs)
 
