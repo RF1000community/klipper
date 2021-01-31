@@ -149,7 +149,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def clean(self):
         ndel, freed = freedir(p.sdcard_path)
         if ndel:
-            self.notify.show(f"Disk space freed", "Deleted {ndel} files, freeing {freed} MiB")
+            self.notify.show("Disk space freed", f"Deleted {ndel} files, freeing {freed} MiB")
 
     def handle_connect(self): # runs in klippy thread
         self.fan_manager = self.printer.lookup_object('fan', None)

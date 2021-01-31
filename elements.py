@@ -153,6 +153,9 @@ class DeletePopup(BasePopup):
             self.timeline.load_all(in_background=False)
         elif self.filechooser:
             self.filechooser.load_files(in_background=True)
+        # Clear file form the metadata cache
+        if app.gcode_metadata:
+            app.gcode_metadata.delete_cache_entry(self.path)
         self.dismiss()
         app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)
 

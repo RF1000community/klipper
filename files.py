@@ -67,9 +67,10 @@ class Filechooser(RecycleView):
                     ext = os.path.splitext(base)[1]
                     dict_['item_type'] = "file"
                     if ext in {'.gco', '.gcode', '.ufp'}:
-                        md = self.app.gcode_metadata.get_metadata(path)
-                        dict_['details'] = md.get_filament(measure="weight")
-                        dict_['thumbnail'] = md.get_thumbnail_path()
+                        if self.app.gcode_metadata:
+                            md = self.app.gcode_metadata.get_metadata(path)
+                            dict_['details'] = md.get_filament(measure="weight")
+                            dict_['thumbnail'] = md.get_thumbnail_path()
                         files.append(dict_)
                 # USB Stick
                 elif base == "USB-Device":
