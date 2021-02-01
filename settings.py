@@ -15,7 +15,6 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 from kivy.uix.tabbedpanel import TabbedPanelItem
-from kivy.uix.textinput import TextInput
 
 from .elements import BaseButton, BasePopup
 from . import parameters as p
@@ -59,7 +58,8 @@ class ConsoleScreen(Screen):
         super().__init__(*args, **kwargs)
         app = App.get_running_app()
         # should hopefully be thread safe
-        self.fd = app.printer.get_start_args().get("gcode_fd")
+        if app.printer:
+            self.fd = app.printer.get_start_args().get("gcode_fd")
         self.reactor = app.reactor
         Clock.schedule_once(self.init_drawing, 0)
 
@@ -362,16 +362,24 @@ class HostnamePopup(BasePopup):
         else:
             self.dismiss()
 
-class HostnameTextInput(TextInput):
-    """
-    Modify TextInput to only input lower- and uppercase ASCII letters,
-    digits and hyphens, and not more than 64 characters in total.
-    """
+# TextInput must be imported later, specifically in the kivy Thread,
+# not in the klippy Thread. This is to prevent a segmentation fault
+# if kivy.core.window is imported in a different Thread.
+def late_define(dt):
+    from kivy.uix.textinput import TextInput
+    global HostnameTextInput
+    class HostnameTextInput(TextInput):
+        """
+        Modify TextInput to only input lower- and uppercase ASCII letters,
+        digits and hyphens, and not more than 64 characters in total.
+        """
 
-    pat = re.compile(r"[^-a-zA-Z0-9]")
+        pat = re.compile(r"[^-a-zA-Z0-9]")
 
-    def insert_text(self, substring, from_undo=False):
-        filtered = re.sub(self.pat, "", substring)
-        max_len = 64 - len(self.text)
-        limited = filtered[:max_len]
-        return super().insert_text(limited, from_undo=from_undo)
+        def insert_text(self, substring, from_undo=False):
+            filtered = re.sub(self.pat, "", substring)
+            max_len = 64 - len(self.text)
+            limited = filtered[:max_len]
+            return super().insert_text(limited, from_undo=from_undo)
+
+Clock.schedule_once(late_define, 0)
