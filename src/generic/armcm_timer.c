@@ -128,7 +128,7 @@ timer_dispatch_many(void)
         uint32_t next = sched_timer_dispatch();
 
         uint32_t now = timer_read_time();
-        int32_t diff = next - now;
+        int64_t diff = next - now; //TODO investigate all possible overflow conditions due to higher clock speed
         if (diff > (int32_t)TIMER_MIN_TRY_TICKS)
             // Schedule next timer normally.
             return diff;
