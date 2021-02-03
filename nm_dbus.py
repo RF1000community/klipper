@@ -334,8 +334,6 @@ class AccessPoint:
         self.freq = self._proxy.Frequency
         # whether the connection is known
         self.saved = self.b_ssid in self._network_manager.saved_ssids
-        # whether we are connected with this connection
-        self.in_use = self._path == self._network_manager.wifi_dev.ActiveAccessPoint
         # whichever is not 0x0
         security_flags = self._proxy.RsnFlags or self._proxy.WpaFlags
         # False when no password is required, True otherwise
@@ -343,17 +341,31 @@ class AccessPoint:
         # Pre-shared Key encryption is supported
         self.supports_psk = security_flags & 0x100
 
+    @property
+    def in_use(self):
+        """Whether we are connected with this connection"""
+        return self._path == self._network_manager.wifi_dev.ActiveAccessPoint
+
     def connect(self, password=None):
-        self._network_manager.wifi_connect(self, password)
+        call_async(self._network_manager.wifi_connect, self, password)
 
     def up(self):
-        self._network_manager.wifi_up(self)
+        call_async(self._network_manager.wifi_up, self)
 
     def down(self):
-        self._network_manager.wifi_down()
+        call_async(self._network_manager.wifi_down)
 
     def delete(self):
-        self._network_manager.wifi_delete(self)
+        call_async(self._network_manager.wifi_delete, self)
+
+
+def call_async(callback, *args):
+    """Call a function asynchronously with the dbus loop.
+    Return values are not handled."""
+    def call_and_stop(args):
+        callback(*args)
+        return False  # Return False, otherwise this is perpetually executed
+    GLib.idle_add(call_and_stop, args, priority=GLib.PRIORITY_HIGH)
 
 def _bytes_to_string(array):
     """Helper function to transform a bytearray to a string"""
