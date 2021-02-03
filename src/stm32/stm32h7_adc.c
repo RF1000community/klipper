@@ -98,7 +98,7 @@ gpio_adc_setup(uint32_t pin)
 uint32_t
 gpio_adc_sample(struct gpio_adc g)
 {
-    //output("gpio_adc_sample");
+    output("gpio_adc_sample");
     return 0;
 }
 /*
@@ -108,19 +108,19 @@ gpio_adc_sample(struct gpio_adc g)
     ADC_TypeDef *adc = g.adc;
     if (adc->ISR & ADC_ISR_EOC) // Conversion ready, EOC set
     {
-        shutdown("Logging ISRadc_sampleEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+        output("conversion ready");
         return 0;
     }
     if ((adc->CR & ADC_CR_ADSTART) || adc->SQR1 != g.chan) // the channel condition only works if this ist the only channel on the sequence and length set to 1 (ADC_SQR1_L = 0000)
     {
         // Conversion already started (still in progress) or busy on another channel or not started yet (EOC flag is cleared by hardware when reading DR)
-        shutdown("Logging 2adc_sampleEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+        output("conversion already started");
         return timer_from_us(20);
     }
     // Start sample
     adc->SQR1 = g.chan;
     adc->CR = ADC_CR_ADSTART | ADC_CR_ADEN; //start the conversion
-    shutdown("Logging 3adc_sampleEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+    output("started conversion");    
     return timer_from_us(20);
     
 }*/
@@ -128,9 +128,8 @@ gpio_adc_sample(struct gpio_adc g)
 uint16_t
 gpio_adc_read(struct gpio_adc g)
 {
-    //output("gpip_adc_read");
-    uint16_t resylt = 10;
-    return resylt;
+    uint16_t result = 10;
+    return result;
 }
 /*
 // Read a value; use only after gpio_adc_sample() returns zero
@@ -138,8 +137,7 @@ uint16_t
 gpio_adc_read(struct gpio_adc g)
 {
     ADC_TypeDef *adc = g.adc;
-        shutdown("Logging adc_riiiiiidddddddddddddddddddddddddddddddddddddddd");
-
+    output("adc read");
     return adc->DR;
 }*/
 
@@ -147,9 +145,9 @@ gpio_adc_read(struct gpio_adc g)
 void
 gpio_adc_cancel_sample(struct gpio_adc g)
 {    
-    //output("gpio_adc_cancel_sample");
     return;
     /*
+    output("gpio_adc_cancel_sample");
     ADC_TypeDef *adc = g.adc;
     irqstatus_t flag = irq_save();
     if (adc->CR & ADC_CR_ADSTART && adc->SQR1 == g.chan)// what is this used for the ADSTART is not as long true as SR_STRT on stm32f4

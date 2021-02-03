@@ -88,6 +88,7 @@ command_query_analog_in(uint32_t *args)
     a->range_check_count = args[7];
     if (! a->sample_count)
         return;
+    output("sched_add_timer from query_analog_in");
     sched_add_timer(&a->timer);
 }
 DECL_COMMAND(command_query_analog_in,

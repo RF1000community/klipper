@@ -173,16 +173,16 @@ clock_setup(void)
     MODIFY_REG(PWR->D3CR, PWR_D3CR_VOS_Msk, PWR_D3CR_VOS);
     while (!(PWR->D3CR & PWR_D3CR_VOSRDY))
         ;
-    // Enable VOS0 (overdrive), only relevant for revision V or later @480mhz 
+    // Enable VOS0 (overdrive)
     RCC->APB4ENR |= RCC_APB4ENR_SYSCFGEN;
     SYSCFG->PWRCR |= SYSCFG_PWRCR_ODEN;
     while (!(PWR->D3CR & PWR_D3CR_VOSRDY))
         ;
 
     // Set flash latency according to clock frequency (pg.159)
-    MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY_Msk, FLASH_ACR_LATENCY_2WS);
-    MODIFY_REG(FLASH->ACR, FLASH_ACR_WRHIGHFREQ_Msk, FLASH_ACR_WRHIGHFREQ_1);
-    while (!(FLASH->ACR & FLASH_ACR_LATENCY_2WS))
+    MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY_Msk, FLASH_ACR_LATENCY_1WS);
+    MODIFY_REG(FLASH->ACR, FLASH_ACR_WRHIGHFREQ_Msk, FLASH_ACR_WRHIGHFREQ_0);
+    while (!(FLASH->ACR & FLASH_ACR_LATENCY_1WS))
         ;
 
     // Switch on PLL1
