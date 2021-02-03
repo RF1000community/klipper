@@ -81,7 +81,7 @@ void
 sched_add_timer(struct timer *add)
 {
     uint32_t waketime = add->waketime;
-    output("add timer with waketime %u", waketime/1000);
+    output("add timer with waketime %u", waketime);
     irqstatus_t flag = irq_save();
     if (unlikely(timer_is_before(waketime, timer_list->waketime))) {
         // This timer is before all other scheduled timers
