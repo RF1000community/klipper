@@ -127,7 +127,8 @@ pll_setup(void)
     if (!CONFIG_STM32_CLOCK_REF_INTERNAL) {
         // Configure 48Mhz PLL from external crystal (HSE)
         uint32_t div = CONFIG_CLOCK_FREQ / CONFIG_CLOCK_REF_FREQ;
-        RCC->CR |= RCC_CR_HSEON;
+        RCC->CR = ((RCC->CR & ~RCC_CR_HSITRIM) | RCC_CR_HSEON
+                   | (CONFIG_STM32F0_TRIM << RCC_CR_HSITRIM_Pos));
         cfgr = RCC_CFGR_PLLSRC_HSE_PREDIV | ((div - 2) << RCC_CFGR_PLLMUL_Pos);
     } else {
         // Configure 48Mhz PLL from internal 8Mhz oscillator (HSI)
@@ -148,9 +149,10 @@ pll_setup(void)
 
     // Setup CFGR3 register
     uint32_t cfgr3 = RCC_CFGR3_I2C1SW;
-    if (CONFIG_USBSERIAL)
+#if CONFIG_USBSERIAL
         // Select PLL as source for USB clock
         cfgr3 |= RCC_CFGR3_USBSW;
+#endif
     RCC->CFGR3 = cfgr3;
 }
 

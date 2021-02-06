@@ -265,7 +265,8 @@ class PrinterHeaters:
     def setup_sensor(self, config):
         modules = ["thermistor", "adc_temperature", "spi_temperature",
                    "bme280", "htu21d", "lm75", "rpi_temperature",
-                   "temperature_mcu"]
+                   "temperature_mcu", "ds18b20"]
+
         for module_name in modules:
             self.printer.load_object(config, module_name)
         sensor_type = config.get('sensor_type')
@@ -284,8 +285,8 @@ class PrinterHeaters:
                 "G-Code sensor id %s already registered" % (gcode_id,))
         self.gcode_id_to_sensor[gcode_id] = psensor
     def get_status(self, eventtime):
-        return {'available_heaters': list(self.available_heaters),
-                'available_sensors': list(self.available_sensors)}
+        return {'available_heaters': self.available_heaters,
+                'available_sensors': self.available_sensors}
     def turn_off_all_heaters(self, print_time=0.):
         for heater in self.heaters.values():
             heater.set_temp(0.)
