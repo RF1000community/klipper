@@ -5,3 +5,6 @@
 [submodule "klippy/extras/klipper-cura-connection"]
 	path = klippy/extras/klipper_cura_connection
 	url = https://github.com/Gobbel2000/klipper-cura-connection
+[submodule "klippy/extras/gcode_metadata"]
+	path = klippy/extras/gcode_metadata
+	url = https://github.com/Gobbel2000/gcode_metadata.git
