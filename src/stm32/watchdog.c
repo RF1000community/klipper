@@ -7,7 +7,7 @@
 #include "internal.h" // IWDG
 #include "sched.h" // DECL_TASK
 
-#ifndef IWDG // stm32h7 libraries only define IWDG1 and IWDG2 
+#ifndef IWDG // stm32h7 libraries only define IWDG1 and IWDG2
 #define IWDG IWDG1
 #endif
 

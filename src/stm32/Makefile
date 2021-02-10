@@ -88,7 +88,7 @@ ifneq ($(RST), "")
 RESET_SEQUENCE = -R -i $(BOOT0),$(RST),-$(RST),$(RST),,:-$(BOOT0),-$(RST),$(RST)
 # BOOT0 is driven high for entering bootloader (add 300ms delay before attempting a connection)
 else
-RESET_SEQUENCE = 
+RESET_SEQUENCE =
 endif
 
 serialflash: $(OUT)klipper.bin

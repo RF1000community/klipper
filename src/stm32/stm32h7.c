@@ -1,4 +1,4 @@
-// Code to setup clocks and gpio on stm32h7 
+// Code to setup clocks and gpio on stm32h7
 //
 // Copyright (C) 2020 Konstantin Vogel <konstantin.vogel@gmx.net>
 //
@@ -134,37 +134,52 @@ DECL_CONSTANT_STR("RESERVE_PINS_crystal", "PH0,PH1");
 static void
 clock_setup(void)
 {
-    // Set this despite correct defaults. "The software has to program the supply configuration in PWR control register 3" (pg. 259)
+    // Set this despite correct defaults.
+    // "The software has to program the supply configuration in PWR control
+    // register 3" (pg. 259)
     // Only a single write is allowed (pg. 304)
     PWR->CR3 = (PWR->CR3 | PWR_CR3_LDOEN) & ~(PWR_CR3_BYPASS | PWR_CR3_SCUEN);
     while (!(PWR->CSR1 & PWR_CSR1_ACTVOSRDY))
         ;
-    // HSE(25mhz) /=DIVM1(5) -pll_base(5Mhz)-> *=DIVN1(192) -pll_freq-> /=DIVP1(2) -SYSCLK(480mhz)->
-    uint32_t pll_base = 5000000; 
-    uint32_t pll_freq = CONFIG_CLOCK_FREQ * 2; // only even dividers (DIVP1) are allowed
+    // HSE(25mhz) /=DIVM1(5) -pll_base(5Mhz)-> *=DIVN1(192) -pll_freq->
+    // /=DIVP1(2) -SYSCLK(480mhz)->
+    uint32_t pll_base = 5000000;
+    uint32_t pll_freq = CONFIG_CLOCK_FREQ * 2; // only even dividers (DIVP1) ok
     if (!CONFIG_STM32_CLOCK_REF_INTERNAL) {
         // Configure PLL from external crystal (HSE)
         RCC->CR |= RCC_CR_HSEON; // enable HSE input
         while(!(RCC->CR & RCC_CR_HSERDY))
             ;
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk, RCC_PLLCKSELR_PLLSRC_HSE);
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk, (CONFIG_CLOCK_REF_FREQ/pll_base) << RCC_PLLCKSELR_DIVM1_Pos);
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk,
+                                   RCC_PLLCKSELR_PLLSRC_HSE);
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk,
+            (CONFIG_CLOCK_REF_FREQ/pll_base) << RCC_PLLCKSELR_DIVM1_Pos);
     } else {
         // Configure PLL from internal 64Mhz oscillator (HSI)
-        pll_base = 4000000; // HSI frequency of 64mhz is integer divisible with 4mhz
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk, RCC_PLLCKSELR_PLLSRC_HSI);
-        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk, (64000000 / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);
+        // HSI frequency of 64mhz is integer divisible with 4mhz
+        pll_base = 4000000;
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk,
+                                   RCC_PLLCKSELR_PLLSRC_HSI);
+        MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk,
+          (64000000 / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);
     }
-    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1FRACEN_Msk, 0); // Default should already be 0
-    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1VCOSEL_Msk, 0); // Default should already be 0
-    // Set input frequency range of PLL1 according to pll_base (3=8-16Mhz, 2=4-8Mhz)
+    // Default should already be 0
+    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1FRACEN_Msk, 0);
+    // Default should already be 0
+    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1VCOSEL_Msk, 0);
+    // Set input frequency range of PLL1 according to pll_base
+    // (3=8-16Mhz, 2=4-8Mhz)
     MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1RGE_Msk, RCC_PLLCFGR_PLL1RGE_2);
-    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_DIVR1EN_Msk, 0); // Disable unused outputs
+    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_DIVR1EN_Msk, 0); // Disable unused outs
     MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_DIVQ1EN_Msk, 0);
-    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_DIVP1EN_Msk, RCC_PLLCFGR_DIVP1EN); // This is necessary, default is not 1!!!
-    // Set multiplier DIVN1 and post divider DIVP1 (where 001 = /2, 010 = not allowed, 0011 = /4...)
-    MODIFY_REG(RCC->PLL1DIVR, RCC_PLL1DIVR_N1_Msk, ((pll_freq/pll_base)-1)          << RCC_PLL1DIVR_N1_Pos);
-    MODIFY_REG(RCC->PLL1DIVR, RCC_PLL1DIVR_P1_Msk, ((pll_freq/CONFIG_CLOCK_FREQ)-1) << RCC_PLL1DIVR_P1_Pos);
+    // This is necessary, default is not 1!!!
+    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_DIVP1EN_Msk, RCC_PLLCFGR_DIVP1EN);
+    // Set multiplier DIVN1 and post divider DIVP1
+    // (where 001 = /2, 010 = not allowed, 0011 = /4...)
+    MODIFY_REG(RCC->PLL1DIVR, RCC_PLL1DIVR_N1_Msk,
+        ((pll_freq/pll_base)-1) << RCC_PLL1DIVR_N1_Pos);
+    MODIFY_REG(RCC->PLL1DIVR, RCC_PLL1DIVR_P1_Msk,
+        ((pll_freq/CONFIG_CLOCK_FREQ)-1) << RCC_PLL1DIVR_P1_Pos);
 
     // Crank up Vcore
     MODIFY_REG(PWR->D3CR, PWR_D3CR_VOS_Msk, PWR_D3CR_VOS);
@@ -177,7 +192,8 @@ clock_setup(void)
         ;
 
     // Set flash latency according to clock frequency (pg.159)
-    uint32_t flash_acr_latency = (CONFIG_CLOCK_FREQ > 450000000) ? FLASH_ACR_LATENCY_4WS : FLASH_ACR_LATENCY_2WS; 
+    uint32_t flash_acr_latency = (CONFIG_CLOCK_FREQ > 450000000) ?
+        FLASH_ACR_LATENCY_4WS : FLASH_ACR_LATENCY_2WS;
     MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY_Msk, flash_acr_latency);
     MODIFY_REG(FLASH->ACR, FLASH_ACR_WRHIGHFREQ_Msk, FLASH_ACR_WRHIGHFREQ_1);
     while (!(FLASH->ACR & flash_acr_latency))
@@ -189,7 +205,7 @@ clock_setup(void)
         ;
 
     MODIFY_REG(RCC->D1CFGR, RCC_D1CFGR_HPRE_Msk,    RCC_D1CFGR_HPRE_DIV2);
-    // Set D1PPRE, D2PPRE, D2PPRE2, D3PPRE 
+    // Set D1PPRE, D2PPRE, D2PPRE2, D3PPRE
     MODIFY_REG(RCC->D1CFGR, RCC_D1CFGR_D1PPRE_Msk,  RCC_D1CFGR_D1PPRE_DIV2);
     MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE1_Msk, RCC_D2CFGR_D2PPRE1_DIV2);
     MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE2_Msk, RCC_D2CFGR_D2PPRE2_DIV2);

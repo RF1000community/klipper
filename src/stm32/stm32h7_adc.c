@@ -20,14 +20,14 @@ DECL_CONSTANT("ADC_MAX", 65.535);
 static const uint8_t adc_pins[] = {
     // GPIOs like A0_C are not covered!
     // all ADCs
-    GPIO('C', 0), GPIO('C', 1), GPIO('C', 2), //GPIO('A_C', 0), 
+    GPIO('C', 0), GPIO('C', 1), GPIO('C', 2), //GPIO('A_C', 0),
     // only 1/2
     GPIO('A', 2), GPIO('A', 3), GPIO('A', 4), //GPIO('A_C',1),
     GPIO('A', 5), GPIO('A', 6), GPIO('A', 7),
-    GPIO('B', 0), GPIO('B', 1), 
+    GPIO('B', 0), GPIO('B', 1),
     GPIO('C', 3), GPIO('C', 4), GPIO('C', 5), //GPIO('C_C',3),
     // only 1
-    GPIO('A', 0), GPIO('A', 1), 
+    GPIO('A', 0), GPIO('A', 1),
     GPIO('F',11), GPIO('F', 12),
     // only 2
     GPIO('F', 13), GPIO('F', 14),
@@ -64,21 +64,32 @@ gpio_adc_setup(uint32_t pin)
         // Enable clock source for ADC
         enable_pclock(adc_base);
         // Calibrate the ADC
-        MODIFY_REG(adc->CR, ADC_CR_DEEPPWD, 0); // Ensure that we are not in Deep-power-down
-        MODIFY_REG(adc->CR, ADC_CR_ADVREGEN, ADC_CR_ADVREGEN); // Ensure that ADC Voltage regulator is on
-        // while(!(adc->CR & ADC_CR_ADRDY)) // maybe wait until ADC is ready this should check LDORDY (doesn't exist) pg.932
+        // Ensure that we are not in Deep-power-down
+        MODIFY_REG(adc->CR, ADC_CR_DEEPPWD, 0);
+        // Ensure that ADC Voltage regulator is on
+        MODIFY_REG(adc->CR, ADC_CR_ADVREGEN, ADC_CR_ADVREGEN);
+        // maybe wait until ADC is ready this should check LDORDY
+        // (doesn't exist) pg.932
+        // while(!(adc->CR & ADC_CR_ADRDY))
         //     ;
-        MODIFY_REG(adc->CR, ADC_CR_ADCALDIF, 0); // Set calibration mode to Single ended (not differential)
-        MODIFY_REG(adc->CR, ADC_CR_ADCALLIN, ADC_CR_ADCALLIN); // Enable linearity calibration
-        MODIFY_REG(adc->CR, ADC_CR_ADCAL,    ADC_CR_ADCAL); // Start the calibration
+        // Set calibration mode to Single ended (not differential)
+        MODIFY_REG(adc->CR, ADC_CR_ADCALDIF, 0);
+        // Enable linearity calibration
+        MODIFY_REG(adc->CR, ADC_CR_ADCALLIN, ADC_CR_ADCALLIN);
+        // Start the calibration
+        MODIFY_REG(adc->CR, ADC_CR_ADCAL,    ADC_CR_ADCAL);
         while(adc->CR & ADC_CR_ADCAL) // wait for the calibration
             ;
-        uint32_t aticks = 0b010; // Set 8.5 ADC clock cycles sample time for every channel (Reference manual pg.940)
-        adc->SMPR1 = (aticks        | (aticks << 3)  | (aticks << 6) // channel 0-9
+        // Set 8.5 ADC clock cycles sample time for every channel
+        // (Reference manual pg.940)
+        uint32_t aticks = 0b010;
+        // cnl 0-9
+        adc->SMPR1 = (aticks        | (aticks << 3)  | (aticks << 6)
                    | (aticks << 9)  | (aticks << 12) | (aticks << 15)
                    | (aticks << 18) | (aticks << 21) | (aticks << 24)
                    | (aticks << 27));
-        adc->SMPR2 = (aticks        | (aticks << 3)  | (aticks << 6) // channel 10-19
+        // channel 10-19
+        adc->SMPR2 = (aticks        | (aticks << 3)  | (aticks << 6)
                    | (aticks << 9)  | (aticks << 12) | (aticks << 15)
                    | (aticks << 18) | (aticks << 21) | (aticks << 24)
                    | (aticks << 27));
@@ -111,18 +122,21 @@ gpio_adc_sample(struct gpio_adc g)
         output("conversion ready");
         return 0;
     }
-    if ((adc->CR & ADC_CR_ADSTART) || adc->SQR1 != g.chan) // the channel condition only works if this ist the only channel on the sequence and length set to 1 (ADC_SQR1_L = 0000)
+    if ((adc->CR & ADC_CR_ADSTART) || adc->SQR1 != g.chan)
+    // the channel condition only works if this ist the only channel
+    // on the sequence and length set to 1 (ADC_SQR1_L = 0000)
     {
-        // Conversion already started (still in progress) or busy on another channel or not started yet (EOC flag is cleared by hardware when reading DR)
+        // Conversion already started (still in progress) or busy on another
+        // channel or not started yet (EOC flag is cleared by hardware when
+        // reading DR)
         output("conversion already started");
         return timer_from_us(20);
     }
     // Start sample
     adc->SQR1 = g.chan;
     adc->CR = ADC_CR_ADSTART | ADC_CR_ADEN; //start the conversion
-    output("started conversion");    
+    output("started conversion");
     return timer_from_us(20);
-    
 }*/
 
 uint16_t
@@ -144,13 +158,15 @@ gpio_adc_read(struct gpio_adc g)
 // Cancel a sample that may have been started with gpio_adc_sample()
 void
 gpio_adc_cancel_sample(struct gpio_adc g)
-{    
+{
     return;
     /*
     output("gpio_adc_cancel_sample");
     ADC_TypeDef *adc = g.adc;
     irqstatus_t flag = irq_save();
-    if (adc->CR & ADC_CR_ADSTART && adc->SQR1 == g.chan)// what is this used for the ADSTART is not as long true as SR_STRT on stm32f4
+    // what is this used for?
+    // The ADSTART is not as long true as SR_STRT on stm32f4
+    if (adc->CR & ADC_CR_ADSTART && adc->SQR1 == g.chan)
         gpio_adc_read(g);
     irq_restore(flag);*/
 }
