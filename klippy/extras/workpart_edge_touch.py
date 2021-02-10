@@ -165,34 +165,44 @@ class WorkpartEdgeTouch:
         angle = (angle_y+angle_x)/2
         gcmd.respond_info("angle = "+str(angle*180/math.pi))
 
-        # correct for tool radius
-        intersect_x = intersect_x + x_direction*math.cos(angle)*self.tool_radius
-        intersect_y = intersect_y + y_direction*math.cos(angle)*self.tool_radius
+        # correct for tool radius (x_direction and y_direction are the signed
+        # of the scan movement along the x resp. y axis, not the directions for
+        # the scans used to define the respective axis!)
+        intersect_x = intersect_x + y_direction*math.cos(angle)*self.tool_radius
+        intersect_y = intersect_y + x_direction*math.cos(angle)*self.tool_radius
 
-        #self.offset = [intersect_y+self.tool_radius, intersect_x+self.tool_radius]
+        # compute coordinate transform offsets
         self.offset[0] = (intersect_y - intersect_x * math.tan(angle)) /       \
                          (1 + pow(math.tan(angle), 2))
         self.offset[1] = self.offset[0]*math.tan(angle) + intersect_x
-        
+
+        # compute coordinate transform rotation matrix
         self.rot_mat = [ [ math.cos(angle), -math.sin(angle)],
                          [+math.sin(angle),  math.cos(angle)] ]
 
+        gcmd.respond_info("Offsets: "+str(self.offset))
+        gcmd.respond_info("Rotation matrix: "+str(self.rot_mat))
+
         gcmd.respond_info("New workpart transform computed. This will not be "
-            + "safed to the config file. Re-issue COMPUTE_WORKPART command "
+            + "saved into the config file. Re-issue COMPUTE_WORKPART command "
             + "after restart to restore the workpart transform!")
 
     def get_position(self):
         x, y, z, e = self.normal_transform.get_position()
-        return [x, y, z, e]
+        x = x - self.offset[0]
+        y = y - self.offset[1]
+        xn = x*self.rot_mat[0][0] + y*self.rot_mat[1][0]
+        yn = x*self.rot_mat[0][1] + y*self.rot_mat[1][1]
+        return [xn, yn, z, e]
 
 
     def move(self, newpos, speed):
         x, y, z, e = newpos
-        x = x*self.rot_mat[0][0] + y*self.rot_mat[0][1]
-        y = x*self.rot_mat[1][0] + y*self.rot_mat[1][1]
-        x = x + self.offset[0]
-        y = y + self.offset[1]
-        self.normal_transform.move([x, y, z, e], speed)
+        xn = x*self.rot_mat[0][0] + y*self.rot_mat[0][1]
+        yn = x*self.rot_mat[1][0] + y*self.rot_mat[1][1]
+        xn = xn + self.offset[0]
+        yn = yn + self.offset[1]
+        self.normal_transform.move([xn, yn, z, e], speed)
 
 
 def load_config(config):
