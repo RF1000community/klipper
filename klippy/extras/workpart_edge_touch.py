@@ -45,6 +45,10 @@ class WorkpartEdgeTouch:
             self.cmd_COMPUTE_WORKPART,
             desc=self.cmd_COMPUTE_WORKPART_help)
 
+        self.gcode.register_command('CLEAR_WORKPART_TRANSFORM',
+            self.cmd_CLEAR_WORKPART_TRANSFORM,
+            desc=self.cmd_CLEAR_WORKPART_TRANSFORM_help)
+
         self.scans = {}
         self.scans['x'] = eval(config.get('x_scans', "[]"))
         self.scans['y'] = eval(config.get('y_scans', "[]"))
@@ -68,6 +72,10 @@ class WorkpartEdgeTouch:
 
     cmd_CLEAR_WORKPART_help = "Clear all recorded edge touch positions and "   \
             + "reset the coordinate transform."
+
+
+    cmd_CLEAR_WORKPART_TRANSFORM_help = "Clear only the workpart transform "   \
+            + "but leave the recorded points intact."
 
 
     def cmd_EDGE_TOUCH(self, gcmd):
@@ -104,6 +112,11 @@ class WorkpartEdgeTouch:
         configfile.set(self.name, 'y_scans', self.scans['y'])
         gcmd.respond_info("The SAVE_CONFIG command will update the printer\n"
                   "config file and restart the printer.")
+
+
+    def cmd_CLEAR_WORKPART_TRANSFORM(self, gcmd):
+        self.rot_mat = [ [1,0], [0,1] ]
+        self.offset = [0,0]
 
 
     def cmd_COMPUTE_WORKPART(self, gcmd):
