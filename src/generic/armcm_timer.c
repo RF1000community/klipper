@@ -11,7 +11,7 @@
 #include "board/misc.h" // timer_from_us
 #include "command.h" // shutdown
 #include "sched.h" // sched_timer_dispatch
-
+#include "stdlib.h"
 DECL_CONSTANT("CLOCK_FREQ", CONFIG_CLOCK_FREQ);
 
 // Return the number of clock ticks for a given number of microseconds
@@ -59,6 +59,7 @@ timer_kick(void)
 void
 udelay(uint32_t usecs)
 {
+    output("udelay");
     if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk)) {
         CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
         DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
@@ -86,6 +87,7 @@ timer_reset(void)
     if (timer_from_us(100000) <= 0xffffff)
         // Timer in sched.c already ensures SysTick wont overflow
         return;
+    output("sched_add_timer from timer_reset");
     sched_add_timer(&wrap_timer);
 }
 DECL_SHUTDOWN(timer_reset);
@@ -93,6 +95,7 @@ DECL_SHUTDOWN(timer_reset);
 void
 timer_init(void)
 {
+    output("timer_init");
     // Enable Debug Watchpoint and Trace (DWT) for its 32bit timer
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
@@ -126,7 +129,6 @@ timer_dispatch_many(void)
     for (;;) {
         // Run the next software timer
         uint32_t next = sched_timer_dispatch();
-
         uint32_t now = timer_read_time();
         int32_t diff = next - now;
         if (diff > (int32_t)TIMER_MIN_TRY_TICKS)
@@ -136,6 +138,7 @@ timer_dispatch_many(void)
         if (unlikely(timer_is_before(tru, now))) {
             // Check if there are too many repeat timers
             if (diff < (int32_t)(-timer_from_us(1000)))
+                output("Rescheduled timer with diff  %i000,     next %u", diff/1000, next);
                 try_shutdown("Rescheduled timer in the past");
             if (sched_tasks_busy()) {
                 timer_repeat_until = now + TIMER_REPEAT_TICKS;

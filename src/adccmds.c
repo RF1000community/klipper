@@ -46,11 +46,12 @@ analog_in_event(struct timer *timer)
     if (likely(a->value >= a->min_value && a->value <= a->max_value)) {
         a->invalid_count = 0;
     } else {
-        a->invalid_count++;
-        if (a->invalid_count >= a->range_check_count) {
-            try_shutdown("ADC out of range");
-            a->invalid_count = 0;
-        }
+        output("ADC out of range with value %u, min is %u, max is %u", a->value, a->min_value, a->max_value);
+        // a->invalid_count++;
+        // if (a->invalid_count >= a->range_check_count) {
+        //     try_shutdown("ADC out of range");
+        //     a->invalid_count = 0;
+        // }
     }
     sched_wake_task(&analog_wake);
     a->next_begin_time += a->rest_time;
@@ -87,6 +88,7 @@ command_query_analog_in(uint32_t *args)
     a->range_check_count = args[7];
     if (! a->sample_count)
         return;
+    output("sched_add_timer from query_analog_in");
     sched_add_timer(&a->timer);
 }
 DECL_COMMAND(command_query_analog_in,
