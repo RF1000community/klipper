@@ -81,6 +81,13 @@ class LoadCellProbe:
         self.gcode.register_command('PROBE', self.cmd_PROBE,
                                     desc=self.cmd_PROBE_help)
 
+        self.gcode.register_command('READ_LOAD_CELL', self.cmd_READ_LOAD_CELL,
+                                    desc=self.cmd_READ_LOAD_CELL_help)
+
+        self.gcode.register_command('COMPENSATE_LOAD_CELL',
+                                    self.cmd_COMPENSATE_LOAD_CELL,
+                                    desc=self.cmd_COMPENSATE_LOAD_CELL_help)
+
         # Infer Z position to move to during a probe
         if config.has_section('stepper_z'):
             zconfig = config.getsection('stepper_z')
@@ -94,6 +101,11 @@ class LoadCellProbe:
             + "in the specified direction (defaults to negative Z)."
     cmd_PROBE_help = "Run probe in the specified direction (defaults to "      \
             + "negative Z) and stop at the contact position."
+    cmd_READ_LOAD_CELL_help = "Print current load cell measurement to the "    \
+            + "console using the same averaging setting as for the probe."
+    cmd_COMPENSATE_LOAD_CELL_help = "Set load cell compensation offset to "    \
+            + "current measured value. Only affects output of READ_LOAD_CELL." \
+            + " Any PROBE command will also perform the compensation."
 
 
     def _handle_ready(self):
@@ -421,6 +433,16 @@ class LoadCellProbe:
             return z_sorted[middle]
         # even number of samples
         return self._calc_mean(z_sorted[middle-1:middle+1])
+
+
+    def cmd_READ_LOAD_CELL(self, gcmd):
+        force = self._average_force(gcmd,True)
+        gcmd.respond_info("Uncompensated: %.1f  compensated: %.1f" %           \
+                          (force, force - self.force_offset))
+
+
+    def cmd_COMPENSATE_LOAD_CELL(self, gcmd):
+        self.force_offset = self._average_force(gcmd,True)
 
 
 def load_config(config):
