@@ -363,20 +363,44 @@
             on_release: root.dismiss(); app.send_stop()
 
 <PrintPopup>:
+    detailsbox: detailsbox
     title: 'Print'
     title_size: p.large_font
-    size_hint: 0.8, 0.3
+    size_hint: 0.94, 0.7
     FloatLayout:
+        Widget:
+            id: thumbnail
+            canvas:
+                Color:
+                    rgba: (1, 1, 1, 1) if root.md.get_thumbnail_path() else p.medium_light_gray
+                Rectangle:
+                    source: root.md.get_thumbnail_path() or p.kgui_dir + "/logos/file.png"
+                    size: self.size
+                    pos: self.pos
+            size: 150, 150
+            size_hint: None, None
+            pos_hint: {'center_x': 0.5, 'top': 1}
         Label:
+            id: filename
             text: basename(root.path)
             halign: 'center'
             valign: 'middle'
             max_lines: 2
-            size_hint: 0.9, 0.5
-            pos_hint: {'center_x': 0.5, 'center_y': 0.5+0.2}
+            size_hint: 0.9, None
+            height: self.texture_size[1]
+            pos_hint: {'center_x': 0.5}
+            top: thumbnail.y
+            padding: p.small_padding, p.small_padding*2
             text_size: self.size
             font_size: p.large_font
             color: p.light_gray
+        BoxLayout:
+            id: detailsbox
+            pos_hint: {'center_x': 0.5}
+            top: filename.y
+            size_hint: 0.6, None
+            height: self.minimum_height
+            orientation: 'vertical'
         BtnPCancel:
             id: btn_cancel
             width: root.width/3
@@ -395,6 +419,33 @@
             width: root.width/3
             pos: btn_del.right, root.y
             on_release: root.confirm()
+
+<PrintPopupDetail>:  # @Label
+    # Parameters
+    key: ''
+    value: ''
+
+    text_size: self.width, None
+    size_hint: 1, None
+    height: self.texture_size[1]
+    halign: 'right'
+    valign: 'top'
+    padding: 7, 7
+
+    text: self.value
+    font_size: p.normal_font
+
+    Label:
+        id: key
+        size: root.size
+        pos: root.pos
+        text_size: self.size
+        halign: 'left'
+        valign: 'top'
+
+        text: root.key
+        color: p.light_gray
+        font_size: p.normal_font
 
 <DeletePopup>:
     title: 'Delete'

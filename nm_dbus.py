@@ -90,6 +90,9 @@ class NetworkManager(EventDispatcher, Thread):
         """
         self.loop.run()
 
+    def stop(self):
+        self.loop.quit()
+
 
     def _handle_nm_props(self, iface, props, inval):
         """Receives all property changes of self.nm"""

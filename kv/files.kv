@@ -56,7 +56,7 @@
         Color:
             rgba: (1,1,1,1) if self.thumbnail else p.medium_light_gray
         Rectangle:
-            source: self.thumbnail if self.thumbnail else p.kgui_dir + {'file':"/logos/file.png", 'usb':"/logos/usb.png", 'folder':"/logos/folder.png"}[self.item_type]
+            source: self.thumbnail or p.kgui_dir + {'file':"/logos/file.png", 'usb':"/logos/usb.png", 'folder':"/logos/folder.png"}[self.item_type]
             size: 84, 84
             pos: self.center_x - 42, self.center_y - 5
         Color:

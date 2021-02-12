@@ -19,7 +19,6 @@ class Filechooser(RecycleView):
 
     def __init__(self, **kwargs):
         self.app = App.get_running_app()
-        self.filament_crossection = 3.141592653 * (self.app.filament_diameter/2.)**2
         self.content = []
         self.usb_state = False
         self.update_timer = None
@@ -65,11 +64,13 @@ class Filechooser(RecycleView):
                 # Gcode/ufp files
                 if os.path.isfile(path):
                     ext = os.path.splitext(base)[1]
-                    dict_['item_type'] = "file"
                     if ext in {'.gco', '.gcode', '.ufp'}:
+                        dict_['item_type'] = "file"
                         if self.app.gcode_metadata:
                             md = self.app.gcode_metadata.get_metadata(path)
-                            dict_['details'] = md.get_filament(measure="weight")
+                            weight = md.get_filament(measure="weight")
+                            if weight is not None:
+                                dict_['details'] = str(round(weight, 4)) + 'g'
                             dict_['thumbnail'] = md.get_thumbnail_path()
                         files.append(dict_)
                 # USB Stick
@@ -95,6 +96,7 @@ class Filechooser(RecycleView):
             self.usb_state = usb_state
 
     def back(self):
+        """Move up one directory"""
         self.path = os.path.dirname(self.path)
         self.load_files()
 
@@ -110,7 +112,7 @@ class FilechooserItem(RecycleDataViewBehavior, Label):
     path = StringProperty()
     details = StringProperty()
     index = None
-    thumbnail = StringProperty("")
+    thumbnail = StringProperty(allownone=True)
     pressed = BooleanProperty(False)
 
     def refresh_view_attrs(self, rv, index, data):
