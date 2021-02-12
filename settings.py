@@ -17,7 +17,6 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.tabbedpanel import TabbedPanelItem
 
 from .elements import BaseButton, BasePopup
-from . import parameters as p
 
 
 class SettingTab(TabbedPanelItem):
@@ -192,7 +191,7 @@ class PasswordPopup(BasePopup):
         self.txt_input.bind(on_text_validate=self.confirm)
         self.network_manager.bind(on_connect_failed=self.connect_failed)
         # If focus is set immediately, keyboard will be covered by popup
-        Clock.schedule_once(self.set_focus_on, 0)
+        Clock.schedule_once(self.set_focus_on, -1)
 
     def set_focus_on(self, *args):
         self.txt_input.focus = True
@@ -346,6 +345,11 @@ class HostnamePopup(BasePopup):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.txt_input.bind(on_text_validate=self.confirm)
+        # If focus is set immediately, keyboard will be covered by popup
+        Clock.schedule_once(self.set_focus_on, -1)
+
+    def set_focus_on(self, *args):
+        self.txt_input.focus = True
 
     def confirm(self, *args):
         text = self.txt_input.text
