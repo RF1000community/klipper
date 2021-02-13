@@ -361,7 +361,7 @@ class LoadCellProbe:
               False)
 
         pos = self.tool.get_position()
-        gcmd.respond_info("FINISHED result = %f" % result)
+        gcmd.respond_info("FINISHED toolhead Z = %f" % result)
         pos[self.probing_axis] = result
         return pos[0], pos[1], pos[2]
 
