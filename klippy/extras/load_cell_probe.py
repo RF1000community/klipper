@@ -69,7 +69,8 @@ class LoadCellProbe:
                                                    above=0.)
         self.lift_speed = config.getfloat('lift_speed', self.speed, above=0.)
 
-        self.force_offset = 0
+        self.force_offset = None
+        self.last_force = 0
         self.force_subscribers = []
 
         self.printer.register_event_handler("klippy:ready", self._handle_ready)
@@ -135,6 +136,12 @@ class LoadCellProbe:
 
 
     def _adc_callback(self, time, value):
+        # First value after start: use as zero offset
+        if self.force_offset == None :
+          self.force_offset = value
+        # Store zero offset compensated value for display
+        self.last_force = value - self.force_offset
+        # Forward uncompensated value to subscribers
         for sub in self.force_subscribers :
             sub(value)
 
@@ -354,7 +361,7 @@ class LoadCellProbe:
               False)
 
         pos = self.tool.get_position()
-        gcmd.respond_info("FINISHED result = %f" % result)
+        gcmd.respond_info("FINISHED toolhead Z = %f" % result)
         pos[self.probing_axis] = result
         return pos[0], pos[1], pos[2]
 
@@ -443,6 +450,10 @@ class LoadCellProbe:
 
     def cmd_COMPENSATE_LOAD_CELL(self, gcmd):
         self.force_offset = self._average_force(gcmd,True)
+
+
+    def get_status(self, eventtime):
+        return {'last_force': self.last_force}
 
 
 def load_config(config):
