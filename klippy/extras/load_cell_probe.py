@@ -5,72 +5,22 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import logging, math
+from fit_helper import fit
 
-
-def fit(X, Y):
-
-    def mean(Xs):
-        return sum(Xs) / len(Xs)
-    m_X = mean(X)
-    m_Y = mean(Y)
-
-    def std(Xs, m):
-        normalizer = len(Xs) - 1
-        return math.sqrt(sum((pow(x - m, 2) for x in Xs)) / normalizer)
-
-    sum_xy = 0
-    sum_sq_v_x = 0
-    sum_sq_v_y = 0
-    sum_sq_x = 0
-
-    for (x, y) in zip(X, Y):
-        var_x = x - m_X
-        var_y = y - m_Y
-        sum_xy += var_x * var_y
-        sum_sq_v_x += pow(var_x, 2)
-        sum_sq_v_y += pow(var_y, 2)
-        sum_sq_x += pow(x, 2)
-
-    # Number of data points
-    n = len(X)
-    logging.info("n: %d" % n)
-
-    # Pearson R
-    r = sum_xy / math.sqrt(sum_sq_v_x * sum_sq_v_y)
-
-    # Slope
-    m = r * (std(Y, m_Y) / std(X, m_X))
-
-    # Intercept
-    b = m_Y - m * m_X
-
-    logging.info("m: %f" % m)
-    logging.info("b: %f" % b)
-    logging.info("r: %f" % r)
-
-    # Estimate measurement error from resuduals
-    sum_res_sq = 0
-    for (x, y) in zip(X, Y):
-        res = m*x + b - y
-        sum_res_sq += pow(res,2)
-    logging.info("sum_res_sq: %f" % sum_res_sq)
-    logging.info("sum_sq_v_x: %f" % sum_sq_v_x)
-    logging.info("sum_sq_x: %f" % sum_sq_x)
-
-    # Error on slope
-    sm = math.sqrt(1./(n-2) * sum_res_sq / sum_sq_v_x)
-    logging.info("sm: %f" % sm)
-
-    # Error on intercept
-    sb = sm * math.sqrt(1./n * sum_sq_x)
-    logging.info("sb: %f" % sb)
-
-    return [m,b,r,sm,sb]
-
-
-def takeFirst(elem):
-    return elem[0]
+DIRECTION_CHOICE_LIST={
+  'X+':[0,+1],
+  'x+':[0,+1],
+  'X-':[0,-1],
+  'x-':[0,-1],
+  'Y+':[1,+1],
+  'y+':[1,+1],
+  'Y-':[1,-1],
+  'y-':[1,-1],
+  'Z+':[2,+1],
+  'z+':[2,+1],
+  'Z-':[2,-1],
+  'z-':[2,-1],
+}
 
 
 class LoadCellProbe:
@@ -128,6 +78,16 @@ class LoadCellProbe:
         self.gcode.register_command('PROBE_ACCURACY', self.cmd_PROBE_ACCURACY,
                                     desc=self.cmd_PROBE_ACCURACY_help)
 
+        self.gcode.register_command('PROBE', self.cmd_PROBE,
+                                    desc=self.cmd_PROBE_help)
+
+        self.gcode.register_command('READ_LOAD_CELL', self.cmd_READ_LOAD_CELL,
+                                    desc=self.cmd_READ_LOAD_CELL_help)
+
+        self.gcode.register_command('COMPENSATE_LOAD_CELL',
+                                    self.cmd_COMPENSATE_LOAD_CELL,
+                                    desc=self.cmd_COMPENSATE_LOAD_CELL_help)
+
         # Infer Z position to move to during a probe
         if config.has_section('stepper_z'):
             zconfig = config.getsection('stepper_z')
@@ -137,7 +97,15 @@ class LoadCellProbe:
             self.z_position = pconfig.getfloat('minimum_z_position', 0.)
 
 
-    cmd_PROBE_ACCURACY_help = "Probe Z-height accuracy at current XY position"
+    cmd_PROBE_ACCURACY_help = "Determine probe accuracy at current position "  \
+            + "in the specified direction (defaults to negative Z)."
+    cmd_PROBE_help = "Run probe in the specified direction (defaults to "      \
+            + "negative Z) and stop at the contact position."
+    cmd_READ_LOAD_CELL_help = "Print current load cell measurement to the "    \
+            + "console using the same averaging setting as for the probe."
+    cmd_COMPENSATE_LOAD_CELL_help = "Set load cell compensation offset to "    \
+            + "current measured value. Only affects output of READ_LOAD_CELL." \
+            + " Any PROBE command will also perform the compensation."
 
 
     def _handle_ready(self):
@@ -287,9 +255,9 @@ class LoadCellProbe:
 
     def _compensated_measurement(self, gcmd):
         # take compensated measurement, update force_offset
-        self._move_z_relative(-self.probing_direction*self.compensation_z_lift)
+        self._move_z_relative(self.compensation_z_lift)
         self.force_offset = self._average_force(gcmd,True)
-        self._move_z_relative(self.probing_direction*self.compensation_z_lift)
+        self._move_z_relative(-self.compensation_z_lift)
         force_in = self._average_force(gcmd,True)
         force = force_in - self.force_offset
 
@@ -380,8 +348,10 @@ class LoadCellProbe:
           # check abort condition
           repeat_count += 1
           if repeat_count > self.max_retry:
-            gcmd.raise_error("Maximum retries reached, giving up.")
+            raise gcmd.error("Maximum retries reached, giving up.")
           gcmd.respond_info("Retrying...")
+          self._move_axis_relative(-self.probing_direction*5*self.step_size,
+              False)
 
         pos = self.tool.get_position()
         gcmd.respond_info("FINISHED result = %f" % result)
@@ -432,6 +402,23 @@ class LoadCellProbe:
             max_value, min_value, range_value, avg_value, median, sigma))
 
 
+    def cmd_PROBE(self, gcmd):
+        toolhead = self.printer.lookup_object('toolhead')
+        pos = toolhead.get_position()
+
+        dirpara = gcmd.get("DIRECTION", "Z-")
+        if dirpara not in DIRECTION_CHOICE_LIST :
+          raise gcmd.error("DIRECTION parameter has illegal value.")
+        (axis,direction) = DIRECTION_CHOICE_LIST[dirpara]
+
+        gcmd.respond_info("PROBE at X:%.3f Y:%.3f Z:%.3f"
+                          " (axis=%d direction=%d)\n"
+                          % (pos[0], pos[1], pos[2], axis, direction))
+
+        pos = self.run_probe(gcmd, axis, direction)
+        self.tool.manual_move([pos[0],pos[1],pos[2]], self.speed)
+
+
     def _calc_mean(self, positions):
         count = float(len(positions))
         return [sum([pos[i] for pos in positions]) / count
@@ -448,9 +435,18 @@ class LoadCellProbe:
         return self._calc_mean(z_sorted[middle-1:middle+1])
 
 
+    def cmd_READ_LOAD_CELL(self, gcmd):
+        force = self._average_force(gcmd,True)
+        gcmd.respond_info("Uncompensated: %.1f  compensated: %.1f" %           \
+                          (force, force - self.force_offset))
+
+
+    def cmd_COMPENSATE_LOAD_CELL(self, gcmd):
+        self.force_offset = self._average_force(gcmd,True)
+
+
 def load_config(config):
     probe = LoadCellProbe(config)
     config.printer.add_object('probe', probe)
-    config.printer.add_object('probe_xy', probe)
     config.printer.add_object('load_cell', probe)
     return probe
