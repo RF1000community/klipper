@@ -1,4 +1,5 @@
 # coding: utf-8
+from datetime import timedelta
 from os.path import join, basename
 from os import remove
 import shutil
@@ -140,7 +141,8 @@ class PrintPopup(BasePopup):
 
         time = md.get_time()
         if time is not None:
-            self.add_detail("Print time:", str(round(time)) + 's')
+            dt = timedelta(seconds=time)
+            self.add_detail("Print time:", str(dt))
 
         slicer = md.get_slicer()
         if slicer is not None:
@@ -152,7 +154,11 @@ class PrintPopup(BasePopup):
 
         size = md.get_file_size()
         if size is not None:
-            self.add_detail("G-Code size:", str(size) + "B")
+            for ext in ("B", "KiB", "MiB", "GiB", "TiB"):
+                if size < 1024:
+                    break
+                size /= 1024
+            self.add_detail("G-Code size:", str(round(size, 2)) + ext)
 
     def add_detail(self, key, value):
         detail = PrintPopupDetail(key=key, value=value)

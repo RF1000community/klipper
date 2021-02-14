@@ -377,8 +377,8 @@
                     source: root.md.get_thumbnail_path() or p.kgui_dir + "/logos/file.png"
                     size: self.size
                     pos: self.pos
-            size: 150, 150
-            size_hint: None, None
+            size_hint: None, 0.25
+            width: self.height
             pos_hint: {'center_x': 0.5, 'top': 1}
         Label:
             id: filename
@@ -386,7 +386,7 @@
             halign: 'center'
             valign: 'middle'
             max_lines: 2
-            size_hint: 0.9, None
+            size_hint: 1, None
             height: self.texture_size[1]
             pos_hint: {'center_x': 0.5}
             top: thumbnail.y
@@ -398,7 +398,7 @@
             id: detailsbox
             pos_hint: {'center_x': 0.5}
             top: filename.y
-            size_hint: 0.6, None
+            size_hint: 0.65, None
             height: self.minimum_height
             orientation: 'vertical'
         BtnPCancel:
@@ -421,16 +421,12 @@
             on_release: root.confirm()
 
 <PrintPopupDetail>:  # @Label
-    # Parameters
-    key: ''
-    value: ''
-
     text_size: self.width, None
     size_hint: 1, None
     height: self.texture_size[1]
     halign: 'right'
     valign: 'top'
-    padding: 7, 7
+    padding: 5, 5
 
     text: self.value
     font_size: p.normal_font
