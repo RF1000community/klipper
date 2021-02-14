@@ -12,11 +12,11 @@
    viewBox="0 0 20.108333 20.108334"
    version="1.1"
    id="svg8"
-   inkscape:version="1.0beta1 (fe3e306, 2019-09-17)"
-   sodipodi:docname="Folder.svg"
-   inkscape:export-filename="C:\Users\Konstantin\Desktop\klipperui\klippy\extras\kgui\Logos\Folder.png"
-   inkscape:export-xdpi="96"
-   inkscape:export-ydpi="96">
+   inkscape:version="1.0.2 (e86c870879, 2021-01-15)"
+   sodipodi:docname="folder.svg"
+   inkscape:export-filename="/home/gabriel/3dp/kgui/logos/folder.png"
+   inkscape:export-xdpi="106.11"
+   inkscape:export-ydpi="106.11">
   <defs
      id="defs2" />
   <sodipodi:namedview
@@ -26,17 +26,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="17.578947"
-     inkscape:cx="38"
-     inkscape:cy="44.990338"
+     inkscape:zoom="12.430193"
+     inkscape:cx="31.464889"
+     inkscape:cy="34.089755"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      units="px"
-     inkscape:window-width="1920"
-     inkscape:window-height="1027"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
+     inkscape:window-width="2538"
+     inkscape:window-height="1391"
+     inkscape:window-x="10"
+     inkscape:window-y="1090"
      inkscape:window-maximized="1"
      inkscape:pagecheckerboard="false"
      inkscape:document-rotation="0" />
@@ -48,7 +48,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
