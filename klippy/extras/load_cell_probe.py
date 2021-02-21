@@ -424,6 +424,7 @@ class LoadCellProbe:
 
         pos = self.run_probe(gcmd, axis, direction)
         self.tool.manual_move([pos[0],pos[1],pos[2]], self.speed)
+        self.tool.wait_moves()
 
 
     def _calc_mean(self, positions):
