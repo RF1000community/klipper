@@ -72,41 +72,41 @@ class ConnectionIcon(Widget):
         self.topright = []
         self.signal = 1
         self.icon_padding = 4
-        super().__init__(**kwargs)
-
         self.signal_timer = None # Clock timer for requesting signal strength
+        super().__init__(**kwargs)
 
         Clock.schedule_once(self.init_drawing, 0)
 
     def init_drawing(self, dt):
         with self.canvas:
             self.wifi_color = Color(rgba=(0,0,0,0))
-            self.wifi = Ellipse(pos=(0, 0), size=(0, 0), angle_start=315, angle_end=405)
+            self.wifi = Ellipse(pos=(0, 0), size=(0, 0),
+                                angle_start=315, angle_end=405)
             self.eth_color = Color(rgba=(0,0,0,0))
             self.eth = Rectangle(pos=(0, 0), size=(0, 0),
-                    source=p.kgui_dir + "/logos/ethernet.png")
+                                 source=p.kgui_dir + "/logos/ethernet.png")
         self.set_icon(None, self.network_manager.connection_type)
         self.network_manager.bind(connection_type=self.set_icon)
 
     def draw_wifi(self):
         padding = self.icon_padding
-        h = self.height - 2*padding
-        full_size = [2*h, 2*h]
+        r = self.height - 2*padding
+        d = 2*r
         # cutoff = width of square h*h - width of cake slice (on one side)
-        # 1/sqrt(2) = cos(pi/4) avoid trigonometric functions
-        cutoff = int(h*(1 - 1/(2**(1./2))) + 0.5)
-        self.width = full_size[0] - 2*cutoff + padding
-        full_pos = [self.topright[0] - (full_size[0] - cutoff) - padding,
-                    self.topright[1] - full_size[1] - padding]
-        partial_size = [full_size[0] * self.signal, full_size[1] * self.signal]
-        difference = h*(1 - self.signal)
-        partial_pos = [full_pos[0] + difference, full_pos[1] + difference]
+        # 0.5**0.5 = cos(pi/4), avoid trigonometric functions
+        cutoff = round(r*(1 - 0.5**0.5))
+        # Position of the full circle
+        full_pos = [self.topright[0] - (d - cutoff) - padding,
+                    self.topright[1] - d - padding]
 
+        # Size of the circle shrinked according to signal strength
+        difference = r*(1 - self.signal)
+        self.wifi.pos = [full_pos[0] + difference, full_pos[1] + difference]
+        self.wifi.size = [d * self.signal, d * self.signal]
+
+        self.width = d - 2*cutoff + padding
         self.wifi_color.rgba = (1,1,1,1)
         self.eth_color.rgba = (0,0,0,0)
-
-        self.wifi.pos = partial_pos
-        self.wifi.size = partial_size
 
     def draw_eth(self):
         h = self.height - 2*self.icon_padding
@@ -137,7 +137,8 @@ class ConnectionIcon(Widget):
     def update_wifi(self, *args):
         strength = self.network_manager.get_connection_strength()
         if strength:
-            self.signal = strength / 100.0
+            # Don't display signals lower than 30%, they would be too tiny
+            self.signal = max(strength / 100, 0.3)
             self.draw_wifi()
         else: # strength can be None if WiFi disconnected
             self.draw_nothing()
@@ -150,14 +151,12 @@ class CuraConnectionIcon(Widget):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.curaconnection = App.get_running_app().curaconnection
         Clock.schedule_interval(self.update, 2)
 
     def update(self, *args):
-        curaconnection = App.get_running_app().curaconnection
-        if curaconnection is not None:
-            self.connected = curaconnection.is_connected()
-        else:
-            self.connected = False
+        self.connected = (self.curaconnection is not None
+                          and self.curaconnection.is_connected())
 
 
 class Notifications(FloatLayout):
