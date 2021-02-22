@@ -122,7 +122,10 @@ class PrintPopup(BasePopup):
 
     def __init__(self, path, filechooser=None, timeline=None, **kwargs):
         self.app = App.get_running_app()
-        self.md = self.app.gcode_metadata.get_metadata(path)
+        try:
+            self.md = self.app.gcode_metadata.get_metadata(path)
+        except (ValueError, AttributeError):
+            self.md = None
         self.path = path
         self.filechooser = filechooser
         self.timeline = timeline
@@ -133,11 +136,12 @@ class PrintPopup(BasePopup):
     def populate_details(self):
         md = self.md
         if md is None:
+            self.add_detail("Invalid file", "")
             return
 
         weight = md.get_filament(measure='weight')
         if weight is not None:
-            self.add_detail("Filament:", str(round(weight, 4)) + 'g')
+            self.add_detail("Filament:", str(round(weight, 4)) + ' g')
 
         time = md.get_time()
         if time is not None:
@@ -158,7 +162,8 @@ class PrintPopup(BasePopup):
                 if size < 1024:
                     break
                 size /= 1024
-            self.add_detail("G-Code size:", str(round(size, 2)) + ext)
+            # Print 4 significant digits
+            self.add_detail("G-Code size:", f"{size:.4g} {ext}")
 
     def add_detail(self, key, value):
         detail = PrintPopupDetail(key=key, value=value)
