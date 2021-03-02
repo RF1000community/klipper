@@ -1,6 +1,6 @@
 import logging, math
 
-def fit(X, Y):
+def fit(X, Y, extra_err=0):
 
     def mean(Xs):
         return sum(Xs) / len(Xs)
@@ -45,7 +45,7 @@ def fit(X, Y):
     # Estimate measurement error from resuduals
     sum_res_sq = 0
     for (x, y) in zip(X, Y):
-        res = m*x + b - y
+        res = m*x + b - y + extra_err
         sum_res_sq += pow(res,2)
     logging.info("sum_res_sq: %f" % sum_res_sq)
     logging.info("sum_sq_v_x: %f" % sum_sq_v_x)
@@ -54,6 +54,8 @@ def fit(X, Y):
     # Error on slope
     if n > 2 and sum_res_sq > 0 :
       sm = math.sqrt(1./(n-2) * sum_res_sq / sum_sq_v_x)
+    elif sum_res_sq > 0 :
+      sm = math.sqrt(sum_res_sq / sum_sq_v_x)
     else :
       sm = 0
     logging.info("sm: %f" % sm)

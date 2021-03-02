@@ -146,10 +146,11 @@ class WorkpartEdgeTouch:
           # Perform fit with x and y swapped, to prevent slope to be close to
           # infinity. Since the swap mirrors the angle, it needs to be mirrored
           # back (switch sign).
-          m,b,r,sm,sb = fit(y, x)
+          m,b,r,sm,sb = fit(y, x, 0.01)
           gcmd.respond_info("Y axis fit: "+str(m)+"*y + " + str(b))
           gcmd.respond_info("r = "+str(r)+" sm = "+str(sm)+" sb = "+str(sb))
           angle_y = -math.atan(m)
+          err_angle_y = abs(-math.atan(m+sm) - angle_y) / angle_y
           gcmd.respond_info("angle_y = "+str(angle_y*180/math.pi))
           intersect_y = b
 
@@ -162,21 +163,40 @@ class WorkpartEdgeTouch:
           for scan in self.scans['y'] :
             x.append(scan['pos'][0])
             y.append(scan['pos'][1])
-          m,b,r,sm,sb = fit(x, y)
+          m,b,r,sm,sb = fit(x, y, 0.01)
           gcmd.respond_info("X axis fit: "+str(m)+"*x + " + str(b))
           gcmd.respond_info("r = "+str(r)+" sm = "+str(sm)+" sb = "+str(sb))
           angle_x = math.atan(m)
+          err_angle_x = abs(-math.atan(m+sm) - angle_x) / angle_x
           gcmd.respond_info("angle_x = "+str(angle_x*180/math.pi))
           intersect_x = b
 
-        # TODO: Allow one axis to be determined by a single point!
-        if angle_y == None or angle_x == None :
+        # Make sure angle is defined at least through one axis
+        if angle_y == None and angle_x == None :
           raise gcmd.error("Too few touch points, cannot determine rotation "
             + "angle!")
+        elif angle_y == None :
+          angle = angle_x
+        elif angle_x == None :
+          angle = angle_y
+        else :
+          # Average angle, weighted with error
+          angle = (angle_y/err_angle_y+angle_x/err_angle_x)/                   \
+                  (1/err_angle_x+1/err_angle_y)
 
-        # average angle TODO: weigh according to precision!
-        angle = (angle_y+angle_x)/2
         gcmd.respond_info("angle = "+str(angle*180/math.pi))
+
+        # Determine X axis intersection with machine Y axis based on new angle
+        intersect_x = 0
+        for scan in self.scans['y'] :
+          b = scan['pos'][1] - math.tan(angle)*scan['pos'][0]
+          intersect_x = intersect_x + b/len(self.scans['y'])
+
+        # Determine Y axis intersection with machine X axis based on new angle
+        intersect_y = 0
+        for scan in self.scans['x'] :
+          b = scan['pos'][0] + math.tan(angle)*scan['pos'][1]
+          intersect_y = intersect_y + b/len(self.scans['x'])
 
         # correct for tool radius (x_direction and y_direction are the signed
         # of the scan movement along the x resp. y axis, not the directions for
@@ -199,6 +219,7 @@ class WorkpartEdgeTouch:
         gcmd.respond_info("New workpart transform computed. This will not be "
             + "saved into the config file. Re-issue COMPUTE_WORKPART command "
             + "after restart to restore the workpart transform!")
+
 
     def get_position(self):
         x, y, z, e = self.normal_transform.get_position()
