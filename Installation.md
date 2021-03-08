@@ -14,6 +14,7 @@ Make sure to get one with an IPS panel (much better image quality)
 - Flash [Raspberry Pi OS lite](https://www.raspberrypi.org/software/operating-systems/) 2021-01-11 to SD-Card
 - Add new file named "ssh" (with no file extension) to the boot folder to enable ssh
 - Boot your pi and run the following commands via SSH
+- An ethernet connection is currently necessary during the installation (installing wifi dependencies disconnects any wifi connection, terminating the ssh session)
 
 ```bash
 sudo apt update
