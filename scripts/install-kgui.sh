@@ -11,7 +11,7 @@ PYTHONDIR="${SRCDIR}/klippy-environment"
 install_packages()
 {
     # Packages for python cffi
-    PKGLIST="python3-virtualenv virtualenv python3-dev libffi-dev build-essential"
+    PKGLIST="python3-dev libffi-dev build-essential"
     # kconfig requirements
     PKGLIST="${PKGLIST} libncurses-dev"
     # hub-ctrl
@@ -39,12 +39,11 @@ install_packages()
     libjpeg-dev \
     xclip \
     xsel \
-    mtdev-tools xorg  \
+    xorg  \
     xserver-xorg-video-fbturbo \
     git \
     git-core \
     python3-dev \
-    python-pil \
     python3-venv \
     python3-setuptools \
     python3-pip"
