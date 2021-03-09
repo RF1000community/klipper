@@ -1,11 +1,9 @@
-## Manual Installation and Debugging Notes (incomplete)
-
+## Development Notes ###
 
 opengl driver used to only work with autologin enabled and a reinstall of the lcd driver  
 
-### Automount usb
-
-[Link](https://raspberrypi.stackexchange.com/questions/66169/auto-mount-usb-stick-on-plug-in-without-uuid)  
+### Automount usb ###
+[https://raspberrypi.stackexchange.com/questions/66169/auto-mount-usb-stick-on-plug-in-without-uuid](https://raspberrypi.stackexchange.com/questions/66169/auto-mount-usb-stick-on-plug-in-without-uuid)  
 
 ```bash
 sudo apt install usbmount
@@ -13,42 +11,48 @@ sudo cp usbmount.conf /etc/usbmount/
 sudo sed -i 's/PrivateMounts=yes/PrivateMounts=no/' /lib/systemd/system/systemd-udevd.service
 ```
 
-### NetworkManager
 
+### NetworkManager ###
 ```bash
 sudo apt install network-manager  
 sudo apt purge dhcpcd5  
 ```
 
-### Boot optimizations
 
-add `quiet logo.nologo` to /boot/cmdline.txt
+### Boot optimizations ###
+add `console=tty3 quiet splash loglevel=3 logo.nologo vt.global_cursor_default=0 fastboot noatime nodiratime` to /boot/cmdline.txt
+this redirects terminal output to tty3, noatime and nodiratime also disable access time storage (increased file system performance)
 add `disable_splash=1` to /boot/config.txt
+additionaly a bash script named ~/.xsessionrc can be added to prevent xorg from loading xterm
+```bash
+#!/bin/sh
+sleep infinity
+```
 
-### Logs
 
+### Logs ###
 Klipper: /tmp/klippy.log  
 Kivy:  ~/.kivy/logs  
 Xorg: /var/log/  
 
 
-### Shutdown without needing to provide password
-
+### Shutdown without needing to provide password ###
 ```bash
 sudo echo "%sudo ALL=(ALL) NOPASSWD: /bin/systemctl" >> /etc/sudoers
 ```
 
+
+### Startup ###
 /home/pi/klippy-env/bin/python      klippy executable  
 /usr/bin/startx                     xorg
 
 
-### Kivy Guide
-
+### Kivy Guide ###
 https://blog.kivy.org/2019/06/widget-interactions-between-python-and-kv/
 Screens (of screenmanager) are relative Layouts (new root for coordinate system)
 setting properties of parent class in kv rules doesnt work if they are assigned to a value in parent rule
 Defining Properties in kv is often bad since it happens too late, and prohibits setting them in __init__
-##### LABELS #####
+#### Labels ####
 try setting hints to None if it does shit e.g. setting size doesnt work
 size: outer dimensions of the label widget, available space, can be set to texture_size to show everything
 text_size: can be set to limit texture size e.g. cut off text, can be set to size to show all that fits bounding box for text
@@ -60,17 +64,17 @@ pos: coordinates are always relative to the innermost Layout, not Widget you are
 Widgets: always define size first then pos at least when using top or right.. x:
 Never Put comments after canvas: Instruction
 f-strings in kv are not reevaluated if properties change, format() is
-##### How to access Instances or their methods #####
+#### How to access Instances or their methods ####
 in kv to on_propertychange: id.method() id can be bound within root widget
 in py someinstance.bind(someinstances on_propertychange = self.method_to_bind) passes instance and every property
 by instantiating in python, storing instance
 in python self.ids.some_id.method() instances of child widges can be accessed by id (ids is dict with instance as value)
-##### THREAD SAFETY #####
+#### Thread Safety ####
 Clock methods (e.g. Clock.schedule_once()) are thread safe, can be used do execute methods in Kivy thread from somewhere else
 reactor.register_async_callback should also be thread safe, since it uses a Queue
 Simple Assignments are thread safe because of GIL, but assigning kivy properties from another thread will sometimes lead
 to UI glitches (property change is not observed and on_property_change handlers don't run)
-#### How to install kivy from Source #####
+#### How to install Kivy from Source #####
 - download [latest kivy build](https://kivy.org/downloads/ci/raspberrypi/kivy/) (cpython37 for armv7) to your raspberry pi
 - install downloaded kivy build
 ```bash
