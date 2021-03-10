@@ -354,7 +354,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             #Move to offset
             self.gcode_move.last_position[2] += delta
             if self.homed['z'] and not self.ongoing_drip_move: #if this runs during homing it will crash
-                self.gcode_move.move_with_transform(self.gcode_move.last_position, 5) #sets speed for adjustment move
+                self.gcode_move.move_with_transform(self.gcode_move.last_position, 5) # speed for adjustment move
         self.reactor.register_async_callback(set_z_offset)
 
     def get_speed(self):
@@ -596,7 +596,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(lambda e: self.printer.request_exit("exit"), 0)
     def register_ui_event_handler(self, event_name, event_handler):
         """using lambdaception to register klippy event handlers to run in the UI thread"""
-        self.printer.register_event_handler(event_name, lambda *args, **kwargs: Clock.schedule_once(lambda dt: event_handler(*args, **kwargs), 0))
+        self.printer.register_event_handler(
+            event_name, lambda *args, **kwargs: Clock.schedule_once(lambda dt: event_handler(*args, **kwargs), 0))
 
 # Catch KGUI exceptions and display popups
 class PopupExceptionHandler(ExceptionHandler):
