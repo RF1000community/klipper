@@ -1,4 +1,5 @@
 # coding: utf-8
+from datetime import timedelta
 from os.path import join, basename
 from os import remove
 import shutil
@@ -6,7 +7,8 @@ from time import time
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.properties import NumericProperty, BooleanProperty, StringProperty, ListProperty
+from kivy.properties import (NumericProperty, BooleanProperty, StringProperty,
+                             ListProperty, ObjectProperty)
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.vkeyboard import VKeyboard
@@ -36,14 +38,15 @@ class BaseButton(Label):
             return False
         if self in touch.ud:
             return False
-        #a button with enabled=False can be placed above other buttons and they keep working
+        # A button with enabled=False can be placed above other buttons and they keep working
         if not self.enabled: 
             return False
         self.pressed = True
         self.dispatch('on_press')
         touch.grab(self)
         touch.ud[self] = True
-        #set pressed=True for at least 180ms to allow gpu to render highlighting of the button. choose lower for faster gpu
+        # Set pressed=True for at least 180ms to allow GPU to render
+        # highlighting of the button. Choose lower for faster GPU.
         self.pressed_at_least_till = time() + 0.15
         return True
 
@@ -114,24 +117,83 @@ class StopPopup(BasePopup):
     pass
 
 class PrintPopup(BasePopup):
+
+    detailsbox = ObjectProperty(None)
+
     def __init__(self, path, filechooser=None, timeline=None, **kwargs):
+        self.app = App.get_running_app()
+        try:
+            self.md = self.app.gcode_metadata.get_metadata(path)
+        except (ValueError, AttributeError):
+            self.md = None
         self.path = path
         self.filechooser = filechooser
         self.timeline = timeline
         super().__init__(**kwargs)
+        self.populate_details()
+        Clock.schedule_once(self._align, 0)
+
+    def populate_details(self):
+        md = self.md
+        if md is None:
+            self.add_detail("Invalid file", "")
+            return
+
+        weight = md.get_filament(measure='weight')
+        if weight is not None:
+            self.add_detail("Filament:", str(round(weight, 4)) + ' g')
+
+        time = md.get_time()
+        if time is not None:
+            dt = timedelta(seconds=time)
+            self.add_detail("Print time:", str(dt))
+
+        slicer = md.get_slicer()
+        if slicer is not None:
+            self.add_detail("Sliced by:", slicer)
+
+        n_extruders = md.get_extruder_count()
+        if n_extruders is not None:
+            self.add_detail("Extruder count:", str(n_extruders))
+
+        size = md.get_file_size()
+        if size is not None:
+            for ext in ("B", "KiB", "MiB", "GiB", "TiB"):
+                if size < 1024:
+                    break
+                size /= 1024
+            # Print 4 significant digits
+            self.add_detail("G-Code size:", f"{size:.4g} {ext}")
+
+    def add_detail(self, key, value):
+        detail = PrintPopupDetail(key=key, value=value)
+        self.detailsbox.add_widget(detail)
+
+    def _align(self, *args):
+        """
+        Detailsbox is anchored at its bottom, so it needs to be
+        readjusted after adding elements to always start right below
+        the filename label.
+        """
+        self.detailsbox.top = self.ids.filename.y
 
     def confirm(self):
-        app = App.get_running_app()
         self.dismiss()
         new_path = self.path
         if 'USB Device' in self.path:
             new_path = join(p.sdcard_path, basename(self.path))
-            app.notify.show(f"Copying {basename(self.path)} to Printer...")
+            self.app.notify.show(f"Copying {basename(self.path)} to Printer...")
             shutil.copy(self.path, new_path)
 
-        app.send_print(new_path)
-        tabs = app.root.ids.tabs
+        self.app.send_print(new_path)
+        tabs = self.app.root.ids.tabs
         tabs.switch_to(tabs.ids.home_tab)
+
+
+class PrintPopupDetail(Label):
+    key = StringProperty()
+    value = StringProperty()
+
 
 class DeletePopup(BasePopup):
     """Popup to confirm file deletion"""
@@ -153,6 +215,9 @@ class DeletePopup(BasePopup):
             self.timeline.load_all(in_background=False)
         elif self.filechooser:
             self.filechooser.load_files(in_background=True)
+        # Clear file form the metadata cache
+        if app.gcode_metadata:
+            app.gcode_metadata.delete_cache_entry(self.path)
         self.dismiss()
         app.notify.show("File deleted", "Deleted " + basename(self.path), delay=4)
 

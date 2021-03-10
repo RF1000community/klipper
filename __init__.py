@@ -137,20 +137,22 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             site.addsitedir(dirname(p.kgui_dir))
             import filament_manager
             self.filament_manager = filament_manager.load_config(None)
+            import gcode_metadata
+            self.gcode_metadata = gcode_metadata.load_config(None)
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
             self.filament_diameter = 1.75
             self.xy_homing_controls = True
             self.extruders = [None, None]
             self.extruder_count = 2
-            self.printer = self.reactor = self.print_history = self.gcode_metadata = None
+            self.printer = self.reactor = self.print_history = None
         self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell the app class where the root kv file is
         super().__init__(**kwargs)
 
     def clean(self):
         ndel, freed = freedir(p.sdcard_path)
         if ndel:
-            self.notify.show(f"Disk space freed", "Deleted {ndel} files, freeing {freed} MiB")
+            self.notify.show("Disk space freed", f"Deleted {ndel} files, freeing {freed} MiB")
 
     def handle_connect(self): # runs in klippy thread
         self.fan_manager = self.printer.lookup_object('fan', None)
@@ -163,6 +165,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.filament_manager = self.printer.lookup_object('filament_manager', None)
         self.heater_manager = self.printer.lookup_object('heaters', None)
         self.curaconnection = self.printer.lookup_object('klipper_cura_connection', None)
+        self.gcode_metadata = self.printer.lookup_object('gcode_metadata', None)
         self.heaters = {}
         self.extruders = []
         if 'heater_bed' in self.heater_manager.heaters: 
@@ -263,7 +266,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
 
     def on_stop(self, *args):
         # Stop networking dbus event loop
-        self.network_manager.loop.quit()
+        self.network_manager.stop()
 
     def control_updating(self, *args):
         tab = self.root.ids.tabs.current_tab
