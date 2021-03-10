@@ -21,7 +21,6 @@ class Printjob:
         self.set_state('queued') # queued -> printing -> pausing -> paused -> printing -> done
         self.file_position = 0 #                    -> stopping -> stopped
         self.no_pause = True if not manager.jobs else no_pause
-        self.saved_pause_state = False
         self.additional_printed_time = 0 # elapsed print time before the last pause
         self.last_start_time = 0
         self.name, ext = os.path.splitext(os.path.basename(path))
@@ -55,9 +54,11 @@ class Printjob:
         if self.state == 'queued':
             if self.no_pause:
                 self.last_start_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
-                self.set_state('printing') # set state only after started_time is set but before entering work handler
+                # set_state only after last_start_time is set but before entering work handler
+                self.set_state('printing')
                 self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
             else:
+                self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
                 self.set_state('paused')
             self.printer.send_event("virtual_sdcard:printjob_start", self)
 
@@ -65,8 +66,6 @@ class Printjob:
         if self.state == 'pausing':
             self.set_state('printing')
         elif self.state == 'paused':
-            if self.saved_pause_state:
-                self.saved_pause_state = False
                 self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1")
             self.last_start_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
             self.set_state('printing')
@@ -141,9 +140,8 @@ class Printjob:
         self.additional_printed_time += self.toolhead.get_last_move_time() - self.last_start_time
         # Finish stopping or pausing actions
         if self.state == 'pausing':
-            self.set_state('paused')
             self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
-            self.saved_pause_state = True
+            self.set_state('paused')
         else:
             if self.state == 'stopping':
                 self.set_state('stopped')
