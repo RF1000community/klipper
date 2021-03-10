@@ -173,7 +173,6 @@ install_klipper_service()
     sudo /bin/sh -c "cat > /etc/systemd/system/klipper.service" <<EOF
 [Unit]
 Description="Klipper with GUI"
-Requires=start_xorg.service
 
 [Service]
 Type=simple
