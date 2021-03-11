@@ -100,9 +100,10 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.kgui_config = config
             self.printer = config.get_printer()
             self.reactor = self.printer.get_reactor()
-            self.print_history = self.printer.load_object(config, 'print_history')
             self.klipper_config_manager = self.printer.objects['configfile']
             self.klipper_config = self.klipper_config_manager.read_main_config()
+            self.print_history = self.printer.load_object(config, 'print_history') # beware this is not the 'right' config
+            self.gcode_metadata = self.printer.load_object(config, 'gcode_metadata')
             # read config
             self.z_speed = self.kgui_config.getfloat('manual_z_speed', 3)
             self.ext_speed = self.kgui_config.getfloat('manual_extrusion_speed', 2)
@@ -165,7 +166,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.filament_manager = self.printer.lookup_object('filament_manager', None)
         self.heater_manager = self.printer.lookup_object('heaters', None)
         self.curaconnection = self.printer.lookup_object('klipper_cura_connection', None)
-        self.gcode_metadata = self.printer.lookup_object('gcode_metadata', None)
         self.heaters = {}
         self.extruders = []
         if 'heater_bed' in self.heater_manager.heaters: 
