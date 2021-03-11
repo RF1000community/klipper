@@ -6,7 +6,7 @@ Features to be implemented
     config editor
     better error handling (klipper)
     finish Gcode console
-
+    thumbnails for timeline
 Bugs
     timer to close error (on live move, homing)
     live_extrusion leaves inconsistent state

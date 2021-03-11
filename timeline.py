@@ -53,9 +53,12 @@ class Timeline(RecycleView):
         else:
             self.data = queue + history + [{}] # for a dividing line after last element
         self.refresh_from_data()
-        if not in_background and 'tl_box' in self.ids:
-            self.ids.tl_box.clear_selection()
-            self.scroll_y = 1
+        if 'tl_box' in self.ids:
+            if instance is self.app.jobs: # clear selection if the jobs have changed
+                self.ids.tl_box.clear_selection()
+            if not in_background:
+                self.ids.tl_box.clear_selection()
+                self.scroll_y = 1
 
     def move(self, offset):
         """Move the selected file up or down the queue. E.g. -1 will print it sooner"""

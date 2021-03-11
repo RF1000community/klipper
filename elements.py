@@ -1,9 +1,11 @@
 # coding: utf-8
+import shutil
+import logging
 from datetime import timedelta
 from os.path import join, basename
 from os import remove
-import shutil
 from time import time
+from math import log10
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -39,7 +41,7 @@ class BaseButton(Label):
         if self in touch.ud:
             return False
         # A button with enabled=False can be placed above other buttons and they keep working
-        if not self.enabled: 
+        if not self.enabled:
             return False
         self.pressed = True
         self.dispatch('on_press')
@@ -136,17 +138,17 @@ class PrintPopup(BasePopup):
     def populate_details(self):
         md = self.md
         if md is None:
-            self.add_detail("Invalid file", "")
+            self.add_detail("Invalid File", "")
             return
 
         weight = md.get_filament(measure='weight')
         if weight is not None:
-            self.add_detail("Filament:", str(round(weight, 4)) + ' g')
+            precision = max(1-int(log10(weight)), 0) # show up to 2 decimal places for small values
+            self.add_detail("Filament:", f"{weight:.{precision}f}g")
 
         time = md.get_time()
         if time is not None:
-            dt = timedelta(seconds=time)
-            self.add_detail("Print time:", str(dt))
+            self.add_detail("Print Time:", self.app.format_time(time))
 
         slicer = md.get_slicer()
         if slicer is not None:
@@ -154,7 +156,7 @@ class PrintPopup(BasePopup):
 
         n_extruders = md.get_extruder_count()
         if n_extruders is not None:
-            self.add_detail("Extruder count:", str(n_extruders))
+            self.add_detail("Extruder Count:", str(n_extruders))
 
         size = md.get_file_size()
         if size is not None:
@@ -162,8 +164,8 @@ class PrintPopup(BasePopup):
                 if size < 1024:
                     break
                 size /= 1024
-            # Print 4 significant digits
-            self.add_detail("G-Code size:", f"{size:.4g} {ext}")
+            precision = max(1-int(log10(size)), 0)
+            self.add_detail("G-Code Size:", f"{size:.{precision}f} {ext}")
 
     def add_detail(self, key, value):
         detail = PrintPopupDetail(key=key, value=value)
@@ -175,7 +177,7 @@ class PrintPopup(BasePopup):
         readjusted after adding elements to always start right below
         the filename label.
         """
-        self.detailsbox.top = self.ids.filename.y
+        self.detailsbox.top = self.ids.thumbnail.y - p.padding
 
     def confirm(self):
         self.dismiss()

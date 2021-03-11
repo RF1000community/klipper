@@ -106,8 +106,10 @@ class TempSlider(UltraSlider):
                 loaded_material = fm.get_status()['loaded']
                 for material in loaded_material:
                     if material['guid']:
-                        material_type = fm.get_info(material['guid'], "./m:metadata/m:name/m:material", "")
-                        bed_temp = fm.get_info(material['guid'], "./m:settings/m:setting[@key='heated bed temperature']", 0)
+                        material_type = fm.get_info(material['guid'],
+                            "./m:metadata/m:name/m:material", "")
+                        bed_temp = fm.get_info(material['guid'],
+                            "./m:settings/m:setting[@key='heated bed temperature']", 0)
                         if bed_temp:
                             self.buttons.append([float(bed_temp), 0, material_type, None])
             else: # show some generic temperatures
@@ -123,8 +125,10 @@ class TempSlider(UltraSlider):
                 tool_idx = int(self.tool_id[-1])
                 loaded_material = fm.get_status()['loaded']
                 if loaded_material[tool_idx]['guid']:
-                    material_type = fm.get_info(loaded_material[tool_idx]['guid'], "./m:metadata/m:name/m:material", "")
-                    ext_temp = fm.get_info(loaded_material[tool_idx]['guid'],"./m:settings/m:setting[@key='print temperature']", 0)
+                    material_type = fm.get_info(loaded_material[tool_idx]['guid'],
+                        "./m:metadata/m:name/m:material", "")
+                    ext_temp = fm.get_info(loaded_material[tool_idx]['guid'],
+                        "./m:settings/m:setting[@key='print temperature']", 0)
                     if ext_temp:
                         self.buttons.append([float(ext_temp), 0, material_type, None])
             else:

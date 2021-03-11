@@ -304,12 +304,20 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.get_config('printer', 'max_accel', 'config_acceleration', 'float')
 
     def format_time(self, seconds):
-        minutes = int((seconds % 3600) // 60)
-        hours  =  int(seconds // 3600)
+        days = seconds // 86400
+        seconds %= 86400
+        hours = seconds // 3600
+        seconds %= 3600
+        minutes = seconds // 60
+        seconds %= 60
+        res = ""
+        if days:
+            return f"{days} days {hours} {'hr' if hours==1 else 'hrs'} {minutes} min"
         if hours:
-            return f"{hours} hr, {minutes} min"
-        else:
+            return f"{hours} {'hr' if hours==1 else 'hrs'} {minutes} min"
+        if minutes:
             return f"{minutes} min"
+        return f"{int(seconds)} sec"
 
     def get_printjob_progress(self, *args):
         if self.print_state in ('printing', 'pausing', 'paused'):

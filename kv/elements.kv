@@ -364,9 +364,9 @@
 
 <PrintPopup>:
     detailsbox: detailsbox
-    title: 'Print'
+    title: basename(root.path)
     title_size: p.large_font
-    size_hint: 0.94, 0.7
+    size_hint: 0.9, 0.68
     FloatLayout:
         Widget:
             id: thumbnail
@@ -379,25 +379,11 @@
                     pos: self.pos
             size_hint: None, 0.25
             width: self.height
-            pos_hint: {'center_x': 0.5, 'top': 1}
-        Label:
-            id: filename
-            text: basename(root.path)
-            halign: 'center'
-            valign: 'middle'
-            max_lines: 2
-            size_hint: 1, None
-            height: self.texture_size[1]
-            pos_hint: {'center_x': 0.5}
-            top: thumbnail.y
-            padding: p.small_padding, p.small_padding*2
-            text_size: self.size
-            font_size: p.large_font
-            color: p.light_gray
+            pos_hint: {'center_x': 0.5, 'top': 0.95}
         BoxLayout:
             id: detailsbox
             pos_hint: {'center_x': 0.5}
-            top: filename.y
+            top: thumbnail.y - p.padding
             size_hint: 0.65, None
             height: self.minimum_height
             orientation: 'vertical'
@@ -440,7 +426,7 @@
         valign: 'top'
 
         text: root.key
-        color: p.light_gray
+        color: p.medium_light_gray
         font_size: p.normal_font
 
 <DeletePopup>:

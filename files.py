@@ -1,4 +1,5 @@
 import os
+from math import log10
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -70,7 +71,8 @@ class Filechooser(RecycleView):
                             md = self.app.gcode_metadata.get_metadata(path)
                             weight = md.get_filament(measure="weight")
                             if weight is not None:
-                                dict_['details'] = str(round(weight, 4)) + 'g'
+                                precision = max(1-int(log10(weight)), 0)
+                                dict_['details'] = f"{weight:.{precision}f}g"
                             dict_['thumbnail'] = md.get_thumbnail_path()
                         files.append(dict_)
                 # USB Stick
