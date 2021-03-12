@@ -20,11 +20,15 @@ class Timeline(RecycleView):
         super().__init__(**kwargs)
         self.app = App.get_running_app()
         self.reactor = self.app.reactor
-        self.load_all(in_background=False)
-        self.app.bind(jobs=self.load_all, state=self.load_all, print_state=self.load_all)
+        self.load_all(clear_scroll_pos=True, clear_selection=True)
+        self.app.bind(
+            jobs=self.load_all,
+            state= lambda *_ : self.load_all(clear_selection=False),
+            print_state=lambda *_ : self.load_all(clear_selection=False))
+        self.app.register_ui_event_handler("print_history:change", self.load_all)
 
-    def load_all(self, instance=None, value=None, in_background=True):
-        queue = [{'name': job.name, 'path': job.path, 'state': job.state} 
+    def load_all(self, *args, clear_scroll_pos=False, clear_selection=True):
+        queue = [{'name': job.name, 'path': job.path, 'state': job.state, 'thumbnail': job.md.get_thumbnail_path()} 
             for job in reversed(self.app.jobs)]
 
         history = []
@@ -32,6 +36,7 @@ class Timeline(RecycleView):
             # latest date in history
             prev_date = date.fromtimestamp(self.app.print_history.history[0][2])
             for job in self.app.print_history.history:
+                md = self.app.gcode_metadata.get_metadata(job[0])
                 new_date = date.fromtimestamp(job[2])
                 # This print happened on a later day than the previous
                 if new_date != prev_date:
@@ -41,7 +46,8 @@ class Timeline(RecycleView):
                 new = {"path": job[0],
                     "state": job[1],
                     "timestamp": job[2],
-                    "name": splitext(basename(job[0]))[0]}
+                    "name": splitext(basename(job[0]))[0],
+                    'thumbnail': md.get_thumbnail_path()}
                 history.append(new)
             # Also show the newest date, but not if the last print happened today
             if new_date != date.today():
@@ -51,14 +57,12 @@ class Timeline(RecycleView):
         if not (queue or history): # Give message in case of empty list
             self.data = [{"name": "No printjobs scheduled or finished", "state": 'message'}]
         else:
-            self.data = queue + history + [{}] # for a dividing line after last element
+            self.data = queue + history + [{'height': 1}] # for a dividing line after last element
+        if clear_scroll_pos:
+            self.scroll_y = 1
+        if clear_selection and 'tl_box' in self.ids:
+            self.ids.tl_box.clear_selection()
         self.refresh_from_data()
-        if 'tl_box' in self.ids:
-            if instance is self.app.jobs: # clear selection if the jobs have changed
-                self.ids.tl_box.clear_selection()
-            if not in_background:
-                self.ids.tl_box.clear_selection()
-                self.scroll_y = 1
 
     def move(self, offset):
         """Move the selected file up or down the queue. E.g. -1 will print it sooner"""
@@ -90,7 +94,6 @@ class Timeline(RecycleView):
         if i == 0:
             StopPopup().open()
         else: # negative values would occur for history items below current
-            self.ids.tl_box.clear_selection()
             self.reactor.register_async_callback(remove)
 
 
@@ -109,6 +112,7 @@ class TimelineBox(LayoutSelectionBehavior, RecycleBoxLayout):
 class TimelineItem(RecycleDataViewBehavior, Label):
     name = StringProperty()
     path = StringProperty()
+    thumbnail = StringProperty()
     state = OptionProperty("header", options=
         ["header", "message", "queued", "printing", "pausing", "paused", "stopping", "stopped", "done"])
     timestamp = NumericProperty(0)

@@ -68,10 +68,11 @@
 <TimelineItem>:
     canvas:
         Color:
-            rgba: (1,1,1,0.06) if self.state in ('printing', 'paused', 'pausing', 'stopping') else (0,0,0,0)
+            rgba: (0,0,0,0) if self.state in ('header', 'message') else (1,1,1,1) if self.thumbnail else p.medium_light_gray
         Rectangle:
-            size: self.size
-            pos: self.pos
+            source: self.thumbnail or p.kgui_dir + "/logos/file.png"
+            size: 80, 80
+            pos: p.padding - 5, self.center_y - 40
         Color:
             rgba: p.translucent_white if (self.selected or self.pressed) else (0,0,0,0)
         Rectangle:
@@ -80,7 +81,7 @@
     #Label
     width: p.screen_width
     size_hint_y: None
-    height: 40 if self.state == "header" else 110
+    height: 45 if self.state == "header" else 110
     text: "" if self.state in ('header', 'message') else self.state.capitalize()
     halign: 'right'
     valign: 'middle'
@@ -88,6 +89,7 @@
     padding_x: p.h_padding
     text_size: self.size
     font_size: p.normal_font
+    bold: self.state in ('printing', 'pausing', 'paused', 'stopping')
     color: {'done':p.green, 'stopped':p.red, 'stopping':p.red, 'printing': (1,1,1,1), 'paused':(1,1,1,1), 'pausing':(1,1,1,1), 'queued':p.medium_light_gray, 'message':(0,0,0,0), 'header':(0,0,0,0)}[self.state]
     Label:
         text: root.name
@@ -97,8 +99,8 @@
         valign: 'middle'
         padding_x: p.h_padding 
         size_hint: None, None
-        size: root.width - (0 if root.state in ("header", "message") else 120), root.height
-        pos: root.pos
+        size: root.width if root.state in ("header", "message") else 380, root.height
+        pos: root.x if root.state in ("header", "message") else 80 + p.padding - 10, root.y
         text_size: self.size
         font_size: p.normal_font
         color: p.medium_gray if root.state in ("header", "message") else (1,1,1,1)

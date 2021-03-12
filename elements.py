@@ -122,7 +122,7 @@ class PrintPopup(BasePopup):
 
     detailsbox = ObjectProperty(None)
 
-    def __init__(self, path, filechooser=None, timeline=None, **kwargs):
+    def __init__(self, path, filechooser=None, **kwargs):
         self.app = App.get_running_app()
         try:
             self.md = self.app.gcode_metadata.get_metadata(path)
@@ -130,7 +130,6 @@ class PrintPopup(BasePopup):
             self.md = None
         self.path = path
         self.filechooser = filechooser
-        self.timeline = timeline
         super().__init__(**kwargs)
         self.populate_details()
         Clock.schedule_once(self._align, 0)
@@ -199,23 +198,19 @@ class PrintPopupDetail(Label):
 
 class DeletePopup(BasePopup):
     """Popup to confirm file deletion"""
-    def __init__(self, path, filechooser=None, timeline=None, **kwargs):
+    def __init__(self, path, filechooser=None, **kwargs):
         self.path = path
         self.filechooser = filechooser
-        self.timeline = timeline
         super().__init__(**kwargs)
 
     def confirm(self):
         """Deletes the file and closes the popup"""
         remove(self.path)
         app = App.get_running_app()
-
-        # Update the files in the filechooser instance
+        # Update the filechooser and print_history
         if app.print_history:
             app.print_history.trim_history()
-        if self.timeline:
-            self.timeline.load_all(in_background=False)
-        elif self.filechooser:
+        if self.filechooser:
             self.filechooser.load_files(in_background=True)
         # Clear file form the metadata cache
         if app.gcode_metadata:

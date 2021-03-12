@@ -398,7 +398,7 @@
             enabled: app.state == "ready"
             width: root.width/3
             pos: btn_cancel.right, root.y
-            on_release: Factory.DeletePopup(path = root.path, filechooser=root.filechooser, timeline=root.timeline).open(); root.dismiss()
+            on_release: Factory.DeletePopup(path = root.path, filechooser=root.filechooser).open(); root.dismiss()
         BtnPConfirm:
             text: 'Print'
             enabled: app.state == "ready"
