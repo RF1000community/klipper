@@ -39,6 +39,7 @@ class PrintHistory:
             self.write(history)
             self.history = history
             return len(to_remove)
+        self.printer.send_event("print_history:change", self.history)
         return 0
 
     def read(self):
@@ -78,6 +79,7 @@ class PrintHistory:
         """Add a new entry to the history from the specified Printjob object"""
         self.history.append([job.path, job.state, time.time()])
         self.write(self.history)
+        self.printer.send_event("print_history:change", self.history)
 
 def load_config(config):
     return PrintHistory(config)
