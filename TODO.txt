@@ -7,13 +7,11 @@ Features to be implemented
     better error handling (klipper)
     finish Gcode console
 Bugs
-    timer to close error
+    performance problems (timer to close error)
         on live move, homing
         uploading large gcode during printing with klipper_cura_connection
+        DripModeEndSignal during homing when stopping print
     live_extrusion leaves inconsistent state
-    DripModeEndSignal during homing due stop command
     cura showing old printjobs after klipper restart
-    prevent starting print and live move during filament loading
-    z offset before print homing when already homed
     filechooser missing files should be fixed in kivy master
     virtual_sdcard stopping hangs

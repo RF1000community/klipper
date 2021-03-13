@@ -68,7 +68,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     print_done_time = StringProperty()
     progress = NumericProperty(0) #updated by scheduled update_home
     pos = ListProperty([0, 0, 0, 0]) #updated by scheduled update_home
-    ongoing_drip_move = BooleanProperty(False)
+    toolhead_busy = BooleanProperty(False)
     z_move_completion = ObjectProperty(None, allownone=True)
     ext_move_completion = ObjectProperty(None, allownone=True)
     #tuning, updated by upate_printing
@@ -127,7 +127,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.register_ui_event_handler("klippy:shutdown", self.handle_shutdown)
             self.register_ui_event_handler("klippy:critical_error", self.handle_critical_error)
             self.register_ui_event_handler("klippy:error", self.handle_error)
-            self.register_ui_event_handler("homing:home_rails_start", self.handle_home_start)
             self.register_ui_event_handler("homing:home_rails_end", self.handle_home_end)
             self.register_ui_event_handler("virtual_sdcard:printjob_start", self.handle_printjob_start)
             self.register_ui_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
@@ -206,12 +205,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def handle_error(self, message):
         ErrorPopup(message = message).open()
 
-    # this ensures disabling manual movement (buttons), and z-tuning moves during drip-move
-    def handle_home_start(self, homing_state, rails):
-        self.ongoing_drip_move = True
-
     def handle_home_end(self, homing_state, rails):
-        self.ongoing_drip_move = False
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
 
@@ -356,18 +350,8 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.z_adjust = self.gcode_move.homing_position[2]
     def send_z_adjust(self, offset):
         self.z_adjust = offset
-        def set_z_offset(e):  
-            #keeps the difference between base_position and homing_position the same
-            #works like this: if base_position = 5, put origin of gcode coordinate system at + 5, 
-            #used for z tuning or G92 zeroing
-            delta = offset - self.gcode_move.homing_position[2] #difference between old and new offset
-            self.gcode_move.base_position[2] += delta
-            self.gcode_move.homing_position[2] = offset
-            #Move to offset
-            self.gcode_move.last_position[2] += delta
-            if self.homed['z'] and not self.ongoing_drip_move: #if this runs during homing it will crash
-                self.gcode_move.move_with_transform(self.gcode_move.last_position, 5) # speed for adjustment move
-        self.reactor.register_async_callback(set_z_offset)
+        self.reactor.register_async_callback(lambda e: 
+            self.gcode.run_script_from_command(f"SET_GCODE_OFFSET Z={offset} MOVE=1 MOVE_SPEED=5"))
 
     def get_speed(self):
         self.speed = self.gcode_move.speed_factor*60*100 #speed factor also converts from mm/sec to mm/min
@@ -475,9 +459,20 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def send_motors_off(self):
         self.reactor.register_async_callback(lambda e: self.gcode.run_script_from_command("M18"))
 
+    def get_toolhead_busy(self, e): # run in klippy thread
+        print_time, est_print_time, lookahead_empty = self.toolhead.check_busy(e)
+        idle_time = est_print_time - print_time
+        return bool(not lookahead_empty or idle_time <= 0)
+
     def get_pos(self):
+        def set_pos(pos, busy):
+            self.pos = pos
+            self.toolhead_busy = busy
         def read_pos(e):
-            self.pos = self.toolhead.get_position()
+            pos = self.toolhead.get_position()
+            busy = self.get_toolhead_busy(e)
+            Clock.schedule_once(lambda dt: set_pos(pos, busy))
+
         self.reactor.register_async_callback(read_pos)
 
     def send_pos(self, x=None, y=None, z=None, e=None, speed=15):  
@@ -514,37 +509,39 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         return pos
 
     def send_z_go(self, up=True):
-        if not (self.homed['z'] or self.warned_not_homed['z']):
-            self.notify.show("Axis not homed", "Movement is still available, proceed with care!", level="warning", delay=3)
-            self.warned_not_homed['z'] = True
-            return
-
+        def note_z_abort(dt):
+            self.z_move_completion = None
         def start_z(e):
-            pos = self.toolhead.get_position()
-            if self.homed['z']:
-                pos[2] = (self.pos_max['z'] if up else self.pos_min['z'])
+            if self.get_toolhead_busy(e):
+                Clock.schedule_once(note_z_abort)
             else:
-                pos[2] += (self.pos_max['z'] - self.pos_min['z']) * (1 if up else -1)
+                pos = self.toolhead.get_position()
+                if self.homed['z']:
+                    pos[2] = (self.pos_max['z'] if up else self.pos_min['z'])
+                else:
+                    pos[2] += (self.pos_max['z'] - self.pos_min['z']) * (1 if up else -1)
 
-            self.toolhead.flush_step_generation()
-            kin = self.toolhead.get_kinematics()
-            steppers = kin.get_steppers()
+                self.toolhead.flush_step_generation()
+                kin = self.toolhead.get_kinematics()
+                steppers = kin.get_steppers()
 
-            for s in steppers:
-                s.set_tag_position(s.get_commanded_position())
+                for s in steppers:
+                    s.set_tag_position(s.get_commanded_position())
 
-            self.z_start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers]
-            self.toolhead.dwell(0.050)
-            self.toolhead.drip_move(pos, self.z_speed, self.z_move_completion, force=True)
+                self.z_start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers]
+                self.toolhead.dwell(0.050)
+                self.toolhead.drip_move(pos, self.z_speed, self.z_move_completion, force=True)
 
-        if not self.ongoing_drip_move:
-            self.ongoing_drip_move = True
-            self.z_move_completion = ReactorCompletion(self.reactor)
-            self.reactor.register_async_callback(start_z)
+        if not (self.homed['z'] or self.warned_not_homed['z']):
+            self.notify.show("Axis not homed", "Proceed with care!", level="warning", delay=3)
+            self.warned_not_homed['z'] = True
+        self.toolhead_busy = True
+        self.z_move_completion = ReactorCompletion(self.reactor)
+        self.reactor.register_async_callback(start_z)
 
     def send_z_stop(self):
         def note_stop_z(dt):
-            self.ongoing_drip_move = False
+            self.get_pos()
             self.z_move_completion = None
         def stop_z(e):
             # this works similar to homing.py
@@ -565,21 +562,25 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.reactor.register_async_callback(stop_z)
 
     def send_extrude(self, tool_id, direction=1):
-        def start_e(e):
-            pos = self.toolhead.get_position()
-            pos[3] += 49 * direction
-            self.toolhead.flush_step_generation()
-            self.toolhead.dwell(0.10)
-            self.toolhead.drip_move(pos, self.ext_speed, self.ext_move_completion, force=True)
+        def note_ext_abort(dt):
+            self.ext_move_completion = None
+        def start_ext(e):
+            if self.get_toolhead_busy(e):
+                Clock.schedule_once(note_ext_abort)
+            else:
+                pos = self.toolhead.get_position()
+                pos[3] += 49 * direction
+                self.toolhead.flush_step_generation()
+                self.toolhead.dwell(0.10)
+                self.toolhead.drip_move(pos, self.ext_speed, self.ext_move_completion, force=True)
 
-        if not self.ongoing_drip_move:
-            self.ongoing_drip_move = True
-            self.ext_move_completion = ReactorCompletion(self.reactor)
-            self.reactor.register_async_callback(start_e)
+        self.toolhead_busy = True
+        self.ext_move_completion = ReactorCompletion(self.reactor)
+        self.reactor.register_async_callback(start_ext)
 
     def send_extrude_stop(self):
         def note_stop_ext(dt): # this needs to be assigned in the ui thread, only after the move is completed
-            self.ongoing_drip_move = False
+            self.get_pos()
             self.ext_move_completion = None
         def stop_ext(e):
             self.ext_move_completion.complete(True)

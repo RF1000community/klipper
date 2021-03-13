@@ -393,7 +393,7 @@
     BaseButton:
         size: root.w1, root.height
         pos: root.pos
-        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.tool_id][0] > app.min_extrude_temp and app.temp[root.tool_id][1] > app.min_extrude_temp
+        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.tool_id][0] > app.min_extrude_temp and app.temp[root.tool_id][1] > app.min_extrude_temp and not app.toolhead_busy
         on_press: app.send_extrude(root.tool_id, -1)
         on_release: app.send_extrude_stop()
         canvas:
@@ -423,7 +423,7 @@
     BaseButton:
         size: root.w3, root.height
         pos: root.x + root.w1+root.w2,root.y
-        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.tool_id][0] > app.min_extrude_temp and app.temp[root.tool_id][1] > app.min_extrude_temp
+        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.tool_id][0] > app.min_extrude_temp and app.temp[root.tool_id][1] > app.min_extrude_temp and not app.toolhead_busy
         on_press: app.send_extrude(root.tool_id)
         on_release: app.send_extrude_stop()
         canvas:
@@ -459,7 +459,7 @@
     BaseButton:
         on_press: app.send_z_go(up=app.invert_z_controls)
         on_release: app.send_z_stop()
-        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.ongoing_drip_move
+        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy
         size: root.width, root.h1
         pos: root.x, root.y
         canvas.before:
@@ -487,7 +487,7 @@
     BaseButton:
         on_press: app.send_z_go(up = not app.invert_z_controls)
         on_release: app.send_z_stop()
-        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.ongoing_drip_move
+        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
         canvas.before:
@@ -505,7 +505,7 @@
 <BtnHome@RoundButton>:
     axis_id: 'Z'
     on_release: app.send_home(self.axis_id)
-    enabled: app.state == "ready"
+    enabled: app.state == "ready" and not app.toolhead_busy
     canvas:
         Color:
             rgba: (1,1,1,1) if self.enabled else p.btn_disabled
