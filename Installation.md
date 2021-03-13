@@ -34,7 +34,7 @@ sudo raspi-config
 cd ~
 
 git clone --recurse-submodules https://github.com/D4SK/klipperui
-./klipperui/scripts/install-kgui.sh
+./klipperui/scripts/install-kgui-x11.sh
 ```
 
 - if you haven't flashed your printer-mainboards firmware yet follow [klipper/Installation.md](https://github.com/KevinOConnor/klipper/blob/master/docs/Installation.md) (Building and flashing the micro-controller)

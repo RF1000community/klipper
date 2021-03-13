@@ -1,4 +1,4 @@
-Features to be implemented    
+Features to be implemented
     Updater
     microcontroller flashing (maybe dead)
     custom gcode macro buttons
@@ -13,5 +13,7 @@ Bugs
     live_extrusion leaves inconsistent state
     DripModeEndSignal during homing due stop command
     cura showing old printjobs after klipper restart
-    maybe prevent starting print during filament loading
+    prevent starting print and live move during filament loading
     z offset before print homing when already homed
+    filechooser missing files should be fixed in kivy master
+    virtual_sdcard stopping hangs

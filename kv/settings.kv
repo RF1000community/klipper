@@ -534,7 +534,7 @@
             text: "Restart Klipper"
             size: btn_poweroff.size
             pos: btn_poweroff.x, btn_reboot.top
-            on_release: app.restart_klipper()
+            on_release: app.firmware_restart()
         Divider:
             width: root.width
             pos: btn_reboot.pos
@@ -766,6 +766,7 @@
             pos: root.pos
             on_release: root.dismiss()
         BtnPConfirm:
+            text: "Set and restart"
             enabled: len(hostname_input.text) >= 1
             width: root.width/2
             pos: root.center_x, root.y

@@ -365,6 +365,7 @@ class HostnamePopup(BasePopup):
             logging.warning("hostnamectl: " + proc.stdout + " " + proc.stderr)            
         else:
             self.dismiss()
+            App.get_running_app().restart()
 
 # TextInput must be imported later, specifically in the kivy Thread,
 # not in the klippy Thread. This is to prevent a segmentation fault

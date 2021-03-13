@@ -96,7 +96,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.sdcard = None
         self.print_stats = None
         if not TESTING:
-            self.clean()
             self.kgui_config = config
             self.printer = config.get_printer()
             self.reactor = self.printer.get_reactor()
@@ -134,6 +133,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.register_ui_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
             self.register_ui_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
             self.register_ui_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
+            self.clean()
         else:
             site.addsitedir(dirname(p.kgui_dir))
             import filament_manager
@@ -154,6 +154,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         ndel, freed = freedir(p.sdcard_path)
         if ndel:
             self.notify.show("Disk space freed", f"Deleted {ndel} files, freeing {freed} MiB")
+            self.print_history.trim_history()
 
     def handle_connect(self): # runs in klippy thread
         self.fan_manager = self.printer.lookup_object('fan', None)
@@ -533,15 +534,18 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 s.set_tag_position(s.get_commanded_position())
 
             self.z_start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers]
-            self.z_move_completion = ReactorCompletion(self.reactor)
             self.toolhead.dwell(0.050)
             self.toolhead.drip_move(pos, self.z_speed, self.z_move_completion, force=True)
 
         if not self.ongoing_drip_move:
             self.ongoing_drip_move = True
+            self.z_move_completion = ReactorCompletion(self.reactor)
             self.reactor.register_async_callback(start_z)
 
     def send_z_stop(self):
+        def note_stop_z(dt):
+            self.ongoing_drip_move = False
+            self.z_move_completion = None
         def stop_z(e):
             # this works similar to homing.py
             self.z_move_completion.complete(True)
@@ -555,8 +559,7 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 s.set_tag_position(s.get_tag_position() + md)
             self.toolhead.set_position(self._fill_coord(self.toolhead.get_kinematics().calc_tag_position()))
             self.get_pos()
-            self.ongoing_drip_move = False
-            self.z_move_completion = None
+            Clock.schedule_once(note_stop_z)
 
         if self.z_move_completion:
             self.reactor.register_async_callback(stop_z)
@@ -565,18 +568,27 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         def start_e(e):
             pos = self.toolhead.get_position()
             pos[3] += 49 * direction
-            self.ext_move_completion = ReactorCompletion(self.reactor)
-            self.toolhead.dwell(0.010)
+            self.toolhead.flush_step_generation()
+            self.toolhead.dwell(0.10)
             self.toolhead.drip_move(pos, self.ext_speed, self.ext_move_completion, force=True)
 
         if not self.ongoing_drip_move:
             self.ongoing_drip_move = True
+            self.ext_move_completion = ReactorCompletion(self.reactor)
             self.reactor.register_async_callback(start_e)
 
     def send_extrude_stop(self):
+        def note_stop_ext(dt): # this needs to be assigned in the ui thread, only after the move is completed
+            self.ongoing_drip_move = False
+            self.ext_move_completion = None
         def stop_ext(e):
             self.ext_move_completion.complete(True)
-            self.ongoing_drip_move = False
+            self.reactor.pause(self.reactor.monotonic() + 0.200)
+            self.toolhead.flush_step_generation()
+            for extruder in self.extruders:
+                extruder.sync_stepper(extruder.stepper)
+            Clock.schedule_once(note_stop_ext)
+
         if self.ext_move_completion:
             self.reactor.register_async_callback(stop_ext)
 
@@ -598,10 +610,13 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
     def reboot(self):
-        Popen(['sudo','systemctl', 'reboot']) 
-    def restart_klipper(self):
+        Popen(['sudo','systemctl', 'reboot'])
+    def restart(self):
         """Quit and restart klipper and GUI"""
-        self.reactor.register_async_callback(lambda e: self.printer.request_exit('firmware_restart'), 0)	
+        self.reactor.register_async_callback(lambda e: self.printer.request_exit('restart'), 0)
+    def firmware_restart(self):
+        """Quit and restart klipper and GUI"""
+        self.reactor.register_async_callback(lambda e: self.printer.request_exit('firmware_restart'), 0)
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
         self.reactor.register_async_callback(lambda e: self.printer.request_exit("exit"), 0)

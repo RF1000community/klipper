@@ -47,11 +47,13 @@
             y: p.tab_height + p.padding
             on_release: tl.move(1)
             enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state == "queued"
+            active: tl.ids.tl_box.selected_nodes and tl.ids.tl_box.selected_nodes[0] > 0
         BtnQDown:
             right: q_up.x - p.h_padding  + 12
             y: p.tab_height + p.padding
             on_release: tl.move(-1)
             enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state == "queued"
+            active: tl.ids.tl_box.selected_nodes and tl.ids.tl_box.selected_nodes[0] < len(app.jobs) - 2
 
 <Timeline>:
     TimelineBox:
@@ -114,7 +116,7 @@
 #:set pad_x pad*p.disp_vertical_stretch
 <BtnPrint@FloatingButton>:
     id: btn_print
-    btn_color: p.accent
+    btn_color: p.medium_gray
     canvas:
         Color:
             rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
@@ -123,23 +125,25 @@
 
 <BtnQUp@FloatingButton>:
     id: q_up
-    btn_color: p.accent
+    btn_color: p.medium_gray
+    active: True
     canvas:
         Color:
-            rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
+            rgba: (0,0,0,0) if not self.enabled else (1,1,1,1) if self.active else p.btn_disabled
         Triangle:
             points: self.x+pad_x-4, self.y+pad+4,  self.right-pad_x+4, self.y+pad+4,  self.center_x, self.top-pad
 
 <BtnQDown@FloatingButton>:
-    btn_color: p.accent
+    btn_color: p.medium_gray
+    active: True
     canvas:
         Color:
-            rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
+            rgba: (0,0,0,0) if not self.enabled else (1,1,1,1) if self.active else p.btn_disabled
         Triangle:
             points: self.x+pad_x-4, self.top-pad-4,  self.right-pad_x+4, self.top-pad-4,  self.center_x, self.y+pad
 
 <BtnQX@FloatingButton>:
-    btn_color: p.accent
+    btn_color: p.red
     canvas:
         Color:
             rgba: (1,1,1,1) if self.enabled else (0,0,0,0)

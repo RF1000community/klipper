@@ -20,13 +20,13 @@ class Timeline(RecycleView):
         super().__init__(**kwargs)
         self.app = App.get_running_app()
         self.reactor = self.app.reactor
+        self.keep_next_selection = False
         self.load_all(clear_scroll_pos=True, clear_selection=True)
         self.app.bind(
             jobs=self.load_all,
             state= lambda *_ : self.load_all(clear_selection=False),
             print_state=lambda *_ : self.load_all(clear_selection=False))
         self.app.register_ui_event_handler("print_history:change", self.load_all)
-
     def load_all(self, *args, clear_scroll_pos=False, clear_selection=True):
         queue = [{'name': job.name, 'path': job.path, 'state': job.state, 'thumbnail': job.md.get_thumbnail_path()} 
             for job in reversed(self.app.jobs)]
@@ -60,9 +60,10 @@ class Timeline(RecycleView):
             self.data = queue + history + [{'height': 1}] # for a dividing line after last element
         if clear_scroll_pos:
             self.scroll_y = 1
-        if clear_selection and 'tl_box' in self.ids:
+        if clear_selection and not self.keep_next_selection and 'tl_box' in self.ids:
             self.ids.tl_box.clear_selection()
         self.refresh_from_data()
+        self.keep_next_selection = False
 
     def move(self, offset):
         """Move the selected file up or down the queue. E.g. -1 will print it sooner"""
@@ -79,11 +80,13 @@ class Timeline(RecycleView):
         if  0 < i+offset < len(self.app.sdcard.jobs):
             self.reactor.register_async_callback(move)
             self.ids.tl_box.select_node(selected[0] - offset)
+            self.keep_next_selection = True
 
     def remove(self):
         """Remove the selcted file from the queue"""
         selected = self.ids.tl_box.selected_nodes
-        if not selected: return
+        if not selected:
+            return
         i = len(self.app.sdcard.jobs) - selected[0] - 1
 
         def remove(e):
@@ -98,7 +101,8 @@ class Timeline(RecycleView):
 
 
 class TimelineBox(LayoutSelectionBehavior, RecycleBoxLayout):
-    # Adds selection behaviour to the view, modified to also store selected Widget (selected_object), not just index (selected_nodes)
+    """ Adds selection behaviour to the view, modified to also store selected
+        Widget (selected_object), not just index (selected_nodes) """
     selected_object = ObjectProperty(None, allownone=True)
     def select_node(self, node):
         super().select_node(node)
@@ -112,14 +116,13 @@ class TimelineBox(LayoutSelectionBehavior, RecycleBoxLayout):
 class TimelineItem(RecycleDataViewBehavior, Label):
     name = StringProperty()
     path = StringProperty()
-    thumbnail = StringProperty()
     state = OptionProperty("header", options=
         ["header", "message", "queued", "printing", "pausing", "paused", "stopping", "stopped", "done"])
     timestamp = NumericProperty(0)
     index = None
     selected = BooleanProperty(False)
     pressed = BooleanProperty(False)
-    thumbnail = StringProperty("")
+    thumbnail = StringProperty(allownone=True)
 
     def refresh_view_attrs(self, rv, index, data):
         # Catch and handle the view changes
