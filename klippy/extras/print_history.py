@@ -38,8 +38,8 @@ class PrintHistory:
                 history.remove(e)
             self.write(history)
             self.history = history
+            self.printer.send_event("print_history:change", self.history)
             return len(to_remove)
-        self.printer.send_event("print_history:change", self.history)
         return 0
 
     def read(self):
