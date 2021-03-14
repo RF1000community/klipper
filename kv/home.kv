@@ -185,7 +185,7 @@
             width: self.height + 40
             x: p.h_padding
             top: root.height-p.padding-p.status_bar_height
-            enabled: app.state == "ready" and app.homed['x'] and app.homed['y']
+            enabled: app.state == "ready" and app.homed['x'] and app.homed['y'] and not app.toolhead_busy
         BtnHome:
             axis_id: 'X'
             size: p.btn_height, p.btn_height
