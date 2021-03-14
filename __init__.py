@@ -29,7 +29,7 @@ from .nm_dbus import NetworkManager
 from . import parameters as p
 from .status import Notifications
 # Imports for KvLang Builder
-from . import files, home, kconfig_ui, settings, status, timeline, update
+from . import files, home, settings, status, timeline, update
 
 if not TESTING:
     site.addsitedir(dirname(dirname(p.kgui_dir)))

@@ -1,6 +1,5 @@
 Features to be implemented
     Updater
-    microcontroller flashing (maybe dead)
     custom gcode macro buttons
     config chooser
     config editor
@@ -15,3 +14,4 @@ Bugs
     cura showing old printjobs after klipper restart
     filechooser missing files should be fixed in kivy master
     virtual_sdcard stopping hangs
+    fix unknown command error silently stalling printjob
