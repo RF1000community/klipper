@@ -50,10 +50,10 @@ class Filechooser(RecycleView):
         files = []
         folders = []
         content = os.listdir(self.path)
-        # If USB-Device folder is not empty => a usb stick is plugged in
+        # If p.usb_mount_dir folder is not empty => a usb stick is plugged in
         # (usbmount mounts to this directory)
-        usb_state = ("USB-Device" in content and
-                len(os.listdir(os.path.join(self.path, "USB-Device"))) > 0)
+        usb_state = (p.usb_mount_dir in content and
+                len(os.listdir(os.path.join(self.path, p.usb_mount_dir))) > 0)
         # Only update if files have changed (loop takes 170ms, listdir 0.3ms)
         if (not in_background) or self.content != content or self.usb_state != usb_state:
             for base in content:
@@ -76,7 +76,7 @@ class Filechooser(RecycleView):
                             dict_['thumbnail'] = md.get_thumbnail_path()
                         files.append(dict_)
                 # USB Stick
-                elif base == "USB-Device":
+                elif base == p.usb_mount_dir:
                     if usb_state:
                         dict_['item_type'] = "usb"
                         usb.append(dict_)

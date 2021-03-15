@@ -1,13 +1,13 @@
 # kgui is the clean touch UI for your 3D Printer running Klipper.
 It's compatible with common chinese 7 inch 1024*600 touch screens.
 This plugin works best in conjunction with the [klipper_cura_connection](https://github.com/Gobbel2000/klipper_cura_connection) plugin.
-Due to using a modified version of Klipper, mainsail is not currently supported.
+A modyfied version of klipper is used, so other web-interfaces may have limited compatibility.
 # Features
 * Filemanager for printing from USB-sticks
-* Easy setup of Wifi, timezone
-* Tune parameters while Printing
+* Easy setup of Wifi, timezone and hostname
+* Tune parameters while printing
   * Acceleration
-  * Linear Advance
+  * Pressure Advance
   * Z-Height
   * Temperature
   * Fan speed

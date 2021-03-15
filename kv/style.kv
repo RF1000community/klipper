@@ -516,16 +516,13 @@
 
         Label:
             text: root.title
-            padding_y: 12
             color: root.title_color
             size_hint_y: None
-            height: self.texture_size[1] + dp(16)
-            text_size: self.width - dp(16), None
+            height: self.texture_size[1] + dp(50)
+            text_size: self.width - dp(50), None
             font_size: root.title_size
             font_name: root.title_font
             halign: root.title_align
-
-    
 
         BoxLayout:
             id: container

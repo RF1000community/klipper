@@ -181,7 +181,7 @@ class PrintPopup(BasePopup):
     def confirm(self):
         self.dismiss()
         new_path = self.path
-        if 'USB Device' in self.path:
+        if p.usb_mount_dir in self.path:
             new_path = join(p.sdcard_path, basename(self.path))
             self.app.notify.show(f"Copying {basename(self.path)} to Printer...")
             shutil.copy(self.path, new_path)

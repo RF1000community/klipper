@@ -74,7 +74,7 @@
         Rectangle:
             source: self.thumbnail or p.kgui_dir + "/logos/file.png"
             size: 80, 80
-            pos: p.padding - 5, self.center_y - 40
+            pos: p.h_padding - 10, self.center_y - 40
         Color:
             rgba: p.translucent_white if (self.selected or self.pressed) else (0,0,0,0)
         Rectangle:
@@ -99,10 +99,10 @@
         shorten_from: 'right'
         halign: 'center' if root.state in ("header", "message") else 'left'
         valign: 'middle'
-        padding_x: p.h_padding 
         size_hint: None, None
-        size: root.width if root.state in ("header", "message") else 380, root.height
-        pos: root.x if root.state in ("header", "message") else 80 + p.padding - 10, root.y
+        size: p.screen_width -2*(2*p.h_padding+80-20), root.height
+        center_x: root.center_x
+        y: root.y
         text_size: self.size
         font_size: p.normal_font
         color: p.medium_gray if root.state in ("header", "message") else (1,1,1,1)

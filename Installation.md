@@ -37,8 +37,11 @@ git clone --recurse-submodules https://github.com/D4SK/klipperui
 ./klipperui/scripts/install-kgui-x11.sh
 ```
 
-- if you haven't flashed your printer-mainboards firmware yet follow [klipper/Installation.md](https://github.com/KevinOConnor/klipper/blob/master/docs/Installation.md) (Building and flashing the micro-controller)
+- If you haven't flashed your printer-mainboards firmware yet follow [klipper/Installation.md](https://github.com/KevinOConnor/klipper/blob/master/docs/Installation.md) (Building and flashing the micro-controller)
 - Move your printer configuration (printer.cfg) to /home/pi and add the necessary sections to activate the KGUI UI as seen here [klipper/config/sample-kgui.cfg](https://github.com/D4SK/klipperui/blob/master/config/sample-kgui.cfg)
+
+### Change Rotation (if needed) ###
+- the rotation parameter of the kivy config can be changed from "rotation = 90" to "rotation = 270" ```nano ~/klipperui/klippy/extras/kgui/config.ini```
 
 ### Install klipper_cura_connection (recommended) ###
 - Add the necessary config section ```[klipper_cura_connection]```

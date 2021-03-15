@@ -1,7 +1,6 @@
 Features to be implemented
     Updater
     custom gcode macro buttons
-    config chooser
     config editor
     better error handling (klipper)
     finish Gcode console
