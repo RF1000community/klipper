@@ -61,12 +61,12 @@ class ConsoleScreen(Screen):
             self.fd = app.printer.get_start_args().get("gcode_fd")
         self.reactor = app.reactor
         Clock.schedule_once(self.init_drawing, 0)
+        logging.info(f"GCOOOOOOODE FD IS {self.fd} with type {type(self.fd)}")
 
     def init_drawing(self, *args):
         self.ids.console_input.bind(on_text_validate=self.confirm)
 
     def on_pre_enter(self):
-        self.ids.console_label.text += "Test text from python \n \n \n some more of that test ext"
         self.ids.console_input.focus = True
         self.ids.console_scroll.scroll_y = 0
         self.scheduled_polling = Clock.schedule_interval(self.poll, 1)
@@ -75,28 +75,30 @@ class ConsoleScreen(Screen):
         Clock.unschedule(self.scheduled_polling)
 
     def poll(self, dt):
-        pass
-        # with open(os.ttyname(self.fd), 'r') as fd:
-        #     while 1:
-        #         newdata = fd.read(4096)
-        #         #if not newdata:
-        #         break
-        #         self.ids.console_label.text += newdata
+        self.ids.console_scroll.scroll_y = 0
+        while 1:
+            try:
+                data = os.read(self.fd, 4096)
+            except BlockingIOError:
+                data = "..."
+                break
+            if not data:
+                break
+                self.ids.console_label.text += data.decode()
 
-        #     # except BlockingIOError:
-        #     #     newdata = "..."
-        #     #     break
 
-        #     logging.info(f"ids {self.ids}\n\n\n")
-        #     logging.warning("lol")
-        #     logging.info(f"scroll ids{self.ids.console_scroll.ids}\n\n\n")
 
     def confirm(self, *args):
         cmd = self.ids.console_input.text + "\n"
-        with open(os.ttyname(self.fd), 'w') as fd:
-            fd.write(cmd)
+        try:
+            os.write(self.fd, cmd.encode())
+        except os.error:
+            logging.exception("couldnt write command")
+
         self.ids.console_input.text = ""
-        self.ids.console_label.text += cmd.encode()
+        self.ids.console_label.text += cmd
+        self.ids.console_scroll.scroll_y = 0
+
 
 
 class WifiScreen(Screen):

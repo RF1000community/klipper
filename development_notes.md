@@ -20,10 +20,19 @@ sudo apt purge dhcpcd5
 
 
 ### Boot optimizations ###
-add `console=tty3 quiet splash loglevel=3 logo.nologo vt.global_cursor_default=0 fastboot noatime nodiratime` to /boot/cmdline.txt
+add this to /boot/cmdline.txt
+```bash
+console=tty3 quiet splash loglevel=3 logo.nologo vt.global_cursor_default=0 fastboot noatime nodiratime vt.default_red=0,0,0,0,0,0,0,0 vt.default_grn=0,0,0,0,0,0,0,0 vt.default_blu=0,0,0,0,0,0,0,0
+```
 this redirects terminal output to tty3, noatime and nodiratime also disable access time storage (increased file system performance)
-add `disable_splash=1` to /boot/config.txt
-additionaly a bash script named ~/.xsessionrc can be added to prevent xorg from loading xterm
+also sets controllable terminal colors to black, to get rid of the broadcast messages
+
+add this to /boot/config.txt
+```bash
+disable_splash=1
+```
+
+additionaly a bash script named ~/.xsessionrc can be added to prevent xorg from loading xterm (potential bug! if this script terminates klipper will terminate)
 ```bash
 #!/bin/sh
 sleep infinity
