@@ -22,11 +22,10 @@ class FilamentManager:
             self.reactor = self.printer.get_reactor()
             klipper_config_manager = self.printer.objects['configfile']
             klipper_config = klipper_config_manager.read_main_config()
-            filament_diameter = klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
+            self.config_diameter = klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
             for i in range(1, 10):
                 try: klipper_config.getsection(f"extruder{i}")
                 except: extruder_count = i; break
-            self.filament_area = pi * (filament_diameter/2.)**2
             self.extruders = {}
             self.printer.register_event_handler("klippy:ready", self.handle_ready)
             self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
@@ -87,15 +86,20 @@ class FilamentManager:
         except: 
             logging.info(f"failed to parse xml-material-file {f_path}")
             return
+
         ns = {'m': 'http://www.ultimaker.com/material'}
+        f_guid     = f_root.find('./m:metadata/m:GUID', ns).text
+        f_diameter = f_root.find('./m:properties/m:diameter', ns).text
+        # generate path lookup
+        self.guid_to_path[f_guid] = f_path
+
+        # only add to the tmc dict if the diameter is correct, use the same check as cura
+        # cura/Settings/ExtruderStack.py -> getApproximateMaterialDiameter()
+        if round(self.config_diameter) != round(float(f_diameter)):
+            return
         f_type  = f_root.find('./m:metadata/m:name/m:material', ns).text
         f_brand = f_root.find('./m:metadata/m:name/m:brand', ns).text
-        f_guid  = f_root.find('./m:metadata/m:GUID', ns).text
         f_color = f_root.find('./m:metadata/m:color_code', ns).text
-
-        # generate path lookup 
-        self.guid_to_path[f_guid] = f_path
-        # generate tmc dict
         if self.tmc_to_guid.get(f_type):
             if self.tmc_to_guid[f_type].get(f_brand):#type and brand already there, add color entry
                 self.tmc_to_guid[f_type][f_brand][f_color] = f_guid
@@ -227,10 +231,14 @@ class FilamentManager:
             idx = self.idx(extruder_id)
             extruded_length = self.extruders[extruder_id].untracked_extruded_length
             self.extruders[extruder_id].untracked_extruded_length = 0
-            density = 1.24 # TODO use density from xml
-            extruded_weight = extruded_length*self.filament_area*density/1000000. # convert from mm^2 to m^2
-            self.material['loaded'][idx]['amount'] -= extruded_weight
-            self.material['loaded'][idx]['all_time_extruded_length'] += extruded_length
+            guid = self.material['loaded'][idx]['guid']
+            if guid:
+                density = float(self.get_info(guid, './m:properties/m:density', '1.24'))
+                diameter = float(self.get_info(guid, './m:properties/m:diameter', '1.75'))
+                area = pi * (diameter/2.)**2
+                extruded_weight = extruded_length*area*density/1000000. # convert from mm^2 to m^2
+                self.material['loaded'][idx]['amount'] -= extruded_weight
+                self.material['loaded'][idx]['all_time_extruded_length'] += extruded_length
 
 
 def load_config(config):

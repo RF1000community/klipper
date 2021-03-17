@@ -202,7 +202,7 @@ class GCodeMove:
         toolhead = self.printer.lookup_object('toolhead', None)
         if toolhead is None:
             raise gcmd.error("Printer not ready")
-        kin_status = toolhead.get_kinematics().get_status(self.reactor.monotonic())
+        kin_status = toolhead.get_kinematics().get_status(self.printer.reactor.monotonic())
         if gcmd.get_int('MOVE', 0) \
         and toolhead.special_queuing_state != "Drip" \
         and 'z' in kin_status['homed_axes']:
