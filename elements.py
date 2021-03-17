@@ -1,4 +1,3 @@
-# coding: utf-8
 import shutil
 from os.path import join, basename
 from os import remove

@@ -1,4 +1,3 @@
-# coding: utf-8
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.properties import ListProperty, NumericProperty, StringProperty, BooleanProperty

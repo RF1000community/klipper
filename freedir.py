@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-# coding: utf-8
-
 """
 freedir() for removing files until enough space is available on the
 disk.

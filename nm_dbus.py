@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 Needs python-gobject (sometimes called python-gi)
 and python-pydbus
