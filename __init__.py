@@ -623,8 +623,9 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.reactor.register_async_callback(lambda e: self.printer.request_exit("exit"), 0)
     def register_ui_event_handler(self, event_name, event_handler):
         """using lambdaception to register klippy event handlers to run in the UI thread"""
-        self.printer.register_event_handler(
-            event_name, lambda *args, **kwargs: Clock.schedule_once(lambda dt: event_handler(*args, **kwargs), 0))
+        if self.printer:
+            self.printer.register_event_handler(
+                event_name, lambda *args, **kwargs: Clock.schedule_once(lambda dt: event_handler(*args, **kwargs), 0))
 
 # Catch KGUI exceptions and display popups
 class PopupExceptionHandler(ExceptionHandler):

@@ -1,7 +1,5 @@
 # coding: utf-8
 import shutil
-import logging
-from datetime import timedelta
 from os.path import join, basename
 from os import remove
 from time import time
@@ -149,13 +147,17 @@ class PrintPopup(BasePopup):
         if time is not None:
             self.add_detail("Print Time:", self.app.format_time(time))
 
-        slicer = md.get_slicer()
-        if slicer is not None:
-            self.add_detail("Sliced by:", slicer)
+        material_type = md.get_material_type()
+        if material_type:
+            self.add_detail("Material:", material_type)
 
         n_extruders = md.get_extruder_count()
         if n_extruders is not None:
             self.add_detail("Extruder Count:", str(n_extruders))
+
+        slicer = md.get_slicer()
+        if slicer is not None:
+            self.add_detail("Sliced by:", slicer)
 
         size = md.get_file_size()
         if size is not None:

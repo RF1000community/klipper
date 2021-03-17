@@ -384,7 +384,7 @@
             id: detailsbox
             pos_hint: {'center_x': 0.5}
             top: thumbnail.y - p.padding
-            size_hint: 0.65, None
+            size_hint: 0.7, None
             height: self.minimum_height
             orientation: 'vertical'
         BtnPCancel:
@@ -424,10 +424,11 @@
         text_size: self.size
         halign: 'left'
         valign: 'top'
+        padding: root.padding
 
         text: root.key
         color: p.medium_light_gray
-        font_size: p.normal_font
+        font_size: root.font_size
 
 <DeletePopup>:
     title: 'Delete'

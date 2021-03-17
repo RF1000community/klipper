@@ -56,6 +56,7 @@ class ConsoleScreen(Screen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         app = App.get_running_app()
+        self.fd = None
         # should hopefully be thread safe
         if app.printer:
             self.fd = app.printer.get_start_args().get("gcode_fd")
