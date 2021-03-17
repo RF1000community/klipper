@@ -199,7 +199,13 @@ class GCodeMove:
             self.base_position[pos] += delta
             self.homing_position[pos] = offset
         # Move the toolhead the given offset if requested
-        if gcmd.get_int('MOVE', 0):
+        toolhead = self.printer.lookup_object('toolhead', None)
+        if toolhead is None:
+            raise gcmd.error("Printer not ready")
+        kin_status = toolhead.get_kinematics().get_status(self.reactor.monotonic())
+        if gcmd.get_int('MOVE', 0) \
+        and toolhead.special_queuing_state != "Drip" \
+        and 'z' in kin_status['homed_axes']:
             speed = gcmd.get_float('MOVE_SPEED', self.speed, above=0.)
             for pos, delta in enumerate(move_delta):
                 self.last_position[pos] += delta
