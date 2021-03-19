@@ -137,11 +137,12 @@ class Printer:
                     if default is not configfile.sentinel:
                         return default
                     return -1
-                init_func(object_config)
+                object_config.reactor._setup_async_callbacks()
+                object_config.reactor.root = init_func(object_config)
 
             object_config = config.getsection(section)
-            object_config.reactor = reactor.Reactor(False, process=section)
-            object_config.reactor.register_mp_queues({'main': self.reactor._mp_queue})
+            object_config.reactor = reactor.Reactor(None, False, process=module_name)
+            object_config.reactor.register_mp_queues(queues={'main': self.reactor._mp_queue})
             self.reactor.register_mp_queues({section: object_config.reactor._mp_queue})
             self.parallel_objects[section] = mp.Process(
                 target=start_process, args=(module_name, init_func, object_config, default))
@@ -352,8 +353,9 @@ def main():
             bglogger.clear_rollover_info()
             bglogger.set_rollover_info('versions', versions)
         gc.collect()
-        main_reactor = reactor.Reactor(gc_checking=True)
+        main_reactor = reactor.Reactor(None, gc_checking=True)
         printer = Printer(main_reactor, bglogger, start_args)
+        main_reactor.root = printer
         res = printer.run()
         if res in ['exit', 'error_exit', 'terminated']:
             break

@@ -25,7 +25,7 @@ class ReactorCompletion:
         self.waiting = []
     def test(self):
         return self.result is not self.sentinel
-    def complete(self, result):
+    def complete(self, result, *args, **kwargs):
         self.result = result
         for wait in self.waiting:
             self.reactor.update_timer(wait.timer, self.reactor.NOW)
@@ -40,14 +40,16 @@ class ReactorCompletion:
         return self.result
 
 class ReactorCallback:
-    def __init__(self, reactor, callback, waketime):
+    def __init__(self, reactor, callback, waketime, *args, **kwargs):
         self.reactor = reactor
         self.timer = reactor.register_timer(self.invoke, waketime)
         self.callback = callback
+        self.args = args
+        self.kwargs = kwargs
         self.completion = ReactorCompletion(reactor)
     def invoke(self, eventtime):
         self.reactor.unregister_timer(self.timer)
-        res = self.callback(eventtime)
+        res = self.callback(eventtime, *self.args, **self.kwargs)
         self.completion.complete(res)
         return self.reactor.NEVER
 
@@ -95,10 +97,10 @@ class ReactorMutex:
 class SelectReactor:
     NOW = _NOW
     NEVER = _NEVER
-    def __init__(self, gc_checking=False, process='main'):
+    def __init__(self, root, gc_checking=False, process='main'):
         # Main code
         self.event_handlers = {}
-
+        self.root = root
         self._process = False
         self.monotonic = chelper.get_ffi()[1].get_monotonic
         self.process_name = process
@@ -120,6 +122,7 @@ class SelectReactor:
         self._greenlets = []
         self._all_greenlets = []
     def register_mp_queues(self, eventtime=None, queues={}):
+        logging.info(f"registering some mp queues, im {self.process_name}, registering {queues}")
         self._mp_queues.update(queues)
     def broadcast_mp_queues(self):
         for process in self._mp_queues.keys():
@@ -180,22 +183,24 @@ class SelectReactor:
         return rcb.completion
     # Asynchronous (from another thread) callbacks and completions
     def register_async_callback(self, callback, waketime=NOW, process='main', *args, **kwargs):
+        logging.info(f"register callbaack, im {self.process_name}, to {process}")
+        args = (callback, waketime) + args
         if self.process_name == process:
             self._async_queue.put_nowait(
-                (ReactorCallback, (self, callback, waketime, args, kwargs)))
+                (ReactorCallback, args, kwargs))
             try:
                 os.write(self._pipe_fds[1], b'.')
             except os.error:
                 pass
         else:
             self._mp_queues[process].put_nowait(
-                (ReactorCallback, (self, callback, waketime, args, kwargs)))
+                (ReactorCallback, args, kwargs))
             try:
                 os.write(self._pipe_fds[1], b'-')
             except os.error:
                 pass
     def async_complete(self, completion, result):
-        self._async_queue.put_nowait((completion.complete, (result,)))
+        self._async_queue.put_nowait((completion.complete, (result,), {}))
         try:
             os.write(self._pipe_fds[1], b'.')
         except os.error:
@@ -205,26 +210,28 @@ class SelectReactor:
             signal = os.read(self._pipe_fds[0], 4096)
         except os.error:
             pass
+        logging.info(f"got pipe signal {signal}")
         if signal == b'-':
             tries = 0
             handlers = 0
             while 1:
                 try:
-                    func, args = self._mp_queue.get_nowait()
+                    func, args, kwargs = self._mp_queue.get_nowait()
                 except queue.Empty:
                     tries += 1
                     if handlers > 0 or tries > 1000: break
                     sleep(0.001)
                     continue
-                func(*args)
+                logging.info(f"running mp handler nr.{handlers} after {tries} tries with args {args} and kwargs {kwargs}")
+                func(*args, **kwargs, root=self.root, reactor=self)
                 handlers += 1
         else:
             while 1:
                 try:
-                    func, args = self._async_queue.get_nowait()
+                    func, args, kwargs = self._async_queue.get_nowait()
                 except queue.Empty:
                     break
-                func(*args)
+                func(*args, **kwargs, root=self.root, reactor=self)
 
     def _setup_async_callbacks(self):
         self._pipe_fds = os.pipe()
@@ -324,8 +331,8 @@ class SelectReactor:
         return [cb(*params) for cb in self.event_handlers.get(event, [])]
 
 class PollReactor(SelectReactor):
-    def __init__(self, gc_checking=False, process='main'):
-        SelectReactor.__init__(self, gc_checking, process)
+    def __init__(self, root, gc_checking=False, process='main'):
+        SelectReactor.__init__(self, root, gc_checking, process)
         self._poll = select.poll()
         self._fds = {}
     # File descriptors
@@ -361,8 +368,8 @@ class PollReactor(SelectReactor):
         self._g_dispatch = None
 
 class EPollReactor(SelectReactor):
-    def __init__(self, gc_checking=False, process='main'):
-        SelectReactor.__init__(self, gc_checking, process)
+    def __init__(self, root, gc_checking=False, process='main'):
+        SelectReactor.__init__(self, root, gc_checking, process)
         self._epoll = select.epoll()
         self._fds = {}
     # File descriptors
