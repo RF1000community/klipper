@@ -21,4 +21,4 @@ register event handler
 
 propagate event to all processes
 
-does pipe work?
+does pipe work? No

@@ -603,13 +603,17 @@ class mainApp(App): #Handles Communication with Klipper
         Popen(['sudo','systemctl', 'reboot'])
     def restart(self):
         """Quit and restart klipper and GUI"""
-        self.reactor.register_async_callback(lambda e: self.printer.request_exit('restart'), 0)
+        self.reactor.register_async_callback(lambda e, root: root.request_exit('restart'), 0)
     def firmware_restart(self):
         """Quit and restart klipper and GUI"""
-        self.reactor.register_async_callback(lambda e: self.printer.request_exit('firmware_restart'), 0)
+        self.reactor.register_async_callback(do_firmware_restart)
+
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
-        self.reactor.register_async_callback(lambda e: self.printer.request_exit("exit"), 0)
+        self.reactor.register_async_callback(lambda e, root: root.request_exit("exit"), 0)
+
+def do_firmware_restart(waketime, root, reactor):
+    root.request_exit('firmware_restart')
 
 # Catch KGUI exceptions and display popups
 class PopupExceptionHandler(ExceptionHandler):
@@ -648,4 +652,5 @@ for fname in kv_files:
 def load_config(config):
     kgui_object = mainApp(config)
     logging.info("Kivy app.run")
-    kgui_object.run()
+    Clock.schedule_once(kgui_object.run())
+    return kgui_object
