@@ -171,8 +171,8 @@ class BtnTriple(Widget):
     def __init__(self, **kwargs):
         self.app = App.get_running_app()
         try:
-            self.app.register_ui_event_handler("filament_manager:material_changed", self.update_material)
-            self.app.register_ui_event_handler("klippy:ready", self.update_material)
+            self.app.reactor.register_event_handler("filament_manager:material_changed", self.update_material)
+            self.app.reactor.register_event_handler("klippy:ready", self.update_material)
         except AttributeError:
             pass
         self.app.bind(print_state=self.update_material)

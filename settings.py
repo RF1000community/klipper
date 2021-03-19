@@ -78,7 +78,7 @@ class ConsoleScreen(Screen):
         self.ids.console_scroll.scroll_y = 0
         while 1:
             try:
-                data = os.read(self.fd, 4096)
+                data = os.read(self.fd, 4096, os.O_NONBLOCK)
             except BlockingIOError:
                 data = "..."
                 break
@@ -91,7 +91,7 @@ class ConsoleScreen(Screen):
     def confirm(self, *args):
         cmd = self.ids.console_input.text + "\n"
         try:
-            os.write(self.fd, cmd.encode())
+            os.write(self.fd, cmd.encode(), os.O_NONBLOCK)
         except os.error:
             logging.exception("couldnt write command")
 

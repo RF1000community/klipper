@@ -25,8 +25,10 @@ class Timeline(RecycleView):
             jobs=self.load_all,
             state= lambda *_ : self.load_all(clear_selection=False),
             print_state=lambda *_ : self.load_all(clear_selection=False))
-        self.app.register_ui_event_handler("print_history:change", self.load_all)
+        self.app.reactor.register_event_handler("print_history:change", self.load_all)
     def load_all(self, *args, clear_scroll_pos=False, clear_selection=True):
+        pass
+    """
         queue = [{'name': job.name, 'path': job.path, 'state': job.state, 'thumbnail': job.md.get_thumbnail_path()} 
             for job in reversed(self.app.jobs)]
 
@@ -62,7 +64,7 @@ class Timeline(RecycleView):
         if clear_selection and not self.keep_next_selection and 'tl_box' in self.ids:
             self.ids.tl_box.clear_selection()
         self.refresh_from_data()
-        self.keep_next_selection = False
+        self.keep_next_selection = False"""
 
     def move(self, offset):
         """Move the selected file up or down the queue. E.g. -1 will print it sooner"""

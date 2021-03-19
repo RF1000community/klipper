@@ -1,6 +1,5 @@
 import logging
 import site
-import threading
 import os
 import traceback
 from os.path import join, dirname
@@ -20,7 +19,6 @@ from kivy.config import Config
 from kivy.lang import Builder
 from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
         NumericProperty, ListProperty, StringProperty, ObjectProperty)
-logging.root = logging.getLogger("klippy") # Kivy can fuck right off and not overwrite the root logger
 from .elements import UltraKeyboard, CriticalErrorPopup, ErrorPopup
 from .freedir import freedir
 from .nm_dbus import NetworkManager
@@ -33,9 +31,7 @@ if not TESTING:
     site.addsitedir(dirname(dirname(p.kgui_dir)))
     from reactor import ReactorCompletion
 
-
-# inherit from threading.thread => inherits start() method to run() in new thread
-class mainApp(App, threading.Thread): #Handles Communication with Klipper
+class mainApp(App): #Handles Communication with Klipper
 
     # Property for controlling the state as shown in the statusbar.
     state = OptionProperty("startup", options=[
@@ -93,14 +89,14 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         self.bed_mesh = True # initialize as True so it shows up on load, maybe dissapears after handle_connect
         self.sdcard = None
         self.print_stats = None
+        self.gcode_metadata = None
+        
         if not TESTING:
             self.kgui_config = config
             self.printer = config.get_printer()
-            self.reactor = self.printer.get_reactor()
+            self.reactor = config.get_reactor()
             self.klipper_config_manager = self.printer.objects['configfile']
             self.klipper_config = self.klipper_config_manager.read_main_config()
-            self.print_history = self.printer.load_object(config, 'print_history') # beware this is not the 'right' config
-            self.gcode_metadata = self.printer.load_object(config, 'gcode_metadata')
             # read config
             self.z_speed = self.kgui_config.getfloat('manual_z_speed', 3)
             self.ext_speed = self.kgui_config.getfloat('manual_extrusion_speed', 2)
@@ -119,17 +115,17 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
                 try: klipper_config.getsection(f"extruder{i}")
                 except: self.extruder_count = i; break
             # register event handlers
-            self.printer.register_event_handler("klippy:connect", self.handle_connect) # printer_objects are available
-            self.register_ui_event_handler("klippy:ready", self.handle_ready) # connect handlers have run
-            self.register_ui_event_handler("klippy:disconnect", self.handle_disconnect)
-            self.register_ui_event_handler("klippy:shutdown", self.handle_shutdown)
-            self.register_ui_event_handler("klippy:critical_error", self.handle_critical_error)
-            self.register_ui_event_handler("klippy:error", self.handle_error)
-            self.register_ui_event_handler("homing:home_rails_end", self.handle_home_end)
-            self.register_ui_event_handler("virtual_sdcard:printjob_start", self.handle_printjob_start)
-            self.register_ui_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
-            self.register_ui_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
-            self.register_ui_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
+            self.reactor.register_event_handler("klippy:connect", self.handle_connect) # printer_objects are available
+            self.reactor.register_event_handler("klippy:ready", self.handle_ready) # connect handlers have run
+            self.reactor.register_event_handler("klippy:disconnect", self.handle_disconnect)
+            self.reactor.register_event_handler("klippy:shutdown", self.handle_shutdown)
+            self.reactor.register_event_handler("klippy:critical_error", self.handle_critical_error)
+            self.reactor.register_event_handler("klippy:error", self.handle_error)
+            self.reactor.register_event_handler("homing:home_rails_end", self.handle_home_end)
+            self.reactor.register_event_handler("virtual_sdcard:printjob_start", self.handle_printjob_start)
+            self.reactor.register_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
+            self.reactor.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
+            self.reactor.register_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
             self.clean()
         else:
             site.addsitedir(dirname(p.kgui_dir))
@@ -171,17 +167,16 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
         for i in range(self.extruder_count):
             self.heaters[f"T{i}"] = self.heater_manager.heaters[f"extruder{'' if i==0 else i}"]
             self.extruders.append(self.printer.lookup_object(f"extruder{'' if i==0 else i}"))
-        Clock.schedule_once(self.ui_handle_connect, 0)
+
+        self.connected = True
+        self.root.ids.tabs.bind(current_tab=self.control_updating)
+        self.root.ids.tabs.ids.home_tab.ids.hs_manager.bind(current=self.control_updating)
+        self.control_updating()
 
 # KLIPPY THREAD ^
 ########################################################################################
 # KGUI   THREAD v
 
-    def ui_handle_connect(self, dt):
-        self.connected = True
-        self.root.ids.tabs.bind(current_tab=self.control_updating)
-        self.root.ids.tabs.ids.home_tab.ids.hs_manager.bind(current=self.control_updating)
-        self.control_updating()
 
     def handle_ready(self):
         self.state = "ready"
@@ -244,10 +239,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
             self.progress = 0
             self.print_state = "no printjob"
             self.reset_tuning() # tuning values are only reset once print_queue has run out
-
-    def run(self):
-        logging.info("Kivy app.run")
-        super().run()
 
     def on_start(self, *args):
         if self.network_manager.available:
@@ -619,11 +610,6 @@ class mainApp(App, threading.Thread): #Handles Communication with Klipper
     def quit(self):
         """Stop klipper and GUI, returns to tty"""
         self.reactor.register_async_callback(lambda e: self.printer.request_exit("exit"), 0)
-    def register_ui_event_handler(self, event_name, event_handler):
-        """using lambdaception to register klippy event handlers to run in the UI thread"""
-        if self.printer:
-            self.printer.register_event_handler(
-                event_name, lambda *args, **kwargs: Clock.schedule_once(lambda dt: event_handler(*args, **kwargs), 0))
 
 # Catch KGUI exceptions and display popups
 class PopupExceptionHandler(ExceptionHandler):
@@ -661,5 +647,5 @@ for fname in kv_files:
 # Entry point, order of execution: __init__()  run()  main.kv  on_start()  handle_connect()  handle_ready()
 def load_config(config):
     kgui_object = mainApp(config)
-    kgui_object.start()
-    return kgui_object
+    logging.info("Kivy app.run")
+    kgui_object.run()
