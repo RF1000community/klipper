@@ -6,6 +6,8 @@
 import os, gc, select, math, time, logging, queue
 import greenlet
 import chelper, util
+import multiprocessing as mp
+from time import sleep
 
 _NOW = 0.
 _NEVER = 9999999999999999.
@@ -93,10 +95,13 @@ class ReactorMutex:
 class SelectReactor:
     NOW = _NOW
     NEVER = _NEVER
-    def __init__(self, gc_checking=False):
+    def __init__(self, gc_checking=False, process='main'):
         # Main code
+        self.event_handlers = {}
+
         self._process = False
         self.monotonic = chelper.get_ffi()[1].get_monotonic
+        self.process_name = process
         # Python garbage collection
         self._check_gc = gc_checking
         self._last_gc_times = [0., 0., 0.]
@@ -106,12 +111,19 @@ class SelectReactor:
         # Callbacks
         self._pipe_fds = None
         self._async_queue = queue.Queue()
+        self._mp_queue = mp.Queue()
+        self._mp_queues = {}
         # File descriptors
         self._fds = []
         # Greenlets
         self._g_dispatch = None
         self._greenlets = []
         self._all_greenlets = []
+    def register_mp_queues(self, eventtime=None, queues={}):
+        self._mp_queues.update(queues)
+    def broadcast_mp_queues(self):
+        for process in self._mp_queues.keys():
+            self.register_async_callback(self.register_mp_queues, waketime=None, queues=self._mp_queues, process=process)
     def get_gc_stats(self):
         return tuple(self._last_gc_times)
     # Timers
@@ -167,13 +179,21 @@ class SelectReactor:
         rcb = ReactorCallback(self, callback, waketime)
         return rcb.completion
     # Asynchronous (from another thread) callbacks and completions
-    def register_async_callback(self, callback, waketime=NOW):
-        self._async_queue.put_nowait(
-            (ReactorCallback, (self, callback, waketime)))
-        try:
-            os.write(self._pipe_fds[1], b'.')
-        except os.error:
-            pass
+    def register_async_callback(self, callback, waketime=NOW, process='main', *args, **kwargs):
+        if self.process_name == process:
+            self._async_queue.put_nowait(
+                (ReactorCallback, (self, callback, waketime, args, kwargs)))
+            try:
+                os.write(self._pipe_fds[1], b'.')
+            except os.error:
+                pass
+        else:
+            self._mp_queues[process].put_nowait(
+                (ReactorCallback, (self, callback, waketime, args, kwargs)))
+            try:
+                os.write(self._pipe_fds[1], b'-')
+            except os.error:
+                pass
     def async_complete(self, completion, result):
         self._async_queue.put_nowait((completion.complete, (result,)))
         try:
@@ -182,15 +202,30 @@ class SelectReactor:
             pass
     def _got_pipe_signal(self, eventtime):
         try:
-            os.read(self._pipe_fds[0], 4096)
+            signal = os.read(self._pipe_fds[0], 4096)
         except os.error:
             pass
-        while 1:
-            try:
-                func, args = self._async_queue.get_nowait()
-            except queue.Empty:
-                break
-            func(*args)
+        if signal == b'-':
+            tries = 0
+            handlers = 0
+            while 1:
+                try:
+                    func, args = self._mp_queue.get_nowait()
+                except queue.Empty:
+                    tries += 1
+                    if handlers > 0 or tries > 1000: break
+                    sleep(0.001)
+                    continue
+                func(*args)
+                handlers += 1
+        else:
+            while 1:
+                try:
+                    func, args = self._async_queue.get_nowait()
+                except queue.Empty:
+                    break
+                func(*args)
+
     def _setup_async_callbacks(self):
         self._pipe_fds = os.pipe()
         util.set_nonblock(self._pipe_fds[0])
@@ -283,9 +318,14 @@ class SelectReactor:
             os.close(self._pipe_fds[1])
             self._pipe_fds = None
 
+    def register_event_handler(self, event, callback):
+        self.event_handlers.setdefault(event, []).append(callback)
+    def send_event(self, event, *params):
+        return [cb(*params) for cb in self.event_handlers.get(event, [])]
+
 class PollReactor(SelectReactor):
-    def __init__(self, gc_checking=False):
-        SelectReactor.__init__(self, gc_checking)
+    def __init__(self, gc_checking=False, process='main'):
+        SelectReactor.__init__(self, gc_checking, process)
         self._poll = select.poll()
         self._fds = {}
     # File descriptors
@@ -321,8 +361,8 @@ class PollReactor(SelectReactor):
         self._g_dispatch = None
 
 class EPollReactor(SelectReactor):
-    def __init__(self, gc_checking=False):
-        SelectReactor.__init__(self, gc_checking)
+    def __init__(self, gc_checking=False, process='main'):
+        SelectReactor.__init__(self, gc_checking, process)
         self._epoll = select.epoll()
         self._fds = {}
     # File descriptors

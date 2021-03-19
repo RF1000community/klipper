@@ -17,10 +17,13 @@ class ConfigWrapper:
         self.fileconfig = fileconfig
         self.access_tracking = access_tracking
         self.section = section
+        self.reactor = printer.reactor
     def get_printer(self):
         return self.printer
     def get_name(self):
         return self.section
+    def get_reactor(self):
+        return self.reactor
     def _get_wrapper(self, parser, option, default, minval=None, maxval=None,
                      above=None, below=None, note_valid=True):
         if not self.fileconfig.has_option(self.section, option):

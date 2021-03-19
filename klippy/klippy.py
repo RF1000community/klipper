@@ -9,6 +9,7 @@ import util, reactor, queuelogger, msgproto
 import gcode, configfile, pins, mcu, toolhead, webhooks
 import signal, traceback
 from subprocess import Popen
+import multiprocessing as mp
 
 message_ready = "Printer is ready"
 
@@ -59,8 +60,8 @@ class Printer:
         self.state_message = message_startup
         self.in_shutdown_state = False
         self.run_result = None
-        self.event_handlers = {}
         self.objects = collections.OrderedDict()
+        self.parallel_objects = {}
         # Init printer components that must be setup prior to config
         for m in [gcode, webhooks]:
             m.add_early_printer_objects(self)
@@ -111,25 +112,46 @@ class Printer:
             return self.objects[section]
         module_parts = section.split()
         module_name = module_parts[0]
-        py_name = os.path.join(os.path.dirname(__file__),
-                               'extras', module_name + '.py')
-        py_dirname = os.path.join(os.path.dirname(__file__),
-                                  'extras', module_name, '__init__.py')
-        if not os.path.exists(py_name) and not os.path.exists(py_dirname):
+        init_func = 'load_config_prefix' if len(module_parts) > 1 else 'load_config' 
+
+        py_name             = os.path.join(os.path.dirname(__file__), 'extras', module_name + '.py')
+        py_dirname          = os.path.join(os.path.dirname(__file__), 'extras', module_name, '__init__.py')
+        py_name_parallel    = os.path.join(os.path.dirname(__file__), 'parallel_extras', module_name + '.py')
+        py_dirname_parallel = os.path.join(os.path.dirname(__file__), 'parallel_extras', module_name, '__init__.py')
+        
+        if os.path.exists(py_name) or os.path.exists(py_dirname):
+            mod = importlib.import_module('extras.' + module_name)
+            init_func = getattr(mod, init_func, None)
+            if init_func is None:
+                if default is not configfile.sentinel:
+                    return default
+                raise self.config_error("Unable to load module '%s'" % (section,))
+            self.objects[section] = init_func(config.getsection(section))
+            return self.objects[section]
+    
+        elif os.path.exists(py_name_parallel) or os.path.exists(py_dirname_parallel):
+            def start_process(module_name, init_func, object_config, default):
+                mod = importlib.import_module('parallel_extras.' + module_name)
+                init_func = getattr(mod, init_func, None)
+                if init_func is None:
+                    if default is not configfile.sentinel:
+                        return default
+                    return -1
+                init_func(object_config)
+
+            object_config = config.getsection(section)
+            object_config.reactor = reactor.Reactor(False, process=section)
+            object_config.reactor.register_mp_queues({'main': self.reactor._mp_queue})
+            self.reactor.register_mp_queues({section: object_config.reactor._mp_queue})
+            self.parallel_objects[section] = mp.Process(
+                target=start_process, args=(module_name, init_func, object_config, default))
+            self.parallel_objects[section].start()
+
+        else:
             if default is not configfile.sentinel:
                 return default
             raise self.config_error("Unable to load module '%s'" % (section,))
-        mod = importlib.import_module('extras.' + module_name)
-        init_func = 'load_config'
-        if len(module_parts) > 1:
-            init_func = 'load_config_prefix'
-        init_func = getattr(mod, init_func, None)
-        if init_func is None:
-            if default is not configfile.sentinel:
-                return default
-            raise self.config_error("Unable to load module '%s'" % (section,))
-        self.objects[section] = init_func(config.getsection(section))
-        return self.objects[section]
+
     def _read_config(self):
         self.objects['configfile'] = pconfig = configfile.PrinterConfig(self)
         config = pconfig.read_main_config()
@@ -142,13 +164,14 @@ class Printer:
             self.load_object(config, section_config.get_name(), None)
         for m in [toolhead]:
             m.add_printer_objects(config)
+        #self.reactor.broadcast_mp_queues()
         # Validate that there are no undefined parameters in the config file
-        pconfig.check_unused_options(config)
+        # pconfig.check_unused_options(config)
     def _connect(self, eventtime):
         try:
             self._read_config()
             self.send_event("klippy:mcu_identify")
-            for cb in self.event_handlers.get("klippy:connect", []):
+            for cb in self.reactor.event_handlers.get("klippy:connect", []):
                 if self.state_message is not message_startup:
                     return
                 cb()
@@ -177,7 +200,7 @@ class Printer:
             return
         try:
             self._set_state(message_ready)
-            for cb in self.event_handlers.get("klippy:ready", []):
+            for cb in self.reactor.event_handlers.get("klippy:ready", []):
                 if self.state_message is not message_ready:
                     return
                 cb()
@@ -227,7 +250,7 @@ class Printer:
         self.in_shutdown_state = True
         self._set_state("%s%s" % (msg, message_shutdown))
         self.send_event("klippy:critical_error", msg)
-        for cb in self.event_handlers.get("klippy:shutdown", []):
+        for cb in self.reactor.event_handlers.get("klippy:shutdown", []):
             try:
                 cb()
             except:
@@ -237,10 +260,11 @@ class Printer:
     def invoke_async_shutdown(self, msg):
         self.reactor.register_async_callback(
             (lambda e: self.invoke_shutdown(msg)))
+
     def register_event_handler(self, event, callback):
-        self.event_handlers.setdefault(event, []).append(callback)
+        self.reactor.register_event_handler(event, callback)
     def send_event(self, event, *params):
-        return [cb(*params) for cb in self.event_handlers.get(event, [])]
+        self.reactor.send_event(event, *params)
     def request_exit(self, result):
         if self.run_result is None:
             self.run_result = result
@@ -248,7 +272,7 @@ class Printer:
     def _terminate(self, signalnum, frame):
         """Called on SIGTERM"""
         logging.info("Received SIGTERM, shutting down...")
-        self.request_exit("Terminated")
+        self.request_exit("terminated")
 
 
 ######################################################################
@@ -323,17 +347,29 @@ def main():
     gc.disable()
 
     # Start Printer() class
-    if bglogger is not None:
-        bglogger.clear_rollover_info()
-        bglogger.set_rollover_info('versions', versions)
-    gc.collect()
-    main_reactor = reactor.Reactor(gc_checking=True)
-    res = Printer(main_reactor, bglogger, start_args).run()
-
+    while 1:
+        if bglogger is not None:
+            bglogger.clear_rollover_info()
+            bglogger.set_rollover_info('versions', versions)
+        gc.collect()
+        main_reactor = reactor.Reactor(gc_checking=True)
+        printer = Printer(main_reactor, bglogger, start_args)
+        res = printer.run()
+        if res in ['exit', 'error_exit', 'terminated']:
+            break
+        time.sleep(1.)
+        main_reactor.finalize()
+        main_reactor = printer = None
+        logging.info("Restarting printer")
+        start_args['start_reason'] = res
+        for process in self.parallel_objects:
+            process.kill()
+            process.close()
     if bglogger is not None:
         bglogger.stop()
-    if res == "firmware_restart":
-        Popen(['sudo', 'systemctl', 'restart', 'klipper'])
+
+    if res == 'error_exit':
+        sys.exit(-1)
 
 
 if __name__ == '__main__':

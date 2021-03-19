@@ -1,5 +1,5 @@
 [submodule "klippy/extras/kgui"]
-	path = klippy/extras/kgui
+	path = klippy/parallel_extras/kgui
 	url = https://github.com/D4SK/kgui
 	branch = master
 [submodule "klippy/extras/klipper-cura-connection"]
