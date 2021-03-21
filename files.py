@@ -12,6 +12,7 @@ from kivy.uix.recycleview import RecycleView
 
 from .elements import PrintPopup
 from . import parameters as p
+from . import printer_cmd
 
 class Filechooser(RecycleView):
 

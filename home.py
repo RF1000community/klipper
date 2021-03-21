@@ -5,6 +5,7 @@ from kivy.uix.widget import Widget
 
 from .elements import BaseButton, BasePopup, UltraSlider
 from . import parameters as p
+from . import printer_cmd
 
 class XyField(Widget):
 
@@ -44,7 +45,7 @@ class XyField(Widget):
         if touch.grab_current is self:
             touch.ungrab(self)
             self.update_with_px(touch.pos)
-            self.app.send_pos(x=self.mm[0], y=self.mm[1], speed=40)
+            self.app.cb(printer_cmd.send_pos, x=self.mm[0], y=self.mm[1], speed=40)
             self.pressed = False
             return True
         return False
@@ -94,7 +95,7 @@ class TempSlider(UltraSlider):
 
     def init_drawing(self, dt=None):
         app = App.get_running_app()
-        app.get_temp()
+        app.cb(printer_cmd.get_temp)
         fm = app.filament_manager
 
         self.buttons = [[0, 0, "Off", None]] #[value, pos_offset, text, instance]

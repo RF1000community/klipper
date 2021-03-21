@@ -14,7 +14,7 @@ from kivy.uix.vkeyboard import VKeyboard
 from kivy.uix.widget import Widget
 
 from . import parameters as p
-
+from . import printer_cmd
 
 class Divider(Widget):
     pass
@@ -44,7 +44,7 @@ class BaseButton(Label):
         self.dispatch('on_press')
         touch.grab(self)
         touch.ud[self] = True
-        # Set pressed=True for at least 180ms to allow GPU to render
+        # Set pressed=True for at least 150ms to allow GPU to render
         # highlighting of the button. Choose lower for faster GPU.
         self.pressed_at_least_till = time() + 0.15
         return True
@@ -187,7 +187,7 @@ class PrintPopup(BasePopup):
             self.app.notify.show(f"Copying {basename(self.path)} to Printer...")
             shutil.copy(self.path, new_path)
 
-        self.app.send_print(new_path)
+        self.app.cb(printer_cmd.send_print, new_path)
         tabs = self.app.root.ids.tabs
         tabs.switch_to(tabs.ids.home_tab)
 

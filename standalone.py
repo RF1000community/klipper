@@ -5,4 +5,4 @@ site.addsitedir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 os.environ["KGUI_TESTING"] = "True"
 import kgui
 
-kgui.mainApp().run()
+kgui.mainApp(None).run()

@@ -16,6 +16,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.tabbedpanel import TabbedPanelItem
 
 from .elements import BaseButton, BasePopup
+from . import printer_cmd
 
 
 class SettingTab(TabbedPanelItem):
@@ -367,7 +368,7 @@ class HostnamePopup(BasePopup):
             logging.warning("hostnamectl: " + proc.stdout + " " + proc.stderr)            
         else:
             self.dismiss()
-            App.get_running_app().restart()
+            App.get_running_app().cb(printer_cmd.restart)
 
 # TextInput must be imported later, specifically in the kivy Thread,
 # not in the klippy Thread. This is to prevent a segmentation fault

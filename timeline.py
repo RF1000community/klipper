@@ -28,7 +28,7 @@ class Timeline(RecycleView):
         self.app.reactor.register_event_handler("print_history:change", self.load_all)
     def load_all(self, *args, clear_scroll_pos=False, clear_selection=True):
         pass
-    """
+    """ TODO
         queue = [{'name': job.name, 'path': job.path, 'state': job.state, 'thumbnail': job.md.get_thumbnail_path()} 
             for job in reversed(self.app.jobs)]
 
