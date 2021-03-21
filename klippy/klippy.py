@@ -114,12 +114,10 @@ class Printer:
         module_parts = section.split()
         module_name = module_parts[0]
         init_func = 'load_config_prefix' if len(module_parts) > 1 else 'load_config' 
-
         module           = join(dirname(__file__), 'extras', module_name + '.py')
         package          = join(dirname(__file__), 'extras', module_name, '__init__.py')
         parallel_module  = join(dirname(__file__), 'parallel_extras', module_name + '.py')
         parallel_package = join(dirname(__file__), 'parallel_extras', module_name, '__init__.py')
-
         if exists(module) or exists(package):
             mod = importlib.import_module('extras.' + module_name)
             init_func = getattr(mod, init_func, None)
@@ -129,9 +127,8 @@ class Printer:
                 raise self.config_error("Unable to load module '%s'" % (section,))
             self.objects[section] = init_func(config.getsection(section))
             return self.objects[section]
-    
         elif exists(parallel_module) or exists(parallel_package):
-            def start_process(module_name, init_func, object_config, default):
+            def start_process(module_name, section, init_func, object_config, default, printer_queue, printer_fd):
                 # avoid active imports changing environment - import in target process
                 mod = importlib.import_module('parallel_extras.' + module_name)
                 init_func = getattr(mod, init_func, None)
@@ -139,7 +136,17 @@ class Printer:
                     if default is not configfile.sentinel:
                         return default
                     return -1
+                object_config.reactor = reactor.Reactor(False, process=module_name)
+                object_config.reactor._setup_async_callbacks()
+                object_config.reactor.register_mp_queues(
+                    queues={'printer': printer_queue}, 
+                    pipes={'printer': printer_fd})
+                object_config.reactor.cb(register_own_mp_queues, 
+                    queues={section: object_config.reactor._mp_queue}, 
+                    pipes={section: object_config.reactor._pipe_fds[1]})
                 object_config.reactor.root = init_func(object_config)
+                object_config.reactor.run()
+
             # add module directory to path, so objects can be imported when unpickled
             # USE GLOBALLY UNIQUE MODULE NAMES RESPECTIVELY
             if exists(parallel_module):
@@ -147,16 +154,12 @@ class Printer:
             else:
                 site.addsitedir(dirname(parallel_package))
             object_config = config.getsection(section)
-            object_config.reactor = reactor.Reactor(False, process=module_name)
-            object_config.reactor._setup_async_callbacks()
-            object_config.reactor.register_mp_queues(
-                queues={'printer': self.reactor._mp_queue}, pipes={'printer': self.reactor._pipe_fds[1]})
-            self.reactor.register_mp_queues(
-                queues={section: object_config.reactor._mp_queue}, pipes={section: object_config.reactor._pipe_fds[1]})
             self.parallel_objects[section] = multiprocessing.Process(
-                target=start_process, args=(module_name, init_func, object_config, default))
+                target=start_process, 
+                args=(module_name, section, init_func, object_config, default, 
+                    self.reactor._mp_queue, self.reactor._pipe_fds[1]))
             self.parallel_objects[section].start()
-
+            return self.parallel_objects[section]
         else:
             if default is not configfile.sentinel:
                 return default
@@ -284,6 +287,8 @@ class Printer:
         logging.info("Received SIGTERM, shutting down...")
         self.request_exit("terminated")
 
+def register_own_mp_queues(e, printer, queues, pipes):
+    printer.reactor.register_mp_queues(queues, pipes)
 
 ######################################################################
 # Startup
@@ -374,7 +379,6 @@ def main():
         logging.info("Restarting printer")
         start_args['start_reason'] = res
         for process in self.parallel_objects:
-            process.kill()
             process.close()
     if bglogger is not None:
         bglogger.stop()

@@ -183,7 +183,7 @@ class SelectReactor:
         rcb = ReactorCallback(self, callback, waketime)
         return rcb.completion
     # Asynchronous (from another thread) callbacks and completions
-    def register_async_callback(self, callback, waketime=NOW, process='printer', *args, **kwargs):
+    def register_async_callback(self, callback, *args, waketime=NOW, process='printer', **kwargs):
         logging.info(f"register callbaack, im {self.process_name}, to {process}")
         args = (callback, waketime) + args
         if self.process_name == process:
@@ -225,8 +225,9 @@ class SelectReactor:
                     if handlers > 0 or tries > 1000: break
                     time.sleep(0.001)
                     continue
+                args = args[:2] + (self.root,) + args[2:]
                 logging.info(f"running mp handler nr.{handlers} after {tries} tries with args {args} and kwargs {kwargs}")
-                func(self, *args[:2], self.root, *args[2:], **kwargs)
+                func(self, *args, **kwargs)
                 handlers += 1
         else:
             while 1:
@@ -327,22 +328,21 @@ class SelectReactor:
             os.close(self._pipe_fds[0])
             os.close(self._pipe_fds[1])
             self._pipe_fds = None
-
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
         logging.info(f"send event {event}")
         for process in self._mp_queues.keys():
             logging.info(f"send event {event} to process {process}")
-            self.register_async_callback(send_event_to_process, event, *params, process=process)
-        return self.actually_send_event(event, *params)
-    def actually_send_event(self, event, *params):
-        logging.info(f"actually_send_event {event}")
+            self.register_async_callback(run_event_in_process, event, *params, process=process)
+        return self.run_event_handlers(event, *params)
+    def run_event_handlers(self, event, *params):
+        logging.info(f"run_event_handlers in {self.process_name} {event}")
         return [cb(*params) for cb in self.event_handlers.get(event, [])]
 
-def send_event_to_process(e, root, *args, **kwargs):
+def run_event_in_process(e, root, *args, **kwargs):
     logging.info(f"send event to process {root} with args {args}, kwargs {kwargs}")
-    root.reactor.actually_send_event(*args, **kwargs)
+    root.reactor.run_event_handlers(*args, **kwargs)
 
 class PollReactor(SelectReactor):
     def __init__(self, gc_checking=False, process='printer'):
