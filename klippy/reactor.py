@@ -6,8 +6,7 @@
 import os, gc, select, math, time, logging, queue
 import greenlet
 import chelper, util
-import multiprocessing as mp
-from time import sleep
+import multiprocessing
 
 _NOW = 0.
 _NEVER = 9999999999999999.
@@ -25,7 +24,7 @@ class ReactorCompletion:
         self.waiting = []
     def test(self):
         return self.result is not self.sentinel
-    def complete(self, result, *args, **kwargs):
+    def complete(self, reactor, result):
         self.result = result
         for wait in self.waiting:
             self.reactor.update_timer(wait.timer, self.reactor.NOW)
@@ -50,7 +49,7 @@ class ReactorCallback:
     def invoke(self, eventtime):
         self.reactor.unregister_timer(self.timer)
         res = self.callback(eventtime, *self.args, **self.kwargs)
-        self.completion.complete(res)
+        self.completion.complete(self.reactor, res)
         return self.reactor.NEVER
 
 class ReactorFileHandler:
@@ -97,10 +96,10 @@ class ReactorMutex:
 class SelectReactor:
     NOW = _NOW
     NEVER = _NEVER
-    def __init__(self, root, gc_checking=False, process='main'):
+    def __init__(self, gc_checking=False, process='printer'):
         # Main code
         self.event_handlers = {}
-        self.root = root
+        self.root = None
         self._process = False
         self.monotonic = chelper.get_ffi()[1].get_monotonic
         self.process_name = process
@@ -113,17 +112,19 @@ class SelectReactor:
         # Callbacks
         self._pipe_fds = None
         self._async_queue = queue.Queue()
-        self._mp_queue = mp.Queue()
+        self._mp_queue = multiprocessing.Queue()
         self._mp_queues = {}
+        self._mp_pipe_fds = {}
         # File descriptors
         self._fds = []
         # Greenlets
         self._g_dispatch = None
         self._greenlets = []
         self._all_greenlets = []
-    def register_mp_queues(self, eventtime=None, queues={}):
+    def register_mp_queues(self, eventtime=None, queues={}, pipes={}):
         logging.info(f"registering some mp queues, im {self.process_name}, registering {queues}")
         self._mp_queues.update(queues)
+        self._mp_pipe_fds.update(pipes)
     def broadcast_mp_queues(self):
         for process in self._mp_queues.keys():
             self.register_async_callback(self.register_mp_queues, waketime=None, queues=self._mp_queues, process=process)
@@ -182,7 +183,7 @@ class SelectReactor:
         rcb = ReactorCallback(self, callback, waketime)
         return rcb.completion
     # Asynchronous (from another thread) callbacks and completions
-    def register_async_callback(self, callback, waketime=NOW, process='main', *args, **kwargs):
+    def register_async_callback(self, callback, waketime=NOW, process='printer', *args, **kwargs):
         logging.info(f"register callbaack, im {self.process_name}, to {process}")
         args = (callback, waketime) + args
         if self.process_name == process:
@@ -196,9 +197,11 @@ class SelectReactor:
             self._mp_queues[process].put_nowait(
                 (ReactorCallback, args, kwargs))
             try:
-                os.write(self._pipe_fds[1], b'-')
+                os.write(self._mp_pipe_fds[process], b'-')
             except os.error:
                 pass
+    def cb(self, *args, **kwargs):
+        self.register_async_callback(*args, **kwargs)
     def async_complete(self, completion, result):
         self._async_queue.put_nowait((completion.complete, (result,), {}))
         try:
@@ -220,10 +223,10 @@ class SelectReactor:
                 except queue.Empty:
                     tries += 1
                     if handlers > 0 or tries > 1000: break
-                    sleep(0.001)
+                    time.sleep(0.001)
                     continue
                 logging.info(f"running mp handler nr.{handlers} after {tries} tries with args {args} and kwargs {kwargs}")
-                func(*args, **kwargs, root=self.root, reactor=self)
+                func(self, *args[:2], self.root, *args[2:], **kwargs)
                 handlers += 1
         else:
             while 1:
@@ -231,7 +234,7 @@ class SelectReactor:
                     func, args, kwargs = self._async_queue.get_nowait()
                 except queue.Empty:
                     break
-                func(*args, **kwargs, root=self.root, reactor=self)
+                func(self, *args, **kwargs)
 
     def _setup_async_callbacks(self):
         self._pipe_fds = os.pipe()
@@ -328,11 +331,22 @@ class SelectReactor:
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
+        logging.info(f"send event {event}")
+        for process in self._mp_queues.keys():
+            logging.info(f"send event {event} to process {process}")
+            self.register_async_callback(send_event_to_process, event, *params, process=process)
+        return self.actually_send_event(event, *params)
+    def actually_send_event(self, event, *params):
+        logging.info(f"actually_send_event {event}")
         return [cb(*params) for cb in self.event_handlers.get(event, [])]
 
+def send_event_to_process(e, root, *args, **kwargs):
+    logging.info(f"send event to process {root} with args {args}, kwargs {kwargs}")
+    root.reactor.actually_send_event(*args, **kwargs)
+
 class PollReactor(SelectReactor):
-    def __init__(self, root, gc_checking=False, process='main'):
-        SelectReactor.__init__(self, root, gc_checking, process)
+    def __init__(self, gc_checking=False, process='printer'):
+        SelectReactor.__init__(self, gc_checking, process)
         self._poll = select.poll()
         self._fds = {}
     # File descriptors
@@ -368,8 +382,8 @@ class PollReactor(SelectReactor):
         self._g_dispatch = None
 
 class EPollReactor(SelectReactor):
-    def __init__(self, root, gc_checking=False, process='main'):
-        SelectReactor.__init__(self, root, gc_checking, process)
+    def __init__(self, gc_checking=False, process='printer'):
+        SelectReactor.__init__(self, gc_checking, process)
         self._epoll = select.epoll()
         self._fds = {}
     # File descriptors

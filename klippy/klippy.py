@@ -8,8 +8,9 @@ import sys, os, gc, optparse, logging, time, collections, importlib
 import util, reactor, queuelogger, msgproto
 import gcode, configfile, pins, mcu, toolhead, webhooks
 import signal, traceback
+import multiprocessing, site
 from subprocess import Popen
-import multiprocessing as mp
+from os.path import join, exists, dirname
 
 message_ready = "Printer is ready"
 
@@ -114,12 +115,12 @@ class Printer:
         module_name = module_parts[0]
         init_func = 'load_config_prefix' if len(module_parts) > 1 else 'load_config' 
 
-        py_name             = os.path.join(os.path.dirname(__file__), 'extras', module_name + '.py')
-        py_dirname          = os.path.join(os.path.dirname(__file__), 'extras', module_name, '__init__.py')
-        py_name_parallel    = os.path.join(os.path.dirname(__file__), 'parallel_extras', module_name + '.py')
-        py_dirname_parallel = os.path.join(os.path.dirname(__file__), 'parallel_extras', module_name, '__init__.py')
-        
-        if os.path.exists(py_name) or os.path.exists(py_dirname):
+        module           = join(dirname(__file__), 'extras', module_name + '.py')
+        package          = join(dirname(__file__), 'extras', module_name, '__init__.py')
+        parallel_module  = join(dirname(__file__), 'parallel_extras', module_name + '.py')
+        parallel_package = join(dirname(__file__), 'parallel_extras', module_name, '__init__.py')
+
+        if exists(module) or exists(package):
             mod = importlib.import_module('extras.' + module_name)
             init_func = getattr(mod, init_func, None)
             if init_func is None:
@@ -129,22 +130,30 @@ class Printer:
             self.objects[section] = init_func(config.getsection(section))
             return self.objects[section]
     
-        elif os.path.exists(py_name_parallel) or os.path.exists(py_dirname_parallel):
+        elif exists(parallel_module) or exists(parallel_package):
             def start_process(module_name, init_func, object_config, default):
+                # avoid active imports changing environment - import in target process
                 mod = importlib.import_module('parallel_extras.' + module_name)
                 init_func = getattr(mod, init_func, None)
                 if init_func is None:
                     if default is not configfile.sentinel:
                         return default
                     return -1
-                object_config.reactor._setup_async_callbacks()
                 object_config.reactor.root = init_func(object_config)
-
+            # add module directory to path, so objects can be imported when unpickled
+            # USE GLOBALLY UNIQUE MODULE NAMES RESPECTIVELY
+            if exists(parallel_module):
+                site.addsitedir(dirname(parallel_module))
+            else:
+                site.addsitedir(dirname(parallel_package))
             object_config = config.getsection(section)
-            object_config.reactor = reactor.Reactor(None, False, process=module_name)
-            object_config.reactor.register_mp_queues(queues={'main': self.reactor._mp_queue})
-            self.reactor.register_mp_queues({section: object_config.reactor._mp_queue})
-            self.parallel_objects[section] = mp.Process(
+            object_config.reactor = reactor.Reactor(False, process=module_name)
+            object_config.reactor._setup_async_callbacks()
+            object_config.reactor.register_mp_queues(
+                queues={'printer': self.reactor._mp_queue}, pipes={'printer': self.reactor._pipe_fds[1]})
+            self.reactor.register_mp_queues(
+                queues={section: object_config.reactor._mp_queue}, pipes={section: object_config.reactor._pipe_fds[1]})
+            self.parallel_objects[section] = multiprocessing.Process(
                 target=start_process, args=(module_name, init_func, object_config, default))
             self.parallel_objects[section].start()
 
@@ -353,7 +362,7 @@ def main():
             bglogger.clear_rollover_info()
             bglogger.set_rollover_info('versions', versions)
         gc.collect()
-        main_reactor = reactor.Reactor(None, gc_checking=True)
+        main_reactor = reactor.Reactor(gc_checking=True)
         printer = Printer(main_reactor, bglogger, start_args)
         main_reactor.root = printer
         res = printer.run()
