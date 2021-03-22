@@ -187,7 +187,7 @@ class PrintPopup(BasePopup):
             self.app.notify.show(f"Copying {basename(self.path)} to Printer...")
             shutil.copy(self.path, new_path)
 
-        self.app.cb(printer_cmd.send_print, new_path)
+        self.app.reactor.cb(printer_cmd.send_print, new_path)
         tabs = self.app.root.ids.tabs
         tabs.switch_to(tabs.ids.home_tab)
 

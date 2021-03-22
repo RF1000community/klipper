@@ -3,6 +3,8 @@
 # They wander off to processes far away
 # They do what needs to be done
 
+import logging
+
 def set_attribute(e, root, property_name, val):
     setattr(root, property_name, val)
 
@@ -54,8 +56,8 @@ def send_fan(e, printer, speed):
     printer.objects['fan'].fan.set_speed_from_command(speed/100)
     get_fan(e, printer)
 
-def get_pressure_advance(e, printer):#gives pressure_advance value of 1. extruder for now
-    pressure_advance = printer.objects["extruder"].get_status(printer.reactor.monotonic())['pressure_advance']
+def get_pressure_advance(e, printer): # gives pressure_advance value of 1. extruder
+    pressure_advance = printer.objects["extruder"].get_status(e)['pressure_advance']
     printer.reactor.cb(set_attribute, 'pressure_advance', pressure_advance, process='kgui')
 def send_pressure_advance(e, printer, val):
     for i in range(10):
@@ -114,7 +116,7 @@ def get_temp(e, printer):
     if 'heaters' in printer.objects:
         temp = {}
         for heater in printer.objects['heaters'].heaters:
-            current, target = heater.get_temp(printer.reactor.monotonic())
+            current, target = heater.get_temp(e)
             temp[heater.name] = [target, current]
         printer.reactor.cb(set_attribute, 'temp', temp, process='kgui')
 def send_temp(e, printer, temp, extruder_id):
@@ -122,7 +124,7 @@ def send_temp(e, printer, temp, extruder_id):
     get_temp(e, printer)
 
 def get_homing_state(e, printer):
-    kin_status = printer.objects['toolhead'].kin.get_status(printer.reactor.monotonic())
+    kin_status = printer.objects['toolhead'].kin.get_status(e)
     homed = {bool(axis in kin_status['homed_axes']) for axis in "xyz"}
     printer.reactor.cb(set_attribute, 'homed', homed, process='kgui')
 def send_home(e, printer, axis):
@@ -131,7 +133,7 @@ def send_home(e, printer, axis):
 def send_motors_off(e, printer):
     printer.objects['gcode'].run_script_from_command("M18")
 
-def get_toolhead_busy(e, printer): # run in klippy thread
+def get_toolhead_busy(e, printer):
     print_time, est_print_time, lookahead_empty = printer.objects['toolhead'].check_busy(e)
     idle_time = est_print_time - print_time
     busy = bool(not lookahead_empty or idle_time <= 0)
@@ -141,16 +143,16 @@ def get_toolhead_busy(e, printer): # run in klippy thread
 def get_pos(e, printer):
     pos = printer.objects['toolhead'].get_position()
     printer.reactor.cb(set_attribute, 'pos', pos, process='kgui')
-def send_pos(e, printer, x=None, y=None, z=None, speed=15):  
+def send_pos(e, printer, x=None, y=None, z=None, speed=15):
     new_pos = [x,y,z,e]
-    homed_axes = printer.objects['toolhead'].get_status(printer.reactor.monotonic())['homed_axes']
+    homed_axes = printer.objects['toolhead'].get_status(e)['homed_axes']
     # check whether axes are still homed
     new_pos = [new if name in homed_axes else None for new, name in zip(new_pos, 'xyze')]
-    new_pos = _fill_coord(new_pos, printer)
+    new_pos = _fill_coord(printer, new_pos)
     printer.objects['toolhead'].move(new_pos, speed)
     get_pos(e, printer)
 
-def _fill_coord(new_pos, printer):
+def _fill_coord(printer, new_pos):
     """ Fill in any None entries in 'new_pos' with current toolhead position """
     pos = list(printer.objects['toolhead'].get_position())
     for i, new in enumerate(new_pos):
@@ -179,7 +181,7 @@ def send_resume(e, printer):
 def restart(e, printer):
     printer.request_exit('restart')
 
-def firmware_restart(e, printer):
+def firmware_restart(e, printer, posarg1, posarg2, kwarg1=77, **kwargs):
     printer.request_exit('firmware_restart')
 
 def quit(e, printer):

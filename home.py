@@ -45,7 +45,7 @@ class XyField(Widget):
         if touch.grab_current is self:
             touch.ungrab(self)
             self.update_with_px(touch.pos)
-            self.app.cb(printer_cmd.send_pos, x=self.mm[0], y=self.mm[1], speed=40)
+            self.app.reactor.cb(printer_cmd.send_pos, x=self.mm[0], y=self.mm[1], speed=40)
             self.pressed = False
             return True
         return False
@@ -95,7 +95,7 @@ class TempSlider(UltraSlider):
 
     def init_drawing(self, dt=None):
         app = App.get_running_app()
-        app.cb(printer_cmd.get_temp)
+        app.reactor.cb(printer_cmd.get_temp)
         fm = app.filament_manager
 
         self.buttons = [[0, 0, "Off", None]] #[value, pos_offset, text, instance]

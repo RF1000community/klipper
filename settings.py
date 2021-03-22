@@ -55,14 +55,13 @@ class SIWifi(SetItem):
 class ConsoleScreen(Screen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        app = App.get_running_app()
-        self.fd = None
-        # should hopefully be thread safe
-        if app.printer:
-            self.fd = app.printer.get_start_args().get("gcode_fd")
-        self.reactor = app.reactor
-        Clock.schedule_once(self.init_drawing, 0)
-        logging.info(f"GCOOOOOOODE FD IS {self.fd} with type {type(self.fd)}")
+        # app = App.get_running_app()
+        # self.fd = None
+        # if 0: #TODO
+        #     self.fd = app.printer.get_start_args().get("gcode_fd")
+        # self.reactor = app.reactor
+        # Clock.schedule_once(self.init_drawing, 0)
+        # logging.info(f"GCOOOOOOODE FD IS {self.fd} with type {type(self.fd)}")
 
     def init_drawing(self, *args):
         self.ids.console_input.bind(on_text_validate=self.confirm)
@@ -70,7 +69,7 @@ class ConsoleScreen(Screen):
     def on_pre_enter(self):
         self.ids.console_input.focus = True
         self.ids.console_scroll.scroll_y = 0
-        self.scheduled_polling = Clock.schedule_interval(self.poll, 1)
+        #self.scheduled_polling = Clock.schedule_interval(self.poll, 1)
 
     def on_leave(self):
         Clock.unschedule(self.scheduled_polling)
@@ -368,7 +367,7 @@ class HostnamePopup(BasePopup):
             logging.warning("hostnamectl: " + proc.stdout + " " + proc.stderr)            
         else:
             self.dismiss()
-            App.get_running_app().cb(printer_cmd.restart)
+            App.get_running_app().reactor.cb(printer_cmd.restart)
 
 # TextInput must be imported later, specifically in the kivy Thread,
 # not in the klippy Thread. This is to prevent a segmentation fault

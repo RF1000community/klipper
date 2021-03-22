@@ -52,7 +52,7 @@
             center_y: progress_bar.top + p.padding + p.btn_stop/2
             center_x: p.screen_width - p.btn_stop/2 - p.h_padding
         BtnPlay:
-            on_release: app.cb(printer_cmd.send_resume)
+            on_release: app.reactor.cb(printer_cmd.send_resume)
             size: btn_stop.size
             y: btn_stop.y
             right: btn_stop.x
@@ -165,7 +165,7 @@
             right: p.screen_width - p.h_padding
         BtnOutline:
             id: btn_calibrate
-            on_release: app.cb(printer_cmd.send_calibrate)
+            on_release: app.reactor.cb(printer_cmd.send_calibrate)
             enabled: app.state == "ready"
             text: "Mesh Bed Leveling"
             size: btn_tr_T0.size
@@ -199,7 +199,7 @@
             y: xy_field.y + p.btn_height
         RoundButton:
             id: btn_off
-            on_release: app.cb(printer_cmd.send_motors_off)
+            on_release: app.reactor.cb(printer_cmd.send_motors_off)
             enabled: app.state == "ready"
             size: p.btn_height, p.btn_height
             x: xy_field.right if app.xy_homing_controls else p.mars
@@ -395,8 +395,8 @@
         size: root.w1, root.height
         pos: root.pos
         enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.tool_id][0] > app.min_extrude_temp and app.temp[root.tool_id][1] > app.min_extrude_temp and not app.toolhead_busy
-        on_press: app.cb(printer_cmd.send_extrude, root.tool_id, -1)
-        on_release: if app.ext_move_completion: app.cb(printer_cmd.send_extrude_stop)
+        on_press: app.reactor.cb(printer_cmd.send_extrude, root.tool_id, -1)
+        on_release: if app.ext_move_completion: app.reactor.cb(printer_cmd.send_extrude_stop)
         canvas:
             Color:
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
@@ -425,8 +425,8 @@
         size: root.w3, root.height
         pos: root.x + root.w1+root.w2,root.y
         enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.tool_id][0] > app.min_extrude_temp and app.temp[root.tool_id][1] > app.min_extrude_temp and not app.toolhead_busy
-        on_press: app.cb(printer_cmd.send_extrude, root.tool_id)
-        on_release: if app.ext_move_completion: app.cb(printer_cmd.send_extrude_stop)
+        on_press: app.reactor.cb(printer_cmd.send_extrude, root.tool_id)
+        on_release: if app.ext_move_completion: app.reactor.cb(printer_cmd.send_extrude_stop)
         canvas:
             Color:
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
@@ -458,8 +458,8 @@
     #:set t 9.5
     #:set u 19 #Triangle has this size x2
     BaseButton:
-        on_press: app.cb(printer_cmd.send_z_go, up = app.invert_z_controls)
-        on_release:  if app.z_move_completion: app.cb(printer_cmd.send_z_stop)
+        on_press: app.reactor.cb(printer_cmd.send_z_go, up = app.invert_z_controls)
+        on_release:  if app.z_move_completion: app.reactor.cb(printer_cmd.send_z_stop)
         enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy
         size: root.width, root.h1
         pos: root.x, root.y
@@ -486,8 +486,8 @@
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: app.cb(printer_cmd.send_z_go, up = not app.invert_z_controls)
-        on_release: if app.z_move_completion: app.cb(printer_cmd.send_z_stop)
+        on_press: app.reactor.cb(printer_cmd.send_z_go, up = not app.invert_z_controls)
+        on_release: if app.z_move_completion: app.reactor.cb(printer_cmd.send_z_stop)
         enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
@@ -505,7 +505,7 @@
 
 <BtnHome@RoundButton>:
     axis_id: 'Z'
-    on_release: app.cb(printer_cmd.send_home, self.axis_id)
+    on_release: app.reactor.cb(printer_cmd.send_home, self.axis_id)
     enabled: app.state == "ready" and not app.toolhead_busy
     canvas:
         Color:
@@ -631,7 +631,7 @@
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.cb(printer_cmd.send_z_offset, slider.val), root.dismiss()
+            on_release: app.reactor.cb(printer_cmd.send_z_offset, slider.val), root.dismiss()
 
 <PressureAdvancePopup@BasePopup>:
     size_hint: 0.94, 0.4
@@ -655,7 +655,7 @@
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.cb(printer_cmd.send_pressure_advance, slider.val), root.dismiss()
+            on_release: app.reactor.cb(printer_cmd.send_pressure_advance, slider.val), root.dismiss()
 
 <AccPopup@BasePopup>:
     title: "Set Acceleration"
@@ -679,7 +679,7 @@
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.cb(printer_cmd.send_acceleration, slider.val), root.dismiss()
+            on_release: app.reactor.cb(printer_cmd.send_acceleration, slider.val), root.dismiss()
 
 <SpeedPopup@BasePopup>:
     size_hint: 0.94, 0.4
@@ -703,7 +703,7 @@
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.cb(printer_cmd.send_speed, slider.val), root.dismiss()
+            on_release: app.reactor.cb(printer_cmd.send_speed, slider.val), root.dismiss()
 
 <FlowPopup@BasePopup>:
     size_hint: 0.94, 0.4
@@ -728,7 +728,7 @@
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.cb(printer_cmd.send_flow, slider.val), root.dismiss()
+            on_release: app.reactor.cb(printer_cmd.send_flow, slider.val), root.dismiss()
 
 <FanPopup@BasePopup>:
     size_hint: 0.94, 0.4
@@ -752,7 +752,7 @@
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.cb(printer_cmd.send_fan, slider.val), root.dismiss()
+            on_release: app.reactor.cb(printer_cmd.send_fan, slider.val), root.dismiss()
 
 <BedTempPopup@BasePopup>:
     size_hint: 0.94, 0.4
@@ -772,7 +772,7 @@
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.cb(printer_cmd.send_temp, slider.val, 'heater_bed'); root.dismiss()
+            on_release: app.reactor.cb(printer_cmd.send_temp, slider.val, 'heater_bed'); root.dismiss()
 
 <ExtTempPopup@BasePopup>:
     size_hint: 0.94, 0.4
@@ -792,7 +792,7 @@
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.cb(printer_cmd.send_temp, slider.val, root.creator.extruder_id); root.dismiss()
+            on_release: app.reactor.cb(printer_cmd.send_temp, slider.val, root.creator.extruder_id); root.dismiss()
 
  #: set o_padding 10
 <FilamentChooserPopup>:

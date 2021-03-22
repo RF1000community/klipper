@@ -38,11 +38,9 @@ class mainApp(App): #Handles Communication with Klipper
     # Property for controlling the state as shown in the statusbar.
     state = OptionProperty("startup", options=[
         # Every string set has to be in this list
-        "ready",
         "startup",
-        "shutdown",
+        "ready",
         "error",
-        "error disconnected"
         ])
     # this is more of a UI-state, it may be 'done' even though virtual_sdcard has no printjobs
     print_state = OptionProperty("no printjob", options=[
@@ -99,14 +97,13 @@ class mainApp(App): #Handles Communication with Klipper
             self.xy_homing_controls = True
             self.extruder_count = 2
             self.printer = self.reactor = self.print_history = None
-            self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell the app class where the root kv file is
+            self.kv_file = join(p.kgui_dir, "kv/main.kv")
             return super().__init__(**kwargs)
 
         self.kgui_config = config
         self.printer = config.get_printer()
         self.reactor = config.get_reactor()
         self.filament_manager = None #TODO
-        self.cb = self.reactor.register_async_callback
         self.klipper_config_manager = self.printer.objects['configfile']
         self.klipper_config = self.klipper_config_manager.read_main_config()
         # read config
@@ -159,7 +156,7 @@ class mainApp(App): #Handles Communication with Klipper
 
     def do_update(self): #TODO do updates from printer process
         logging.info("doing update")
-        self.cb(printer_cmd.update)
+        self.reactor.cb(printer_cmd.update)
 
     def handle_ready(self):
         self.state = "ready"
@@ -170,8 +167,12 @@ class mainApp(App): #Handles Communication with Klipper
     def handle_shutdown(self):
         pass
 
+    # is called when system disconnects from mcu, this is only done at
+    # the very end, when exiting or restarting
     def handle_disconnect(self):
+        logging.info("handle disconnect")
         self.connected = False
+        self.reactor.cb(lambda e:self.reactor.finalize)
         self.stop()
 
     def handle_critical_error(self, message):
@@ -221,7 +222,7 @@ class mainApp(App): #Handles Communication with Klipper
             self.print_time = ""
             self.progress = 0
             self.print_state = "no printjob"
-            self.cb(printer_cmd.reset_tuning) # tuning values are only reset once print_queue has run out
+            self.reactor.cb(printer_cmd.reset_tuning) # tuning values are only reset once print_queue has run out
 
     def on_start(self, *args):
         if self.network_manager.available:
