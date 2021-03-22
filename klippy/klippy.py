@@ -63,6 +63,7 @@ class Printer:
         self.run_result = None
         self.objects = collections.OrderedDict()
         self.parallel_objects = {}
+        self._pending_event_handlers = {}
         # Init printer components that must be setup prior to config
         for m in [gcode, webhooks]:
             m.add_early_printer_objects(self)
@@ -128,7 +129,7 @@ class Printer:
             self.objects[section] = init_func(config.getsection(section))
             return self.objects[section]
         elif exists(parallel_module) or exists(parallel_package):
-            def start_process(module_name, section, init_func, object_config, default, printer_queue, printer_fd):
+            def start_process(module_name, init_func, object_config, default):
                 # avoid active imports changing environment - import in target process
                 mod = importlib.import_module('parallel_extras.' + module_name)
                 init_func = getattr(mod, init_func, None)
@@ -136,17 +137,9 @@ class Printer:
                     if default is not configfile.sentinel:
                         return default
                     return -1
-                object_config.reactor = reactor.Reactor(False, process=module_name)
-                object_config.reactor._setup_async_callbacks()
-                object_config.reactor.register_mp_queues(
-                    queues={'printer': printer_queue}, 
-                    pipes={'printer': printer_fd})
-                object_config.reactor.cb(register_own_mp_queues, 
-                    queues={section: object_config.reactor._mp_queue}, 
-                    pipes={section: object_config.reactor._pipe_fds[1]})
                 object_config.reactor.root = init_func(object_config)
                 object_config.reactor.run()
-
+            logging.info(f"starting parallel object {module_name}")
             # add module directory to path, so objects can be imported when unpickled
             # USE GLOBALLY UNIQUE MODULE NAMES RESPECTIVELY
             if exists(parallel_module):
@@ -154,11 +147,19 @@ class Printer:
             else:
                 site.addsitedir(dirname(parallel_package))
             object_config = config.getsection(section)
+            object_config.reactor = reactor.Reactor(False, process=module_name)
+            object_config.reactor._setup_async_callbacks()
+            object_config.reactor.register_mp_queues(
+                queues={'printer': self.reactor._mp_queue}, 
+                pipes={'printer': self.reactor._pipe_fds[1]})
+            self.reactor.register_mp_queues(
+                queues={section: object_config.reactor._mp_queue}, 
+                pipes={section: object_config.reactor._pipe_fds[1]})
             self.parallel_objects[section] = multiprocessing.Process(
                 target=start_process, 
-                args=(module_name, section, init_func, object_config, default, 
-                    self.reactor._mp_queue, self.reactor._pipe_fds[1]))
+                args=(module_name, init_func, object_config, default))
             self.parallel_objects[section].start()
+            logging.info(f"started {module_name} successfully")
             return self.parallel_objects[section]
         else:
             if default is not configfile.sentinel:
@@ -184,10 +185,23 @@ class Printer:
         try:
             self._read_config()
             self.send_event("klippy:mcu_identify")
+            self._pending_event_handlers = {}
             for cb in self.reactor.event_handlers.get("klippy:connect", []):
                 if self.state_message is not message_startup:
                     return
                 cb()
+            # run event handlers in all processes, wait for completion
+            for process in self.reactor._mp_queues.keys():
+                self._pending_event_handlers[process] = True
+                self.reactor.cb(send_event_and_wait, "klippy:connect", process=process)
+            while 1:
+                pending = False
+                for process_pending in self._pending_event_handlers.values():
+                    pending = pending or process_pending
+                if not pending:
+                    break
+                self.reactor.pause(0.01)
+            logging.info(f"got all events done")
         except (self.config_error, pins.error) as e:
             logging.exception("Config error")
             self.send_event("klippy:critical_error", "Config error")
@@ -287,8 +301,13 @@ class Printer:
         logging.info("Received SIGTERM, shutting down...")
         self.request_exit("terminated")
 
-def register_own_mp_queues(e, printer, queues, pipes):
-    printer.reactor.register_mp_queues(queues, pipes)
+def send_event_and_wait(e, root, event):
+    logging.info("running send event and wait")
+    for cb in root.reactor.event_handlers.get("klippy:connect", []):
+        cb()
+    root.reactor.cb(note_event_handlers_done, root.reactor.process_name)
+def note_event_handlers_done(e, printer, process):
+    printer._pending_event_handlers['process'] = False
 
 ######################################################################
 # Startup

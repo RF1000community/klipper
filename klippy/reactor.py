@@ -222,7 +222,7 @@ class SelectReactor:
                     func, args, kwargs = self._mp_queue.get_nowait()
                 except queue.Empty:
                     tries += 1
-                    if handlers > 0 or tries > 1000: break
+                    if handlers > 0 or tries > 10: break
                     time.sleep(0.001)
                     continue
                 args = args[:2] + (self.root,) + args[2:]
