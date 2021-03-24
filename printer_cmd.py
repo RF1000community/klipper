@@ -6,6 +6,7 @@
 import logging
 
 def set_attribute(e, root, property_name, val):
+    logging.info(f"set attribute {property_name} to {val}")
     setattr(root, property_name, val)
 
 ######################################################################
@@ -57,7 +58,7 @@ def send_fan(e, printer, speed):
     get_fan(e, printer)
 
 def get_pressure_advance(e, printer): # gives pressure_advance value of 1. extruder
-    pressure_advance = printer.objects["extruder"].get_status(e)['pressure_advance']
+    pressure_advance = printer.objects['extruder'].get_status(e)['pressure_advance']
     printer.reactor.cb(set_attribute, 'pressure_advance', pressure_advance, process='kgui')
 def send_pressure_advance(e, printer, val):
     for i in range(10):
@@ -93,7 +94,6 @@ def update(e, printer):
     get_toolhead_busy(e, printer)
     get_homing_state(e, printer)
     get_pos(e, printer)
-    get_printjob_progress(e, printer)
     get_pressure_advance(e, printer)
     get_acceleration(e, printer)
     get_z_offset(e, printer)
@@ -115,9 +115,9 @@ def write_pressure_advance(e, printer, value, extruder_count):
 def get_temp(e, printer):
     if 'heaters' in printer.objects:
         temp = {}
-        for heater in printer.objects['heaters'].heaters:
+        for name, heater in printer.objects['heaters'].heaters.items():
             current, target = heater.get_temp(e)
-            temp[heater.name] = [target, current]
+            temp[name] = [target, current]
         printer.reactor.cb(set_attribute, 'temp', temp, process='kgui')
 def send_temp(e, printer, temp, extruder_id):
     printer.objects['heaters'].heaters[extruder_id].set_temp(temp)
@@ -125,7 +125,7 @@ def send_temp(e, printer, temp, extruder_id):
 
 def get_homing_state(e, printer):
     kin_status = printer.objects['toolhead'].kin.get_status(e)
-    homed = {bool(axis in kin_status['homed_axes']) for axis in "xyz"}
+    homed = {axis: bool(axis in kin_status['homed_axes']) for axis in "xyz"}
     printer.reactor.cb(set_attribute, 'homed', homed, process='kgui')
 def send_home(e, printer, axis):
     printer.objects['gcode'].run_script_from_command("G28" + axis.upper())
@@ -181,7 +181,7 @@ def send_resume(e, printer):
 def restart(e, printer):
     printer.request_exit('restart')
 
-def firmware_restart(e, printer, posarg1, posarg2, kwarg1=77, **kwargs):
+def firmware_restart(e, printer):
     printer.request_exit('firmware_restart')
 
 def quit(e, printer):

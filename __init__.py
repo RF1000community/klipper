@@ -33,7 +33,7 @@ site.addsitedir(join(p.klipper_dir, "klippy/extras/"))
 from reactor import ReactorCompletion
 import gcode_metadata as gm
 
-class mainApp(App): #Handles Communication with Klipper
+class mainApp(App):
 
     # Property for controlling the state as shown in the statusbar.
     state = OptionProperty("startup", options=[
@@ -174,6 +174,7 @@ class mainApp(App): #Handles Communication with Klipper
         self.connected = False
         self.reactor.cb(lambda e:self.reactor.finalize)
         self.stop()
+        logging.info("handle disconenct done")
 
     def handle_critical_error(self, message):
         self.state = "error"
@@ -203,7 +204,8 @@ class mainApp(App): #Handles Communication with Klipper
     def handle_printjob_start(self, job):
         self.notify.show("Started printing", f"Started printing {job.name}", delay=5)
         self.print_title = job.name
-        # this only works if we are in a printing state (we rely on this being called after handle_printjob_change)
+        # this only works if we are in a printing state 
+        # we rely on this being called after handle_printjob_change
         self.get_printjob_progress()
 
     def handle_printjob_end(self, job):
@@ -222,7 +224,8 @@ class mainApp(App): #Handles Communication with Klipper
             self.print_time = ""
             self.progress = 0
             self.print_state = "no printjob"
-            self.reactor.cb(printer_cmd.reset_tuning) # tuning values are only reset once print_queue has run out
+            # tuning values are only reset once print_queue has run out
+            self.reactor.cb(printer_cmd.reset_tuning)
 
     def on_start(self, *args):
         if self.network_manager.available:
@@ -311,5 +314,7 @@ for fname in ("style.kv", "overwrites.kv", "elements.kv", "home.kv", "timeline.k
 def load_config(config):
     kgui_object = mainApp(config)
     logging.info("Kivy app.run")
-    Clock.schedule_once(kgui_object.run())
+    #config.reactor.register_callback(lambda e: kgui_object.run)
+    #Clock.schedule_once(lambda dt: kgui_object.run, 0)
+    kgui_object.run()
     return kgui_object
