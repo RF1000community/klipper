@@ -3,7 +3,7 @@
 # Copyright (C) 2016-2020  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import os, gc, select, math, time, logging, queue
+import os, gc, select, math, time, queue
 import greenlet
 import chelper, util
 import multiprocessing
@@ -122,7 +122,6 @@ class SelectReactor:
         self._greenlets = []
         self._all_greenlets = []
     def register_mp_queues(self, eventtime=None, queues={}, pipes={}):
-        logging.info(f"registering some mp queues, im {self.process_name}, registering {queues}")
         self._mp_queues.update(queues)
         self._mp_pipe_fds.update(pipes)
     def broadcast_mp_queues(self):
@@ -183,10 +182,11 @@ class SelectReactor:
         rcb = ReactorCallback(self, callback, waketime)
         return rcb.completion
     # Asynchronous (from another thread) callbacks and completions
-    def register_async_callback(self, callback, *args, waketime=NOW, process='printer', **kwargs):
-        logging.info(f"register callbaack, im {self.process_name}, to {process}")
+    def register_async_callback(self, callback, *args, waketime=NOW, process=None, **kwargs):
+        import logging
+        logging.info(f"register callback {callback} from {self.process_name}, to {process}")
         args = (callback, waketime) + args
-        if self.process_name == process:
+        if process is None or process == self.process_name:
             self._async_queue.put_nowait(
                 (ReactorCallback, args, kwargs))
             try:
@@ -200,8 +200,8 @@ class SelectReactor:
                 os.write(self._mp_pipe_fds[process], b'-')
             except os.error:
                 pass
-    def cb(self, *args, **kwargs):
-        self.register_async_callback(*args, **kwargs)
+    def cb(self, *args,  process='printer', **kwargs):
+        self.register_async_callback(*args, process=process, **kwargs)
     def async_complete(self, completion, result):
         self._async_queue.put_nowait((completion.complete, (result,), {}))
         try:
@@ -213,8 +213,10 @@ class SelectReactor:
             signal = os.read(self._pipe_fds[0], 4096)
         except os.error:
             pass
-        logging.info(f"got pipe signal {signal}")
-        if signal == b'-':
+        import logging
+        logging.info(f"{self.process_name} got pipe signal {signal}")
+        if b'-' in signal:
+            logging.info(f"parallel signal handler")
             tries = 0
             handlers = 0
             while 1:
@@ -223,13 +225,14 @@ class SelectReactor:
                 except queue.Empty:
                     tries += 1
                     if handlers > 0 or tries > 10: break
+                    logging.info("queue empty")
                     time.sleep(0.001)
                     continue
                 args = args[:2] + (self.root,) + args[2:]
                 logging.info(f"running mp handler nr.{handlers} after {tries} tries with args {args} and kwargs {kwargs}")
                 func(self, *args, **kwargs)
                 handlers += 1
-        else:
+        if b'.' in signal:
             while 1:
                 try:
                     func, args, kwargs = self._async_queue.get_nowait()
@@ -331,16 +334,20 @@ class SelectReactor:
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
-        logging.info(f"send event {event}")
+        import logging
+
+        logging.info(f"{self.process_name} sending event {event}, mp_queues are {self._mp_queues}")
         for process in self._mp_queues.keys():
             logging.info(f"send event {event} to process {process}")
             self.register_async_callback(run_event_in_process, event, *params, process=process)
         return self.run_event_handlers(event, *params)
     def run_event_handlers(self, event, *params):
+        import logging
         logging.info(f"run_event_handlers in {self.process_name} {event}")
         return [cb(*params) for cb in self.event_handlers.get(event, [])]
 
 def run_event_in_process(e, root, *args, **kwargs):
+    import logging
     logging.info(f"send event to process {root} with args {args}, kwargs {kwargs}")
     root.reactor.run_event_handlers(*args, **kwargs)
 

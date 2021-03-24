@@ -105,7 +105,7 @@ class SerialReader:
             self.background_thread.start()
             # Obtain and load the data dictionary from the firmware
             completion = self.reactor.register_callback(self._get_identify_data)
-            identify_data = completion.wait(connect_time + 15.)
+            identify_data = completion.wait(connect_time + 5.)
             if identify_data is not None:
                 break
             logging.info("Timeout on serial connect")
@@ -143,7 +143,7 @@ class SerialReader:
             self.ser.close()
             self.ser = None
         for pn in self.pending_notifications.values():
-            pn.complete(None)
+            pn.complete(None, None)
         self.pending_notifications.clear()
     def stats(self, eventtime):
         if self.serialqueue is None:

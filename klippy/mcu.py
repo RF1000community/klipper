@@ -197,7 +197,7 @@ class MCU_pwm:
         cmd_queue = self._mcu.alloc_command_queue()
         curtime = self._mcu.get_printer().get_reactor().monotonic()
         printtime = self._mcu.estimated_print_time(curtime)
-        self._last_clock = self._mcu.print_time_to_clock(printtime + 0.500)
+        self._last_clock = self._mcu.print_time_to_clock(printtime + 0.200)
         cycle_ticks = self._mcu.seconds_to_clock(self._cycle_time)
         if self._hardware_pwm:
             self._pwm_max = self._mcu.get_constant_float("PWM_MAX")
