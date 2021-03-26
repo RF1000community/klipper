@@ -9,7 +9,6 @@ import util, reactor, queuelogger, msgproto
 import gcode, configfile, pins, mcu, toolhead, webhooks
 import signal, traceback
 import multiprocessing, site
-from subprocess import Popen
 from os.path import join, exists, dirname
 
 message_ready = "Printer is ready"
@@ -139,7 +138,6 @@ class Printer:
                     return -1
                 object_config.reactor.root = init_func(object_config)
                 object_config.reactor.run()
-
             # add module directory to path, so objects can be imported when unpickled
             # USE GLOBALLY UNIQUE MODULE NAMES RESPECTIVELY
             if exists(parallel_module):
@@ -148,20 +146,17 @@ class Printer:
                 site.addsitedir(dirname(parallel_package))
             object_config = config.getsection(section)
             object_config.reactor = reactor.Reactor(False, process=section)
-            #object_config.reactor.run()
             object_config.reactor._setup_async_callbacks()
             object_config.reactor.register_mp_queues(
-                queues={'printer': self.reactor._mp_queue}, 
-                pipes={'printer': self.reactor._pipe_fds[1]})
+                {'printer': self.reactor._mp_queue}, 
+                {'printer': self.reactor._pipe_fds[1]})
             self.reactor.register_mp_queues(
-                queues={section: object_config.reactor._mp_queue}, 
-                pipes={section: object_config.reactor._pipe_fds[1]})
-            logging.info(f"registering  queue {object_config.reactor._mp_queue} and pipes {object_config.reactor._pipe_fds[1]} to printer")
+                {section: object_config.reactor._mp_queue}, 
+                {section: object_config.reactor._pipe_fds[1]})
             self.parallel_objects[section] = multiprocessing.Process(
                 target=start_process, 
                 args=(module_name, init_func, object_config, default))
             self.parallel_objects[section].start()
-            time.sleep(30)
             return self.parallel_objects[section]
         else:
             if default is not configfile.sentinel:
@@ -192,7 +187,6 @@ class Printer:
                 if self.state_message is not message_startup:
                     return
                 cb()
-            logging.info(f" run connect handlers, with processes {self.reactor._mp_queues.keys()}")
             # run event handlers in all processes, wait for completion
             for process in self.reactor._mp_queues.keys():
                 self._pending_event_handlers[process] = True
@@ -204,7 +198,6 @@ class Printer:
                 if not pending:
                     break
                 self.reactor.pause(0.01)
-            logging.info(f"got all events done")
         except (self.config_error, pins.error) as e:
             logging.exception("Config error")
             self.send_event("klippy:critical_error", "Config error")
@@ -234,6 +227,8 @@ class Printer:
                 if self.state_message is not message_ready:
                     return
                 cb()
+            for process in self.reactor._mp_queues.keys():
+                self.reactor.cb(send_event_and_wait, "klippy:ready", process=process)
         except Exception as e:
             logging.exception("Unhandled exception during ready callback")
             self.invoke_shutdown("Internal error during ready callback: %s"
@@ -305,8 +300,7 @@ class Printer:
         self.request_exit("terminated")
 
 def send_event_and_wait(e, root, event):
-    logging.info("running send event and wait")
-    for cb in root.reactor.event_handlers.get("klippy:connect", []):
+    for cb in root.reactor.event_handlers.get(event, []):
         cb()
     root.reactor.cb(note_event_handlers_done, root.reactor.process_name, process='printer')
 def note_event_handlers_done(e, printer, done_process):
@@ -396,12 +390,13 @@ def main():
         if res in ['exit', 'error_exit', 'terminated']:
             break
         time.sleep(1.)
+        for process in printer.parallel_objects.values():
+            process.join()
+            logging.info(f"successfully joined process")
         main_reactor.finalize()
         main_reactor = printer = None
         logging.info("Restarting printer")
         start_args['start_reason'] = res
-        for process in self.parallel_objects:
-            process.close()
     if bglogger is not None:
         bglogger.stop()
 

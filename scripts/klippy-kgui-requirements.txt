@@ -5,7 +5,7 @@
 cffi==1.14
 pyserial==3.4
 greenlet==0.4.15
-Jinja2==2.10.1
+Jinja2==2.11.3
 
 #KGUI
 Cython==0.29.17

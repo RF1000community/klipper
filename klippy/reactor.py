@@ -121,12 +121,12 @@ class SelectReactor:
         self._g_dispatch = None
         self._greenlets = []
         self._all_greenlets = []
-    def register_mp_queues(self, eventtime=None, queues={}, pipes={}):
+    def register_mp_queues(self, queues={}, pipes={}):
         self._mp_queues.update(queues)
         self._mp_pipe_fds.update(pipes)
     def broadcast_mp_queues(self):
         for process in self._mp_queues.keys():
-            self.register_async_callback(self.register_mp_queues, waketime=None, queues=self._mp_queues, process=process)
+            self.cb(register_mp_queues, queues=self._mp_queues, process=process)
     def get_gc_stats(self):
         return tuple(self._last_gc_times)
     # Timers
@@ -183,19 +183,15 @@ class SelectReactor:
         return rcb.completion
     # Asynchronous (from another thread) callbacks and completions
     def register_async_callback(self, callback, *args, waketime=NOW, process=None, **kwargs):
-        import logging
-        logging.info(f"register callback {callback} from {self.process_name}, to {process}")
         args = (callback, waketime) + args
         if process is None or process == self.process_name:
-            self._async_queue.put_nowait(
-                (ReactorCallback, args, kwargs))
+            self._async_queue.put_nowait((ReactorCallback, args, kwargs))
             try:
                 os.write(self._pipe_fds[1], b'.')
             except os.error:
                 pass
         else:
-            self._mp_queues[process].put_nowait(
-                (ReactorCallback, args, kwargs))
+            self._mp_queues[process].put((ReactorCallback, args, kwargs))
             try:
                 os.write(self._mp_pipe_fds[process], b'-')
             except os.error:
@@ -216,22 +212,17 @@ class SelectReactor:
         import logging
         logging.info(f"{self.process_name} got pipe signal {signal}")
         if b'-' in signal:
-            logging.info(f"parallel signal handler")
-            tries = 0
-            handlers = 0
             while 1:
                 try:
                     func, args, kwargs = self._mp_queue.get_nowait()
                 except queue.Empty:
-                    tries += 1
-                    if handlers > 0 or tries > 10: break
-                    logging.info("queue empty")
-                    time.sleep(0.001)
-                    continue
+                    break
+                while self.root is None:
+                    logging.info(f"root object {self.process_name} not yet available")
+                    time.sleep(0.1)
                 args = args[:2] + (self.root,) + args[2:]
-                logging.info(f"running mp handler nr.{handlers} after {tries} tries with args {args} and kwargs {kwargs}")
+                logging.info(f"running mp cb with args: {args}, kwargs: {kwargs}")
                 func(self, *args, **kwargs)
-                handlers += 1
         if b'.' in signal:
             while 1:
                 try:
@@ -334,21 +325,13 @@ class SelectReactor:
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
-        import logging
-
-        logging.info(f"{self.process_name} sending event {event}, mp_queues are {self._mp_queues}")
         for process in self._mp_queues.keys():
-            logging.info(f"send event {event} to process {process}")
-            self.register_async_callback(run_event_in_process, event, *params, process=process)
+            self.cb(run_event_in_process, event, *params, process=process)
         return self.run_event_handlers(event, *params)
     def run_event_handlers(self, event, *params):
-        import logging
-        logging.info(f"run_event_handlers in {self.process_name} {event}")
         return [cb(*params) for cb in self.event_handlers.get(event, [])]
 
 def run_event_in_process(e, root, *args, **kwargs):
-    import logging
-    logging.info(f"send event to process {root} with args {args}, kwargs {kwargs}")
     root.reactor.run_event_handlers(*args, **kwargs)
 
 class PollReactor(SelectReactor):
