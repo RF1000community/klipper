@@ -4,10 +4,17 @@
 # They do what needs to be done
 
 import logging
+from datetime import datetime, timedelta
 
 def set_attribute(e, root, property_name, val):
     logging.info(f"set attribute {property_name} to {val}")
     setattr(root, property_name, val)
+
+def update_dict(e, root, dict_name, val):
+    getattr(root, dict_name).update(val)
+
+def load_object(e, printer, config, object_name):
+    printer.load_object(config, object_name)
 
 ######################################################################
 # Tuning
@@ -93,6 +100,7 @@ def send_acceleration(e, printer, val):
 def update(e, printer):
     get_toolhead_busy(e, printer)
     get_homing_state(e, printer)
+    get_printjob_progress(e, printer)
     get_pos(e, printer)
     get_pressure_advance(e, printer)
     get_acceleration(e, printer)
@@ -103,7 +111,6 @@ def update(e, printer):
     get_fan(e, printer)
 
 def write_config(e, printer, section, option, value):
-    logging.info(f"trying to write config section: {section} option: {option}, value: {value}")
     printer.objects['configfile'].set(section, option, value)
     printer.objects['configfile'].cmd_SAVE_CONFIG(None)
 
@@ -118,7 +125,7 @@ def get_temp(e, printer):
         for name, heater in printer.objects['heaters'].heaters.items():
             current, target = heater.get_temp(e)
             temp[name] = [target, current]
-        printer.reactor.cb(set_attribute, 'temp', temp, process='kgui')
+        printer.reactor.cb(update_dict, 'temp', temp, process='kgui')
 def send_temp(e, printer, temp, extruder_id):
     printer.objects['heaters'].heaters[extruder_id].set_temp(temp)
     get_temp(e, printer)
@@ -129,9 +136,12 @@ def get_homing_state(e, printer):
     printer.reactor.cb(set_attribute, 'homed', homed, process='kgui')
 def send_home(e, printer, axis):
     printer.objects['gcode'].run_script_from_command("G28" + axis.upper())
+    get_toolhead_busy(e, printer)
+    get_pos(e, printer)
 
 def send_motors_off(e, printer):
     printer.objects['gcode'].run_script_from_command("M18")
+    get_homing_state(e, printer)
 
 def get_toolhead_busy(e, printer):
     print_time, est_print_time, lookahead_empty = printer.objects['toolhead'].check_busy(e)
@@ -150,6 +160,7 @@ def send_pos(e, printer, x=None, y=None, z=None, speed=15):
     new_pos = [new if name in homed_axes else None for new, name in zip(new_pos, 'xyze')]
     new_pos = _fill_coord(printer, new_pos)
     printer.objects['toolhead'].move(new_pos, speed)
+    get_toolhead_busy(e, printer)
     get_pos(e, printer)
 
 def _fill_coord(printer, new_pos):
@@ -160,8 +171,44 @@ def _fill_coord(printer, new_pos):
             pos[i] = new
     return pos
 
+def send_z_go(e, printer, z_speed, direction):
+    printer.objects['live_move'].start_move('z', direction)
+    get_toolhead_busy(e, printer)
 
+def send_z_stop(e, printer):
+    printer.objects['live_move'].stop_move('z')
+    get_pos(e, printer)
 
+def send_extrude(e, printer, tool_id, direction):
+    printer.objects['live_move'].start_move(tool_id, direction)
+    get_toolhead_busy(e, printer)
+
+def send_extrude_stop(e, printer, tool_id):
+    printer.objects['live_move'].stop_move(tool_id)
+    get_pos(e, printer)
+
+def get_printjob_progress(e, printer):
+    est_remaining, progress = printer.objects['print_stats'].get_print_time_prediction()
+    printer.reactor.cb(set_printjob_progress, est_remaining, progress, process='kgui')
+def set_printjob_progress(e, kgui, est_remaining, progress):
+    if kgui.print_state in ('printing', 'pausing', 'paused'):
+        if progress is None: # no prediction could be made yet
+            kgui.progress = 0
+            kgui.print_time = ""
+            kgui.print_done_time = ""
+        else:
+            remaining = timedelta(seconds=est_remaining)
+            done = datetime.now() + remaining
+            tomorrow = datetime.now() + timedelta(days=1)
+            kgui.progress = progress
+            logging.info(f"got printjob progress of {progress}, remaining {remaining.total_seconds()}")
+            kgui.print_time = format_time(remaining.total_seconds()) + " remaining"
+            if done.day == datetime.now().day:
+                kgui.print_done_time = done.strftime("%-H:%M")
+            elif done.day == tomorrow.day:
+                kgui.print_done_time = done.strftime("tomorrow %-H:%M")
+            else:
+                kgui.print_done_time = done.strftime("%a %-H:%M")
 
 def send_calibrate(e, printer):
     printer.objects['bed_mesh'].calibrate.cmd_BED_MESH_CALIBRATE(None)
@@ -187,3 +234,19 @@ def firmware_restart(e, printer):
 def quit(e, printer):
     """Stop klipper and GUI, returns to tty"""
     printer.request_exit('exit')
+
+def format_time(seconds):
+    seconds = int(seconds)
+    days = seconds // 86400
+    seconds %= 86400
+    hours = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    seconds %= 60
+    if days:
+        return f"{days} days {hours} {'hr' if hours==1 else 'hrs'} {minutes} min"
+    if hours:
+        return f"{hours} {'hr' if hours==1 else 'hrs'} {minutes} min"
+    if minutes:
+        return f"{minutes} min"
+    return f"{seconds} sec"

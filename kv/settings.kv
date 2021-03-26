@@ -395,7 +395,7 @@
             text: "Restart Klipper"
             size: btn_poweroff.size
             pos: btn_poweroff.x, btn_reboot.top
-            on_release: app.reactor.cb(printer_cmd.firmware_restart, "pos1", "pos2", glibglob=42)
+            on_release: app.reactor.cb(printer_cmd.firmware_restart)
         Divider:
             width: root.width
             pos: btn_reboot.pos

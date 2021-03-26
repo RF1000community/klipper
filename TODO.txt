@@ -3,22 +3,11 @@ Features to be implemented
     custom gcode macro buttons
     config editor
     better error handling (klipper)
+        fix unknown command error silently stalling printjob
     finish Gcode console
 Bugs
-    performance problems (timer to close error)
-        on live move, homing
-        uploading large gcode during printing with klipper_cura_connection
-        DripModeEndSignal during homing when stopping print
     live_extrusion leaves inconsistent state
     cura showing old printjobs after klipper restart
     filechooser missing files should be fixed in kivy master
     virtual_sdcard stopping hangs
-    fix unknown command error silently stalling printjob
 
-
-
-register event handler
-
-propagate event to all processes
-
-does pipe work? No

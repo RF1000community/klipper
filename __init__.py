@@ -1,9 +1,9 @@
 import logging
 import site
+import threading
 import os
 import traceback
-from os.path import join, dirname
-from datetime import datetime, timedelta
+from os.path import join
 from subprocess import Popen
 
 TESTING = "KGUI_TESTING" in os.environ
@@ -30,10 +30,9 @@ from . import files, home, settings, status, timeline, update, printer_cmd
 site.addsitedir(join(p.klipper_dir, "klippy/"))
 site.addsitedir(join(p.klipper_dir, "klippy/extras/"))
 
-from reactor import ReactorCompletion
-import gcode_metadata as gm
+import gcode_metadata
 
-class mainApp(App):
+class mainApp(App, threading.Thread):
 
     # Property for controlling the state as shown in the statusbar.
     state = OptionProperty("startup", options=[
@@ -53,26 +52,24 @@ class mainApp(App):
         "stopped",
         "done",
         ])
-    homed = DictProperty() #updated by handle_home_end/start event handler
-    temp = DictProperty() #{'B':[setpoint, current], 'T0': ...}
-    connected = BooleanProperty(False) #updated with handle_connect
+    homed = DictProperty() # updated by handle_home_end/start event handler
+    temp = DictProperty() # {'heater_bed':[setpoint, current], 'extruder': ...}
+    connected = BooleanProperty(False) # updated with handle_connect
     jobs = ListProperty()
     print_title = StringProperty()
-    print_time = StringProperty() #updated by get_printjob_progress
+    print_time = StringProperty() # updated by get_printjob_progress
     print_done_time = StringProperty()
     progress = NumericProperty(0)
     pos = ListProperty([0, 0, 0, 0])
     toolhead_busy = BooleanProperty(False)
-    z_move_completion = ObjectProperty(None, allownone=True)
-    ext_move_completion = ObjectProperty(None, allownone=True)
-    #tuning
+    # tuning
     speed = NumericProperty(100)
     flow = NumericProperty(100)
     fan_speed = NumericProperty(0)
     z_offset = NumericProperty(0)
     acceleration = NumericProperty(2000)
     pressure_advance = NumericProperty(0)
-    #config
+    # config
     config_pressure_advance = NumericProperty(0)
     config_acceleration = NumericProperty(2000)
 
@@ -80,11 +77,13 @@ class mainApp(App):
         logging.info("Kivy app initializing...")
         self.network_manager = NetworkManager()
         self.notify = Notifications()
-        self.temp = {'T0':[0,0], 'T1':[0,0], 'B':[0,0]}
+        self.gcode_metadata = None#gcode_metadata.load_config(None)
+        self.temp = {'extruder':[0,0], 'extruder1':[0,0], 'heater_bed':[0,0]}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.warned_not_homed = {'x':False, 'y':False, 'z':False}
-        self.gcode_metadata = None #TODO
         self.curaconnection = None
+        self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell the app class where the root kv file is
+
         if TESTING:
             site.addsitedir(join(p.klipper_dir, "klippy/extras/"))
             import filament_manager
@@ -97,7 +96,6 @@ class mainApp(App):
             self.xy_homing_controls = True
             self.extruder_count = 2
             self.printer = self.reactor = self.print_history = None
-            self.kv_file = join(p.kgui_dir, "kv/main.kv")
             return super().__init__(**kwargs)
 
         self.kgui_config = config
@@ -126,7 +124,8 @@ class mainApp(App):
             try:
                 klipper_config.getsection(f"extruder{i}")
             except:
-                self.extruder_count = i; break
+                self.extruder_count = i
+                break
         # register event handlers
         self.reactor.register_event_handler("klippy:connect", self.handle_connect) # printer_objects available
         self.reactor.register_event_handler("klippy:ready", self.handle_ready) # connect handlers have run
@@ -139,8 +138,8 @@ class mainApp(App):
         self.reactor.register_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
         self.reactor.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
         self.reactor.register_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
+        self.reactor.cb(printer_cmd.load_object, self.klipper_config, "live_move")
         self.clean()
-        self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell the app class where the root kv file is
         super().__init__(**kwargs)
 
     def clean(self):
@@ -151,12 +150,8 @@ class mainApp(App):
 
     def handle_connect(self):
         self.connected = True
-        self.do_update()
-        Clock.schedule_interval(self.do_update, 1)
-
-    def do_update(self): #TODO do updates from printer process
-        logging.info("doing update")
         self.reactor.cb(printer_cmd.update)
+        Clock.schedule_interval(lambda dt: self.reactor.cb(printer_cmd.update), 1)
 
     def handle_ready(self):
         self.state = "ready"
@@ -172,7 +167,7 @@ class mainApp(App):
     def handle_disconnect(self):
         logging.info("handle disconnect")
         self.connected = False
-        self.reactor.cb(lambda e:self.reactor.finalize)
+        self.reactor.register_async_callback(lambda e: self.reactor.finalize)
         self.stop()
         logging.info("handle disconenct done")
 
@@ -206,14 +201,15 @@ class mainApp(App):
         self.print_title = job.name
         # this only works if we are in a printing state 
         # we rely on this being called after handle_printjob_change
-        self.get_printjob_progress()
+        self.reactor.cb(get_printjob_progress, process='printer')
 
     def handle_printjob_end(self, job):
         if 'done' == job.state:
             self.progress = 1
             self.print_done_time = ""
             self.print_time = "finished in " + self.format_time(job.get_printed_time())
-            Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 3600) # show finished job for 1h
+            # show finished job for 1h
+            Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 3600)
         else:
             self.hide_printjob(job.name)
 
@@ -226,6 +222,11 @@ class mainApp(App):
             self.print_state = "no printjob"
             # tuning values are only reset once print_queue has run out
             self.reactor.cb(printer_cmd.reset_tuning)
+    
+    def warn_not_homed(self, axis):
+        if not (self.homed[axis] or self.warned_not_homed[axis]):
+            self.notify.show("Axis not homed", "Proceed with care!", level="warning", delay=3)
+            self.warned_not_homed['z'] = True
 
     def on_start(self, *args):
         if self.network_manager.available:
@@ -238,43 +239,6 @@ class mainApp(App):
     def on_stop(self, *args):
         # Stop networking dbus event loop
         self.network_manager.stop()
-
-    def format_time(self, seconds):
-        seconds = int(seconds)
-        days = seconds // 86400
-        seconds %= 86400
-        hours = seconds // 3600
-        seconds %= 3600
-        minutes = seconds // 60
-        seconds %= 60
-        if days:
-            return f"{days} days {hours} {'hr' if hours==1 else 'hrs'} {minutes} min"
-        if hours:
-            return f"{hours} {'hr' if hours==1 else 'hrs'} {minutes} min"
-        if minutes:
-            return f"{minutes} min"
-        return f"{seconds} sec"
-
-    def get_printjob_progress(self, *args):
-        if self.print_state in ('printing', 'pausing', 'paused'):
-            est_remaining, progress = self.print_stats.get_print_time_prediction()
-            if progress is None: # no prediction could be made yet
-                self.progress = 0
-                self.print_time = ""
-                self.print_done_time = ""
-            else:
-                remaining = timedelta(seconds=est_remaining)
-                done = datetime.now() + remaining
-                tomorrow = datetime.now() + timedelta(days=1)
-                self.progress = progress
-                logging.info(f"got printjob progress of {progress}, remaining {remaining.total_seconds()}")
-                self.print_time = self.format_time(remaining.total_seconds()) + " remaining"
-                if done.day == datetime.now().day:
-                    self.print_done_time = done.strftime("%-H:%M")
-                elif done.day == tomorrow.day:
-                    self.print_done_time = done.strftime("tomorrow %-H:%M")
-                else:
-                    self.print_done_time = done.strftime("%a %-H:%M")
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
@@ -314,7 +278,5 @@ for fname in ("style.kv", "overwrites.kv", "elements.kv", "home.kv", "timeline.k
 def load_config(config):
     kgui_object = mainApp(config)
     logging.info("Kivy app.run")
-    #config.reactor.register_callback(lambda e: kgui_object.run)
-    #Clock.schedule_once(lambda dt: kgui_object.run, 0)
-    kgui_object.run()
+    kgui_object.start()
     return kgui_object

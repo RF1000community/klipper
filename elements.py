@@ -16,6 +16,7 @@ from kivy.uix.widget import Widget
 from . import parameters as p
 from . import printer_cmd
 
+
 class Divider(Widget):
     pass
 
@@ -144,7 +145,7 @@ class PrintPopup(BasePopup):
 
         time = md.get_time()
         if time is not None:
-            self.add_detail("Print Time:", self.app.format_time(time))
+            self.add_detail("Print Time:", printer_cmd.format_time(time))
 
         material_type = md.get_material_type()
         if material_type:

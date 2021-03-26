@@ -87,9 +87,9 @@
             id: temp_T1
             tool_id: "T1"
             on_release: Factory.ExtTempPopup(creator=self, val=app.temp).open()
-            large_value: "{:3.0f}°C".format(app.temp[self.tool_id][1])
-            small_value: "{:3.0f}".format(app.temp[self.tool_id][0]) if app.temp[self.tool_id][0] != 0 else "Off"
-            red: app.temp[self.tool_id][1] > 50
+            large_value: "{:3.0f}°C".format(app.temp['extruder1'][1])
+            small_value: "{:3.0f}".format(app.temp['extruder1'][0]) if app.temp['extruder1'][0] != 0 else "Off"
+            red: app.temp['extruder1'][1] > 50
             width: 80
             right: temp_bed.right if app.extruder_count > 1 else p.mars
             y: p.tab_height + p.padding*3 + p.progress_bar_height + p.btn_stop
@@ -101,9 +101,9 @@
             id: temp_T0
             tool_id: "T0"
             on_release: Factory.ExtTempPopup(creator=self, val=app.temp).open()
-            large_value: "{:3.0f}°C".format(app.temp[self.tool_id][1])
-            small_value: "{:3.0f}".format(app.temp[self.tool_id][0]) if app.temp[self.tool_id][0] != 0 else "Off"
-            red: app.temp[self.tool_id][1] > 50
+            large_value: "{:3.0f}°C".format(app.temp['extruder'][1])
+            small_value: "{:3.0f}".format(app.temp['extruder'][0]) if app.temp['extruder'][0] != 0 else "Off"
+            red: app.temp['extruder'][1] > 50
             width: 80
             right: temp_bed.right
             y: p.tab_height + p.progress_bar_height + 4*p.padding + p.btn_height + p.btn_stop
@@ -114,9 +114,9 @@
         BtnTemp:
             on_release: Factory.BedTempPopup(creator=self, val=app.temp).open()
             id: temp_bed
-            large_value: "{:3.0f}°C".format(app.temp['B'][1])
-            small_value: "{:3.0f}".format(app.temp['B'][0]) if app.temp['B'][0] != 0 else "Off"
-            red: app.temp['B'][1] > 50
+            large_value: "{:3.0f}°C".format(app.temp['heater_bed'][1])
+            small_value: "{:3.0f}".format(app.temp['heater_bed'][0]) if app.temp['heater_bed'][0] != 0 else "Off"
+            red: app.temp['heater_bed'][1] > 50
             x: p.h_padding
             y: p.tab_height + p.progress_bar_height + 5*p.padding + 2*p.btn_height + p.btn_stop
             canvas.before:
@@ -308,7 +308,7 @@
         size: self.texture_size
         pos: xy_pos.right, xy_pos.y
         font_size: p.normal_font
-        color: (1,1,1,1) if app.z_move_completion else p.nozzle
+        color: p.nozzle
     Label:
         id: ext_pos
         text: "E{:.1f}".format(app.pos[3]%100)
@@ -316,7 +316,7 @@
         size: self.texture_size
         pos: z_pos.right, xy_pos.y
         font_size: p.normal_font
-        color: (1,1,1,1) if app.ext_move_completion else p.nozzle
+        color: p.nozzle
 
 <PrintProgressBar@Widget>:
     canvas:
@@ -394,9 +394,9 @@
     BaseButton:
         size: root.w1, root.height
         pos: root.pos
-        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.tool_id][0] > app.min_extrude_temp and app.temp[root.tool_id][1] > app.min_extrude_temp and not app.toolhead_busy
+        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.extruder_id][0] > app.min_extrude_temp and app.temp[root.extruder_id][1] > app.min_extrude_temp and not app.toolhead_busy
         on_press: app.reactor.cb(printer_cmd.send_extrude, root.tool_id, -1)
-        on_release: if app.ext_move_completion: app.reactor.cb(printer_cmd.send_extrude_stop)
+        on_release: app.reactor.cb(printer_cmd.send_extrude_stop)
         canvas:
             Color:
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
@@ -412,7 +412,7 @@
         id: btn_load
         size: root.w2, root.height
         pos: root.x + root.w1,root.y
-        enabled: app.state == "ready"  and app.print_state in ("no printjob", "done", "paused") and app.filament_manager
+        enabled: True#app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.filament_manager
         on_release: root.load_unload()
         color: (1,1,1,1) if self.enabled else p.btn_disabled
         text: root.title
@@ -424,9 +424,9 @@
     BaseButton:
         size: root.w3, root.height
         pos: root.x + root.w1+root.w2,root.y
-        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.tool_id][0] > app.min_extrude_temp and app.temp[root.tool_id][1] > app.min_extrude_temp and not app.toolhead_busy
+        enabled: True #app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.extruder_id][0] > app.min_extrude_temp and app.temp[root.extruder_id][1] > app.min_extrude_temp and not app.toolhead_busy
         on_press: app.reactor.cb(printer_cmd.send_extrude, root.tool_id)
-        on_release: if app.ext_move_completion: app.reactor.cb(printer_cmd.send_extrude_stop)
+        on_release: app.reactor.cb(printer_cmd.send_extrude_stop)
         canvas:
             Color:
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
@@ -458,8 +458,8 @@
     #:set t 9.5
     #:set u 19 #Triangle has this size x2
     BaseButton:
-        on_press: app.reactor.cb(printer_cmd.send_z_go, up = app.invert_z_controls)
-        on_release:  if app.z_move_completion: app.reactor.cb(printer_cmd.send_z_stop)
+        on_press: app.reactor.cb(printer_cmd.send_z_go, 5, -1 if app.invert_z_controls else 1); app.warn_not_homed()
+        on_release: app.reactor.cb(printer_cmd.send_z_stop)
         enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy
         size: root.width, root.h1
         pos: root.x, root.y
@@ -486,8 +486,8 @@
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: app.reactor.cb(printer_cmd.send_z_go, up = not app.invert_z_controls)
-        on_release: if app.z_move_completion: app.reactor.cb(printer_cmd.send_z_stop)
+        on_press: app.reactor.cb(printer_cmd.send_z_go, -1 if app.invert_z_controls else 1); app.warn_not_homed()
+        on_release: app.reactor.cb(printer_cmd.send_z_stop)
         enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
@@ -505,7 +505,7 @@
 
 <BtnHome@RoundButton>:
     axis_id: 'Z'
-    on_release: app.reactor.cb(printer_cmd.send_home, self.axis_id)
+    on_release: app.reactor.cb(printer_cmd.send_home, str(self.axis_id))
     enabled: app.state == "ready" and not app.toolhead_busy
     canvas:
         Color:

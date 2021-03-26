@@ -38,7 +38,7 @@ class Filechooser(RecycleView):
     def control_updating(self, instance, tab):
         if tab == instance.ids.file_tab:
             self.load_files(in_background = True)
-            self.update_timer = Clock.schedule_interval(self.update, 0.8)
+            self.update_timer = Clock.schedule_interval(self.update, 0.5)
         elif self.update_timer:
             Clock.unschedule(self.update_timer)
             self.update_timer = None
