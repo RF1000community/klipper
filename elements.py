@@ -82,6 +82,9 @@ class BaseButton(Label):
 class RoundButton(BaseButton):
     pass
 
+class RectangleButton(BaseButton):
+    pass
+
 class BtnSlider(BaseButton):
     val = NumericProperty()
     px = NumericProperty()
@@ -199,7 +202,7 @@ class PrintPopupDetail(Label):
 
 
 class DeletePopup(BasePopup):
-    """Popup to confirm file deletion"""
+    """ Popup to confirm file deletion """
     def __init__(self, path, filechooser=None, **kwargs):
         self.path = path
         self.filechooser = filechooser
@@ -339,7 +342,7 @@ class UltraSlider(Widget):
         return round(val/self.round_style, self.round_to)*self.round_style
 
     def get_disp_from_val(self, val):
-        """Returns string of the value and the given unit string"""
+        """ Returns string of the value and the given unit string """
         dec = max(0, self.round_to)
         return f"{val:.{dec}f}{self.unit}"
 
@@ -438,5 +441,3 @@ class UltraKeyboard(VKeyboard):
             if special_char == 'capslock' and self.have_capslock:
                 self.active_keys[-1] = key
             self.refresh_active_keys_layer()
-
-

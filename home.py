@@ -96,13 +96,12 @@ class TempSlider(UltraSlider):
     def init_drawing(self, dt=None):
         app = App.get_running_app()
         app.reactor.cb(printer_cmd.get_temp)
-        fm = app.filament_manager
 
         self.buttons = [[0, 0, "Off", None]] #[value, pos_offset, text, instance]
         if self.tool_id == 'B':
             self.val_min = 30
             self.val_max = 140
-            if fm:
+            if 0: #TODO
                 loaded_material = fm.get_status()['loaded']
                 for material in loaded_material:
                     if material['guid']:
@@ -121,7 +120,7 @@ class TempSlider(UltraSlider):
         else:
             self.val_min = 40
             self.val_max = 280
-            if fm:
+            if 0: #TODO
                 tool_idx = int(self.tool_id[-1])
                 loaded_material = fm.get_status()['loaded']
                 if loaded_material[tool_idx]['guid']:
@@ -181,7 +180,7 @@ class BtnTriple(Widget):
         super().__init__(**kwargs)
 
     def update_material(self, *_):
-        self.fm = self.app.filament_manager
+        self.fm = 0 #TODO
         if not self.fm:
             return
         if not self.tool_id: # kv ui not initialized yet
@@ -213,6 +212,8 @@ class BtnTriple(Widget):
         elif self.material['state'] == 'loaded':
             FilamentPopup(self.extruder_id, False, self.material['guid'], amount=self.material['amount']).open()
 
+def get_material(e, printer):
+    material = printer.objects['filament_manager'].get_status()['loaded']
 
 class FilamentChooserPopup(BasePopup):
     tab_2 = BooleanProperty(False)

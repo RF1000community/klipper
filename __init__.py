@@ -18,7 +18,7 @@ from kivy.clock import Clock
 from kivy.config import Config
 from kivy.lang import Builder
 from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
-        NumericProperty, ListProperty, StringProperty, ObjectProperty)
+                            NumericProperty, ListProperty, StringProperty)
 from .elements import UltraKeyboard, CriticalErrorPopup, ErrorPopup
 from .freedir import freedir
 from .nm_dbus import NetworkManager
@@ -27,9 +27,7 @@ from .status import Notifications
 # Imports for KvLang Builder
 from . import files, home, settings, status, timeline, update, printer_cmd
 
-site.addsitedir(join(p.klipper_dir, "klippy/"))
-site.addsitedir(join(p.klipper_dir, "klippy/extras/"))
-
+site.addsitedir(join(p.klipper_dir, "klippy/extras/")) # gcode_metadata
 import gcode_metadata
 
 class mainApp(App, threading.Thread):
@@ -53,7 +51,7 @@ class mainApp(App, threading.Thread):
         "done",
         ])
     homed = DictProperty() # updated by handle_home_end/start event handler
-    temp = DictProperty() # {'heater_bed':[setpoint, current], 'extruder': ...}
+    temp = DictProperty() # {'heater_bed': [setpoint, current], 'extruder': ...}
     connected = BooleanProperty(False) # updated with handle_connect
     jobs = ListProperty()
     print_title = StringProperty()
@@ -62,6 +60,7 @@ class mainApp(App, threading.Thread):
     progress = NumericProperty(0)
     pos = ListProperty([0, 0, 0, 0])
     toolhead_busy = BooleanProperty(False)
+    ongoing_live_move = BooleanProperty(False)
     # tuning
     speed = NumericProperty(100)
     flow = NumericProperty(100)
@@ -77,53 +76,42 @@ class mainApp(App, threading.Thread):
         logging.info("Kivy app initializing...")
         self.network_manager = NetworkManager()
         self.notify = Notifications()
-        self.gcode_metadata = None#gcode_metadata.load_config(None)
+        self.gcode_metadata = gcode_metadata.load_config(config) # beware this is not the 'right' config
         self.temp = {'extruder':[0,0], 'extruder1':[0,0], 'heater_bed':[0,0]}
         self.homed = {'x':False, 'y':False, 'z':False}
         self.warned_not_homed = {'x':False, 'y':False, 'z':False}
         self.curaconnection = None
-        self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell the app class where the root kv file is
+        self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell kivy where the root kv file is
 
         if TESTING:
-            site.addsitedir(join(p.klipper_dir, "klippy/extras/"))
-            import filament_manager
-            self.filament_manager = filament_manager.load_config(None)
-            import gcode_metadata
-            self.gcode_metadata = gcode_metadata.load_config(None)
             self.pos_max = {'x':200, 'y':0}
             self.pos_min = {'x':0, 'y':0}
-            self.filament_diameter = 1.75
             self.xy_homing_controls = True
             self.extruder_count = 2
-            self.printer = self.reactor = self.print_history = None
+            self.reactor = None
             return super().__init__(**kwargs)
 
-        self.kgui_config = config
-        self.printer = config.get_printer()
         self.reactor = config.get_reactor()
-        self.filament_manager = None #TODO
-        self.klipper_config_manager = self.printer.objects['configfile']
-        self.klipper_config = self.klipper_config_manager.read_main_config()
+        self.reactor.register_external_callback_handler(kivy_callback)
+        self.fd = config.get_printer().get_start_args().get("gcode_fd")
+        klipper_config = config.get_printer().objects['configfile'].read_main_config()
         # read config
-        self.config_pressure_advance = self.klipper_config.getsection('extruder').getfloat("pressure_advance", 0)
-        self.config_acceleration = self.klipper_config.getsection('printer').getfloat("max_accel", 0)
-        self.z_speed = self.kgui_config.getfloat('manual_z_speed', 3)
-        self.ext_speed = self.kgui_config.getfloat('manual_extrusion_speed', 2)
-        self.invert_z_controls = self.kgui_config.getboolean('invert_z_controls', False)
-        self.xy_homing_controls = self.kgui_config.getboolean('xy_homing_controls', True)
-        stepper_config = {'x': self.klipper_config.getsection('stepper_x'),
-                            'y': self.klipper_config.getsection('stepper_y'),
-                            'z': self.klipper_config.getsection('stepper_z')}
+        self.config_pressure_advance = klipper_config.getsection('extruder').getfloat("pressure_advance", 0)
+        self.config_acceleration = klipper_config.getsection('printer').getfloat("max_accel", 0)
+        self.z_speed = config.getfloat('manual_z_speed', 3)
+        self.ext_speed = config.getfloat('manual_extrusion_speed', 2)
+        self.invert_z_controls = config.getboolean('invert_z_controls', False)
+        self.xy_homing_controls = config.getboolean('xy_homing_controls', True)
+        stepper_config = {'x': klipper_config.getsection('stepper_x'),
+                          'y': klipper_config.getsection('stepper_y'),
+                          'z': klipper_config.getsection('stepper_z')}
         self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in 'xyz'}
         self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in 'xyz'}
-        self.filament_diameter = self.klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
         # maintain this by keeping default the same as klipper
-        self.min_extrude_temp = self.klipper_config.getsection("extruder").getint("min_extrude_temp", 170)
+        self.min_extrude_temp = klipper_config.getsection("extruder").getint("min_extrude_temp", 170)
         # count how many extruders exist
         for i in range(1, 10):
-            try:
-                klipper_config.getsection(f"extruder{i}")
-            except:
+            if not klipper_config.has_section(f"extruder{i}"):
                 self.extruder_count = i
                 break
         # register event handlers
@@ -138,7 +126,9 @@ class mainApp(App, threading.Thread):
         self.reactor.register_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
         self.reactor.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
         self.reactor.register_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
-        self.reactor.cb(printer_cmd.load_object, self.klipper_config, "live_move")
+        self.reactor.cb(printer_cmd.load_object, "live_move")
+        self.reactor.cb(printer_cmd.load_object, "filament_manager")
+        self.reactor.cb(printer_cmd.load_object, "print_history")
         self.clean()
         super().__init__(**kwargs)
 
@@ -167,7 +157,8 @@ class mainApp(App, threading.Thread):
     def handle_disconnect(self):
         logging.info("handle disconnect")
         self.connected = False
-        self.reactor.register_async_callback(lambda e: self.reactor.finalize)
+        self.reactor.external_callback_handler = None # run finalize callback in reactor thread
+        self.reactor.cb(lambda e: self.reactor.finalize(), process='kgui')
         self.stop()
         logging.info("handle disconenct done")
 
@@ -222,11 +213,16 @@ class mainApp(App, threading.Thread):
             self.print_state = "no printjob"
             # tuning values are only reset once print_queue has run out
             self.reactor.cb(printer_cmd.reset_tuning)
-    
-    def warn_not_homed(self, axis):
-        if not (self.homed[axis] or self.warned_not_homed[axis]):
+
+    def note_live_move(self, axis):
+        if axis in 'xyz' and not (self.homed[axis] or self.warned_not_homed[axis]):
             self.notify.show("Axis not homed", "Proceed with care!", level="warning", delay=3)
             self.warned_not_homed['z'] = True
+        self.ongoing_live_move = True
+
+    def note_live_move_end(self, axis=None):
+        self.ongoing_live_move = False
+        self.reactor.cb(printer_cmd.wait_toolhead_not_busy)
 
     def on_start(self, *args):
         if self.network_manager.available:
@@ -245,6 +241,8 @@ class mainApp(App, threading.Thread):
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
 
+def kivy_callback(callback, waketime, *args, **kwargs):
+    Clock.schedule_once(lambda dt: callback(None, *args, **kwargs))
 
 # Catch KGUI exceptions and display popups
 class PopupExceptionHandler(ExceptionHandler):

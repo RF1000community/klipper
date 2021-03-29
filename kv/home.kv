@@ -186,7 +186,7 @@
             width: self.height + 40
             x: p.h_padding
             top: root.height-p.padding-p.status_bar_height
-            enabled: app.state == "ready" and app.homed['x'] and app.homed['y'] and not app.toolhead_busy
+            enabled: app.state == "ready" and app.homed['x'] and app.homed['y'] and not app.toolhead_busy and not app.ongoing_live_move
         BtnHome:
             axis_id: 'X'
             size: p.btn_height, p.btn_height
@@ -394,7 +394,7 @@
     BaseButton:
         size: root.w1, root.height
         pos: root.pos
-        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.extruder_id][0] > app.min_extrude_temp and app.temp[root.extruder_id][1] > app.min_extrude_temp and not app.toolhead_busy
+        enabled: app.state == "ready" # and app.print_state in ("no printjob", "done", "paused") and app.temp[root.extruder_id][0] > app.min_extrude_temp and app.temp[root.extruder_id][1] > app.min_extrude_temp and not app.toolhead_busy and not app.ongoing_live_move
         on_press: app.reactor.cb(printer_cmd.send_extrude, root.tool_id, -1)
         on_release: app.reactor.cb(printer_cmd.send_extrude_stop)
         canvas:
@@ -424,7 +424,7 @@
     BaseButton:
         size: root.w3, root.height
         pos: root.x + root.w1+root.w2,root.y
-        enabled: True #app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.extruder_id][0] > app.min_extrude_temp and app.temp[root.extruder_id][1] > app.min_extrude_temp and not app.toolhead_busy
+        enabled: True #app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and app.temp[root.extruder_id][0] > app.min_extrude_temp and app.temp[root.extruder_id][1] > app.min_extrude_temp and not app.toolhead_busy and not app.ongoing_live_move
         on_press: app.reactor.cb(printer_cmd.send_extrude, root.tool_id)
         on_release: app.reactor.cb(printer_cmd.send_extrude_stop)
         canvas:
@@ -458,9 +458,9 @@
     #:set t 9.5
     #:set u 19 #Triangle has this size x2
     BaseButton:
-        on_press: app.reactor.cb(printer_cmd.send_z_go, 5, -1 if app.invert_z_controls else 1); app.warn_not_homed()
-        on_release: app.reactor.cb(printer_cmd.send_z_stop)
-        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy
+        on_press: app.reactor.cb(printer_cmd.send_z_go, 5, 1 if app.invert_z_controls else -1); app.note_live_move('z')
+        on_release: app.reactor.cb(printer_cmd.send_z_stop);  app.note_live_move_end('z')
+        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy and not app.ongoing_live_move
         size: root.width, root.h1
         pos: root.x, root.y
         canvas.before:
@@ -486,9 +486,9 @@
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: app.reactor.cb(printer_cmd.send_z_go, -1 if app.invert_z_controls else 1); app.warn_not_homed()
-        on_release: app.reactor.cb(printer_cmd.send_z_stop)
-        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy
+        on_press: app.reactor.cb(printer_cmd.send_z_go, 5, -1 if app.invert_z_controls else 1); app.note_live_move('z')
+        on_release: app.reactor.cb(printer_cmd.send_z_stop); app.note_live_move_end('z')
+        enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy and not app.ongoing_live_move
         size: root.width, root.h3
         pos: root.x, root.top-root.h3
         canvas.before:
@@ -506,7 +506,7 @@
 <BtnHome@RoundButton>:
     axis_id: 'Z'
     on_release: app.reactor.cb(printer_cmd.send_home, str(self.axis_id))
-    enabled: app.state == "ready" and not app.toolhead_busy
+    enabled: app.state == "ready" and not app.toolhead_busy and not app.ongoing_live_move
     canvas:
         Color:
             rgba: (1,1,1,1) if self.enabled else p.btn_disabled

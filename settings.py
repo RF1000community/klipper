@@ -15,8 +15,9 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 from kivy.uix.tabbedpanel import TabbedPanelItem
 
-from .elements import BaseButton, BasePopup
+from .elements import BaseButton, BasePopup, RectangleButton
 from . import printer_cmd
+from util import set_nonblock
 
 
 class SettingTab(TabbedPanelItem):
@@ -25,10 +26,6 @@ class SettingTab(TabbedPanelItem):
         if self.collide_point(*touch.pos):
             self.ids.screen_man.current = "SettingScreen"
         return super().on_touch_down(touch)
-
-
-class RectangleButton(BaseButton):
-    pass
 
 
 class SetItem(FloatLayout, RectangleButton):
@@ -55,21 +52,19 @@ class SIWifi(SetItem):
 class ConsoleScreen(Screen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # app = App.get_running_app()
-        # self.fd = None
-        # if 0: #TODO
-        #     self.fd = app.printer.get_start_args().get("gcode_fd")
-        # self.reactor = app.reactor
-        # Clock.schedule_once(self.init_drawing, 0)
-        # logging.info(f"GCOOOOOOODE FD IS {self.fd} with type {type(self.fd)}")
+        self.app = App.get_running_app()
+        self.reactor = self.app.reactor
+        Clock.schedule_once(self.init_drawing, 0)
+        logging.info(f"GCOOOOOOODE FD IS {self.app.fd} with type {type(self.app.fd)}")
 
     def init_drawing(self, *args):
         self.ids.console_input.bind(on_text_validate=self.confirm)
+        set_nonblock(self.app.fd)
 
     def on_pre_enter(self):
         self.ids.console_input.focus = True
         self.ids.console_scroll.scroll_y = 0
-        #self.scheduled_polling = Clock.schedule_interval(self.poll, 1)
+        self.scheduled_polling = Clock.schedule_interval(self.poll, 1)
 
     def on_leave(self):
         Clock.unschedule(self.scheduled_polling)
@@ -78,7 +73,7 @@ class ConsoleScreen(Screen):
         self.ids.console_scroll.scroll_y = 0
         while 1:
             try:
-                data = os.read(self.fd, 4096, os.O_NONBLOCK)
+                data = os.read(self.app.fd, 4096)
             except BlockingIOError:
                 data = "..."
                 break
@@ -86,19 +81,15 @@ class ConsoleScreen(Screen):
                 break
                 self.ids.console_label.text += data.decode()
 
-
-
     def confirm(self, *args):
         cmd = self.ids.console_input.text + "\n"
         try:
-            os.write(self.fd, cmd.encode(), os.O_NONBLOCK)
+            os.write(self.app.fd, cmd.encode())
         except os.error:
             logging.exception("couldnt write command")
-
         self.ids.console_input.text = ""
         self.ids.console_label.text += cmd
         self.ids.console_scroll.scroll_y = 0
-
 
 
 class WifiScreen(Screen):

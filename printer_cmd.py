@@ -7,14 +7,14 @@ import logging
 from datetime import datetime, timedelta
 
 def set_attribute(e, root, property_name, val):
-    logging.info(f"set attribute {property_name} to {val}")
     setattr(root, property_name, val)
 
 def update_dict(e, root, dict_name, val):
     getattr(root, dict_name).update(val)
 
-def load_object(e, printer, config, object_name):
-    printer.load_object(config, object_name)
+def load_object(e, printer, object_name): # config objects can't be pickled
+    klipper_config = printer.objects['configfile'].read_main_config()
+    printer.load_object(klipper_config, object_name)
 
 ######################################################################
 # Tuning
@@ -25,7 +25,8 @@ def reset_tuning(e, printer):
     send_speed(e, printer, 100)
     send_z_offset(e, printer, 0)
     send_fan(e, printer, 0)
-    send_acceleration(e, printer, printer.config.getsection('printer').getfloat('max_accel', above=0.))
+    klipper_config = printer.objects['configfile'].read_main_config()
+    send_acceleration(e, printer, klipper_config.getsection('printer').getfloat('max_accel', above=0.))
     reset_pressure_advance(e, printer)
     update(e, printer)
 
@@ -81,7 +82,8 @@ def reset_pressure_advance(e, printer):
         extruder_id = f"extruder{'' if i==0 else i}"
         if extruder_id in printer.objects:
             extruder = printer.objects[extruder_id]
-            pa = printer.config.getsection(extruder.name).getfloat('pressure_advance', 0., minval=0.)
+            klipper_config = printer.objects['configfile'].read_main_config()
+            pa = klipper_config.getsection(extruder.name).getfloat('pressure_advance', 0., minval=0.)
             extruder._set_pressure_advance(pa, extruder.pressure_advance_smooth_time)
 
 def get_acceleration(e, printer):
@@ -149,6 +151,9 @@ def get_toolhead_busy(e, printer):
     busy = bool(not lookahead_empty or idle_time <= 0)
     printer.reactor.cb(set_attribute, 'toolhead_busy', busy, process='kgui')
     return busy
+def wait_toolhead_not_busy(e, printer):
+    while get_toolhead_busy(printer.reactor.monotonic(), printer):
+        printer.reactor.pause(printer.reactor.monotonic() + 0.1)
 
 def get_pos(e, printer):
     pos = printer.objects['toolhead'].get_position()
@@ -174,7 +179,6 @@ def _fill_coord(printer, new_pos):
 def send_z_go(e, printer, z_speed, direction):
     printer.objects['live_move'].start_move('z', direction)
     get_toolhead_busy(e, printer)
-
 def send_z_stop(e, printer):
     printer.objects['live_move'].stop_move('z')
     get_pos(e, printer)
@@ -182,7 +186,6 @@ def send_z_stop(e, printer):
 def send_extrude(e, printer, tool_id, direction):
     printer.objects['live_move'].start_move(tool_id, direction)
     get_toolhead_busy(e, printer)
-
 def send_extrude_stop(e, printer, tool_id):
     printer.objects['live_move'].stop_move(tool_id)
     get_pos(e, printer)
@@ -232,7 +235,7 @@ def firmware_restart(e, printer):
     printer.request_exit('firmware_restart')
 
 def quit(e, printer):
-    """Stop klipper and GUI, returns to tty"""
+    """ Stop klipper and GUI, returns to tty """
     printer.request_exit('exit')
 
 def format_time(seconds):
