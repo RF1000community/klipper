@@ -40,6 +40,11 @@ class ReactorCompletion:
 
 class ReactorCallback:
     def __init__(self, reactor, callback, waketime, *args, **kwargs):
+        if reactor.external_callback_handler:
+            self.completion = ReactorCompletion(reactor)
+            res = reactor.external_callback_handler(callback, waketime, *args, **kwargs)
+            self.completion.complete(reactor, res)
+            return
         self.reactor = reactor
         self.timer = reactor.register_timer(self.invoke, waketime)
         self.callback = callback
@@ -115,6 +120,7 @@ class SelectReactor:
         self._mp_queue = multiprocessing.Queue()
         self._mp_queues = {}
         self._mp_pipe_fds = {}
+        self.external_callback_handler = None
         # File descriptors
         self._fds = []
         # Greenlets
@@ -124,9 +130,8 @@ class SelectReactor:
     def register_mp_queues(self, queues={}, pipes={}):
         self._mp_queues.update(queues)
         self._mp_pipe_fds.update(pipes)
-    def broadcast_mp_queues(self):
-        for process in self._mp_queues.keys():
-            self.cb(register_mp_queues, queues=self._mp_queues, process=process)
+    def register_external_callback_handler(self, handler):
+        self.external_callback_handler = handler
     def get_gc_stats(self):
         return tuple(self._last_gc_times)
     # Timers
@@ -190,13 +195,21 @@ class SelectReactor:
                 os.write(self._pipe_fds[1], b'.')
             except os.error:
                 pass
-        else:
-            self._mp_queues[process].put((ReactorCallback, args, kwargs))
+        elif process in self._mp_queues.keys():
+            try:
+                self._mp_queues[process].put((ReactorCallback, args, kwargs))
+            except:
+                import logging
+                logging.warning(f"\n \n Cannot pickle callback {args}, {kwargs} \n \n")
+                return
             try:
                 os.write(self._mp_pipe_fds[process], b'-')
             except os.error:
                 pass
-    def cb(self, *args,  process='printer', **kwargs):
+        else:
+            cb(forward_async_callback, (callback, *args),
+                {'waketime': waketime, 'process': process, **kwargs}, process='printer')
+    def cb(self, *args, process='printer', **kwargs):
         self.register_async_callback(*args, process=process, **kwargs)
     def async_complete(self, completion, result):
         self._async_queue.put_nowait((completion.complete, (result,), {}))
@@ -210,18 +223,13 @@ class SelectReactor:
         except os.error:
             pass
         import logging
-        logging.info(f"{self.process_name} got pipe signal {signal}")
         if b'-' in signal:
             while 1:
                 try:
                     func, args, kwargs = self._mp_queue.get_nowait()
                 except queue.Empty:
                     break
-                while self.root is None:
-                    logging.info(f"root object {self.process_name} not yet available")
-                    time.sleep(0.1)
                 args = args[:2] + (self.root,) + args[2:]
-                logging.info(f"running mp cb with args: {args}, kwargs: {kwargs}")
                 func(self, *args, **kwargs)
         if b'.' in signal:
             while 1:
@@ -230,7 +238,19 @@ class SelectReactor:
                 except queue.Empty:
                     break
                 func(self, *args, **kwargs)
-
+    # def check_pickleable(self, args):
+    #     if type(args) is dict:
+    #         items = args.items()
+    #     else:
+    #         args = list(args)
+    #         items = enumerate(args)
+    #     for key, value in items:
+    #         try:
+    #             pickle.dump(value)
+    #         except:
+    #             logging.warning(f"couldn't pickle arg {key}, {value}")
+    #             args[key] = None
+    #     return args
     def _setup_async_callbacks(self):
         self._pipe_fds = os.pipe()
         util.set_nonblock(self._pipe_fds[0])
@@ -325,14 +345,23 @@ class SelectReactor:
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
+        import logging
+        logging.info(f"send event {event} from process {self.process_name}")
+        if self.process_name != 'printer':
+            self.cb(forward_event, (event, params), process='printer')
+            return
         for process in self._mp_queues.keys():
-            self.cb(run_event_in_process, event, *params, process=process)
-        return self.run_event_handlers(event, *params)
-    def run_event_handlers(self, event, *params):
-        return [cb(*params) for cb in self.event_handlers.get(event, [])]
+            self.cb(run_event, event, params, process=process)
+        return run_event(None, self.root, event, params)
 
-def run_event_in_process(e, root, *args, **kwargs):
-    root.reactor.run_event_handlers(*args, **kwargs)
+def run_event(e, root, event, params):
+    return [cb(*params) for cb in root.reactor.event_handlers.get(event, [])]
+
+def forward_event(e, root, args):
+    root.reactor.send_event(event, *args)
+
+def forward_async_callback(e, root, args, kwargs):
+    root.reactor.cb(*args, **kwargs)
 
 class PollReactor(SelectReactor):
     def __init__(self, gc_checking=False, process='printer'):

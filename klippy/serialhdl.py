@@ -143,7 +143,7 @@ class SerialReader:
             self.ser.close()
             self.ser = None
         for pn in self.pending_notifications.values():
-            pn.complete(None, None)
+            pn.complete(self.reactor, None)
         self.pending_notifications.clear()
     def stats(self, eventtime):
         if self.serialqueue is None:

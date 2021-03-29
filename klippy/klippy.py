@@ -7,8 +7,8 @@
 import sys, os, gc, optparse, logging, time, collections, importlib
 import util, reactor, queuelogger, msgproto
 import gcode, configfile, pins, mcu, toolhead, webhooks
-import signal, traceback
-import multiprocessing, site
+import signal, traceback, site
+import multiprocessing
 from os.path import join, exists, dirname
 
 message_ready = "Printer is ready"

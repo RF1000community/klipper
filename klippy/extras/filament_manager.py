@@ -15,20 +15,18 @@ from math import pi
 
 class FilamentManager:
     def __init__(self, config):
-        extruder_count = 1
-        if config:
-            self.filament_manager_config = config
-            self.printer = self.filament_manager_config.get_printer()
-            self.reactor = self.printer.get_reactor()
-            klipper_config_manager = self.printer.objects['configfile']
-            klipper_config = klipper_config_manager.read_main_config()
-            self.config_diameter = klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
-            for i in range(1, 10):
-                try: klipper_config.getsection(f"extruder{i}")
-                except: extruder_count = i; break
-            self.extruders = {}
-            self.printer.register_event_handler("klippy:ready", self.handle_ready)
-            self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
+        self.config = config
+        self.printer = self.config.get_printer()
+        self.reactor = self.printer.get_reactor()
+        klipper_config = self.printer.objects['configfile'].read_main_config()
+        self.config_diameter = klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
+        for i in range(1, 10):
+            if not klipper_config.has_section(f"extruder{i}"):
+                extruder_count = i
+                break
+        self.extruders = {}
+        self.printer.register_event_handler("klippy:ready", self.handle_ready)
+        self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
         # xml files for each material
         self.material_dir = expanduser('~/materials')
         if not os.path.exists(self.material_dir):
