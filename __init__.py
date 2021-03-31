@@ -1,7 +1,7 @@
 import logging
 import site
 import threading
-import os
+import os, time
 import traceback
 from os.path import join
 from subprocess import Popen
@@ -32,7 +32,7 @@ import gcode_metadata
 
 class mainApp(App, threading.Thread):
 
-    # Property for controlling the state as shown in the statusbar.
+    # Property for controlling the state as shown in the statusbar
     state = OptionProperty("startup", options=[
         # Every string set has to be in this list
         "startup",
@@ -94,24 +94,23 @@ class mainApp(App, threading.Thread):
         self.reactor = config.get_reactor()
         self.reactor.register_external_callback_handler(kivy_callback)
         self.fd = config.get_printer().get_start_args().get("gcode_fd")
-        klipper_config = config.get_printer().objects['configfile'].read_main_config()
         # read config
-        self.config_pressure_advance = klipper_config.getsection('extruder').getfloat("pressure_advance", 0)
-        self.config_acceleration = klipper_config.getsection('printer').getfloat("max_accel", 0)
-        self.z_speed = config.getfloat('manual_z_speed', 3)
+        self.config_pressure_advance = config.getsection('extruder').getfloat("pressure_advance", 0)
+        self.config_acceleration = config.getsection('printer').getfloat("max_accel", 0)
+        self.z_speed = config.getfloat('manual_z_speed', 5)
         self.ext_speed = config.getfloat('manual_extrusion_speed', 2)
         self.invert_z_controls = config.getboolean('invert_z_controls', False)
         self.xy_homing_controls = config.getboolean('xy_homing_controls', True)
-        stepper_config = {'x': klipper_config.getsection('stepper_x'),
-                          'y': klipper_config.getsection('stepper_y'),
-                          'z': klipper_config.getsection('stepper_z')}
+        stepper_config = {'x': config.getsection('stepper_x'),
+                          'y': config.getsection('stepper_y'),
+                          'z': config.getsection('stepper_z')}
         self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in 'xyz'}
         self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in 'xyz'}
         # maintain this by keeping default the same as klipper
-        self.min_extrude_temp = klipper_config.getsection("extruder").getint("min_extrude_temp", 170)
+        self.min_extrude_temp = config.getsection("extruder").getint("min_extrude_temp", 170)
         # count how many extruders exist
         for i in range(1, 10):
-            if not klipper_config.has_section(f"extruder{i}"):
+            if not config.has_section(f"extruder{i}"):
                 self.extruder_count = i
                 break
         # register event handlers
@@ -157,8 +156,10 @@ class mainApp(App, threading.Thread):
     def handle_disconnect(self):
         logging.info("handle disconnect")
         self.connected = False
-        self.reactor.external_callback_handler = None # run finalize callback in reactor thread
-        self.reactor.cb(lambda e: self.reactor.finalize(), process='kgui')
+        self.reactor.external_callback_handler = None # run callback in reactor thread
+        self.reactor.cb(self.reactor.close_process, process='kgui')
+        time.sleep(1)
+        # self.reactor.finalize()
         self.stop()
         logging.info("handle disconenct done")
 
@@ -190,15 +191,15 @@ class mainApp(App, threading.Thread):
     def handle_printjob_start(self, job):
         self.notify.show("Started printing", f"Started printing {job.name}", delay=5)
         self.print_title = job.name
-        # this only works if we are in a printing state 
+        # this only works if we are in a printing state
         # we rely on this being called after handle_printjob_change
-        self.reactor.cb(get_printjob_progress, process='printer')
+        self.reactor.cb(printer_cmd.get_printjob_progress, process='printer')
 
     def handle_printjob_end(self, job):
         if 'done' == job.state:
             self.progress = 1
             self.print_done_time = ""
-            self.print_time = "finished in " + self.format_time(job.get_printed_time())
+            self.print_time = "done"
             # show finished job for 1h
             Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 3600)
         else:

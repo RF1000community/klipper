@@ -57,7 +57,7 @@
             y: btn_stop.y
             right: btn_stop.x
         BtnPause:
-            on_release: app.send_pause()
+            on_release: app.reactor.cb(printer_cmd.send_pause)
             size: btn_stop.size
             y: btn_stop.y
             right: btn_stop.x
@@ -458,7 +458,7 @@
     #:set t 9.5
     #:set u 19 #Triangle has this size x2
     BaseButton:
-        on_press: app.reactor.cb(printer_cmd.send_z_go, 5, 1 if app.invert_z_controls else -1); app.note_live_move('z')
+        on_press: app.reactor.cb(printer_cmd.send_z_go, app.z_speed, 1 if app.invert_z_controls else -1); app.note_live_move('z')
         on_release: app.reactor.cb(printer_cmd.send_z_stop);  app.note_live_move_end('z')
         enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy and not app.ongoing_live_move
         size: root.width, root.h1
@@ -486,7 +486,7 @@
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: app.reactor.cb(printer_cmd.send_z_go, 5, -1 if app.invert_z_controls else 1); app.note_live_move('z')
+        on_press: app.reactor.cb(printer_cmd.send_z_go, app.z_speed, -1 if app.invert_z_controls else 1); app.note_live_move('z')
         on_release: app.reactor.cb(printer_cmd.send_z_stop); app.note_live_move_end('z')
         enabled: app.state == "ready" and app.print_state in ("no printjob", "done", "paused") and not app.toolhead_busy and not app.ongoing_live_move
         size: root.width, root.h3

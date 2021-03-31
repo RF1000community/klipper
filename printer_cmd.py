@@ -42,7 +42,7 @@ def get_speed(e, printer):
     printer.reactor.cb(set_attribute, 'speed', speed, process='kgui')
 def send_speed(e, printer, val):
     val = val/(60.*100.)
-    printer.objects['gcode_move'].speed = rinter.objects['gcode_move']._get_gcode_speed() * val
+    printer.objects['gcode_move'].speed = printer.objects['gcode_move']._get_gcode_speed() * val
     printer.objects['gcode_move'].speed_factor = val
     get_speed(e, printer)
 
