@@ -175,7 +175,6 @@ class Printer:
             self.load_object(config, section_config.get_name(), None)
         for m in [toolhead]:
             m.add_printer_objects(config)
-        #self.reactor.broadcast_mp_queues()
         # Validate that there are no undefined parameters in the config file
         # pconfig.check_unused_options(config)
     def _connect(self, eventtime):
@@ -289,7 +288,7 @@ class Printer:
     def register_event_handler(self, event, callback):
         self.reactor.register_event_handler(event, callback)
     def send_event(self, event, *params):
-        self.reactor.send_event(event, *params)
+        return self.reactor.send_event(event, *params)
     def request_exit(self, result):
         if self.run_result is None:
             self.run_result = result

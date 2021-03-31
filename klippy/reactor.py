@@ -7,6 +7,7 @@ import os, gc, select, math, time, queue
 import greenlet
 import chelper, util
 import multiprocessing
+import pickle
 
 _NOW = 0.
 _NEVER = 9999999999999999.
@@ -196,12 +197,7 @@ class SelectReactor:
             except os.error:
                 pass
         elif process in self._mp_queues.keys():
-            try:
-                self._mp_queues[process].put((ReactorCallback, args, kwargs))
-            except:
-                import logging
-                logging.warning(f"\n \n Cannot pickle callback {args}, {kwargs} \n \n")
-                return
+            self._mp_queues[process].put((ReactorCallback, self.check_pickleable(args), self.check_pickleable(kwargs)))
             try:
                 os.write(self._mp_pipe_fds[process], b'-')
             except os.error:
@@ -238,19 +234,24 @@ class SelectReactor:
                 except queue.Empty:
                     break
                 func(self, *args, **kwargs)
-    # def check_pickleable(self, args):
-    #     if type(args) is dict:
-    #         items = args.items()
-    #     else:
-    #         args = list(args)
-    #         items = enumerate(args)
-    #     for key, value in items:
-    #         try:
-    #             pickle.dump(value)
-    #         except:
-    #             logging.warning(f"couldn't pickle arg {key}, {value}")
-    #             args[key] = None
-    #     return args
+    def check_pickleable(self, args):
+        is_kwarg = bool(type(args) is dict)
+        if is_kwarg:
+            items = args.items()
+        else:
+            args = list(args)
+            items = enumerate(args)
+        for key, value in items:
+            try:
+                pickle.dumps(value)
+            except:
+                import logging
+                logging.warning(f"couldn't pickle arg {key}, {value}")
+                args[key] = None
+                raise
+        if not is_kwarg:
+            args = tuple(args)
+        return args
     def _setup_async_callbacks(self):
         self._pipe_fds = os.pipe()
         util.set_nonblock(self._pipe_fds[0])
@@ -336,6 +337,7 @@ class SelectReactor:
             try:
                 g.throw()
             except:
+                import logging
                 logging.exception("reactor finalize greenlet terminate")
         self._all_greenlets = []
         if self._pipe_fds is not None:
@@ -353,15 +355,21 @@ class SelectReactor:
         for process in self._mp_queues.keys():
             self.cb(run_event, event, params, process=process)
         return run_event(None, self.root, event, params)
+    def close_process(self, e):
+        self.end()
+        self.pause(1)
+        self.finalize()
 
 def run_event(e, root, event, params):
+    import logging
+    logging.info(f"run event {event} in process {root.reactor.process_name}")
     return [cb(*params) for cb in root.reactor.event_handlers.get(event, [])]
 
 def forward_event(e, root, args):
     root.reactor.send_event(event, *args)
 
 def forward_async_callback(e, root, args, kwargs):
-    root.reactor.cb(*args, **kwargs)
+    root.reactor.cb(*args, **kwargs)    
 
 class PollReactor(SelectReactor):
     def __init__(self, gc_checking=False, process='printer'):

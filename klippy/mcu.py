@@ -25,7 +25,6 @@ class MCU_endstop:
         self._trigger_completion = self._home_completion = None
     def __getstate__(self):
         logging.info("got state from MCU_endstop")
-        state = self.__dict__.copy()
         return {}
     def get_mcu(self):
         return self._mcu

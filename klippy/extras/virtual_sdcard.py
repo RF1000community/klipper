@@ -14,7 +14,6 @@ class Printjob:
         self.reactor = manager.reactor
         self.toolhead = manager.toolhead
         self.gcode = manager.gcode
-        self.printer = manager.printer
         self.heater_manager = manager.heater_manager
         self.gcode_metadata = manager.gcode_metadata
 
@@ -32,14 +31,25 @@ class Printjob:
             self.file_obj = self.md.get_gcode_stream()
             self.file_size = self.md.get_file_size()
         except (ValueError, FileNotFoundError) as e:
-            self.printer.send_event("klippy:error", f"Failed opening file {self.path}")
+            self.reactor.send_event("klippy:error", f"Failed opening file {self.path}")
             logging.exception(f"Failed opening {ext} file: {e}")
             self.set_state('stopped')
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['reactor']
+        del state['gcode']
+        del state['heater_manager']
+        del state['gcode_metadata']
+        del state['file_obj']
+        del state['manager']
+        del state['toolhead']
+        return {'path': state['path'], 'name': state['name'], 'state': state['state']}
 
     def set_state(self, state):
         if self.state != state:
             self.state = state
-            self.printer.send_event("virtual_sdcard:printjob_change", self.manager.jobs)
+            self.reactor.send_event("virtual_sdcard:printjob_change", self.manager.jobs)
 
     def start(self):
         if self.state == 'queued':
@@ -51,7 +61,7 @@ class Printjob:
             else:
                 self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
                 self.set_state('paused')
-            self.printer.send_event("virtual_sdcard:printjob_start", self)
+            self.reactor.send_event("virtual_sdcard:printjob_start", self)
 
     def resume(self):
         if self.state == 'pausing':
@@ -99,7 +109,7 @@ class Printjob:
                 except:
                     self.set_state('stopping')
                     logging.exception("virtual_sdcard read")
-                    self.printer.send_event("klippy:error", "Error reading File")
+                    self.reactor.send_event("klippy:error", "Error reading File")
                     self.gcode.respond_error("Error on virtual sdcard read")
                     break
                 if not data:
@@ -121,7 +131,7 @@ class Printjob:
             try:
                 self.gcode.run_script(lines[-1])
             except Exception as e:
-                self.printer.send_event("klippy:error", repr(e))
+                self.reactor.send_event("klippy:error", repr(e))
                 self.set_state('stopping')
                 logging.exception("Virtual sdcard error dispaching command: " + repr(e))
                 break
@@ -142,8 +152,7 @@ class Printjob:
         return self.reactor.NEVER
 
     def get_printed_time(self, print_time=None):
-        # doesnt use get_last_move_time since this can be ran in UI thread
-        # also doesnt use print time since it doesnt advance continuously
+        # don't use print_time since it doesnt advance continuously
         if not print_time:
             print_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
         if self.state in ("printing", "pausing", "stopping"):
@@ -158,7 +167,7 @@ class PrintjobManager:
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object('gcode')
         self.heater_manager = self.printer.lookup_object('heaters')
-        self.gcode_metadata = self.printer.load_object(config, 'gcode_metadata') # beware this is not the 'right' config
+        self.gcode_metadata = self.printer.load_object(config, 'gcode_metadata')
         self.printer.load_object(config, 'print_stats')
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)

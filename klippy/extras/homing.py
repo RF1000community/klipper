@@ -5,7 +5,7 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import logging, math, collections
 
-HOMING_START_DELAY = 0.005
+HOMING_START_DELAY = 0.001
 ENDSTOP_SAMPLE_TIME = .000015
 ENDSTOP_SAMPLE_COUNT = 4
 
@@ -18,6 +18,11 @@ class Homing:
         self.verify_retract = True
         if self.printer.get_start_args().get("debuginput"):
             self.verify_retract = False
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['printer']
+        del state['toolhead']
+        return {}
     def set_axes(self, axes):
         self.changed_axes = axes
     def get_axes(self):

@@ -43,6 +43,11 @@ class MCU_stepper:
         self._itersolve_generate_steps = self._ffi_lib.itersolve_generate_steps
         self._itersolve_check_active = self._ffi_lib.itersolve_check_active
         self._trapq = ffi_main.NULL
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['_mcu']
+        del state['_dir_pin']
+        return {'_name':state['_name']}
     def get_mcu(self):
         return self._mcu
     def get_name(self, short=False):
