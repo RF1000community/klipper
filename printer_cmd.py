@@ -1,4 +1,3 @@
-
 # This is where functions turn themselves into a pickle
 # They wander off to processes far away
 # They do what needs to be done
@@ -213,6 +212,37 @@ def set_printjob_progress(e, kgui, est_remaining, progress):
             else:
                 kgui.print_done_time = done.strftime("%a %-H:%M")
 
+def get_material(e, printer):
+    fm = printer.lookup_object('filament_manager', None)
+    if not fm:
+        return
+    material = fm.get_status()
+    for m in material['unloaded']:
+        m.update({
+            'material_type': fm.get_info(m['guid'], "./m:metadata/m:name/m:material", ""),
+            'hex_color': fm.get_info(m['guid'], "./m:metadata/m:color_code", "#ffffff"),
+            'brand': fm.get_info(m['guid'], './m:metadata/m:name/m:brand', "")})
+    for m in material['loaded']:
+        if m['guid']:
+            m.update({
+            'material_type': fm.get_info(m['guid'], "./m:metadata/m:name/m:material", ""),
+            'hex_color': fm.get_info(m['guid'], "./m:metadata/m:color_code", "#ffffff"),
+            'brand': fm.get_info(m['guid'], './m:metadata/m:name/m:brand', ""),
+            'print_temp': fm.get_info(m['guid'], "./m:settings/m:setting[@key='print temperature']", 0),
+            'bed_temp': fm.get_info(m['guid'], "./m:settings/m:setting[@key='heated bed temperature']", 0)})
+        else:
+            m.update({
+            'material_type': "",
+            'hex_color': None,
+            'brand': ""})
+    printer.reactor.cb(set_attribute, 'material', material, process='kgui')
+
+def get_tmc(e, printer):
+    fm = printer.lookup_object('filament_manager', None)
+    if not fm:
+        return
+    printer.reactor.cb(set_attribute, 'tmc_to_guid', fm.get_tmc(), process='kgui')
+
 def send_calibrate(e, printer):
     printer.objects['bed_mesh'].calibrate.cmd_BED_MESH_CALIBRATE(None)
 
@@ -253,3 +283,18 @@ def format_time(seconds):
     if minutes:
         return f"{minutes} min"
     return f"{seconds} sec"
+
+def calculate_filament_color(filament_color):
+    """ Calculate filament color thats not to light for text.
+        Also the lightness of an rgb color.
+        This is equal to the average between the minimum and
+        maximum value."""
+    #lightness = 0.5*(max(filament_color) + min(filament_color))
+    return  [c*0.6 for c in filament_color]
+
+def hex_to_rgba(h):
+    """ Converts hex color to rgba float format
+        accepts strings like '#ffffff' or "#FFFFFF" """
+    if not h:
+        return (0,0,0,0)
+    return [int(h[i:i + 2], 16) / 255. for i in (1, 3, 5)] + [1]

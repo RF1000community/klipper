@@ -1,5 +1,3 @@
-#:kivy 1.8.0
-
 #:import platform platform
 #:import Factory kivy.factory.Factory
 #:import screenmanager kivy.uix.screenmanager
@@ -7,20 +5,22 @@
 #:import printer_cmd printer_cmd
 
 <SettingTab>:
-    background_down: '' 
+    background_down: ''
     background_color: p.background
     canvas:
         Rectangle:
             source: p.kgui_dir+'/logos/settings.png'
-            size: 60 * p.disp_vertical_stretch, 60
+            size: 60*p.disp_vertical_stretch, 60
             pos: 525 - 30 * p.disp_vertical_stretch, 20
     BoxLayout:
         orientation: 'vertical'
         TitleBar:
-            title: {'SettingScreen': "Settings", 'ConsoleScreen':"Gcode Console", 'WifiScreen': "Wifi", 'UpdateScreen': "System Update"}[screen_man.current]
+            title:
+                {'SettingScreen': "Settings", 'ConsoleScreen':"Gcode Console",
+                'WifiScreen': "Wifi", 'UpdateScreen': "System Update"}[screen_man.current]
             enabled: screen_man.current != 'SettingScreen'
             on_release: screen_man.current = 'SettingScreen'
-            pos_hint: {'x':0, 'top':1}
+            pos_hint: {'x': 0, 'top': 1}
         ScreenManager:
             id: screen_man
             name: 'SettingScreenManager'
@@ -49,7 +49,7 @@
             pos: 0, root.height - self.height
             size_hint_y: None
             Divider:
-                pos_hint: {'center_x':0.5}
+                pos_hint: {'center_x': 0.5}
             SetItem:
                 left_title: "Gcode Console"
                 on_release: root.manager.current = "ConsoleScreen"
@@ -84,7 +84,7 @@
         Color:
             rgba: p.background
         Rectangle:
-            pos: 0,0 # screens are relative layouts
+            pos: 0, 0 # screens are relative layouts
             size: self.size
     ScrollView:
         id: console_scroll
@@ -101,7 +101,7 @@
             halign: 'left'
             padding_x: p.padding
             padding_y: p.padding - 10
-            pos_hint: {'x':0, 'y':0}
+            pos_hint: {'x': 0, 'y': 0}
             color: p.medium_light_gray
     TextInput:
         id: console_input
@@ -124,7 +124,7 @@
         Color:
             rgba: p.background
         Rectangle:
-            pos: 0,0 # screens are relative layouts
+            pos: 0, 0 # screens are relative layouts
             size: self.size
     Wifi:
         id: wifi
@@ -179,7 +179,7 @@
         shorten: True
         halign: 'left'
         valign: 'middle'
-        padding_x: p.h_padding 
+        padding_x: p.h_padding
         size_hint: None, None
         size: root.size
         pos: root.pos
@@ -198,7 +198,7 @@
             pos: 0, 0
             size: self.size
     Divider:
-        pos_hint: {'center_x':0.5, 'top':1}
+        pos_hint: {'center_x': 0.5, 'top': 1}
     #Label:
     #    id: message
     #    text: ""
@@ -213,7 +213,7 @@
     #    color: p.medium_light_gray
     ScrollView:
         size_hint: 1, 1
-        pos_hint: {'x':0, 'y':0}
+        pos_hint: {'x': 0, 'y': 0}
         do_scroll_x: False
         BoxLayout:
             id: box
@@ -281,7 +281,7 @@
         id: knopf
         size_hint: None, None
         pos_hint: {'center_y': 0.5}
-        right: p.screen_width-p.padding +p.small_padding #to increase touch area
+        right: p.screen_width-p.padding +p.small_padding # to increase touch area
 
 <SITimezone>:
     left_title: "Timezone"
@@ -517,7 +517,7 @@
             unit: "mm/mm/s"
             round_to: 3
             id: slider
-            pos_hint: {'center_x':0.5, 'y':0.6}
+            pos_hint: {'center_x': 0.5, 'y': 0.6}
         BtnPCancel:
             id: btn_cancel
             width: root.width/2

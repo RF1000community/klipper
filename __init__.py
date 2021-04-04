@@ -61,31 +61,33 @@ class mainApp(App, threading.Thread):
     pos = ListProperty([0, 0, 0, 0])
     toolhead_busy = BooleanProperty(False)
     ongoing_live_move = BooleanProperty(False)
+    material = DictProperty()
+    tmc_to_guid = DictProperty()
     # tuning
     speed = NumericProperty(100)
     flow = NumericProperty(100)
     fan_speed = NumericProperty(0)
     z_offset = NumericProperty(0)
-    acceleration = NumericProperty(2000)
+    acceleration = NumericProperty(0)
     pressure_advance = NumericProperty(0)
     # config
     config_pressure_advance = NumericProperty(0)
-    config_acceleration = NumericProperty(2000)
+    config_acceleration = NumericProperty(0)
 
     def __init__(self, config, **kwargs):
         logging.info("Kivy app initializing...")
         self.network_manager = NetworkManager()
         self.notify = Notifications()
         self.gcode_metadata = gcode_metadata.load_config(config) # beware this is not the 'right' config
-        self.temp = {'extruder':[0,0], 'extruder1':[0,0], 'heater_bed':[0,0]}
-        self.homed = {'x':False, 'y':False, 'z':False}
-        self.warned_not_homed = {'x':False, 'y':False, 'z':False}
+        self.temp = {'extruder': [0,0], 'extruder1': [0,0], 'heater_bed': [0,0]}
+        self.homed = {'x': False, 'y': False, 'z': False}
+        self.warned_not_homed = {'x': False, 'y': False, 'z': False}
         self.curaconnection = None
         self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell kivy where the root kv file is
 
         if TESTING:
-            self.pos_max = {'x':200, 'y':0}
-            self.pos_min = {'x':0, 'y':0}
+            self.pos_max = {'x': 200, 'y': 0}
+            self.pos_min = {'x': 0, 'y': 0}
             self.xy_homing_controls = True
             self.extruder_count = 2
             self.reactor = None
@@ -104,8 +106,8 @@ class mainApp(App, threading.Thread):
         stepper_config = {'x': config.getsection('stepper_x'),
                           'y': config.getsection('stepper_y'),
                           'z': config.getsection('stepper_z')}
-        self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in 'xyz'}
-        self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in 'xyz'}
+        self.pos_max = {i: stepper_config[i].getfloat('position_max', 200) for i in 'xyz'}
+        self.pos_min = {i: stepper_config[i].getfloat('position_min', 0) for i in 'xyz'}
         # maintain this by keeping default the same as klipper
         self.min_extrude_temp = config.getsection("extruder").getint("min_extrude_temp", 170)
         # count how many extruders exist
@@ -125,6 +127,7 @@ class mainApp(App, threading.Thread):
         self.reactor.register_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
         self.reactor.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
         self.reactor.register_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
+        self.reactor.register_event_handler("filament_manager:material_changed", self.handle_material_change)
         self.reactor.cb(printer_cmd.load_object, "live_move")
         self.reactor.cb(printer_cmd.load_object, "filament_manager")
         self.reactor.cb(printer_cmd.load_object, "print_history")
@@ -140,10 +143,13 @@ class mainApp(App, threading.Thread):
     def handle_connect(self):
         self.connected = True
         self.reactor.cb(printer_cmd.update)
+        self.reactor.cb(printer_cmd.get_tmc)
+        self.bind(print_state=self.handle_material_change)
         Clock.schedule_interval(lambda dt: self.reactor.cb(printer_cmd.update), 1)
 
     def handle_ready(self):
         self.state = "ready"
+        self.reactor.cb(printer_cmd.get_material, process='printer')
 
     # is called when system shuts down all work, either
     # to halt so the user can see what he did wrong
@@ -158,10 +164,7 @@ class mainApp(App, threading.Thread):
         self.connected = False
         self.reactor.external_callback_handler = None # run callback in reactor thread
         self.reactor.cb(self.reactor.close_process, process='kgui')
-        time.sleep(1)
-        # self.reactor.finalize()
         self.stop()
-        logging.info("handle disconenct done")
 
     def handle_critical_error(self, message):
         self.state = "error"
@@ -214,6 +217,9 @@ class mainApp(App, threading.Thread):
             self.print_state = "no printjob"
             # tuning values are only reset once print_queue has run out
             self.reactor.cb(printer_cmd.reset_tuning)
+
+    def handle_material_change(self, *args):
+        self.reactor.cb(printer_cmd.get_material, process='printer')
 
     def note_live_move(self, axis):
         if axis in 'xyz' and not (self.homed[axis] or self.warned_not_homed[axis]):

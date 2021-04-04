@@ -1,4 +1,4 @@
-#:kivy 1.8.0
+#:import Factory kivy.factory.Factory
 
 #:import p parameters
 #:import printer_cmd printer_cmd
@@ -93,7 +93,9 @@
     text_size: self.size
     font_size: p.normal_font
     bold: self.state in ('printing', 'pausing', 'paused', 'stopping')
-    color: {'done':p.green, 'stopped':p.red, 'stopping':p.red, 'printing': (1,1,1,1), 'paused':(1,1,1,1), 'pausing':(1,1,1,1), 'queued':p.medium_light_gray, 'message':(0,0,0,0), 'header':(0,0,0,0)}[self.state]
+    color:
+        {'done': p.green, 'stopped': p.red, 'stopping': p.red, 'printing': (1,1,1,1), 'paused': (1,1,1,1),
+        'pausing': (1,1,1,1), 'queued': p.medium_light_gray, 'message': (0,0,0,0), 'header': (0,0,0,0)}[self.state]
     Label:
         text: root.name
         shorten: True

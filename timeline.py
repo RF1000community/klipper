@@ -29,7 +29,7 @@ class Timeline(RecycleView):
     def load_all(self, *args, clear_scroll_pos=False, clear_selection=True):
         pass
     """ TODO
-        queue = [{'name': job.name, 'path': job.path, 'state': job.state, 'thumbnail': job.md.get_thumbnail_path()} 
+        queue = [{'name': job.name, 'path': job.path, 'state': job.state, 'thumbnail': job.md.get_thumbnail_path()}
             for job in reversed(self.app.jobs)]
 
         history = []
@@ -67,7 +67,7 @@ class Timeline(RecycleView):
         self.keep_next_selection = False"""
 
     def move(self, offset):
-        """Move the selected file up or down the queue. E.g. -1 will print it sooner"""
+        """ Move the selected file up or down the queue. E.g. -1 will print it sooner """
         selected = self.ids.tl_box.selected_nodes
         if not selected: return
         i = len(self.app.sdcard.jobs) - selected[0] - 1
@@ -107,7 +107,8 @@ class TimelineBox(LayoutSelectionBehavior, RecycleBoxLayout):
     selected_object = ObjectProperty(None, allownone=True)
     def select_node(self, node):
         super().select_node(node)
-        self.selected_object = self.recycleview.view_adapter.get_visible_view(node) # set after super().select.. it deselects before selecting
+        # set after super().select.. it deselects before selecting
+        self.selected_object = self.recycleview.view_adapter.get_visible_view(node)
     def deselect_node(self, node):
         if node in self.selected_nodes: # check before super().deselect...
             self.selected_object = None

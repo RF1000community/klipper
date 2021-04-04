@@ -355,7 +355,7 @@ class HostnamePopup(BasePopup):
                        + str(proc.returncode),
                        level="error",
                        delay=30)
-            logging.warning("hostnamectl: " + proc.stdout + " " + proc.stderr)            
+            logging.warning("hostnamectl: " + proc.stdout + " " + proc.stderr)
         else:
             self.dismiss()
             App.get_running_app().reactor.cb(printer_cmd.restart)
