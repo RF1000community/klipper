@@ -1,5 +1,5 @@
 # Printjob manager providing API for local printjobs
-# with pause-resume, cura-style compressed gcode, and queue functionality 
+# with pause-resume, cura-style compressed gcode, and queue functionality
 #
 # Copyright (C) 2020  Konstantin Vogel <konstantin.vogel@gmx.net>
 #
@@ -36,15 +36,7 @@ class Printjob:
             self.set_state('stopped')
 
     def __getstate__(self):
-        state = self.__dict__.copy()
-        del state['reactor']
-        del state['gcode']
-        del state['heater_manager']
-        del state['gcode_metadata']
-        del state['file_obj']
-        del state['manager']
-        del state['toolhead']
-        return {'path': state['path'], 'name': state['name'], 'state': state['state']}
+        return {'path': self.path, 'name': self.name, 'state': self.state}
 
     def set_state(self, state):
         if self.state != state:
@@ -225,8 +217,8 @@ class PrintjobManager:
             except:
                 logging.exception("virtual_sdcard shutdown read")
                 return
-            logging.info(f"Virtual sdcard ({readpos}): { repr(data[:readcount]) }\n\
-                           Upcoming ({self.jobs[0].file_position}): { repr(data[readcount:]) }")
+            logging.info(f"Virtual sdcard ({readpos}): {repr(data[:readcount])}\n\
+                           Upcoming ({self.jobs[0].file_position}): {repr(data[readcount:])}")
 
     def stats(self, eventtime):
         if len(self.jobs) and self.jobs[0].state in ('printing', 'pausing', 'stopping'):

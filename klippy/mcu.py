@@ -470,8 +470,6 @@ class MCU:
         printer.register_event_handler("klippy:shutdown", self._shutdown)
         printer.register_event_handler("klippy:disconnect", self._disconnect)
     def __getstate__(self):
-        state = self.__dict__.copy()
-        del state['_serial']
         return {}
     # Serial callbacks
     def _handle_mcu_stats(self, params):

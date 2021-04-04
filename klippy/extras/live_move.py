@@ -13,12 +13,11 @@ class LiveMove:
         self.move_completion = {'x': None, 'y': None, 'z': None, 'e': None}
         self.start_mcu_pos = {}
         self.z_speed = 3
-        klipper_config = self.printer.objects['configfile'].read_main_config()
-        stepper_config = {'x': klipper_config.getsection('stepper_x'),
-                          'y': klipper_config.getsection('stepper_y'),
-                          'z': klipper_config.getsection('stepper_z')}
-        self.pos_max = {i:stepper_config[i].getfloat('position_max', 200) for i in 'xyz'}
-        self.pos_min = {i:stepper_config[i].getfloat('position_min', 0) for i in 'xyz'}
+        stepper_config = {'x': config.getsection('stepper_x'),
+                          'y': config.getsection('stepper_y'),
+                          'z': config.getsection('stepper_z')}
+        self.pos_max = {i: stepper_config[i].getfloat('position_max', 200) for i in 'xyz'}
+        self.pos_min = {i: stepper_config[i].getfloat('position_min', 0) for i in 'xyz'}
 
     def _fill_coord(self, new_pos):
         """ Fill in any None entries in 'new_pos' with current toolhead position """

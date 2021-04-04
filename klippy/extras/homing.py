@@ -19,9 +19,6 @@ class Homing:
         if self.printer.get_start_args().get("debuginput"):
             self.verify_retract = False
     def __getstate__(self):
-        state = self.__dict__.copy()
-        del state['printer']
-        del state['toolhead']
         return {}
     def set_axes(self, axes):
         self.changed_axes = axes

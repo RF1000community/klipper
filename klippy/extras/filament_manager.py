@@ -15,13 +15,11 @@ from math import pi
 
 class FilamentManager:
     def __init__(self, config):
-        self.config = config
-        self.printer = self.config.get_printer()
+        self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
-        klipper_config = self.printer.objects['configfile'].read_main_config()
-        self.config_diameter = klipper_config.getsection("extruder").getfloat("filament_diameter", 1.75)
+        self.config_diameter = config.getsection("extruder").getfloat("filament_diameter", 1.75)
         for i in range(1, 10):
-            if not klipper_config.has_section(f"extruder{i}"):
+            if not config.has_section(f"extruder{i}"):
                 extruder_count = i
                 break
         self.extruders = {}
@@ -43,10 +41,8 @@ class FilamentManager:
         # 'unloaded': [{'guid': None if nothing is loaded,
         #           'amount': amount in kg}, ...]}
         self.material = {
-            'loaded':[{'guid':None,
-                    'state':"no material",
-                    'amount':0,
-                    'all_time_extruded_length':0}] * extruder_count,
+            'loaded':[{'guid': None, 'state': "no material", 
+                        'amount': 0, 'all_time_extruded_length': 0}] * extruder_count,
             'unloaded':[]}
         self.read_loaded_material_json()
         # set state for all materials to loaded in case power was lost during loading or unloading
@@ -60,7 +56,8 @@ class FilamentManager:
         for i in range(10):
             extruder_id = f"extruder{'' if i==0 else i}"
             extruder = self.printer.lookup_object(extruder_id, None)
-            if extruder: self.extruders[extruder_id] = extruder
+            if extruder:
+                self.extruders[extruder_id] = extruder
 
     def handle_shutdown(self):
         self.update_loaded_material_amount()
@@ -122,12 +119,15 @@ class FilamentManager:
         return default
 
 ######################################################################
-# loading and unloading api (only execute in klippy thread)
+# loading and unloading api
 ######################################################################
 
     def get_status(self):
         self.update_loaded_material_amount()
         return self.material
+    
+    def get_tmc(self):
+        return self.tmc_to_guid
 
     def load(self, extruder_id, temp=None, amount=None, unloaded_idx=None, guid=None):
         """

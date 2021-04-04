@@ -197,13 +197,15 @@ class SelectReactor:
             except os.error:
                 pass
         elif process in self._mp_queues.keys():
-            self._mp_queues[process].put((ReactorCallback, self.check_pickleable(args), self.check_pickleable(kwargs)))
+            self._mp_queues[process].put((ReactorCallback, args, kwargs))
+            time.sleep(0.005)
             try:
                 os.write(self._mp_pipe_fds[process], b'-')
             except os.error:
-                pass
+                import logging
+                logging.warning("failed to write - to pipe")
         else:
-            cb(forward_async_callback, (callback, *args),
+            cb(self.forward_async_callback, (callback, *args),
                 {'waketime': waketime, 'process': process, **kwargs}, process='printer')
     def cb(self, *args, process='printer', **kwargs):
         self.register_async_callback(*args, process=process, **kwargs)
@@ -218,7 +220,6 @@ class SelectReactor:
             signal = os.read(self._pipe_fds[0], 4096)
         except os.error:
             pass
-        import logging
         if b'-' in signal:
             while 1:
                 try:
@@ -348,28 +349,26 @@ class SelectReactor:
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
         import logging
-        logging.info(f"send event {event} from process {self.process_name}")
+        logging.info(f" {self.process_name} sent event {event}")
         if self.process_name != 'printer':
-            self.cb(forward_event, (event, params), process='printer')
+            self.cb(self.forward_event, (event, params), process='printer')
             return
         for process in self._mp_queues.keys():
-            self.cb(run_event, event, params, process=process)
-        return run_event(None, self.root, event, params)
+            self.cb(self.run_event, event, params, process=process)
+        return self.run_event(None, self.root, event, params)
     def close_process(self, e):
         self.end()
-        self.pause(1)
+        self.pause(self.monotonic() + 1)
         self.finalize()
-
-def run_event(e, root, event, params):
-    import logging
-    logging.info(f"run event {event} in process {root.reactor.process_name}")
-    return [cb(*params) for cb in root.reactor.event_handlers.get(event, [])]
-
-def forward_event(e, root, args):
-    root.reactor.send_event(event, *args)
-
-def forward_async_callback(e, root, args, kwargs):
-    root.reactor.cb(*args, **kwargs)    
+    @staticmethod
+    def run_event(e, root, event, params):
+        return [cb(*params) for cb in root.reactor.event_handlers.get(event, [])]
+    @staticmethod
+    def forward_event(e, root, args):
+        root.reactor.send_event(event, *args)
+    @staticmethod
+    def forward_async_callback(e, root, args, kwargs):
+        root.reactor.cb(*args, **kwargs)    
 
 class PollReactor(SelectReactor):
     def __init__(self, gc_checking=False, process='printer'):

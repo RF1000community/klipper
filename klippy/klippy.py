@@ -386,12 +386,12 @@ def main():
         printer = Printer(main_reactor, bglogger, start_args)
         main_reactor.root = printer
         res = printer.run()
-        if res in ['exit', 'error_exit', 'terminated']:
-            break
-        time.sleep(1.)
+        time.sleep(3)
         for process in printer.parallel_objects.values():
             process.join()
-            logging.info(f"successfully joined process")
+        logging.info("Joined all processes")
+        if res in ['exit', 'error_exit', 'terminated']:
+            break
         main_reactor.finalize()
         main_reactor = printer = None
         logging.info("Restarting printer")

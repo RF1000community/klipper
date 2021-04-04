@@ -13,8 +13,6 @@ class RunoutHelper:
         self.gcode = self.printer.lookup_object('gcode')
         # Read config
         self.runout_pause = config.getboolean('pause_on_runout', True)
-        if self.runout_pause:
-            self.printer.load_object(config, 'pause_resume')
         self.runout_gcode = self.insert_gcode = None
         gcode_macro = self.printer.load_object(config, 'gcode_macro')
         if self.runout_pause or config.get('runout_gcode', None) is not None:
@@ -42,12 +40,10 @@ class RunoutHelper:
     def _handle_ready(self):
         self.min_event_systime = self.reactor.monotonic() + 2.
     def _runout_event_handler(self, eventtime):
-        # Pausing from inside an event requires that the pause portion
-        # of pause_resume execute immediately.
         pause_prefix = ""
         if self.runout_pause:
-            pause_resume = self.printer.lookup_object('pause_resume')
-            pause_resume.send_pause_command()
+            virtual_sdcard = self.printer.lookup_object('virtual_sdcard')
+            virtual_sdcard.pause_printjob()
             pause_prefix = "PAUSE\n"
             self.printer.get_reactor().pause(eventtime + self.pause_delay)
         self._exec_gcode(pause_prefix, self.runout_gcode)
