@@ -132,7 +132,7 @@ class PrintPopup(BasePopup):
         self.filechooser = filechooser
         super().__init__(**kwargs)
         self.populate_details()
-        Clock.schedule_once(self._align, -1)
+        Clock.schedule_once(self._align, 0)
 
     def populate_details(self):
         md = self.md
@@ -242,7 +242,7 @@ class UltraSlider(Widget):
     can be safely overwritten by inheritors for nonlinear conversion.
     """
     buttons = ListProperty()  #list of lists: e.g. [[val,offset,"name",the instance]]
-    val = NumericProperty(None, allownone=True) #value, passed to printer, not in px
+    val = NumericProperty() #value, passed to printer, not in px
     val_min = NumericProperty(0)
     val_max = NumericProperty(100)
     unit = StringProperty()
