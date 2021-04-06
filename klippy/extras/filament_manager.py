@@ -29,7 +29,7 @@ class FilamentManager:
         self.material_dir = expanduser('~/materials')
         if not os.path.exists(self.material_dir):
             os.mkdir(self.material_dir)
-        self.tmc_to_guid = {} # [Type][Manufacturer][Color] = guid, a dict tree for choosing filaments
+        self.tbc_to_guid = {} # [Type][Brand][Color] = guid, a dict tree for choosing filaments
         self.guid_to_path = {}
         self.read_material_library_xml()
         # json list of loaded and unloaded material
@@ -69,7 +69,7 @@ class FilamentManager:
 
     def read_material_library_xml(self):
         self.guid_to_path = {}
-        self.tmc_to_guid = {}
+        self.tbc_to_guid = {}
         files = os.listdir(self.material_dir)
         for f in files:
             if f.endswith(".xml.fdm_material"):
@@ -88,20 +88,20 @@ class FilamentManager:
         # generate path lookup
         self.guid_to_path[f_guid] = f_path
 
-        # only add to the tmc dict if the diameter is correct, use the same check as cura
+        # only add to the tbc dict if the diameter is correct, use the same check as cura
         # cura/Settings/ExtruderStack.py -> getApproximateMaterialDiameter()
         if round(self.config_diameter) != round(float(f_diameter)):
             return
         f_type  = f_root.find('./m:metadata/m:name/m:material', ns).text
         f_brand = f_root.find('./m:metadata/m:name/m:brand', ns).text
         f_color = f_root.find('./m:metadata/m:color_code', ns).text
-        if self.tmc_to_guid.get(f_type):
-            if self.tmc_to_guid[f_type].get(f_brand):#type and brand already there, add color entry
-                self.tmc_to_guid[f_type][f_brand][f_color] = f_guid
+        if self.tbc_to_guid.get(f_type):
+            if self.tbc_to_guid[f_type].get(f_brand):#type and brand already there, add color entry
+                self.tbc_to_guid[f_type][f_brand][f_color] = f_guid
             else: #type already there, add dict for this brand with color entry
-                self.tmc_to_guid[f_type][f_brand] = {f_color: f_guid}
+                self.tbc_to_guid[f_type][f_brand] = {f_color: f_guid}
         else: #add dict for this type ..
-            self.tmc_to_guid[f_type] = {f_brand: {f_color: f_guid}}
+            self.tbc_to_guid[f_type] = {f_brand: {f_color: f_guid}}
 
     def get_info(self, material, xpath, default=None):
         """material can be either GUID or filepath"""
@@ -126,8 +126,8 @@ class FilamentManager:
         self.update_loaded_material_amount()
         return self.material
     
-    def get_tmc(self):
-        return self.tmc_to_guid
+    def get_tbc(self):
+        return self.tbc_to_guid
 
     def load(self, extruder_id, temp=None, amount=None, unloaded_idx=None, guid=None):
         """
