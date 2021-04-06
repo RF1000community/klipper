@@ -1,7 +1,72 @@
-#:kivy 1.8.0
-#:import p parameters
-<Label>:
+
+# Custom overwrites
+
+<VKeyboard>:
+    # Use local keyboard json instead of system default
+    layout_path: p.kgui_dir
+    size_hint: 1, 0.34
+    # Space on outside of keyboard
+    margin_hint: 0.02, 0.01, 0.02, 0.01
+    # Distance between keys (top, right, bottom, left)
+    key_margin: 6, 6, 6, 6
+    background: p.kgui_dir+'/logos/transparent.png'
+    #background_color: 0.1, 0.3, 0.1, 1
+    key_background_normal: p.kgui_dir+'/logos/keyboard_key_normal.png'
+    key_background_down: p.kgui_dir+'/logos/keyboard_key_down.png'
+    #key_background_color: p.translucent_white
     canvas:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+# ModalView widget
+<ModalView>:
+    error: False
+    canvas:
+        Color:
+            rgba: root.background_color[:3] + [root.background_color[-1] * self._anim_alpha]
+        Rectangle:
+            size: (self._window.size[0], self._window.size[1]) if self._window else (0, 0)
+        Color:
+            rgba: p.red if self.error else p.popup
+        RoundedRectangle:
+            radius: [p.popup_radius]
+            pos: self.pos
+            size: self.size
+
+# Popup widget @ModalView
+<Popup>:
+    _container: container
+    GridLayout:
+        padding: '0dp'
+        cols: 1
+        size_hint: None, None
+        pos: root.pos
+        size: root.size
+
+        Label:
+            text: root.title
+            color: root.title_color
+            size_hint_y: None
+            height: self.texture_size[1] + dp(50)
+            text_size: self.width - dp(50), None
+            font_size: root.title_size
+            font_name: root.title_font
+            halign: root.title_align
+
+        BoxLayout:
+            id: container
+
+# Buttons for switching tabs
+<-Button,-ToggleButton>:
+    canvas:
+        Color:
+            rgba: (0,0,0,0) if self.state == 'normal' else self.background_color 
+        Rectangle:
+            pos: self.pos
+            size: self.size
         Color:
             rgba: 1, 1, 1, 1
         Rectangle:
@@ -9,17 +74,29 @@
             size: self.texture_size
             pos: int(self.center_x - self.texture_size[0] / 2.), int(self.center_y - self.texture_size[1] / 2.)
 
-<-Button,-ToggleButton>:
-    state_image: self.background_normal if self.state == 'normal' else self.background_down
-    disabled_image: self.background_disabled_normal if self.state == 'normal' else self.background_disabled_down
-    canvas:
+<TextInput>:
+    canvas.before:
         Color:
             rgba: self.background_color
-        BorderImage:
-            border: self.border
+        RoundedRectangle:
             pos: self.pos
             size: self.size
-            source: self.disabled_image if self.disabled else self.state_image
+            radius: (p.icon_radius,)
+        Color:
+            rgba:
+                (self.cursor_color
+                if self.focus and not self._cursor_blink
+                else (0, 0, 0, 0))
+        Rectangle:
+            pos: self._cursor_visual_pos
+            size: root.cursor_width, -self._cursor_visual_height
+        Color:
+            rgba: self.disabled_foreground_color if self.disabled else (self.hint_text_color if not self.text else self.foreground_color)
+
+# Regular style.kv (custom classes removed)
+
+<Label>:
+    canvas:
         Color:
             rgba: 1, 1, 1, 1
         Rectangle:
@@ -60,7 +137,7 @@
             rgba: root.value_track_color if self.value_track and self.orientation == 'horizontal' else [1, 1, 1, 0]
         Line:
             width: self.value_track_width
-            points: self.x + self.padding, self.center_y - self.value_track_width / 2, self.value_pos[0], self.center_y - self.value_track_width / 2
+            points: self.x + self.padding, self.center_y, self.value_pos[0], self.center_y
         Color:
             rgba: root.value_track_color if self.value_track and self.orientation == 'vertical' else [1, 1, 1, 0]
         Line:
@@ -72,23 +149,23 @@
         pos: (root.value_pos[0] - root.cursor_width / 2, root.center_y - root.cursor_height / 2) if root.orientation == 'horizontal' else (root.center_x - root.cursor_width / 2, root.value_pos[1] - root.cursor_height / 2)
         size: root.cursor_size
         source: root.cursor_disabled_image if root.disabled else root.cursor_image
+        allow_stretch: True
+        keep_ratio: False
 
 <ProgressBar>:
-    enabled: False
     canvas:
         Color:
-            rgba: p.btn if self.enabled else (0,0,0,0)
-        RoundedRectangle:
-            radius: [5]
-            pos: self.pos
-            size: self.width, 10
-        Color:
-            rgba: (0,0,0,0) if not self.enabled else p.green if self.value == self.max else p.accent
-        RoundedRectangle:
-            radius: [5]
-            pos: self.pos
-            size: self.width*self.value/float(self.max), 10
-
+            rgb: 1, 1, 1
+        BorderImage:
+            border: (12, 12, 12, 12)
+            pos: self.x, self.center_y - 12
+            size: self.width, 24
+            source: 'atlas://data/images/defaulttheme/progressbar_background'
+        BorderImage:
+            border: [int(min(self.width * (self.value / float(self.max)) if self.max else 0, 12))] * 4
+            pos: self.x, self.center_y - 12
+            size: self.width * (self.value / float(self.max)) if self.max else 0, 24
+            source: 'atlas://data/images/defaulttheme/progressbar'
 
 <SplitterStrip>:
     border: self.parent.border if self.parent else (3, 3, 3, 3)
@@ -177,25 +254,6 @@
     color: 148. / 255, 208 / 255., 230 / 255., 1
     allow_stretch: True
 
-<TextInput>:
-    canvas.before:
-        Color:
-            rgba: self.background_color
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: (p.icon_radius,)
-        Color:
-            rgba:
-                (self.cursor_color
-                if self.focus and not self._cursor_blink
-                else (0, 0, 0, 0))
-        Rectangle:
-            pos: self._cursor_visual_pos
-            size: root.cursor_width, -self._cursor_visual_height
-        Color:
-            rgba: self.disabled_foreground_color if self.disabled else (self.hint_text_color if not self.text else self.foreground_color)
-
 <TextInputCutCopyPaste>:
     but_cut: cut.__self__
     but_copy: copy.__self__
@@ -236,8 +294,8 @@
             rgba: 1, 1, 1, int(not self.is_leaf)
         Rectangle:
             source: 'atlas://data/images/defaulttheme/tree_%s' % ('opened' if self.is_open else 'closed')
-            size: self.height / 2.0, self.height / 2.0
-            pos: self.x - dp(20), self.center_y - dp(8)
+            size: self.height / (3. if dp(1) > 1 else 2.), self.height / (3. if dp(1) > 1 else 2.)
+            pos: self.x - dp(20), int(self.center_y - (self.height / (3. if dp(1) > 1 else 2.)) * .5)
     canvas.after:
         Color:
             rgba: .5, .5, .5, .2
@@ -324,39 +382,40 @@
         id: layout
         controller: root
 
-#[FileListEntry@FloatLayout+TreeViewNode]:
-#    locked: False
-#    entries: []
-#    path: ctx.path
-#    # FIXME: is_selected is actually a read_only treeview property. In this
-#    # case, however, we're doing this because treeview only has single-selection
-#    # hardcoded in it. The fix to this would be to update treeview to allow
-#    # multiple selection.
-#    is_selected: self.path in ctx.controller().selection
-#
-#    orientation: 'horizontal'
-#    size_hint_y: None
-#    height: '48dp' if dp(1) > 1 else '24dp'
-#    # Don't allow expansion of the ../ node
-#    is_leaf: not ctx.isdir or ctx.name.endswith('..' + ctx.sep) or self.locked
-#    on_touch_down: self.collide_point(*args[1].pos) and ctx.controller().entry_touched(self, args[1])
-#    on_touch_up: self.collide_point(*args[1].pos) and ctx.controller().entry_released(self, args[1])
-#    BoxLayout:
-#        pos: root.pos
-#        size_hint_x: None
-#        width: root.width - dp(10)
-#        Label:
-#            id: filename
-#            text_size: self.width, None
-#            halign: 'left'
-#            shorten: True
-#            text: ctx.name
-#        Label:
-#            text_size: self.width, None
-#            size_hint_x: None
-#            halign: 'right'
-#            text: '{}'.format(ctx.get_nice_size())
+[FileListEntry@FloatLayout+TreeViewNode]:
+    locked: False
+    entries: []
+    path: ctx.path
+    # FIXME: is_selected is actually a read_only treeview property. In this
+    # case, however, we're doing this because treeview only has single-selection
+    # hardcoded in it. The fix to this would be to update treeview to allow
+    # multiple selection.
+    is_selected: self.path in ctx.controller().selection
 
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: '48dp' if dp(1) > 1 else '24dp'
+    # Don't allow expansion of the ../ node
+    is_leaf: not ctx.isdir or ctx.name.endswith('..' + ctx.sep) or self.locked
+    on_touch_down: self.collide_point(*args[1].pos) and ctx.controller().entry_touched(self, args[1])
+    on_touch_up: self.collide_point(*args[1].pos) and ctx.controller().entry_released(self, args[1])
+    BoxLayout:
+        pos: root.pos
+        size_hint_x: None
+        width: root.width - dp(10)
+        Label:
+            id: filename
+            text_size: self.width, None
+            halign: 'left'
+            shorten: True
+            text: ctx.name
+            font_name: ctx.controller().font_name
+        Label:
+            text_size: self.width, None
+            size_hint_x: None
+            halign: 'right'
+            text: '{}'.format(ctx.get_nice_size())
+            font_name: ctx.controller().font_name
 
 <FileChooserIconLayout>:
     on_entry_added: stacklayout.add_widget(args[1])
@@ -387,44 +446,45 @@
         id: layout
         controller: root
 
-#[FileIconEntry@Widget]:
-#    locked: False
-#    path: ctx.path
-#    selected: self.path in ctx.controller().selection
-#    size_hint: None, None
-#
-#    on_touch_down: self.collide_point(*args[1].pos) and ctx.controller().entry_touched(self, args[1])
-#    on_touch_up: self.collide_point(*args[1].pos) and ctx.controller().entry_released(self, args[1])
-#    size: '100dp', '100dp'
-#
-#    canvas:
-#        Color:
-#            rgba: 1, 1, 1, 1 if self.selected else 0
-#        BorderImage:
-#            border: 8, 8, 8, 8
-#            pos: root.pos
-#            size: root.size
-#            source: 'atlas://data/images/defaulttheme/filechooser_selected'
-#
-#    Image:
-#        size: '48dp', '48dp'
-#        source: 'atlas://data/images/defaulttheme/filechooser_%s' % ('folder' if ctx.isdir else 'file')
-#        pos: root.x + dp(24), root.y + dp(40)
-#    Label:
-#        text: ctx.name
-#        text_size: (root.width, self.height)
-#        halign: 'center'
-#        shorten: True
-#        size: '100dp', '16dp'
-#        pos: root.x, root.y + dp(16)
-#
-#    Label:
-#        text: '{}'.format(ctx.get_nice_size())
-#        font_size: '11sp'
-#        color: .8, .8, .8, 1
-#        size: '100dp', '16sp'
-#        pos: root.pos
-#        halign: 'center'
+[FileIconEntry@Widget]:
+    locked: False
+    path: ctx.path
+    selected: self.path in ctx.controller().selection
+    size_hint: None, None
+
+    on_touch_down: self.collide_point(*args[1].pos) and ctx.controller().entry_touched(self, args[1])
+    on_touch_up: self.collide_point(*args[1].pos) and ctx.controller().entry_released(self, args[1])
+    size: '100dp', '100dp'
+
+    canvas:
+        Color:
+            rgba: 1, 1, 1, 1 if self.selected else 0
+        BorderImage:
+            border: 8, 8, 8, 8
+            pos: root.pos
+            size: root.size
+            source: 'atlas://data/images/defaulttheme/filechooser_selected'
+
+    Image:
+        size: '48dp', '48dp'
+        source: 'atlas://data/images/defaulttheme/filechooser_%s' % ('folder' if ctx.isdir else 'file')
+        pos: root.x + dp(24), root.y + dp(40)
+    Label:
+        text: ctx.name
+        font_name: ctx.controller().font_name
+        text_size: (root.width, self.height)
+        halign: 'center'
+        shorten: True
+        size: '100dp', '16dp'
+        pos: root.x, root.y + dp(16)
+    Label:
+        text: '{}'.format(ctx.get_nice_size())
+        font_name: ctx.controller().font_name
+        font_size: '11sp'
+        color: .8, .8, .8, 1
+        size: '100dp', '16sp'
+        pos: root.pos
+        halign: 'center'
 
 <FileChooserProgress>:
     pos_hint: {'x': 0, 'y': 0}
@@ -487,45 +547,6 @@
             source: 'atlas://data/images/defaulttheme/switch-button{}'.format('_disabled' if self.disabled else '')
             size: sp(43), sp(32)
             pos: int(self.center_x - sp(41) + self.active_norm_pos * sp(41)), int(self.center_y - sp(16))
-
-
-# ModalView widget
-<ModalView>:
-    error: False
-    canvas:
-        Color:
-            rgba: root.background_color[:3] + [root.background_color[-1] * self._anim_alpha]
-        Rectangle:
-            size: (self._window.size[0], self._window.size[1]) if self._window else (0, 0)
-        Color:
-            rgba: p.red if self.error else p.popup
-        RoundedRectangle:
-            radius: [p.popup_radius]
-            pos: self.pos
-            size: self.size
-
-# Popup widget @ModalView
-<Popup>:
-    _container: container
-    GridLayout:
-        padding: '0dp'
-        cols: 1
-        size_hint: None, None
-        pos: root.pos
-        size: root.size
-
-        Label:
-            text: root.title
-            color: root.title_color
-            size_hint_y: None
-            height: self.texture_size[1] + dp(50)
-            text_size: self.width - dp(50), None
-            font_size: root.title_size
-            font_name: root.title_font
-            halign: root.title_align
-
-        BoxLayout:
-            id: container
 
 # =============================================================================
 # Spinner widget
@@ -706,27 +727,27 @@
 # Accordion widget
 # =============================================================================
 
-#[AccordionItemTitle@Label]:
-#    text: ctx.title
-#    normal_background: ctx.item.background_normal if ctx.item.collapse else ctx.item.background_selected
-#    disabled_background: ctx.item.background_disabled_normal if ctx.item.collapse else ctx.item.background_disabled_selected
-#    canvas.before:
-#        Color:
-#            rgba: self.disabled_color if self.disabled else self.color
-#        BorderImage:
-#            source: self.disabled_background if self.disabled else self.normal_background
-#            pos: self.pos
-#            size: self.size
-#        PushMatrix
-#        Translate:
-#            xy: self.center_x, self.center_y
-#        Rotate:
-#            angle: 90 if ctx.item.orientation == 'horizontal' else 0
-#            axis: 0, 0, 1
-#        Translate:
-#            xy: -self.center_x, -self.center_y
-#    canvas.after:
-#        PopMatrix
+[AccordionItemTitle@Label]:
+    text: ctx.title
+    normal_background: ctx.item.background_normal if ctx.item.collapse else ctx.item.background_selected
+    disabled_background: ctx.item.background_disabled_normal if ctx.item.collapse else ctx.item.background_disabled_selected
+    canvas.before:
+        Color:
+            rgba: self.disabled_color if self.disabled else self.color
+        BorderImage:
+            source: self.disabled_background if self.disabled else self.normal_background
+            pos: self.pos
+            size: self.size
+        PushMatrix
+        Translate:
+            xy: self.center_x, self.center_y
+        Rotate:
+            angle: 90 if ctx.item.orientation == 'horizontal' else 0
+            axis: 0, 0, 1
+        Translate:
+            xy: -self.center_x, -self.center_y
+    canvas.after:
+        PopMatrix
 
 
 <AccordionItem>:
@@ -929,7 +950,6 @@
         pos: root.pos
         cols: 1
         id: menu
-        orientation: 'vertical'
         padding: 5
 
         canvas.after:
@@ -999,7 +1019,7 @@
 <VideoPlayerPreview>:
     pos_hint: {'x': 0, 'y': 0}
     image_overlay_play: 'atlas://data/images/defaulttheme/player-play-overlay'
-    image_loading: 'data/images/image-loading.gif'
+    image_loading: 'data/images/image-loading.zip'
     Image:
         source: root.source
         color: (.5, .5, .5, 1) if root.source else (0, 0, 0, 0)
@@ -1282,23 +1302,3 @@
             id: wheel
             color: root.color
             on_color: root.set_color(args[1][:3])
-
-<VKeyboard>:
-    # Use local keyboard json instead of system default
-    layout_path: p.kgui_dir
-    size_hint: 1, 0.34
-    # Space on outside of keyboard
-    margin_hint: 0.02, 0.01, 0.02, 0.01
-    # Distance between keys (top, right, bottom, left)
-    key_margin: 6, 6, 6, 6
-    background: p.kgui_dir+'/logos/transparent.png'
-    #background_color: 0.1, 0.3, 0.1, 1
-    key_background_normal: p.kgui_dir+'/logos/keyboard_key_normal.png'
-    key_background_down: p.kgui_dir+'/logos/keyboard_key_down.png'
-    #key_background_color: p.translucent_white
-    canvas:
-        Color:
-            rgba: p.background
-        Rectangle:
-            pos: self.pos
-            size: self.size

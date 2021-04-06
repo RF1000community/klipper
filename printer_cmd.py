@@ -237,11 +237,11 @@ def get_material(e, printer):
             'brand': ""})
     printer.reactor.cb(set_attribute, 'material', material, process='kgui')
 
-def get_tmc(e, printer):
+def get_tbc(e, printer):
     fm = printer.lookup_object('filament_manager', None)
     if not fm:
         return
-    printer.reactor.cb(set_attribute, 'tmc_to_guid', fm.get_tmc(), process='kgui')
+    printer.reactor.cb(set_attribute, 'tbc_to_guid', fm.get_tbc(), process='kgui')
 
 def send_calibrate(e, printer):
     printer.objects['bed_mesh'].calibrate.cmd_BED_MESH_CALIBRATE(None)

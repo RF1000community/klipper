@@ -5,7 +5,7 @@
 #:import printer_cmd printer_cmd
 
 <HomeTab@TabbedPanelItem>:
-    background_down: '' # should take on background color, opacity is also applied to provided images
+    background_down: ''
     background_color: p.background
     canvas:
         Rectangle:
@@ -939,7 +939,7 @@
         or (self.filamentchooser.sel[self.level] == self.key)
     font_size: p.normal_font - 2
     option_color: (0,0,0,0)
-    amount: 0
+    amount: 1
     canvas.before:
         Color:
             rgba: self.option_color
@@ -988,7 +988,7 @@
 
 <FilamentPopup>:
     size_hint: 0.96, 0.5
-    title: "{} {}".format(self.material['manufacturer'], self.material['material_type'])
+    title: "{} {}".format(self.material['brand'], self.material['material_type'])
     FloatLayout:
         FilamentSlider:
             active: root.new

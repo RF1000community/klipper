@@ -63,7 +63,7 @@ class mainApp(App, threading.Thread):
     toolhead_busy = BooleanProperty(False)
     ongoing_live_move = BooleanProperty(False)
     material = DictProperty()
-    tmc_to_guid = DictProperty()
+    tbc_to_guid = DictProperty()
     # tuning
     speed = NumericProperty(100)
     flow = NumericProperty(100)
@@ -149,7 +149,7 @@ class mainApp(App, threading.Thread):
     def handle_connect(self):
         self.connected = True
         self.reactor.cb(printer_cmd.update)
-        self.reactor.cb(printer_cmd.get_tmc)
+        self.reactor.cb(printer_cmd.get_tbc)
         self.bind(print_state=self.handle_material_change)
         Clock.schedule_interval(lambda dt: self.reactor.cb(printer_cmd.update), 1)
 

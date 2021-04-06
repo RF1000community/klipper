@@ -174,7 +174,7 @@ class FilamentChooserPopup(BasePopup):
         self.reactor = self.app.reactor
         self.extruder_id = extruder_id
         self.show_more = [False, False, False]
-        self.sel = [None, None, None, None] # selected [type, manufacturer, color, guid]
+        self.sel = [None, None, None, None] # selected [type, brand, color, guid]
         self.sel_2 = {}
         self.widgets = [[], [], []]
         super().__init__(**kwargs)
@@ -188,37 +188,37 @@ class FilamentChooserPopup(BasePopup):
         self.ids.btn_confirm.enabled = False
 
         # 1. generate options to draw based on selection
-        # get material library from filament manager as type-manufacturer-color tree of dicts
-        tmc = self.app.tmc_to_guid
+        # get material library from filament manager as type-brand-color tree of dicts
+        tbc = self.app.tbc_to_guid
 
         # always show types
-        options = [[{'level':0, 'text':t, 'key':t} for t in list(tmc)], [], []]
+        options = [[{'level':0, 'text':t, 'key':t} for t in list(tbc)], [], []]
         if self.sel[0]:
-            # type is selected, show manufacturers
-            # autoselect if there's only one manufacturer, or 'Generic' and none is selected
-            manufacturers = list(tmc[self.sel[0]])
-            if len(manufacturers) == 1:
-                self.sel[1] = manufacturers[0]
-            elif self.sel[1] is None and 'Generic' in manufacturers:
+            # type is selected, show brands
+            # autoselect if there's only one brand, or 'Generic' and none is selected
+            brands = list(tbc[self.sel[0]])
+            if len(brands) == 1:
+                self.sel[1] = brands[0]
+            elif self.sel[1] is None and 'Generic' in brands:
                 self.sel[1] = 'Generic'
-            options[1] = [{'level':1, 'material':{'manufacturer': m}, 'text':m,'key':m} for m in manufacturers]
+            options[1] = [{'level':1, 'material':{'brand': m}, 'text':m,'key':m} for m in brands]
             if self.sel[1]:
-                # type and manufacturer is selected, show colors
+                # type and brand is selected, show colors
                 # autoselect if there's only one color
-                colors = list(tmc[self.sel[0]][self.sel[1]])
+                colors = list(tbc[self.sel[0]][self.sel[1]])
                 if len(colors) == 1:
                     self.sel[2] = colors[0]
                 options[2] = [{'level':2, 'material':{'hex_color': c}, 'key':c} for c in colors]
                 if self.sel[2]:
-                    # type and manufacturer and color is selected, we have a material guid
-                    self.sel[3] = tmc[self.sel[0]][self.sel[1]][self.sel[2]]
+                    # type and brand and color is selected, we have a material guid
+                    self.sel[3] = tbc[self.sel[0]][self.sel[1]][self.sel[2]]
                     self.ids.btn_confirm.text = f"Select {self.sel[1]} {self.sel[0]}"
                     self.ids.btn_confirm.enabled = True
 
         # sort types by how many manufactures make them
-        # tmc[option['key']] is the dict of manufacturers for the selected type (e.g. for PLA)
-        options[0].sort(key = lambda option: len(tmc[option['key']]), reverse=True)
-        # sort manufacturers alphabetically, "Generic" always first
+        # tbc[option['key']] is the dict of brands for the selected type (e.g. for PLA)
+        options[0].sort(key = lambda option: len(tbc[option['key']]), reverse=True)
+        # sort brands alphabetically, "Generic" always first
         options[1].sort(key = lambda option: option['text'].lower() if option['text'] != 'Generic' else '\t')
 
         # 2. remove widgets that need to be updated (level >= change_level)
@@ -284,7 +284,7 @@ class FilamentChooserPopup(BasePopup):
         else:
             material = {
                 'material_type': self.sel[0],
-                'manufacturer': self.sel[1],
+                'brand': self.sel[1],
                 'hex_color': self.sel[2],
                 'guid': self.sel[3],
                 'amount': 1}
@@ -297,6 +297,7 @@ class Option(BaseButton):
         self.key = key
         self.filamentchooser = filamentchooser
         self.level = level
+        self.material = material
         self.multiline = True
         self.max_lines = 2
         self.shorten_from = 'right'
@@ -305,7 +306,7 @@ class Option(BaseButton):
             self.amount = material['amount']
         if 'hex_color' in material:
             self.option_color = calculate_filament_color(hex_to_rgba(material['hex_color']))
-        if 'manufacturer' in material:
+        if 'brand' in material:
             self.font_size = p.small_font
             self.color = p.light_gray
 
@@ -349,11 +350,10 @@ class FilamentPopup(BasePopup):
 
     def confirm(self):
         if self.new:
-            self.reactor.cb(self.load(
-                self.extruder_id, guid=self.material['guid'],
-                amount=self.ids.filament_slider.val/1000, unloaded_idx=self.unloaded_idx))
+            self.reactor.cb(self.load, self.extruder_id, guid=self.material['guid'],
+                amount=self.ids.filament_slider.val/1000, unloaded_idx=self.unloaded_idx)
         else:
-            self.reactor.cb(self.unload(self.extruder_id))
+            self.reactor.cb(self.unload, self.extruder_id)
         self.dismiss()
 
     @staticmethod
