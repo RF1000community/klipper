@@ -8,6 +8,3 @@ Features to be implemented
 Bugs
     live_extrusion leaves inconsistent state
     cura showing old printjobs after klipper restart
-    filechooser missing files should be fixed in kivy master
-    virtual_sdcard stopping hangs
-

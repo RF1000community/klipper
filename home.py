@@ -90,7 +90,7 @@ class XyField(Widget):
 
 
 class TempSlider(UltraSlider):
-    tool_id = StringProperty()
+    gcode_id = StringProperty()
 
     def __init__(self, **kwargs):
         self.btn_last_active = None
@@ -102,10 +102,10 @@ class TempSlider(UltraSlider):
     def init_drawing(self, dt=None):
         self.app.reactor.cb(printer_cmd.get_temp)
         self.buttons = [[0, 0, "Off", None]] # [value, pos_offset, text, instance]
-        if self.tool_id == 'B':
+        if self.gcode_id == 'B':
             self.val_min = 30
             self.val_max = 140
-            if app.material:
+            if self.app.material:
                 loaded_material = self.app.material['loaded']
                 for material in loaded_material:
                     if material['guid']:
@@ -119,8 +119,8 @@ class TempSlider(UltraSlider):
         else:
             self.val_min = 40
             self.val_max = 280
-            if app.material:
-                tool_idx = int(self.tool_id[-1])
+            if self.app.material:
+                tool_idx = int(self.gcode_id[-1])
                 material = self.app.material['loaded'][tool_idx]
                 if material['guid']:
                     self.buttons.append([float(material['print_temp']), 0, material['material_type'], None])
@@ -159,7 +159,7 @@ class BtnTriple(Widget):
     filament_amount = NumericProperty()
     filament_color = ListProperty([0,0,0,0])
     title = StringProperty()
-    tool_id = StringProperty()
+    gcode_id = StringProperty()
     tool_idx = NumericProperty()
     extruder_id = StringProperty()
     material = DictProperty({'guid': None, 'state': "no material", 'amount': 0,

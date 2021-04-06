@@ -123,7 +123,7 @@ class Wifi(RecycleView):
         # Repopulate the list of networks
         if value:
             self.message = ""
-            self.data = [{'ap':value[0], 'height':1}] + [{'ap': ap, 'height':110} for ap in value]
+            self.data = [{'ap': None}] + [{'ap': ap} for ap in value]
             self.refresh_from_data()
         else:
             self.data = []
@@ -137,7 +137,7 @@ class WifiBox(LayoutSelectionBehavior, RecycleBoxLayout):
 
 
 class WifiItem(RecycleDataViewBehavior, Label):
-    ap = ObjectProperty()
+    ap = ObjectProperty(allownone=True)
     pressed = BooleanProperty(False)
     index = None
 

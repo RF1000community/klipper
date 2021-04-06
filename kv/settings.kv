@@ -158,22 +158,34 @@
 <WifiItem>:
     canvas:
         Color:
-            rgba: p.translucent_white if self.pressed or (self.ap and self.ap.in_use) else (0,0,0,0)
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
         Rectangle:
-            size: self.size
+            size: self.width, self.height - 1
             pos: self.pos
     #Label
     width: p.screen_width
     size_hint_y: None
-    height: 110
-    text: "" if not root.ap else self.ap.ssid
+    height: 1 if not self.ap else 155 if self.ap.in_use or self.ap.saved else 110
+    text: "" if not self.ap else self.ap.ssid
     halign: 'right'
-    valign: 'middle'
+    valign: 'top'
     max_lines: 1
     padding_x: p.h_padding
+    padding_y: (110 - p.normal_font - 3)/2
     text_size: self.size
     font_size: p.normal_font
-    color: p.light_gray
+    Label:
+        text: "" if not root.ap else "Connected" if root.ap.in_use else "Saved" if root.ap.saved else ""
+        shorten: True
+        halign: 'right'
+        valign: 'middle'
+        padding_x: p.h_padding
+        size_hint: None, None
+        size: root.width, 110
+        pos: root.pos
+        text_size: self.size
+        font_size: p.normal_font
+        color: p.medium_light_gray
     Label:
         text: "" if not root.ap else str(root.ap.signal)
         shorten: True
@@ -181,13 +193,14 @@
         valign: 'middle'
         padding_x: p.h_padding
         size_hint: None, None
-        size: root.size
-        pos: root.pos
+        size: root.width, 110
+        top: root.top
+        x: root.x
         text_size: self.size
         font_size: p.normal_font
-        color: p.medium_light_gray if not (root.ap and root.ap.saved) else (1,1,1,1)
+        color: p.medium_light_gray
     Divider:
-        y: root.y
+        top: root.y
 
 <UpdateScreen>:
     name: 'UpdateScreen'
@@ -238,7 +251,7 @@
 #             rgba: p.btn_outline
 #         Line:
 #             width: 1
-#             ellipse: self.x, self.y,     self.width, self.height
+#             ellipse: self.x, self.y,   self.width, self.height
 #         Color:
 #             rgba: p.medium_light_gray if self.selected else (0,0,0,0)
 #         Ellipse:
@@ -273,7 +286,7 @@
         right: p.screen_width
         padding_x: p.padding
     Divider:
-        y: root.y
+        top: root.y
 
 <SISwitch@SetItem>:
     enabled: False

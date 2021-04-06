@@ -182,11 +182,11 @@ def send_z_stop(e, printer):
     printer.objects['live_move'].stop_move('z')
     get_pos(e, printer)
 
-def send_extrude(e, printer, tool_id, direction):
-    printer.objects['live_move'].start_move(tool_id, direction)
+def send_extrude(e, printer, gcode_id, direction):
+    printer.objects['live_move'].start_move(gcode_id, direction)
     get_toolhead_busy(e, printer)
-def send_extrude_stop(e, printer, tool_id):
-    printer.objects['live_move'].stop_move(tool_id)
+def send_extrude_stop(e, printer, gcode_id):
+    printer.objects['live_move'].stop_move(gcode_id)
     get_pos(e, printer)
 
 def get_printjob_progress(e, printer):
@@ -256,7 +256,7 @@ def send_pause(e, printer):
     printer.objects['virtual_sdcard'].pause_printjob()
 
 def send_resume(e, printer):
-    printer.sdcard.resume_printjob()
+    printer.objects['virtual_sdcard'].resume_printjob()
 
 def restart(e, printer):
     printer.request_exit('restart')

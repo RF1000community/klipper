@@ -54,6 +54,7 @@ class mainApp(App, threading.Thread):
     temp = DictProperty() # {'heater_bed': [setpoint, current], 'extruder': ...}
     connected = BooleanProperty(False) # updated with handle_connect
     jobs = ListProperty()
+    history = ListProperty()
     print_title = StringProperty()
     print_time = StringProperty() # updated by get_printjob_progress
     print_done_time = StringProperty()
@@ -127,6 +128,7 @@ class mainApp(App, threading.Thread):
         self.reactor.register_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
         self.reactor.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
         self.reactor.register_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
+        self.reactor.register_event_handler("print_history:change", self.handle_history_change)
         self.reactor.register_event_handler("filament_manager:material_changed", self.handle_material_change)
         self.reactor.cb(printer_cmd.load_object, "live_move")
         self.reactor.cb(printer_cmd.load_object, "filament_manager")
@@ -138,7 +140,11 @@ class mainApp(App, threading.Thread):
         ndel, freed = freedir(p.sdcard_path)
         if ndel:
             self.notify.show("Disk space freed", f"Deleted {ndel} files, freeing {freed} MiB")
-            self.print_history.trim_history()
+            self.reactor.cb(self.trim_history, process='printer')
+
+    @staticmethod
+    def trim_history(e, printer):
+        printer.objects['print_history'].trim_history()
 
     def handle_connect(self):
         self.connected = True
@@ -217,6 +223,10 @@ class mainApp(App, threading.Thread):
             self.print_state = "no printjob"
             # tuning values are only reset once print_queue has run out
             self.reactor.cb(printer_cmd.reset_tuning)
+
+    def handle_history_change(self, history):
+        logging.info(f"got history {history}")
+        self.history = history
 
     def handle_material_change(self, *args):
         self.reactor.cb(printer_cmd.get_material, process='printer')

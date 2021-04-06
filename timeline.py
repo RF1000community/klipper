@@ -19,24 +19,20 @@ class Timeline(RecycleView):
         super().__init__(**kwargs)
         self.app = App.get_running_app()
         self.reactor = self.app.reactor
-        self.keep_next_selection = False
-        self.load_all(clear_scroll_pos=True, clear_selection=True)
-        self.app.bind(
-            jobs=self.load_all,
-            state= lambda *_ : self.load_all(clear_selection=False),
-            print_state=lambda *_ : self.load_all(clear_selection=False))
-        self.app.reactor.register_event_handler("print_history:change", self.load_all)
+        self.next_selection = None
+        self.load_all(clear_scroll_pos=True, clear_selection=False)
+        self.app.bind(jobs=self.load_all, history=self.load_all)
+
     def load_all(self, *args, clear_scroll_pos=False, clear_selection=True):
-        pass
-    """ TODO
-        queue = [{'name': job.name, 'path': job.path, 'state': job.state, 'thumbnail': job.md.get_thumbnail_path()}
+        queue = [{'name': job.name, 'path': job.path, 'state': job.state,
+            'thumbnail': self.app.gcode_metadata.get_metadata(job.path).get_thumbnail_path()}
             for job in reversed(self.app.jobs)]
 
         history = []
-        if self.app.print_history and self.app.print_history.history != []:
+        if self.app.history != []:
             # latest date in history
-            prev_date = date.fromtimestamp(self.app.print_history.history[0][2])
-            for job in self.app.print_history.history:
+            prev_date = date.fromtimestamp(self.app.history[0][2])
+            for job in self.app.history:
                 md = self.app.gcode_metadata.get_metadata(job[0])
                 new_date = date.fromtimestamp(job[2])
                 # This print happened on a later day than the previous
@@ -55,50 +51,47 @@ class Timeline(RecycleView):
                 history.append({"name": new_date.strftime("%d. %b %Y")})
             history.reverse() # sort history to last file at end (bottom)
 
-        if not (queue or history): # Give message in case of empty list
-            self.data = [{"name": "No printjobs scheduled or finished", "state": 'message'}]
-        else:
+        if queue or history:
             self.data = queue + history + [{'height': 1}] # for a dividing line after last element
         if clear_scroll_pos:
             self.scroll_y = 1
-        if clear_selection and not self.keep_next_selection and 'tl_box' in self.ids:
+        if clear_selection and self.next_selection is None:
             self.ids.tl_box.clear_selection()
+        elif not self.next_selection is None:
+            self.ids.tl_box.select_node(self.next_selection)
+
         self.refresh_from_data()
-        self.keep_next_selection = False"""
+        self.next_selection = None
 
-    def move(self, offset):
+    def move(self, move):
         """ Move the selected file up or down the queue. E.g. -1 will print it sooner """
-        selected = self.ids.tl_box.selected_nodes
-        if not selected: return
-        i = len(self.app.sdcard.jobs) - selected[0] - 1
-
-        def move(e):
-            if  0 < i+offset < len(self.app.sdcard.jobs):
-                to_move = self.app.sdcard.jobs.pop(i)
-                self.app.sdcard.jobs.insert(i + offset, to_move)
-                self.app.sdcard.queue_modified()
-        # do the check twice, since it's easy to press this button again when it should have already disappeared
-        if  0 < i+offset < len(self.app.sdcard.jobs):
-            self.reactor.register_async_callback(move)
-            self.ids.tl_box.select_node(selected[0] - offset)
-            self.keep_next_selection = True
-
-    def remove(self):
-        """Remove the selcted file from the queue"""
         selected = self.ids.tl_box.selected_nodes
         if not selected:
             return
-        i = len(self.app.sdcard.jobs) - selected[0] - 1
+        idx = len(self.app.jobs) - selected[0] - 1
+        # check index since it's easy to press this button again when it should have already disappeared
+        if 0 < idx + move < len(self.app.jobs):
+            self.reactor.cb(self.move_printjob, idx, self.app.jobs[idx].path, move)
+            self.next_selection = selected[0] - move
 
-        def remove(e):
-            if  0 < i < len(self.app.sdcard.jobs):
-                self.app.sdcard.jobs.pop(i)
-                self.app.sdcard.queue_modified()
+    @staticmethod
+    def move_printjob(e, printer, idx, path, move):
+        printer.objects['virtual_sdcard'].move_printjob(idx, path, move)
 
-        if i == 0:
+    def remove(self):
+        """ Remove the selcted file from the queue """
+        selected = self.ids.tl_box.selected_nodes
+        if not selected:
+            return
+        idx = len(self.app.jobs) - selected[0] - 1
+        if idx == 0:
             StopPopup().open()
-        else: # negative values would occur for history items below current
-            self.reactor.register_async_callback(remove)
+        else:
+            self.reactor.cb(self.remove_printjob, idx, self.app.jobs[idx].path, process='printer')
+
+    @staticmethod
+    def remove_printjob(e, printer, idx, path):
+        printer.objects['virtual_sdcard'].remove_printjob(idx, path)
 
 
 class TimelineBox(LayoutSelectionBehavior, RecycleBoxLayout):
@@ -119,7 +112,7 @@ class TimelineItem(RecycleDataViewBehavior, Label):
     name = StringProperty()
     path = StringProperty()
     state = OptionProperty("header", options=
-        ["header", "message", "queued", "printing", "pausing", "paused", "stopping", "stopped", "done"])
+        ["header", "queued", "printing", "pausing", "paused", "stopping", "stopped", "done"])
     timestamp = NumericProperty(0)
     index = None
     selected = BooleanProperty(False)

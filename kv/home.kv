@@ -83,30 +83,32 @@
             PrintingScreen:
         BtnTemp:
             id: temp_T1
-            tool_id: "T1"
+            gcode_id: "T1"
+            heater_id: "extruder1"
             on_release: Factory.ExtTempPopup(creator=self, val=app.temp).open()
-            large_value: "{:3.0f}°C".format(app.temp['extruder1'][1])
-            small_value: "{:3.0f}".format(app.temp['extruder1'][0]) if app.temp['extruder1'][0] != 0 else "Off"
-            red: app.temp['extruder1'][1] > 50
+            large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
+            small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
+            red: app.temp[self.heater_id][1] > 50
             width: 80
             right: temp_bed.right if app.extruder_count > 1 else p.mars
             y: p.tab_height + p.padding*3 + p.progress_bar_height + p.btn_stop
         BtnExtruder:
-            tool_id: 'T1'
+            gcode_id: 'T1'
             center_x: p.h_padding + icon_center if app.extruder_count > 1 else p.mars
             y: p.tab_height + p.padding*3 + p.progress_bar_height + p.btn_stop
         BtnTemp:
             id: temp_T0
-            tool_id: "T0"
+            gcode_id: "T0"
+            heater_id: "extruder"
             on_release: Factory.ExtTempPopup(creator=self, val=app.temp).open()
-            large_value: "{:3.0f}°C".format(app.temp['extruder'][1])
-            small_value: "{:3.0f}".format(app.temp['extruder'][0]) if app.temp['extruder'][0] != 0 else "Off"
-            red: app.temp['extruder'][1] > 50
+            large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
+            small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
+            red: app.temp[self.heater_id][1] > 50
             width: 80
             right: temp_bed.right
             y: p.tab_height + p.progress_bar_height + 4*p.padding + p.btn_height + p.btn_stop
         BtnExtruder:
-            tool_id: 'T0'
+            gcode_id: 'T0'
             center_x: p.h_padding + icon_center
             y: p.tab_height + p.padding*4 + p.progress_bar_height + p.btn_height + p.btn_stop
         BtnTemp:
@@ -160,7 +162,7 @@
             w1: p.btn_height
             w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
-            tool_id: 'T1'
+            gcode_id: 'T1'
             tool_idx: 1
             extruder_id: 'extruder1'
             material:
@@ -173,7 +175,7 @@
             w2: p.btn_width - 2*p.btn_height
             w3: p.btn_height
             id: btn_tr_T0
-            tool_id: 'T0'
+            gcode_id: 'T0'
             tool_idx: 0
             extruder_id: 'extruder'
             material:
@@ -368,7 +370,7 @@
 <BtnExtruder@BaseButton>:
     #:set esh 17
     size: icon_center*2 + 10, p.btn_height
-    tool_id: 'T0'
+    gcode_id: 'T0'
     selected: False
     canvas:
         Color:
@@ -382,10 +384,10 @@
                 self.center_x - esh, self.y + esh, \
                 self.center_x, self.y, \
                 self.center_x + esh, self.y + esh
-    # this needs a new label instance since the properties set in BaseButton 
+    # this needs a new label instance since the properties set in BaseButton
     # cannot be overwritten in rule definition (only in instance)
     Label:
-        text: str(int(root.tool_id[1]) + 1)
+        text: str(int(root.gcode_id[1]) + 1)
         bold: True
         color: p.background
         center_x: root.center_x
@@ -398,9 +400,9 @@
     w3: 0
     filament_amount: self.material['amount']
     filament_color: printer_cmd.calculate_filament_color(printer_cmd.hex_to_rgba(self.material['hex_color']))
-    title: 
+    title:
         {'loading': "Loading...",
-        'unloading': "Unloading...", 
+        'unloading': "Unloading...",
         'loaded': f"{self.material['amount']*1000:3.0f}g {self.material['material_type']}\n(unload)",
         'no material': "Load Material"}[self.material['state']]
     size_hint: None, None
@@ -445,7 +447,7 @@
             and app.temp[root.extruder_id][0] > app.min_extrude_temp \
             and app.temp[root.extruder_id][1] > app.min_extrude_temp \
             and not app.toolhead_busy and not app.ongoing_live_move
-        on_press: app.reactor.cb(printer_cmd.send_extrude, root.tool_id, -1)
+        on_press: app.reactor.cb(printer_cmd.send_extrude, root.gcode_id, -1)
         on_release: app.reactor.cb(printer_cmd.send_extrude_stop)
         canvas:
             Color:
@@ -457,7 +459,7 @@
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
-                radius: (p.radius, 0,0,p.radius)
+                radius: (p.radius, 0, 0, p.radius)
                 size: self.size
                 pos: self.pos
     RectangleButton:
@@ -483,7 +485,7 @@
             and app.temp[root.extruder_id][0] > app.min_extrude_temp \
             and app.temp[root.extruder_id][1] > app.min_extrude_temp \
             and not app.toolhead_busy and not app.ongoing_live_move
-        on_press: app.reactor.cb(printer_cmd.send_extrude, root.tool_id)
+        on_press: app.reactor.cb(printer_cmd.send_extrude, root.gcode_id)
         on_release: app.reactor.cb(printer_cmd.send_extrude_stop)
         canvas:
             Color:
@@ -511,10 +513,10 @@
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
         Rectangle:
-            pos: self.x + p.btn_divider_padding, self.y + self.h1
+            pos: self.x + p.btn_divider_padding, self.y + self.h1 - 1
             size: self.width - 2*p.btn_divider_padding, 1
         Rectangle:
-            pos: self.x + p.btn_divider_padding, self.y + self.h1 + self.h2
+            pos: self.x + p.btn_divider_padding, self.y + self.h1 + self.h2 - 1
             size: self.width - 2*p.btn_divider_padding, 1
     #:set t 9.5
     #:set u 19 # Triangle has this size x2
@@ -554,7 +556,7 @@
                 size: self.size
                 pos: self.pos
     BaseButton:
-        on_press: 
+        on_press:
             app.reactor.cb(printer_cmd.send_z_go, app.z_speed, -1 if app.invert_z_controls else 1), \
             app.note_live_move('z')
         on_release: app.reactor.cb(printer_cmd.send_z_stop); app.note_live_move_end('z')
@@ -573,7 +575,7 @@
             Color:
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
-                points: 
+                points:
                     self.center_x - u, self.center_y - t, \
                     self.center_x + u, self.center_y - t, \
                     self.center_x, self.center_y + t
@@ -841,8 +843,8 @@
     FloatLayout:
         TempSlider:
             id: slider
-            tool_id: 'B'
-            val: root.val['B'][0]
+            gcode_id: 'B'
+            val: root.val['heater_bed'][0]
             pos_hint: {'center_x': 0.5, 'y': 0.6}
         BtnPCancel:
             id: btn_cancel
@@ -857,12 +859,12 @@
 
 <ExtTempPopup@BasePopup>:
     size_hint: 0.94, 0.4
-    title: "Set Extruder {} Temperature".format(int(self.creator.tool_id[1]) + 1)
+    title: "Set Extruder {} Temperature".format(int(self.creator.gcode_id[1]) + 1)
     FloatLayout:
         TempSlider:
-            val: root.val[root.creator.tool_id][0]
+            val: root.val[root.creator.heater_id][0]
             id: slider
-            tool_id: root.creator.tool_id
+            gcode_id: root.creator.gcode_id
             pos_hint: {'center_x': 0.5, 'y': 0.6}
         BtnPCancel:
             id: btn_cancel
@@ -873,7 +875,7 @@
             enabled: slider.changed
             width: root.width/2
             pos: root.center_x, root.y
-            on_release: app.reactor.cb(printer_cmd.send_temp, slider.val, root.creator.extruder_id); root.dismiss()
+            on_release: app.reactor.cb(printer_cmd.send_temp, slider.val, root.creator.heater_id); root.dismiss()
 
  #: set o_padding 10
 <FilamentChooserPopup>:
@@ -932,7 +934,7 @@
 
 <Option>:
     size: 86, 60
-    selected: 
+    selected:
         (self.filamentchooser.sel_2 and self.filamentchooser.sel_2['unloaded_idx'] == self.key) \
         or (self.filamentchooser.sel[self.level] == self.key)
     font_size: p.normal_font - 2

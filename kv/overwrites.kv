@@ -17,11 +17,11 @@
             radius: (int(sp(rad)),)
         Color:
             rgba: (1,1,1,1) if self.active else p.medium_light_gray
-        
+
         Ellipse:
             size: sp(Rad*2), sp(Rad*2)
             pos: int(self.center_x - sp(move/2+Rad)  + self.active_norm_pos * sp(move)), int(self.center_y - sp(Rad))
-        
+
 <-TabbedPanelStrip>:
     canvas:
         Color:
@@ -30,5 +30,5 @@
             size: self.size
             pos: self.pos
 
-<StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
+<-StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
     padding: (0,0,0,0)

@@ -92,7 +92,6 @@ class BtnSlider(BaseButton):
     offset = NumericProperty()
 
 class BasePopup(Popup):
-
     def __init__(self, creator=None, val=None, **kwargs):
         # makes this Popup recieve the instance of the calling button to
         # access its methods and e.g. heater_id
@@ -133,7 +132,7 @@ class PrintPopup(BasePopup):
         self.filechooser = filechooser
         super().__init__(**kwargs)
         self.populate_details()
-        Clock.schedule_once(self._align, 0)
+        Clock.schedule_once(self._align, -1)
 
     def populate_details(self):
         md = self.md
@@ -243,7 +242,7 @@ class UltraSlider(Widget):
     can be safely overwritten by inheritors for nonlinear conversion.
     """
     buttons = ListProperty()  #list of lists: e.g. [[val,offset,"name",the instance]]
-    val = NumericProperty() #value, passed to printer, not in px
+    val = NumericProperty(None, allownone=True) #value, passed to printer, not in px
     val_min = NumericProperty(0)
     val_max = NumericProperty(100)
     unit = StringProperty()
@@ -253,6 +252,7 @@ class UltraSlider(Widget):
     disp = StringProperty() #value displayed by label
     pressed = BooleanProperty(False)
     changed = BooleanProperty(False)
+    initialized = BooleanProperty(False)
 
     def __init__(self, **kwargs):
         self.btn_last_active = None

@@ -31,7 +31,7 @@
         Color:
             rgba: p.translucent_white if self.pressed and self.enabled else (0,0,0,0)
         Rectangle:
-            size: self.size
+            size: self.width, self.height - 1
             pos: self.pos
 
 <FloatingButton@BaseButton>:
@@ -146,7 +146,7 @@
         halign: 'center'
 
 <UltraSlider>:
-    size_hint: None,None
+    size_hint: None, None
     size: self.parent.width - 2*p.padding, 20
     px: self.x
     canvas:
@@ -163,7 +163,7 @@
             size: self.px - self.x + 1, 8
             pos: self.x, self.center_y-4
         Color:
-            rgba: (1,1,1,1)
+            rgba: (1,1,1,1) if self.initialized else (0,0,0,0)
         Ellipse:
             size: 20, 20
             pos: self.px-10, self.center_y-10
