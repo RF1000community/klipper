@@ -9,7 +9,6 @@ class LiveMove:
     def __init__(self, config):
         self.printer = config.get_printer()
         self.reactor = config.get_reactor()
-        self.toolhead = self.printer.objects['toolhead']
         self.move_completion = {'x': None, 'y': None, 'z': None, 'e': None}
         self.start_mcu_pos = {}
         self.z_speed = 3
@@ -18,6 +17,10 @@ class LiveMove:
                           'z': config.getsection('stepper_z')}
         self.pos_max = {i: stepper_config[i].getfloat('position_max', 200) for i in 'xyz'}
         self.pos_min = {i: stepper_config[i].getfloat('position_min', 0) for i in 'xyz'}
+        self.printer.register_event_handler("klippy:connect", self.handle_connect)
+
+    def handle_connect(self):
+        self.toolhead = self.printer.objects['toolhead']
 
     def _fill_coord(self, new_pos):
         """ Fill in any None entries in 'new_pos' with current toolhead position """

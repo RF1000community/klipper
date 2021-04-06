@@ -221,7 +221,7 @@ class FilamentManager:
         except IOError:
             logging.warning("Filament-Manager: Couldn't write loaded-material-file at "
                     + self.loaded_material_path)
-        self.printer.send_event("filament_manager:material_changed")
+        self.printer.send_event("filament_manager:material_changed", self.material)
 
     # only call in klipper thread else extruded_length += x can cause additional extruded_length
     def update_loaded_material_amount(self):

@@ -182,9 +182,16 @@ class PrintjobManager:
     def resume_printjob(self, *args):
         self.jobs[0].resume()
 
-    def queue_modified(self):
-        self.check_queue()
-        self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
+    def remove_printjob(self, idx, path):
+        if 0 < idx < len(self.jobs) and self.jobs[idx].path == path:
+            self.jobs.pop(idx)
+            self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
+
+    def move_printjob(self, idx, path, move):
+        if 0 < idx + move < len(self.jobs) and 0 < idx < len(self.jobs) and self.jobs[idx].path == path:
+            to_move = self.jobs.pop(idx)
+            self.jobs.insert(idx + move, to_move)
+            self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
 
     def clear_queue(self):
         """ remove everything but the first element which is currently being printed """

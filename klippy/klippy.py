@@ -113,7 +113,7 @@ class Printer:
             return self.objects[section]
         module_parts = section.split()
         module_name = module_parts[0]
-        init_func = 'load_config_prefix' if len(module_parts) > 1 else 'load_config' 
+        init_func = 'load_config_prefix' if len(module_parts) > 1 else 'load_config'
         module           = join(dirname(__file__), 'extras', module_name + '.py')
         package          = join(dirname(__file__), 'extras', module_name, '__init__.py')
         parallel_module  = join(dirname(__file__), 'parallel_extras', module_name + '.py')
@@ -148,13 +148,13 @@ class Printer:
             object_config.reactor = reactor.Reactor(False, process=section)
             object_config.reactor._setup_async_callbacks()
             object_config.reactor.register_mp_queues(
-                {'printer': self.reactor._mp_queue}, 
+                {'printer': self.reactor._mp_queue},
                 {'printer': self.reactor._pipe_fds[1]})
             self.reactor.register_mp_queues(
-                {section: object_config.reactor._mp_queue}, 
+                {section: object_config.reactor._mp_queue},
                 {section: object_config.reactor._pipe_fds[1]})
             self.parallel_objects[section] = multiprocessing.Process(
-                target=start_process, 
+                target=start_process,
                 args=(module_name, init_func, object_config, default))
             self.parallel_objects[section].start()
             return self.parallel_objects[section]
