@@ -49,13 +49,14 @@ USARTx_IRQHandler(void)
     uint32_t isr = USARTx->ISR;
     if (isr & (USART_ISR_RXNE_RXFNE | USART_ISR_ORE))
         serial_rx_byte(USARTx->RDR);
-    if (isr & USART_ISR_TXE_TXFNF && USARTx->CR1 & USART_CR1_TXEIE) { //USART_ISR_TXE_TXFNF only works with Fifo mode disabled
+    //USART_ISR_TXE_TXFNF only works with Fifo mode disabled
+    if (isr & USART_ISR_TXE_TXFNF && USARTx->CR1 & USART_CR1_TXEIE) {
         uint8_t data;
         int ret = serial_get_tx_byte(&data);
         if (ret)
             USARTx->CR1 = CR1_FLAGS;
         else
-            USARTx->TDR = data;// or maybe RDR?
+            USARTx->TDR = data;
     }
 #else
     uint32_t sr = USARTx->SR;
