@@ -58,11 +58,13 @@ def send_flow(e, printer, val):
     get_flow(e, printer)
 
 def get_fan(e, printer):
-    fan_speed = printer.objects['fan'].fan.last_fan_value * 100 / printer.objects['fan'].fan.max_power
-    printer.reactor.cb(set_attribute, 'fan_speed', fan_speed, process='kgui')
+    if 'fan' in printer.objects:
+        fan_speed = printer.objects['fan'].fan.last_fan_value * 100 / printer.objects['fan'].fan.max_power
+        printer.reactor.cb(set_attribute, 'fan_speed', fan_speed, process='kgui')
 def send_fan(e, printer, speed):
-    printer.objects['fan'].fan.set_speed_from_command(speed/100)
-    get_fan(e, printer)
+    if 'fan' in printer.objects:
+        printer.objects['fan'].fan.set_speed_from_command(speed/100)
+        get_fan(e, printer)
 
 def get_pressure_advance(e, printer): # gives pressure_advance value of 1. extruder
     pressure_advance = printer.objects['extruder'].get_status(e)['pressure_advance']
