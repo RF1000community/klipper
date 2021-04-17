@@ -7,7 +7,7 @@ Installation Guide
 * Raspberry pi 4 (raspberry pi 3 is not tested, and may require different GL driver settings in kgui/\_\_init\_\_.py)
 * One of the supported touchscreens:
    - Official Raspberry pi 7" touchscreen 800x480
-   - Chinese 7" 1024\x600 touchscreens. These screens can be purchased for around 35$ on [Aliexpress](https://s.click.aliexpress.com/e/_d78tnDk), Ebay, or Banggood. Make sure to get one with an IPS panel (much better image quality)
+   - Chinese 7" 1024x600 touchscreens. These screens can be purchased for around 35$ on [Aliexpress](https://s.click.aliexpress.com/e/_d78tnDk), Ebay, or Banggood. Make sure to get one with an IPS panel (much better image quality)
 
 ### Prepare OS ###
 - Flash [Raspberry Pi OS lite](https://www.raspberrypi.org/software/operating-systems/) 2021-01-11 to SD-Card
