@@ -163,29 +163,27 @@
             size: self.width, self.height - 1
             pos: self.pos
     #Label
-    width: p.screen_width
-    size_hint_y: None
-    height: 1 if not self.ap else dp(155) if self.ap.in_use or self.ap.saved else dp(110)
-    text: "" if not self.ap else self.ap.ssid
+    text: "" if not self.ap else "Connected" if self.ap.in_use else "Saved" if self.ap.saved else ""
     halign: 'right'
-    valign: 'top'
-    max_lines: 1
-    padding_x: p.h_padding
-    padding_y: (dp(110) - p.normal_font - dp(3))/2
+    valign: 'bottom'
+    padding: p.h_padding, dp(32)
+    size_hint: 1, None
+    height: 1 if not self.ap else dp(150) if self.ap.in_use or self.ap.saved else dp(110)
     text_size: self.size
     font_size: p.normal_font
+    color: p.medium_light_gray
     Label:
-        text: "" if not root.ap else "Connected" if root.ap.in_use else "Saved" if root.ap.saved else ""
-        shorten: True
-        halign: 'right'
-        valign: 'middle'
-        padding_x: p.h_padding
+        text: "" if not root.ap else root.ap.ssid
         size_hint: None, None
         size: root.width, dp(110)
-        pos: root.pos
+        top: root.top
+        x: root.x
+        halign: 'right'
+        valign: 'middle'
+        max_lines: 1
+        padding_x: p.h_padding
         text_size: self.size
         font_size: p.normal_font
-        color: p.medium_light_gray
     Label:
         text: "" if not root.ap else str(root.ap.signal)
         shorten: True
