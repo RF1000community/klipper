@@ -40,8 +40,8 @@ FloatLayout:
         Color:
             rgba: (1,1,1,1)
         Rectangle:
-            size: 300, 3
-            pos: self.animation_pos - 300, self.y
+            size: dp(300), dp(3)
+            pos: self.animation_pos - dp(300), self.y
     StackLayout:
         id: left
         orientation: 'lr-tb'
@@ -53,7 +53,7 @@ FloatLayout:
             size_hint_x: None
             size: self.texture_size
             font_size: p.normal_font
-            padding: 7, 0
+            padding_x: dp(7)
     StackLayout:
         id: right
         orientation: 'rl-tb'
@@ -74,14 +74,14 @@ FloatLayout:
             size_hint_x: None
             size: self.texture_size
             font_size: p.normal_font
-            padding: 7, 0
+            padding_x: dp(7)
 
 <CuraConnectionIcon>:
     canvas:
         Color:
             rgba: (1, 1, 1, 1) if self.connected else (0, 0, 0, 0)
         Rectangle:
-            size: self.width - 4, self.height - 8
-            pos: self.x, self.y + 4
+            size: self.width - dp(4), self.height - dp(8)
+            pos: self.x, self.y + dp(4)
             source: p.kgui_dir + "/logos/cura-32.png"
-    width: self.height - 4 if self.connected else 0
+    width: self.height - dp(4) if self.connected else 0

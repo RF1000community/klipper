@@ -36,7 +36,7 @@
 
 <FloatingButton@BaseButton>:
     btn_color: (0,0,0,0)
-    size: 78 * p.disp_vertical_stretch, 78
+    size: dp(78) * p.disp_vertical_stretch, dp(78)
     bold: True
     halign: 'center'
     valign: 'middle'
@@ -48,8 +48,8 @@
             rgba: p.floating_button_shadow if self.enabled else (0,0,0,0)
         BorderImage:
             source: p.kgui_dir + '/logos/shadow.png'
-            pos: self.x - 30, self.y - 30
-            size: self.width + 60, self.height + 60
+            pos: self.x - dp(30), self.y - dp(30)
+            size: self.width + dp(60), self.height + dp(60)
             border: (30, 30, 30, 30)
         Color:
             rgba: self.btn_color if self.enabled else (0,0,0,0)
@@ -83,7 +83,7 @@
 <BtnPCancel@BaseButton>:
     text: "Cancel"
     single: False
-    height: 74
+    height: dp(74)
     canvas:
         Color:
             rgba: p.divider
@@ -98,7 +98,7 @@
 
 <BtnPConfirm@BaseButton>:
     text: "Confirm"
-    height: 74
+    height: dp(74)
     enabled: False
     canvas:
         Color:
@@ -116,7 +116,7 @@
     #:set t 9  # half of width
     #:set j 15
     x: self.px-self.width/2-self.offset
-    size: 68, 60
+    size: dp(68), dp(60)
     size_hint: None,None
     active: False
     canvas:
@@ -128,12 +128,12 @@
             pos: self.pos
         Triangle:
             points:
-                (self.x + self.width/2 + self.offset, self.top + j, \
-                self.x + self.width/2 + t + self.offset, self.top, \
-                self.x + self.width/2 - t + self.offset, self.top) \
+                (self.x + self.width/2 + self.offset, self.top + dp(j), \
+                self.x + self.width/2 + dp(t) + self.offset, self.top, \
+                self.x + self.width/2 - dp(t) + self.offset, self.top) \
                 if 2*abs(self.offset) != self.width else \
-                (self.x + self.width/2 + self.offset, self.top + j, \
-                self.x + self.width/2 + self.offset, self.top-10, \
+                (self.x + self.width/2 + self.offset, self.top + dp(j), \
+                self.x + self.width/2 + self.offset, self.top - dp(10), \
                 self.x + self.width/2 + self.offset - (self.offset/abs(self.offset))*j, self.top)
     Label:
         markup: True
@@ -147,26 +147,26 @@
 
 <UltraSlider>:
     size_hint: None, None
-    size: self.parent.width - 2*p.padding, 20
+    size: self.parent.width - 2*p.padding, dp(20)
     px: self.x
     canvas:
         Color:
             rgba: p.medium_light_gray if self.pressed else p.btn
         RoundedRectangle:
-            radius: (4,)
-            size: self.width, 8
-            pos: self.x, self.center_y-4
+            radius: (dp(4),)
+            size: self.width, dp(8)
+            pos: self.x, self.center_y - dp(4)
         Color:
             rgba: p.light_gray if self.pressed else p.medium_light_gray
         RoundedRectangle:
             radius: (4,)
-            size: self.px - self.x + 1, 8
-            pos: self.x, self.center_y-4
+            size: self.px - self.x + 1, dp(8)
+            pos: self.x, self.center_y - dp(4)
         Color:
             rgba: (1,1,1,1) if self.initialized else (0,0,0,0)
         Ellipse:
-            size: 20, 20
-            pos: self.px-10, self.center_y-10
+            size: dp(20), dp(20)
+            pos: self.px - dp(10), self.center_y - dp(10)
     Label:
         id: value_label
         text: root.disp
@@ -175,7 +175,7 @@
         pos_hint: None,None
         size: root.width, p.large_font
         font_size: p.large_font
-        y: root.top + 35
+        y: root.top + dp(35)
         center_x: root.center_x
         color: p.light_gray
         valign: 'middle'
@@ -231,7 +231,7 @@
 # MISC
 
 <TitleBar@BaseButton>:
-    size: 150, 110
+    size: dp(150), dp(110)
     enabled: False
     title: ""
     #: set q 26
@@ -261,7 +261,7 @@
         valign: 'middle'
         max_lines: 1
         size_hint: None, None
-        size: p.screen_width - 200, root.height
+        size: p.screen_width - dp(200), root.height
         center_x: p.screen_width/2
         y: root.y
         text_size: self.size

@@ -10,8 +10,8 @@
     canvas:
         Rectangle:
             source: p.kgui_dir+'/logos/settings.png'
-            size: 60*p.disp_vertical_stretch, 60
-            pos: 525 - 30 * p.disp_vertical_stretch, 20
+            size: dp(60*p.disp_vertical_stretch), dp(60)
+            pos: dp(525 - 30 * p.disp_vertical_stretch), dp(20)
     BoxLayout:
         orientation: 'vertical'
         TitleBar:
@@ -100,7 +100,7 @@
             valign: 'bottom'
             halign: 'left'
             padding_x: p.padding
-            padding_y: p.padding - 10
+            padding_y: p.padding - dp(10)
             pos_hint: {'x': 0, 'y': 0}
             color: p.medium_light_gray
     TextInput:
@@ -138,7 +138,7 @@
         valign: 'top'
         halign: 'left'
         padding_x: p.padding
-        padding_y: p.padding - 10
+        padding_y: p.padding - dp(10)
         pos_hint: {'x':0, 'top':1}
         color: p.medium_light_gray
 
@@ -165,13 +165,13 @@
     #Label
     width: p.screen_width
     size_hint_y: None
-    height: 1 if not self.ap else 155 if self.ap.in_use or self.ap.saved else 110
+    height: 1 if not self.ap else dp(155) if self.ap.in_use or self.ap.saved else dp(110)
     text: "" if not self.ap else self.ap.ssid
     halign: 'right'
     valign: 'top'
     max_lines: 1
     padding_x: p.h_padding
-    padding_y: (110 - p.normal_font - 3)/2
+    padding_y: (dp(110) - p.normal_font - dp(3))/2
     text_size: self.size
     font_size: p.normal_font
     Label:
@@ -181,7 +181,7 @@
         valign: 'middle'
         padding_x: p.h_padding
         size_hint: None, None
-        size: root.width, 110
+        size: root.width, dp(110)
         pos: root.pos
         text_size: self.size
         font_size: p.normal_font
@@ -193,7 +193,7 @@
         valign: 'middle'
         padding_x: p.h_padding
         size_hint: None, None
-        size: root.width, 110
+        size: root.width, dp(110)
         top: root.top
         x: root.x
         text_size: self.size
@@ -238,7 +238,7 @@
         btn_color: p.medium_gray
         y: p.padding
         right: root.right - p.padding
-        size: 85*p.disp_vertical_stretch, 85
+        size: dp(85*p.disp_vertical_stretch), dp(85)
         text: "Update"
         on_release: root.fetch()
 
@@ -262,7 +262,7 @@
 
 <SetItem>:
     size_hint_y: None
-    height: 110
+    height: dp(110)
     width: p.screen_width
     # Button Label
     text: self.left_title
@@ -278,7 +278,7 @@
         font_size: p.normal_font
         text_size: self.size
         color: p.medium_light_gray
-        size: 350, root.height
+        size: dp(350), root.height
         size_hint: None, None
         valign: 'middle'
         halign: 'right'

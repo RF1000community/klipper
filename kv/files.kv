@@ -13,8 +13,8 @@
     canvas:
         Rectangle:
             source: p.kgui_dir+'/logos/files.png'
-            size: 60, 60
-            pos: 375 - 30, 20
+            size: dp(60), dp(60)
+            pos: dp(375 - 30), dp(20)
     FloatLayout:
         pos: 0, p.tab_height
         canvas.before:
@@ -40,8 +40,8 @@
     FilechooserGrid:
         id: gc_grid
         cols: 3
-        padding: (15,)
-        spacing:(15,)
+        padding: (dp(15),)
+        spacing:(dp(15),)
         default_size: dp(180), dp(180)
         size_hint: None, None
         width: p.screen_width
@@ -58,8 +58,8 @@
             source:
                 self.thumbnail or p.kgui_dir + \
                 {'file':"/logos/file.png", 'usb':"/logos/usb.png", 'folder':"/logos/folder.png"}[self.item_type]
-            size: 84, 84
-            pos: self.center_x - 42, self.center_y - 5
+            size: dp(84), dp(84)
+            pos: self.center_x - dp(42), self.center_y - dp(5)
         Color:
             rgba: p.translucent_white if self.pressed else (0,0,0,0)
         RoundedRectangle:
@@ -72,9 +72,9 @@
     valign: 'bottom'
     max_lines: 1
     padding_x: 0
-    padding_y: 6
+    padding_y: dp(6)
     text_size: self.size
-    font_size: p.normal_font - 3
+    font_size: p.normal_font - dp(3)
     color: p.medium_light_gray
     Label:
         text: root.name
@@ -85,8 +85,8 @@
         max_lines: 2
         padding_x: 0
         padding_y: 0
-        size: root.width, 80
+        size: root.width, dp(80)
         pos: root.pos
         text_size: self.size
-        font_size: p.normal_font - 3
+        font_size: p.normal_font - dp(3)
         color: (1,1,1,1)

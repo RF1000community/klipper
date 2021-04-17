@@ -3,13 +3,21 @@ import site
 import threading
 import os, time
 import traceback
-from os.path import join
+from os.path import join, dirname
 from subprocess import Popen
+from kivy.config import Config
 
+# Read custom Kivy config. This needs an absolute path otherwise
+# config will only be loaded when working directory is the parent directory
 TESTING = "KGUI_TESTING" in os.environ
-if not TESTING:
+
+if TESTING:
+    Config.read(join(dirname(__file__), "config_test.ini"))
+else:
+    Config.read(join(dirname(__file__), "config.ini"))
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'sdl2'
+    os.environ['KIVY_METRICS_DENSITY'] = str(Config.getint('graphics', 'width')/600)
 
 from kivy import kivy_data_dir
 from kivy.app import App
@@ -22,8 +30,8 @@ from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
 from .elements import UltraKeyboard, CriticalErrorPopup, ErrorPopup
 from .freedir import freedir
 from .nm_dbus import NetworkManager
-from . import parameters as p
 from .status import Notifications
+from . import parameters as p
 # Imports for KvLang Builder
 from . import files, home, settings, status, timeline, update, printer_cmd
 
@@ -31,7 +39,6 @@ site.addsitedir(join(p.klipper_dir, "klippy/extras/")) # gcode_metadata
 import gcode_metadata
 
 class mainApp(App, threading.Thread):
-
     # Property for controlling the state as shown in the statusbar
     state = OptionProperty("startup", options=[
         # Every string set has to be in this list
@@ -110,7 +117,7 @@ class mainApp(App, threading.Thread):
         self.pos_max = {i: stepper_config[i].getfloat('position_max', 200) for i in 'xyz'}
         self.pos_min = {i: stepper_config[i].getfloat('position_min', 0) for i in 'xyz'}
         # maintain this by keeping default the same as klipper
-        self.min_extrude_temp = config.getsection("extruder").getint("min_extrude_temp", 170)
+        self.min_extrude_temp = config.getsection("extruder").getfloat("min_extrude_temp", 170)
         # count how many extruders exist
         for i in range(1, 10):
             if not config.has_section(f"extruder{i}"):
@@ -273,12 +280,6 @@ class PopupExceptionHandler(ExceptionHandler):
 
 ExceptionManager.add_handler(PopupExceptionHandler())
 
-# Read custom Kivy config. This needs an absolute path otherwise
-# config will only be loaded when working directory is the parent directory
-if TESTING:
-    Config.read(join(p.kgui_dir, "config_test.ini"))
-else:
-    Config.read(join(p.kgui_dir, "config.ini"))
 # Load kv-files:
 # Add parent directory to sys.path so kv-files (kivy/../parser.py) can import from it
 site.addsitedir(p.kgui_dir)

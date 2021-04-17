@@ -9,8 +9,8 @@
     canvas:
         Rectangle:
             source: p.kgui_dir + '/logos/timeline.png'
-            size: 60*p.disp_vertical_stretch, 65
-            pos: 225 - 30*p.disp_vertical_stretch, 17.5
+            size: dp(60*p.disp_vertical_stretch), dp(65)
+            pos: dp(225 - 30*p.disp_vertical_stretch), dp(17.5)
     FloatLayout:
         pos: 0, p.tab_height
         canvas.before:
@@ -32,25 +32,25 @@
             pos: 0, p.tab_height
         BtnPrint:
             id: btn_print
-            right: p.screen_width - p.h_padding + 12
+            right: p.screen_width - p.h_padding + dp(12)
             y: p.tab_height + p.padding
             on_release: Factory.PrintPopup(tl.ids.tl_box.selected_object.path).open()
             enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state in ('done', 'stopped')
         BtnQX:
             id: q_x
-            right: p.screen_width - p.h_padding + 12
+            right: p.screen_width - p.h_padding + dp(12)
             y: p.tab_height + p.padding
             on_release: tl.remove()
             enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state in ("queued", "printing")
         BtnQUp:
             id: q_up
-            right: q_x.x - p.h_padding  + 12
+            right: q_x.x - p.h_padding  + dp(12)
             y: p.tab_height + p.padding
             on_release: tl.move(1)
             enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state == "queued"
             active: tl.ids.tl_box.selected_nodes and tl.ids.tl_box.selected_nodes[0] > 0
         BtnQDown:
-            right: q_up.x - p.h_padding  + 12
+            right: q_up.x - p.h_padding  + dp(12)
             y: p.tab_height + p.padding
             on_release: tl.move(-1)
             enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state == "queued"
@@ -74,8 +74,8 @@
             rgba: (0,0,0,0) if self.state == 'header' else (1,1,1,1) if self.thumbnail else p.medium_light_gray
         Rectangle:
             source: self.thumbnail or p.kgui_dir + "/logos/file.png"
-            size: 80, 80
-            pos: p.h_padding - 10, self.top - 55 - 40
+            size: dp(80), dp(80)
+            pos: p.h_padding - dp(10), self.top - dp(55 + 40)
         Color:
             rgba: p.translucent_white if (self.selected or self.pressed) else (0,0,0,0)
         Rectangle:
@@ -84,12 +84,12 @@
     #Label
     width: p.screen_width
     size_hint_y: None
-    height: 44 if self.state == "header" else 155 if self.state in ('printing', 'pausing', 'paused', 'stopping') else 110
+    height: dp(44) if self.state == "header" else dp(155) if self.state in ('printing', 'pausing', 'paused', 'stopping') else dp(110)
     text: "" if self.state == 'header' else self.state.capitalize()
     halign: 'right'
     valign: 'top'
     max_lines: 1
-    padding_y: (110 - p.normal_font - 3)/2
+    padding_y: (dp(110 - 3) - p.normal_font)/2
     padding_x: p.h_padding
     text_size: self.size
     font_size: p.normal_font
@@ -98,7 +98,7 @@
         'pausing': (1,1,1,1), 'queued': p.medium_light_gray, 'header': (0,0,0,0)}[self.state]
     Label:
         text: app.print_time if root.state in ('printing', 'pausing', 'paused', 'stopping') else ""
-        size: root.width, 110
+        size: root.width, dp(110)
         size_hint: None, None
         pos: root.pos
         halign: 'right'
@@ -115,10 +115,10 @@
         halign: 'center' if root.state == 'header' else 'left'
         valign: 'middle'
         size_hint: None, None
-        size: root.width, 44 if root.state == 'header' else 110
+        size: root.width, dp(44) if root.state == 'header' else dp(110)
         x: root.x
         top: root.top
-        padding_x: 2*p.h_padding + 80 - 20
+        padding_x: 2*p.h_padding + dp(80 - 20)
         text_size: self.size
         font_size: p.normal_font
         color: p.medium_gray if root.state == 'header' else (1,1,1,1)
@@ -137,7 +137,10 @@
         Color:
             rgba: (1, 1, 1, 1) if self.enabled else (0,0,0,0)
         Triangle:
-            points: self.x+pad_x+4, self.y+pad-4,   self.x+pad_x+4, self.top-pad+4,   self.right-pad_x+4, self.center_y
+            points:
+                self.x + dp(pad_x) + dp(4), self.y + dp(pad) - dp(4), \
+                self.x + dp(pad_x) + dp(4), self.top - dp(pad) + dp(4), \
+                self.right - dp(pad_x) + dp(4), self.center_y
 
 <BtnQUp@FloatingButton>:
     id: q_up
@@ -147,7 +150,10 @@
         Color:
             rgba: (0,0,0,0) if not self.enabled else (1,1,1,1) if self.active else p.btn_disabled
         Triangle:
-            points: self.x+pad_x-4, self.y+pad+4,   self.right-pad_x+4, self.y+pad+4, self.center_x, self.top-pad
+            points:
+                self.x + dp(pad_x) - dp(4), self.y + dp(pad) + dp(4), \
+                self.right-dp(pad_x) + dp(4), self.y + dp(pad) + dp(4), \
+                self.center_x, self.top - dp(pad)
 
 <BtnQDown@FloatingButton>:
     btn_color: p.medium_gray
@@ -156,7 +162,10 @@
         Color:
             rgba: (0,0,0,0) if not self.enabled else (1,1,1,1) if self.active else p.btn_disabled
         Triangle:
-            points: self.x+pad_x-4, self.top-pad-4,   self.right-pad_x+4, self.top-pad-4, self.center_x, self.y+pad
+            points:
+                self.x+dp(pad_x) - dp(4), self.top - dp(pad) - dp(4), \
+                self.right-dp(pad_x) + dp(4), self.top - dp(pad) - dp(4), \
+                self.center_x, self.y + dp(pad)
 
 <BtnQX@FloatingButton>:
     btn_color: p.red
@@ -164,10 +173,10 @@
         Color:
             rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
         Line:
-            points: self.x + pad_x, self.top - pad,   self.right - pad_x, self.y + pad
-            width: 4
+            points: self.x + dp(pad_x), self.top - dp(pad),   self.right - dp(pad_x), self.y + dp(pad)
+            width: dp(4)
             cap: 'round'
         Line:
-            points: self.x + pad_x, self.y + pad,   self.right - pad_x, self.top - pad
-            width: 4
+            points: self.x + dp(pad_x), self.y + dp(pad),   self.right - dp(pad_x), self.top - dp(pad)
+            width: dp(4)
             cap: 'round'

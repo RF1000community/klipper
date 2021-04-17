@@ -10,8 +10,8 @@
     canvas:
         Rectangle:
             source: p.kgui_dir + '/logos/home.png'
-            size: 60, 60
-            pos: 75 - 30, 20
+            size: dp(60), dp(60)
+            pos: dp(75 - 30), dp(20)
     FloatLayout:
         Background:
             pos_hint: {'x': 0, 'y': 0}
@@ -28,7 +28,7 @@
             text_size: self.size
             font_size: p.normal_font
             x: p.h_padding - 2
-            top: progress_bar.y - 5
+            top: progress_bar.y - dp(5)
             color: (1,1,1,1)
             halign: 'left'
             valign: 'bottom'
@@ -39,14 +39,14 @@
             text_size: self.size
             font_size: p.normal_font
             x: p.h_padding - 2
-            top: progress_bar.y - 5
+            top: progress_bar.y - dp(5)
             color: p.btn_disabled
             halign: 'right'
             valign: 'bottom'
         BtnStop:
             on_release: Factory.StopPopup().open()
             id: btn_stop
-            size: 118, 118
+            size: dp(118), dp(118)
             center_y: progress_bar.top + p.padding + p.btn_stop/2
             center_x: p.screen_width - p.btn_stop/2 - p.h_padding
         BtnPlay:
@@ -64,10 +64,10 @@
             text: app.print_title
             color: (1,1,1,1)
             size_hint: None, None
-            size: 280, 134
+            size: dp(280), dp(134)
             text_size: self.size
             font_size: p.large_font
-            x: p.h_padding - 3
+            x: p.h_padding - dp(3)
             center_y: btn_stop.center_y
             shorten: True
             halign: 'left'
@@ -89,12 +89,12 @@
             large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
             small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             red: app.temp[self.heater_id][1] > 50
-            width: 80
+            width: dp(80)
             right: temp_bed.right if app.extruder_count > 1 else p.mars
             y: p.tab_height + p.padding*3 + p.progress_bar_height + p.btn_stop
         BtnExtruder:
             gcode_id: 'T1'
-            center_x: p.h_padding + icon_center if app.extruder_count > 1 else p.mars
+            center_x: p.h_padding + dp(icon_center) if app.extruder_count > 1 else p.mars
             y: p.tab_height + p.padding*3 + p.progress_bar_height + p.btn_stop
         BtnTemp:
             id: temp_T0
@@ -104,12 +104,12 @@
             large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
             small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
             red: app.temp[self.heater_id][1] > 50
-            width: 80
+            width: dp(80)
             right: temp_bed.right
             y: p.tab_height + p.progress_bar_height + 4*p.padding + p.btn_height + p.btn_stop
         BtnExtruder:
             gcode_id: 'T0'
-            center_x: p.h_padding + icon_center
+            center_x: p.h_padding + dp(icon_center)
             y: p.tab_height + p.padding*4 + p.progress_bar_height + p.btn_height + p.btn_stop
         BtnTemp:
             on_release: Factory.BedTempPopup(creator=self, val=app.temp).open()
@@ -131,29 +131,29 @@
                 Line:
                     width: p.icon_radius
                     points:
-                        self.x + icon_center - bw/2, self.center_y - p.btn_height/2 + p.icon_radius, \
-                        self.x + icon_center + bw/2, self.center_y - p.btn_height/2 + p.icon_radius
+                        self.x + dp(icon_center) - dp(bw)/2, self.center_y - p.btn_height/2 + p.icon_radius, \
+                        self.x + dp(icon_center) + dp(bw)/2, self.center_y - p.btn_height/2 + p.icon_radius
                 Line:
                     width: p.icon_radius - 0.5
                     bezier:
-                        self.x + icon_center + bx1, self.center_y + p.btn_height/2 - p.icon_radius, \
-                        self.x + icon_center + bx1 - bo, self.center_y + p.btn_height/2 - bh*0.35 - p.icon_radius, \
-                        self.x + icon_center + bx1 + bo, self.center_y + p.btn_height/2 - bh*0.65 - p.icon_radius, \
-                        self.x + icon_center + bx1, self.center_y + p.btn_height/2 - bh - p.icon_radius
+                        self.x + dp(icon_center) + dp(bx1), self.center_y + p.btn_height/2 - p.icon_radius, \
+                        self.x + dp(icon_center) + dp(bx1) - dp(bo), self.center_y + p.btn_height/2 - dp(bh)*0.35 - p.icon_radius, \
+                        self.x + dp(icon_center) + dp(bx1) + dp(bo), self.center_y + p.btn_height/2 - dp(bh)*0.65 - p.icon_radius, \
+                        self.x + dp(icon_center) + dp(bx1), self.center_y + p.btn_height/2 - dp(bh) - p.icon_radius
                 Line:
                     width: p.icon_radius - 0.5
                     bezier:
-                        self.x + icon_center + bx2, self.center_y + p.btn_height/2 - p.icon_radius, \
-                        self.x + icon_center + bx2 - bo, self.center_y + p.btn_height/2 - bh*0.35 - p.icon_radius, \
-                        self.x + icon_center + bx2 + bo, self.center_y + p.btn_height/2 - bh*0.65 - p.icon_radius, \
-                        self.x + icon_center + bx2, self.center_y + p.btn_height/2 - bh - p.icon_radius
+                        self.x + dp(icon_center) + dp(bx2), self.center_y + p.btn_height/2 - p.icon_radius, \
+                        self.x + dp(icon_center) + dp(bx2) - dp(bo), self.center_y + p.btn_height/2 - dp(bh)*0.35 - p.icon_radius, \
+                        self.x + dp(icon_center) + dp(bx2) + dp(bo), self.center_y + p.btn_height/2 - dp(bh)*0.65 - p.icon_radius, \
+                        self.x + dp(icon_center) + dp(bx2), self.center_y + p.btn_height/2 - dp(bh) - p.icon_radius
                 Line:
                     width: p.icon_radius - 0.5
                     bezier:
-                        self.x + icon_center, self.center_y + p.btn_height/2 - p.icon_radius, \
-                        self.x + icon_center - bo, self.center_y + p.btn_height/2 - bh*0.35 - p.icon_radius, \
-                        self.x + icon_center  + bo, self.center_y + p.btn_height/2 - bh*0.65 - p.icon_radius, \
-                        self.x + icon_center, self.center_y + p.btn_height/2 - bh - p.icon_radius
+                        self.x + dp(icon_center), self.center_y + p.btn_height/2 - p.icon_radius, \
+                        self.x + dp(icon_center) - dp(bo), self.center_y + p.btn_height/2 - dp(bh)*0.35 - p.icon_radius, \
+                        self.x + dp(icon_center)  + dp(bo), self.center_y + p.btn_height/2 - dp(bh)*0.65 - p.icon_radius, \
+                        self.x + dp(icon_center), self.center_y + p.btn_height/2 - dp(bh) - p.icon_radius
 
 <HomeScreen@Screen>:
     name: "homescreen"
@@ -203,7 +203,7 @@
             id: xy_field
             size_hint: None, None
             height: p.btn_height*3
-            width: self.height + 40
+            width: self.height + dp(40)
             x: p.h_padding
             top: root.height - p.padding - p.status_bar_height
             enabled:
@@ -351,9 +351,9 @@
         Color:
             rgba: (0,0,0,0) if app.print_state == 'no printjob' else p.btn
         RoundedRectangle:
-            radius: [5]
+            radius: [dp(5)]
             pos: self.pos
-            size: self.width, 10
+            size: self.width, dp(10)
         Color:
             rgba:
                 (0,0,0,0) if app.print_state == 'no printjob' else \
@@ -361,29 +361,29 @@
                 p.red if app.print_state in ('stopped', 'stopping') else \
                 p.accent
         RoundedRectangle:
-            radius: [5]
+            radius: [dp(5)]
             pos: self.pos
-            size: self.width*app.progress, 10
+            size: self.width*app.progress, dp(10)
 
 # BUTTONS
 
 <BtnExtruder@BaseButton>:
     #:set esh 17
-    size: icon_center*2 + 10, p.btn_height
+    size: dp(icon_center)*2 + dp(10), p.btn_height
     gcode_id: 'T0'
     selected: False
     canvas:
         Color:
             rgba: p.nozzle_selected if self.selected else p.nozzle
         RoundedRectangle:
-            size: self.width, self.height - esh
-            pos: self.x, self.y + esh
+            size: self.width, self.height - dp(esh)
+            pos: self.x, self.y + dp(esh)
             radius: (p.icon_radius,)
         Triangle:
             points:
-                self.center_x - esh, self.y + esh, \
+                self.center_x - dp(esh), self.y + dp(esh), \
                 self.center_x, self.y, \
-                self.center_x + esh, self.y + esh
+                self.center_x + dp(esh), self.y + dp(esh)
     # this needs a new label instance since the properties set in BaseButton
     # cannot be overwritten in rule definition (only in instance)
     Label:
@@ -391,7 +391,7 @@
         bold: True
         color: p.background
         center_x: root.center_x
-        center_y: root.center_y + esh/2
+        center_y: root.center_y + dp(esh)/2
         font_size: p.large_font + 4
 
 <BtnTriple>:
@@ -454,8 +454,8 @@
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points:
-                    self.x + self.width/2 + w/2, self.center_y - w, self.x + self.width/2 + w/2, \
-                    self.center_y + w, self.x + self.width/2 - w/2, self.center_y
+                    self.x + self.width/2 + w/2, self.center_y - dp(w), self.x + self.width/2 + dp(w)/2, \
+                    self.center_y + dp(w), self.x + self.width/2 - dp(w)/2, self.center_y
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
@@ -492,9 +492,9 @@
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points:
-                    self.x + self.width/2 - w/2, self.center_y - w, \
-                    self.x + self.width/2 - w/2, self.center_y + w, \
-                    self.x + self.width/2 + w/2, self.center_y
+                    self.x + self.width/2 - dp(w)/2, self.center_y - dp(w), \
+                    self.x + self.width/2 - dp(w)/2, self.center_y + dp(w), \
+                    self.x + self.width/2 + dp(w)/2, self.center_y
             Color:
                 rgba: p.translucent_white if self.pressed else (0,0,0,0)
             RoundedRectangle:
@@ -541,9 +541,9 @@
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points:
-                    self.center_x - u, self.center_y + t, \
-                    self.center_x + u, self.center_y + t, \
-                    self.center_x, self.center_y - t
+                    self.center_x - dp(u), self.center_y + dp(t), \
+                    self.center_x + dp(u), self.center_y + dp(t), \
+                    self.center_x, self.center_y - dp(t)
     BtnHome:
         axis_id: 'Z'
         size: root.width, root.h2
@@ -576,9 +576,9 @@
                 rgba: (1,1,1,1) if self.enabled else p.btn_disabled
             Triangle:
                 points:
-                    self.center_x - u, self.center_y - t, \
-                    self.center_x + u, self.center_y - t, \
-                    self.center_x, self.center_y + t
+                    self.center_x - dp(u), self.center_y - dp(t), \
+                    self.center_x + dp(u), self.center_y - dp(t), \
+                    self.center_x, self.center_y + dp(t)
 
 <BtnHome@RoundButton>:
     axis_id: 'Z'
@@ -589,15 +589,15 @@
             rgba: (1,1,1,1) if self.enabled else p.btn_disabled
         Rectangle:
             source: p.kgui_dir + '/logos/home_axis.png'
-            size: 66, 66
-            pos: self.center_x - 32, self.center_y - 32
+            size: dp(66), dp(66)
+            pos: self.center_x - dp(32), self.center_y - dp(32)
         Color:
             rgba: p.translucent_white if self.pressed else (0,0,0,0)
         Rectangle:
             size: self.size
             pos: self.pos
     Label:
-        pos: root.x, root.y - 2
+        pos: root.x, root.y - dp(2)
         text: root.axis_id
         color: p.background
         font_size: p.normal_font
@@ -620,15 +620,15 @@
             rgba: p.translucent_white if self.pressed and self.enabled else (0,0,0,0)
         RoundedRectangle:
             radius: (p.radius,)
-            size: self.width + 40, self.height + 40
-            pos: self.x - 20, self.y - 20
+            size: self.width + dp(40), self.height + dp(40)
+            pos: self.x - dp(20), self.y - dp(20)
     Label:
         color: p.red if root.red else (1,1,1,1) if root.enabled else p.btn_disabled
         text: root.large_value
         size_hint: None, None
-        size: root.width + 50, root.height
+        size: root.width + dp(50), root.height
         text_size: self.size
-        y: root.y + 5
+        y: root.y + dp(5)
         right: root.right
         font_size: p.large_font
         valign: 'top'
@@ -637,9 +637,9 @@
         color: p.btn_disabled
         text: root.small_value
         size_hint: None, None
-        size: root.width + 50, root.height
+        size: root.width + dp(50), root.height
         text_size: self.size
-        y: root.y - 3
+        y: root.y - dp(3)
         right: root.right
         font_size: p.normal_font
         valign: 'bottom'
@@ -664,15 +664,15 @@
             rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
         Triangle:
             points:
-                self.center_x - pw, self.center_y - ph, \
-                self.center_x - pw, self.center_y + ph, \
-                self.center_x + pw, self.center_y
+                self.center_x - dp(pw), self.center_y - dp(ph), \
+                self.center_x - dp(pw), self.center_y + dp(ph), \
+                self.center_x + dp(pw), self.center_y
         Line:
             width: p.icon_radius
             points:
-                self.center_x - pw, self.center_y - ph, \
-                self.center_x - pw, self.center_y + ph, \
-                self.center_x + pw, self.center_y
+                self.center_x - dp(pw), self.center_y - dp(ph), \
+                self.center_x - dp(pw), self.center_y + dp(ph), \
+                self.center_x + dp(pw), self.center_y
             close: True
 
 <BtnPause@RoundButton>:
@@ -889,7 +889,7 @@
             text: "New Material"
             font_size: p.normal_font
             size_hint: None, None
-            size: root.width/2, 70
+            size: root.width/2, dp(70)
             pos_hint: {'top': 1, 'x': 0}
             color:  p.medium_light_gray if root.tab_2 else (1,1,1,1)
             valign: 'middle'
@@ -900,7 +900,7 @@
             text: "Your Materials"
             font_size: p.normal_font
             size_hint: None, None
-            size: root.width/2, 70
+            size: root.width/2, dp(70)
             pos_hint: {'top': 1, 'right': 1}
             color: (1,1,1,1) if root.tab_2 else p.medium_light_gray
             valign: 'middle'
@@ -933,7 +933,7 @@
             on_release: root.confirm()
 
 <Option>:
-    size: 86, 60
+    size: dp(86), dp(60)
     selected:
         (self.filamentchooser.sel_2 and self.filamentchooser.sel_2['unloaded_idx'] == self.key) \
         or (self.filamentchooser.sel[self.level] == self.key)
@@ -982,7 +982,7 @@
             "show less" if root.filamentchooser.show_more[root.level] else ""
         text_size: self.size
         font_size: p.normal_font
-        padding_y: 5
+        padding_y: dp(5)
         valign: 'top'
         halign: 'center'
 
@@ -994,7 +994,7 @@
             active: root.new
             id: filament_slider
             center_x: root.center_x
-            y: btn_cancel.top + 90
+            y: btn_cancel.top + dp(90)
             val: root.material['amount'] * 1000
             filament_color: root.filament_color
         BtnPCancel:
@@ -1012,7 +1012,7 @@
 
 <-FilamentSlider>:
     size_hint: None, None
-    size: p.screen_width - 2*p.small_padding - 2*p.padding, 100
+    size: p.screen_width - 2*p.small_padding - 2*p.padding, dp(100)
     px: self.x
     canvas:
         Color:
@@ -1043,8 +1043,8 @@
         size_hint: None, None
         pos_hint: None, None
         size: root.size
-        pos: root.x, root.top + 50
-        font_size: p.large_font + 10
+        pos: root.x, root.top + dp(50)
+        font_size: p.large_font + dp(10)
         color: (1,1,1,1)
         valign: 'middle'
         halign: 'center'
