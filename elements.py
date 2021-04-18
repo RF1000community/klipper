@@ -47,7 +47,7 @@ class BaseButton(Label):
         touch.ud[self] = True
         # Set pressed=True for at least 150ms to allow GPU to render
         # highlighting of the button. Choose lower for faster GPU.
-        self.pressed_at_least_till = time() + 0.15
+        self.pressed_at_least_till = time() + 0.12
         return True
 
     def on_touch_move(self, touch):
