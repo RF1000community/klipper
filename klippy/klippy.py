@@ -52,7 +52,7 @@ class Printer:
     config_error = configfile.error
     command_error = gcode.CommandError
     def __init__(self, main_reactor, bglogger, start_args):
-        signal.signal(signal.SIGTERM, self._terminate)
+        signal.signal(signal.SIGTERM, lambda signum, frame: self.request_exit("exit"))
         self.bglogger = bglogger
         self.start_args = start_args
         self.reactor = main_reactor
@@ -162,7 +162,6 @@ class Printer:
             if default is not configfile.sentinel:
                 return default
             raise self.config_error("Unable to load module '%s'" % (section,))
-
     def _read_config(self):
         self.objects['configfile'] = pconfig = configfile.PrinterConfig(self)
         config = pconfig.read_main_config()
@@ -189,7 +188,7 @@ class Printer:
             # run event handlers in all processes, wait for completion
             for process in self.reactor._mp_queues.keys():
                 self._pending_event_handlers[process] = True
-                self.reactor.cb(send_event_and_wait, "klippy:connect", process=process)
+                self.reactor.cb(self.send_event_and_wait, "klippy:connect", process=process)
             while 1:
                 pending = False
                 for pending_process in self._pending_event_handlers.values():
@@ -227,7 +226,7 @@ class Printer:
                     return
                 cb()
             for process in self.reactor._mp_queues.keys():
-                self.reactor.cb(send_event_and_wait, "klippy:ready", process=process)
+                self.reactor.cb(self.send_event_and_wait, "klippy:ready", process=process)
         except Exception as e:
             logging.exception("Unhandled exception during ready callback")
             self.invoke_shutdown("Internal error during ready callback: %s"
@@ -284,7 +283,6 @@ class Printer:
     def invoke_async_shutdown(self, msg):
         self.reactor.register_async_callback(
             (lambda e: self.invoke_shutdown(msg)))
-
     def register_event_handler(self, event, callback):
         self.reactor.register_event_handler(event, callback)
     def send_event(self, event, *params):
@@ -293,17 +291,14 @@ class Printer:
         if self.run_result is None:
             self.run_result = result
         self.reactor.end()
-    def _terminate(self, signalnum, frame):
-        """Called on SIGTERM"""
-        logging.info("Received SIGTERM, shutting down...")
-        self.request_exit("terminated")
-
-def send_event_and_wait(e, root, event):
-    for cb in root.reactor.event_handlers.get(event, []):
-        cb()
-    root.reactor.cb(note_event_handlers_done, root.reactor.process_name, process='printer')
-def note_event_handlers_done(e, printer, done_process):
-    printer._pending_event_handlers[done_process] = False
+    @staticmethod
+    def send_event_and_wait(e, root, event):
+        for cb in root.reactor.event_handlers.get(event, []):
+            cb()
+        root.reactor.cb(Printer.note_event_handlers_done, root.reactor.process_name, process='printer')
+    @staticmethod
+    def note_event_handlers_done(e, printer, done_process):
+        printer._pending_event_handlers[done_process] = False
 
 ######################################################################
 # Startup
@@ -386,22 +381,22 @@ def main():
         printer = Printer(main_reactor, bglogger, start_args)
         main_reactor.root = printer
         res = printer.run()
-        time.sleep(3)
+        time.sleep(1)
         for process in printer.parallel_objects.values():
             process.join()
         logging.info("Joined all processes")
-        if res in ['exit', 'error_exit', 'terminated']:
+        if res in ['exit', 'error_exit']:
             break
         main_reactor.finalize()
         main_reactor = printer = None
         logging.info("Restarting printer")
         start_args['start_reason'] = res
+
     if bglogger is not None:
         bglogger.stop()
 
     if res == 'error_exit':
         sys.exit(-1)
-
 
 if __name__ == '__main__':
     main()

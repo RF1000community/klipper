@@ -23,9 +23,6 @@ class MCU_endstop:
         self._min_query_time = self._last_sent_time = 0.
         self._next_query_print_time = self._end_home_time = 0.
         self._trigger_completion = self._home_completion = None
-    def __getstate__(self):
-        logging.info("got state from MCU_endstop")
-        return {}
     def get_mcu(self):
         return self._mcu
     def add_stepper(self, stepper):
@@ -131,9 +128,6 @@ class MCU_digital_out:
         self._max_duration = 2.
         self._last_clock = 0
         self._set_cmd = None
-    def __getstate__(self):
-        logging.info("got state from MCU_digital_out")
-        return {}
     def get_mcu(self):
         return self._mcu
     def setup_max_duration(self, max_duration):
@@ -183,9 +177,6 @@ class MCU_pwm:
         self._last_clock = self._last_cycle_ticks = 0
         self._pwm_max = 0.
         self._set_cmd = self._set_cycle_ticks = None
-    def __getstate__(self):
-        logging.info("got state from MCU_pwm")
-        return {}
     def get_mcu(self):
         return self._mcu
     def setup_max_duration(self, max_duration):
@@ -294,9 +285,6 @@ class MCU_adc:
         self._oid = self._callback = None
         self._mcu.register_config_callback(self._build_config)
         self._inv_max_adc = 0.
-    def __getstate__(self):
-        logging.info("got state from MCU_adc")
-        return {}
     def get_mcu(self):
         return self._mcu
     def setup_minmax(self, sample_time, sample_count,

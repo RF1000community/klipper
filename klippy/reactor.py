@@ -205,7 +205,7 @@ class SelectReactor:
                 import logging
                 logging.warning("failed to write - to pipe")
         else:
-            cb(self.forward_async_callback, (callback, *args),
+            self.cb(self.forward_async_callback, (callback, *args),
                 {'waketime': waketime, 'process': process, **kwargs}, process='printer')
     def cb(self, *args, process='printer', **kwargs):
         self.register_async_callback(*args, process=process, **kwargs)
@@ -348,8 +348,6 @@ class SelectReactor:
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
-        import logging
-        logging.info(f" {self.process_name} sent event {event}")
         if self.process_name != 'printer':
             self.cb(self.forward_event, (event, params), process='printer')
             return
