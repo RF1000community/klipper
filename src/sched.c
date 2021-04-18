@@ -81,7 +81,6 @@ void
 sched_add_timer(struct timer *add)
 {
     uint32_t waketime = add->waketime;
-    output("add timer with waketime %u", waketime);
     irqstatus_t flag = irq_save();
     if (unlikely(timer_is_before(waketime, timer_list->waketime))) {
         // This timer is before all other scheduled timers
@@ -137,7 +136,7 @@ sched_del_timer(struct timer *del)
 }
 
 // Invoke the next timer - called from board hardware irq code.
-uint32_t
+unsigned int
 sched_timer_dispatch(void)
 {
     // Invoke timer callback
@@ -153,7 +152,7 @@ sched_timer_dispatch(void)
     }
 
     // Update timer_list (rescheduling current timer if necessary)
-    uint32_t next_waketime = updated_waketime;
+    unsigned int next_waketime = updated_waketime;
     if (unlikely(res == SF_DONE)) {
         next_waketime = t->next->waketime;
         timer_list = t->next;
@@ -233,8 +232,9 @@ run_tasks(void)
             if (tasks_status != TS_REQUESTED) {
                 // Sleep processor (only run timers) until tasks woken
                 tasks_status = TS_IDLE;
+                irq_enable();
                 do {
-                    irq_wait();
+                    //irq_wait();
                 } while (tasks_status != TS_REQUESTED);
             }
             irq_enable();
