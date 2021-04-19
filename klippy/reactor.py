@@ -41,11 +41,6 @@ class ReactorCompletion:
 
 class ReactorCallback:
     def __init__(self, reactor, callback, waketime, *args, **kwargs):
-        if reactor.external_callback_handler:
-            self.completion = ReactorCompletion(reactor)
-            res = reactor.external_callback_handler(callback, waketime, *args, **kwargs)
-            self.completion.complete(reactor, res)
-            return
         self.reactor = reactor
         self.timer = reactor.register_timer(self.invoke, waketime)
         self.callback = callback
@@ -56,6 +51,22 @@ class ReactorCallback:
         self.reactor.unregister_timer(self.timer)
         res = self.callback(eventtime, *self.args, **self.kwargs)
         self.completion.complete(self.reactor, res)
+        return self.reactor.NEVER
+
+class MPCallback:
+    def __init__(self, reactor, waketime):
+        self.reactor = reactor
+        self.timer = reactor.register_timer(self.invoke, waketime)
+    def invoke(self, eventtime):
+        self.reactor.unregister_timer(self.timer)
+        while 1:
+            try:
+                args, kwargs = self.reactor._mp_queue.get_nowait()
+            except queue.Empty:
+                self.reactor.pause(self.reactor.monotonic() + 0.001)
+                continue
+            break
+        args[0](args[1], self.reactor.root, *args[2:], **kwargs)
         return self.reactor.NEVER
 
 class ReactorFileHandler:
@@ -121,7 +132,7 @@ class SelectReactor:
         self._mp_queue = multiprocessing.Queue()
         self._mp_queues = {}
         self._mp_pipe_fds = {}
-        self.external_callback_handler = None
+        self._mp_callback_handler = MPCallback
         # File descriptors
         self._fds = []
         # Greenlets
@@ -132,7 +143,7 @@ class SelectReactor:
         self._mp_queues.update(queues)
         self._mp_pipe_fds.update(pipes)
     def register_external_callback_handler(self, handler):
-        self.external_callback_handler = handler
+        self._mp_callback_handler = handler
     def get_gc_stats(self):
         return tuple(self._last_gc_times)
     # Timers
@@ -197,13 +208,8 @@ class SelectReactor:
             except os.error:
                 pass
         elif process in self._mp_queues.keys():
-            self._mp_queues[process].put((ReactorCallback, args, kwargs))
-            time.sleep(0.005)
-            try:
-                os.write(self._mp_pipe_fds[process], b'-')
-            except os.error:
-                import logging
-                logging.warning("failed to write - to pipe")
+            self._mp_queues[process].put_nowait((args, kwargs))
+            os.write(self._mp_pipe_fds[process], b'-')
         else:
             self.cb(self.forward_async_callback, (callback, *args),
                 {'waketime': waketime, 'process': process, **kwargs}, process='printer')
@@ -219,15 +225,9 @@ class SelectReactor:
         try:
             signal = os.read(self._pipe_fds[0], 4096)
         except os.error:
-            pass
-        if b'-' in signal:
-            while 1:
-                try:
-                    func, args, kwargs = self._mp_queue.get_nowait()
-                except queue.Empty:
-                    break
-                args = args[:2] + (self.root,) + args[2:]
-                func(self, *args, **kwargs)
+            raise
+        for i in range(signal.count(b'-')):
+            self._mp_callback_handler(self, eventtime)
         if b'.' in signal:
             while 1:
                 try:
@@ -345,6 +345,10 @@ class SelectReactor:
             os.close(self._pipe_fds[0])
             os.close(self._pipe_fds[1])
             self._pipe_fds = None
+    def close_process(self, e):
+        self.end()
+        self.pause(self.monotonic() + 1)
+        self.finalize()
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
@@ -354,10 +358,6 @@ class SelectReactor:
         for process in self._mp_queues.keys():
             self.cb(self.run_event, event, params, process=process)
         return self.run_event(None, self.root, event, params)
-    def close_process(self, e):
-        self.end()
-        self.pause(self.monotonic() + 1)
-        self.finalize()
     @staticmethod
     def run_event(e, root, event, params):
         return [cb(*params) for cb in root.reactor.event_handlers.get(event, [])]

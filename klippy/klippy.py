@@ -52,7 +52,7 @@ class Printer:
     config_error = configfile.error
     command_error = gcode.CommandError
     def __init__(self, main_reactor, bglogger, start_args):
-        signal.signal(signal.SIGTERM, lambda signum, frame: self.request_exit("exit"))
+        signal.signal(signal.SIGTERM, lambda signum, frame: self.request_exit('exit'))
         self.bglogger = bglogger
         self.start_args = start_args
         self.reactor = main_reactor
@@ -385,7 +385,7 @@ def main():
         for process in printer.parallel_objects.values():
             process.join()
         logging.info("Joined all processes")
-        if res in ['exit', 'error_exit']:
+        if res in ('exit', 'error_exit'):
             break
         main_reactor.finalize()
         main_reactor = printer = None
