@@ -62,7 +62,9 @@ class MPCallback:
             try:
                 cb, args, kwargs = self.reactor._mp_queue.get_nowait()
             except queue.Empty:
-                self.reactor.pause(self.reactor.monotonic() + 0.001)
+                import logging
+                logging.info("mp callback retry")
+                self.reactor.pause(self.reactor.monotonic() + 0.005)
                 continue
             break
         cb(eventtime, self.reactor.root, *args[1:], **kwargs)
@@ -132,7 +134,7 @@ class SelectReactor:
         self._mp_queues = {}
         self._mp_pipe_fds = {}
         self._mp_callback_handler = MPCallback
-        self._fd_lock = threading.Lock()
+        self._fd_lock = self.mutex()
         # File descriptors
         self._fds = []
         # Greenlets
@@ -202,11 +204,10 @@ class SelectReactor:
     def register_async_callback(self, callback, *args, waketime=NOW, process=None, **kwargs):
         if process is None or process == self.process_name:
             self._async_queue.put_nowait((ReactorCallback, (self, callback, waketime, *args), kwargs))
-            with self._fd_lock:
-                try:
-                    os.write(self._pipe_fds[1], b'.')
-                except os.error:
-                    pass
+            try:
+                os.write(self._pipe_fds[1], b'.')
+            except os.error:
+                pass
         elif process in self._mp_queues.keys():
             self._mp_queues[process].put_nowait((callback, (waketime, *args), kwargs))
             with self._fd_lock:
