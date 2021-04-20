@@ -381,7 +381,7 @@ def main():
         printer = Printer(main_reactor, bglogger, start_args)
         main_reactor.root = printer
         res = printer.run()
-        time.sleep(1)
+        time.sleep(3)
         for process in printer.parallel_objects.values():
             process.join()
         logging.info("Joined all processes")

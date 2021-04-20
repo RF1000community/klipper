@@ -6,8 +6,7 @@
 import os, gc, select, math, time, queue
 import greenlet
 import chelper, util
-import multiprocessing
-import pickle
+import multiprocessing, pickle, threading
 
 _NOW = 0.
 _NEVER = 9999999999999999.
@@ -25,7 +24,7 @@ class ReactorCompletion:
         self.waiting = []
     def test(self):
         return self.result is not self.sentinel
-    def complete(self, reactor, result):
+    def complete(self, result):
         self.result = result
         for wait in self.waiting:
             self.reactor.update_timer(wait.timer, self.reactor.NOW)
@@ -50,23 +49,23 @@ class ReactorCallback:
     def invoke(self, eventtime):
         self.reactor.unregister_timer(self.timer)
         res = self.callback(eventtime, *self.args, **self.kwargs)
-        self.completion.complete(self.reactor, res)
+        self.completion.complete(res)
         return self.reactor.NEVER
 
 class MPCallback:
-    def __init__(self, reactor, waketime):
+    def __init__(self, reactor, eventtime):
         self.reactor = reactor
-        self.timer = reactor.register_timer(self.invoke, waketime)
+        self.timer = reactor.register_timer(self.invoke, eventtime)
     def invoke(self, eventtime):
         self.reactor.unregister_timer(self.timer)
         while 1:
             try:
-                args, kwargs = self.reactor._mp_queue.get_nowait()
+                cb, args, kwargs = self.reactor._mp_queue.get_nowait()
             except queue.Empty:
                 self.reactor.pause(self.reactor.monotonic() + 0.001)
                 continue
             break
-        args[0](args[1], self.reactor.root, *args[2:], **kwargs)
+        cb(eventtime, self.reactor.root, *args[1:], **kwargs)
         return self.reactor.NEVER
 
 class ReactorFileHandler:
@@ -133,16 +132,17 @@ class SelectReactor:
         self._mp_queues = {}
         self._mp_pipe_fds = {}
         self._mp_callback_handler = MPCallback
+        self._fd_lock = threading.Lock()
         # File descriptors
         self._fds = []
         # Greenlets
         self._g_dispatch = None
         self._greenlets = []
         self._all_greenlets = []
-    def register_mp_queues(self, queues={}, pipes={}):
+    def register_mp_queues(self, queues, pipes):
         self._mp_queues.update(queues)
         self._mp_pipe_fds.update(pipes)
-    def register_external_callback_handler(self, handler):
+    def register_mp_callback_handler(self, handler):
         self._mp_callback_handler = handler
     def get_gc_stats(self):
         return tuple(self._last_gc_times)
@@ -200,16 +200,17 @@ class SelectReactor:
         return rcb.completion
     # Asynchronous (from another thread) callbacks and completions
     def register_async_callback(self, callback, *args, waketime=NOW, process=None, **kwargs):
-        args = (callback, waketime) + args
         if process is None or process == self.process_name:
-            self._async_queue.put_nowait((ReactorCallback, args, kwargs))
-            try:
-                os.write(self._pipe_fds[1], b'.')
-            except os.error:
-                pass
+            self._async_queue.put_nowait((ReactorCallback, (self, callback, waketime, *args), kwargs))
+            with self._fd_lock:
+                try:
+                    os.write(self._pipe_fds[1], b'.')
+                except os.error:
+                    pass
         elif process in self._mp_queues.keys():
-            self._mp_queues[process].put_nowait((args, kwargs))
-            os.write(self._mp_pipe_fds[process], b'-')
+            self._mp_queues[process].put_nowait((callback, (waketime, *args), kwargs))
+            with self._fd_lock:
+                os.write(self._mp_pipe_fds[process], b'-')
         else:
             self.cb(self.forward_async_callback, (callback, *args),
                 {'waketime': waketime, 'process': process, **kwargs}, process='printer')
@@ -234,7 +235,8 @@ class SelectReactor:
                     func, args, kwargs = self._async_queue.get_nowait()
                 except queue.Empty:
                     break
-                func(self, *args, **kwargs)
+                func(*args, **kwargs)
+    # helper function to identify unpickleable objects during development
     def check_pickleable(self, args):
         is_kwarg = bool(type(args) is dict)
         if is_kwarg:

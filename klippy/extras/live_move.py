@@ -42,7 +42,7 @@ class LiveMove:
                 self.move_completion[axis] = ReactorCompletion(self.reactor)
                 pos = self.toolhead.get_position()
                 if axis in kin_status['homed_axes']:
-                    pos[2] = (self.pos_max['z'] if up else self.pos_min['z'])
+                    pos[2] = (self.pos_max['z'] if direction == 1 else self.pos_min['z'])
                 else:
                     pos[2] += (self.pos_max['z'] - self.pos_min['z']) * direction
                 self.toolhead.flush_step_generation()
@@ -53,13 +53,13 @@ class LiveMove:
                     s.set_tag_position(s.get_commanded_position())
 
                 self.start_mcu_pos[axis] = [(s, s.get_mcu_position()) for s in steppers]
-                self.toolhead.dwell(0.050)
+                #self.toolhead.dwell(0.050)
                 self.toolhead.drip_move(pos, self.z_speed, self.move_completion[axis], force=True)
 
     def stop_move(self, axis):
         if self.move_completion[axis] != None:
             # this works similar to homing.py
-            self.move_completion[axis].complete(self.reactor, True)
+            self.move_completion[axis].complete(True)
             self.reactor.pause(self.reactor.NOW)
             self.toolhead.flush_step_generation()
             #                   v--start_pos     v--end_pos

@@ -72,7 +72,8 @@ class Printjob:
         if self.state in ('printing', 'pausing'):
             self.set_state('stopping')
             # turn off heaters so stopping doesn't wait for temperature requests
-            self.reactor.pause(self.reactor.monotonic() + 0.100)
+            self.heater_manager.cmd_TURN_OFF_HEATERS(None)
+            self.reactor.pause(self.reactor.monotonic() + 0.05)
             self.heater_manager.cmd_TURN_OFF_HEATERS(None)
         else: # in case it is paused we need to do all stopping actions here
             self.set_state('stopped')
@@ -117,7 +118,7 @@ class Printjob:
                 continue
             # Pause if any other request is pending in the gcode class
             if gcode_mutex.test():
-                self.reactor.pause(self.reactor.monotonic() + 0.100)
+                self.reactor.pause(self.reactor.monotonic() + 0.050)
                 continue
             # Dispatch command
             try:

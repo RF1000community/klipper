@@ -161,7 +161,7 @@ class ControlBangBang:
         else:
             self.heater.set_pwm(read_time, 0.)
     def check_busy(self, eventtime, smoothed_temp, target_temp):
-        return smoothed_temp < target_temp-self.max_delta
+        return smoothed_temp < target_temp-self.max_delta and target_temp != 0
 
 
 ######################################################################
@@ -216,8 +216,7 @@ class ControlPID:
     def check_busy(self, eventtime, smoothed_temp, target_temp):
         temp_diff = target_temp - smoothed_temp
         return (abs(temp_diff) > PID_SETTLE_DELTA
-                or abs(self.prev_temp_deriv) > PID_SETTLE_SLOPE
-                and target_temp != 0)
+                or abs(self.prev_temp_deriv) > PID_SETTLE_SLOPE) and target_temp != 0
 
 
 ######################################################################
@@ -321,10 +320,12 @@ class PrinterHeaters:
         gcode = self.printer.lookup_object("gcode")
         reactor = self.printer.get_reactor()
         eventtime = reactor.monotonic()
+        i = 0
         while not self.printer.is_shutdown() and heater.check_busy(eventtime):
-            print_time = toolhead.get_last_move_time()
-            gcode.respond_raw(self._get_temp(eventtime))
-            eventtime = reactor.pause(eventtime + 1.)
+            if i%20 == 0:
+                gcode.respond_raw(self._get_temp(eventtime))
+            i += 1
+            eventtime = reactor.pause(eventtime + 0.05)
     cmd_TEMPERATURE_WAIT_help = "Wait for a temperature on a sensor"
     def cmd_TEMPERATURE_WAIT(self, gcmd):
         sensor_name = gcmd.get('SENSOR')
