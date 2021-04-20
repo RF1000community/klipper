@@ -69,7 +69,7 @@ class mainApp(App, threading.Thread):
     progress = NumericProperty(0)
     pos = ListProperty([0, 0, 0, 0])
     toolhead_busy = BooleanProperty(False)
-    ongoing_live_move = BooleanProperty(False)
+    ui_toolhead_busy = BooleanProperty(False)
     material = DictProperty()
     tbc_to_guid = DictProperty()
     # tuning
@@ -103,7 +103,7 @@ class mainApp(App, threading.Thread):
             return super().__init__(**kwargs)
 
         self.reactor = config.get_reactor()
-        self.reactor.register_external_callback_handler(KivyMPCallback)
+        self.reactor.register_mp_callback_handler(KivyMPCallback)
         self.fd = config.get_printer().get_start_args().get("gcode_fd")
         # read config
         self.config_pressure_advance = config.getsection('extruder').getfloat("pressure_advance", 0)
@@ -188,8 +188,10 @@ class mainApp(App, threading.Thread):
         ErrorPopup(message = message).open()
 
     def handle_home_end(self, homing_state, rails):
+        self.ui_toolhead_busy = False
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
+        self.reactor.cb(printer_cmd.wait_toolhead_not_busy)
 
     def handle_printjob_change(self, jobs):
         """ this monitors changes of 2 things:
@@ -233,7 +235,6 @@ class mainApp(App, threading.Thread):
             self.reactor.cb(printer_cmd.reset_tuning)
 
     def handle_history_change(self, history):
-        logging.info(f"got history {history}")
         self.history = history
 
     def handle_material_change(self, *args):
@@ -243,10 +244,11 @@ class mainApp(App, threading.Thread):
         if axis in 'xyz' and not (self.homed[axis] or self.warned_not_homed[axis]):
             self.notify.show("Axis not homed", "Proceed with care!", level="warning", delay=3)
             self.warned_not_homed['z'] = True
-        self.ongoing_live_move = True
+        self.ui_toolhead_busy = True
+        self.toolhead_busy = True
 
     def note_live_move_end(self, axis=None):
-        self.ongoing_live_move = False
+        self.ui_toolhead_busy = False
         self.reactor.cb(printer_cmd.wait_toolhead_not_busy)
 
     def on_start(self, *args):
@@ -267,17 +269,17 @@ class mainApp(App, threading.Thread):
         Popen(['sudo','systemctl', 'reboot'])
 
 class KivyMPCallback:
-    def __init__(self, reactor, waketime):
+    def __init__(self, reactor, eventtime):
         self.reactor = reactor
         Clock.schedule_del_safe(self.invoke)
     def invoke(self, dt=None):
         try:
-            args, kwargs = self.reactor._mp_queue.get_nowait()
+            cb, args, kwargs = self.reactor._mp_queue.get_nowait()
         except queue.Empty:
             logging.info("kgui queue retry")
             Clock.schedule_once(self.invoke, 0.001)
             return
-        args[0](args[1], self.reactor.root, *args[2:], **kwargs)
+        cb(args[0], self.reactor.root, *args[1:], **kwargs)
         return self.reactor.NEVER
 
 # Catch KGUI exceptions and display popups

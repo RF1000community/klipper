@@ -138,9 +138,8 @@ def get_homing_state(e, printer):
     homed = {axis: bool(axis in kin_status['homed_axes']) for axis in "xyz"}
     printer.reactor.cb(set_attribute, 'homed', homed, process='kgui')
 def send_home(e, printer, axis):
+    wait_toolhead_not_busy(e, printer)
     printer.objects['gcode'].run_script_from_command("G28" + axis.upper())
-    get_toolhead_busy(e, printer)
-    get_pos(e, printer)
 
 def send_motors_off(e, printer):
     printer.objects['gcode'].run_script_from_command("M18")
@@ -148,13 +147,16 @@ def send_motors_off(e, printer):
 
 def get_toolhead_busy(e, printer):
     print_time, est_print_time, lookahead_empty = printer.objects['toolhead'].check_busy(e)
-    idle_time = est_print_time - print_time
-    busy = bool(not lookahead_empty or idle_time <= 0)
+    busy = not (est_print_time > print_time and lookahead_empty)
     printer.reactor.cb(set_attribute, 'toolhead_busy', busy, process='kgui')
     return busy
 def wait_toolhead_not_busy(e, printer):
-    while get_toolhead_busy(printer.reactor.monotonic(), printer):
-        printer.reactor.pause(printer.reactor.monotonic() + 0.1)
+    while 1:
+        print_time, est_print_time, lookahead_empty = printer.objects['toolhead'].check_busy(printer.reactor.monotonic())
+        if est_print_time > print_time and lookahead_empty:
+            break
+        printer.reactor.pause(printer.reactor.monotonic() + print_time - est_print_time + 0.05)
+    printer.reactor.cb(set_attribute, 'toolhead_busy', False, process='kgui')
 
 def get_pos(e, printer):
     pos = printer.objects['toolhead'].get_position()
