@@ -179,18 +179,14 @@ def _fill_coord(printer, new_pos):
             pos[i] = new
     return pos
 
-def send_z_go(e, printer, z_speed, direction):
+def send_extrude(e, printer, gcode_id, direction):
+    printer.objects['live_move'].start_move('e', direction)
+    get_toolhead_busy(e, printer)
+def send_z_go(e, printer, direction):
     printer.objects['live_move'].start_move('z', direction)
     get_toolhead_busy(e, printer)
-def send_z_stop(e, printer):
-    printer.objects['live_move'].stop_move('z')
-    get_pos(e, printer)
-
-def send_extrude(e, printer, gcode_id, direction):
-    printer.objects['live_move'].start_move(gcode_id, direction)
-    get_toolhead_busy(e, printer)
-def send_extrude_stop(e, printer, gcode_id):
-    printer.objects['live_move'].stop_move(gcode_id)
+def send_lm_stop(e, printer, axis):
+    printer.objects['live_move'].stop_move(axis)
     get_pos(e, printer)
 
 def get_printjob_progress(e, printer):

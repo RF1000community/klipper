@@ -108,8 +108,6 @@ class mainApp(App, threading.Thread):
         # read config
         self.config_pressure_advance = config.getsection('extruder').getfloat("pressure_advance", 0)
         self.config_acceleration = config.getsection('printer').getfloat("max_accel", 0)
-        self.z_speed = config.getfloat('manual_z_speed', 5)
-        self.ext_speed = config.getfloat('manual_extrusion_speed', 2)
         self.invert_z_controls = config.getboolean('invert_z_controls', False)
         self.xy_homing_controls = config.getboolean('xy_homing_controls', True)
         stepper_config = {'x': config.getsection('stepper_x'),
