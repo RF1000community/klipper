@@ -96,7 +96,7 @@ timer_init(void)
     // Enable Debug Watchpoint and Trace (DWT) for its 32bit timer
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
 #if CONFIG_MACH_STM32H7
-    DWT->LAR = 0xC5ACCE55; // <-- added unlock access to DWT (ITM, etc.)registers
+    DWT->LAR = 0xC5ACCE55; // unlock access to DWT registers
 #endif
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
     DWT->CYCCNT = 0;

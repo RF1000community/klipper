@@ -5,7 +5,7 @@
 // This file may be distributed under the terms of the GNU GPLv3 license.
 
 
-// USB AND I2C NOT SUPPORTED!!
+// USB and I2C is not supported, SPI is untested!
 
 #include "autoconf.h" // CONFIG_CLOCK_REF_FREQ
 #include "board/armcm_boot.h" // VectorTable
@@ -22,10 +22,9 @@ enable_pclock(uint32_t periph_base)
 {
     // periph_base determines in which bitfield at wich position to set a bit
     // E.g. D2_AHB1PERIPH_BASE is the adress offset of the given bitfield
-    // the naming makes 0% sense
     if (periph_base < D2_APB2PERIPH_BASE) {
         uint32_t pos = (periph_base - D2_APB1PERIPH_BASE) / 0x400;
-        RCC->APB1LENR |= (1<<pos);// we assume it is not in APB1HENR
+        RCC->APB1LENR |= (1<<pos); // we assume it is not in APB1HENR
         RCC->APB1LENR;
     } else if (periph_base < D2_AHB1PERIPH_BASE) {
         uint32_t pos = (periph_base - D2_APB2PERIPH_BASE) / 0x400;
@@ -64,7 +63,7 @@ is_enabled_pclock(uint32_t periph_base)
 {
     if (periph_base < D2_APB2PERIPH_BASE) {
         uint32_t pos = (periph_base - D2_APB1PERIPH_BASE) / 0x400;
-        return RCC->APB1LENR & (1<<pos);// we assume it is not in APB1HENR
+        return RCC->APB1LENR & (1<<pos); // we assume it is not in APB1HENR
     } else if (periph_base < D2_AHB1PERIPH_BASE) {
         uint32_t pos = (periph_base - D2_APB2PERIPH_BASE) / 0x400;
         return RCC->APB2ENR & (1<<pos);
@@ -103,7 +102,7 @@ gpio_clock_enable(GPIO_TypeDef *regs)
     enable_pclock((uint32_t)regs);
 }
 
-// Set the mode and extended function of a pin TODO verify
+// Set the mode and extended function of a pin
 void
 gpio_peripheral(uint32_t gpio, uint32_t mode, int pullup)
 {
@@ -141,13 +140,14 @@ clock_setup(void)
     PWR->CR3 = (PWR->CR3 | PWR_CR3_LDOEN) & ~(PWR_CR3_BYPASS | PWR_CR3_SCUEN);
     while (!(PWR->CSR1 & PWR_CSR1_ACTVOSRDY))
         ;
-    // HSE(25mhz) /=DIVM1(5) -pll_base(5Mhz)-> *=DIVN1(192) -pll_freq->
-    // /=DIVP1(2) -SYSCLK(480mhz)->
+    // (HSE 25mhz) /DIVM1(5) (pll_base 5Mhz) *DIVN1(192) (pll_freq 960Mhz)
+    // /DIVP1(2) (SYSCLK 480Mhz)
     uint32_t pll_base = 5000000;
-    uint32_t pll_freq = CONFIG_CLOCK_FREQ * 2; // only even dividers (DIVP1) ok
+    // Only even dividers (DIVP1) are allowed
+    uint32_t pll_freq = CONFIG_CLOCK_FREQ * 2;
     if (!CONFIG_STM32_CLOCK_REF_INTERNAL) {
         // Configure PLL from external crystal (HSE)
-        RCC->CR |= RCC_CR_HSEON; // enable HSE input
+        RCC->CR |= RCC_CR_HSEON;
         while(!(RCC->CR & RCC_CR_HSERDY))
             ;
         MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk,
@@ -156,32 +156,32 @@ clock_setup(void)
             (CONFIG_CLOCK_REF_FREQ/pll_base) << RCC_PLLCKSELR_DIVM1_Pos);
     } else {
         // Configure PLL from internal 64Mhz oscillator (HSI)
-        // HSI frequency of 64mhz is integer divisible with 4mhz
+        // HSI frequency of 64Mhz is integer divisible with 4Mhz
         pll_base = 4000000;
         MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_PLLSRC_Msk,
                                    RCC_PLLCKSELR_PLLSRC_HSI);
         MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk,
-          (64000000 / pll_base) << RCC_PLLCKSELR_DIVM1_Pos);
+          (64000000/pll_base) << RCC_PLLCKSELR_DIVM1_Pos);
     }
-    // Default should already be 0
+    // Default for these should already be 0
     MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1FRACEN_Msk, 0);
-    // Default should already be 0
     MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1VCOSEL_Msk, 0);
     // Set input frequency range of PLL1 according to pll_base
-    // (3=8-16Mhz, 2=4-8Mhz)
+    // 3 = 8-16Mhz, 2 = 4-8Mhz
     MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1RGE_Msk, RCC_PLLCFGR_PLL1RGE_2);
-    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_DIVR1EN_Msk, 0); // Disable unused outs
+    // Disable unused PLL1 outputs
+    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_DIVR1EN_Msk, 0);
     MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_DIVQ1EN_Msk, 0);
-    // This is necessary, default is not 1!!!
+    // This is necessary, default is not 1!
     MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_DIVP1EN_Msk, RCC_PLLCFGR_DIVP1EN);
     // Set multiplier DIVN1 and post divider DIVP1
-    // (where 001 = /2, 010 = not allowed, 0011 = /4...)
+    // 001 = /2, 010 = not allowed, 0011 = /4 ...
     MODIFY_REG(RCC->PLL1DIVR, RCC_PLL1DIVR_N1_Msk,
-        ((pll_freq/pll_base)-1) << RCC_PLL1DIVR_N1_Pos);
+        (pll_freq/pll_base - 1) << RCC_PLL1DIVR_N1_Pos);
     MODIFY_REG(RCC->PLL1DIVR, RCC_PLL1DIVR_P1_Msk,
-        ((pll_freq/CONFIG_CLOCK_FREQ)-1) << RCC_PLL1DIVR_P1_Pos);
+        (pll_freq/CONFIG_CLOCK_FREQ - 1) << RCC_PLL1DIVR_P1_Pos);
 
-    // Crank up Vcore
+    // Pwr
     MODIFY_REG(PWR->D3CR, PWR_D3CR_VOS_Msk, PWR_D3CR_VOS);
     while (!(PWR->D3CR & PWR_D3CR_VOSRDY))
         ;
@@ -199,21 +199,20 @@ clock_setup(void)
     while (!(FLASH->ACR & flash_acr_latency))
         ;
 
-    // Switch on PLL1
-    RCC->CR |= RCC_CR_PLL1ON;
-    while (!(RCC->CR & RCC_CR_PLL1RDY))// Wait for PLL lock
-        ;
-
+    // Set HPRE, D1PPRE, D2PPRE, D2PPRE2, D3PPRE dividers
     MODIFY_REG(RCC->D1CFGR, RCC_D1CFGR_HPRE_Msk,    RCC_D1CFGR_HPRE_DIV2);
-    // Set D1PPRE, D2PPRE, D2PPRE2, D3PPRE
     MODIFY_REG(RCC->D1CFGR, RCC_D1CFGR_D1PPRE_Msk,  RCC_D1CFGR_D1PPRE_DIV2);
     MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE1_Msk, RCC_D2CFGR_D2PPRE1_DIV2);
     MODIFY_REG(RCC->D2CFGR, RCC_D2CFGR_D2PPRE2_Msk, RCC_D2CFGR_D2PPRE2_DIV2);
     MODIFY_REG(RCC->D3CFGR, RCC_D3CFGR_D3PPRE_Msk,  RCC_D3CFGR_D3PPRE_DIV2);
 
+    // Switch on PLL1
+    RCC->CR |= RCC_CR_PLL1ON;
+    while (!(RCC->CR & RCC_CR_PLL1RDY))
+        ;
+
     // Switch system clock source (SYSCLK) to PLL1
     MODIFY_REG(RCC->CFGR, RCC_CFGR_SW_Msk, RCC_CFGR_SW_PLL1);
-    // Wait for PLL1 to be selected
     while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL1)
         ;
 }
