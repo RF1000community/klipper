@@ -187,12 +187,12 @@ class Printer:
                 self._pending_event_handlers[process] = True
                 self.reactor.cb(self.send_event_and_wait, "klippy:connect", process=process)
             while 1:
-                pending = False
                 for pending_process in self._pending_event_handlers.values():
-                    pending = pending or pending_process
-                if not pending:
+                    if pending_process:
+                        self.reactor.pause(0.01)
+                        break
+                else:
                     break
-                self.reactor.pause(0.01)
         except (self.config_error, pins.error) as e:
             logging.exception("Config error")
             self.send_event("klippy:critical_error", "Config error")
