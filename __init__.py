@@ -103,7 +103,7 @@ class mainApp(App, threading.Thread):
             return super().__init__(**kwargs)
 
         self.reactor = config.get_reactor()
-        self.reactor.register_mp_callback_handler(KivyMPCallback)
+        self.reactor.register_mp_callback_handler(KivyCallback)
         self.fd = config.get_printer().get_start_args().get("gcode_fd")
         # read config
         self.config_pressure_advance = config.getsection('extruder').getfloat("pressure_advance", 0)
@@ -174,7 +174,6 @@ class mainApp(App, threading.Thread):
     def handle_disconnect(self):
         logging.info("Kivy app.handle_disconnect")
         self.connected = False
-        self.reactor.external_callback_handler = None # run callback in reactor thread
         self.reactor.cb(self.reactor.close_process, process='kgui')
         self.stop()
 
@@ -266,19 +265,14 @@ class mainApp(App, threading.Thread):
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
 
-class KivyMPCallback:
-    def __init__(self, reactor, eventtime):
-        self.reactor = reactor
+class KivyCallback:
+    def __init__(self, reactor, callback, waketime, *args, **kwargs):
+        self.callback = callback
+        self.args = args
+        self.kwargs = kwargs
         Clock.schedule_del_safe(self.invoke)
     def invoke(self, dt=None):
-        try:
-            cb, args, kwargs = self.reactor._mp_queue.get_nowait()
-        except queue.Empty:
-            logging.info("kgui queue retry")
-            Clock.schedule_once(self.invoke, 0.001)
-            return
-        cb(args[0], self.reactor.root, *args[1:], **kwargs)
-        return self.reactor.NEVER
+        self.callback(dt, *self.args, **self.kwargs)
 
 # Catch KGUI exceptions and display popups
 class PopupExceptionHandler(ExceptionHandler):
