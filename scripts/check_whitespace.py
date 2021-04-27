@@ -47,6 +47,16 @@ def check_file(filename):
                 report_error(filename, lineno, "Invalid %s character" % (
                     char_name,))
                 break
+        # Check for trailing space
+        if line.endswith(' ') or line.endswith('\t'):
+            report_error(filename, lineno, "Line has trailing spaces")
+        # Check for more than 120 characters
+        if is_source_code and len(line) > 120:
+            report_error(filename, lineno, "Line longer than 80 characters")
+    if not data.endswith('\n'):
+        report_error(filename, lineno, "No newline at end of file")
+    if data.endswith('\n\n'):
+        report_error(filename, lineno, "Extra newlines at end of file")
 
 def main():
     files = sys.argv[1:]
