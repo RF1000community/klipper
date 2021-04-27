@@ -50,7 +50,7 @@ class Heater:
         heater_pin = config.get('heater_pin')
         ppins = self.printer.lookup_object('pins')
         self.mcu_pwm = ppins.setup_pin('pwm', heater_pin)
-        pwm_cycle_time = config.getfloat('pwm_cycle_time', 0.100, above=0.,
+        pwm_cycle_time = config.getfloat('pwm_cycle_time', 0.05, above=0.,
                                          maxval=self.pwm_delay)
         self.mcu_pwm.setup_cycle_time(pwm_cycle_time)
         self.mcu_pwm.setup_max_duration(MAX_HEAT_TIME)

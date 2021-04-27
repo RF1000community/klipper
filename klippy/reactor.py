@@ -52,24 +52,6 @@ class ReactorCallback:
         self.completion.complete(res)
         return self.reactor.NEVER
 
-class MPCallback:
-    def __init__(self, reactor, eventtime):
-        self.reactor = reactor
-        self.timer = reactor.register_timer(self.invoke, eventtime)
-    def invoke(self, eventtime):
-        self.reactor.unregister_timer(self.timer)
-        while 1:
-            try:
-                cb, args, kwargs = self.reactor._mp_queue.get_nowait()
-            except queue.Empty:
-                import logging
-                logging.info("mp callback retry")
-                self.reactor.pause(self.reactor.monotonic() + 0.005)
-                continue
-            break
-        cb(eventtime, self.reactor.root, *args[1:], **kwargs)
-        return self.reactor.NEVER
-
 class ReactorFileHandler:
     def __init__(self, fd, callback):
         self.fd = fd
@@ -130,20 +112,19 @@ class SelectReactor:
         # Callbacks
         self._pipe_fds = None
         self._async_queue = queue.Queue()
+        # Multiprocessing
         self._mp_queue = multiprocessing.Queue()
         self._mp_queues = {}
-        self._mp_pipe_fds = {}
-        self._mp_callback_handler = MPCallback
-        self._fd_lock = self.mutex()
+        self._mp_callback_handler = ReactorCallback
         # File descriptors
         self._fds = []
         # Greenlets
         self._g_dispatch = None
         self._greenlets = []
         self._all_greenlets = []
-    def register_mp_queues(self, queues, pipes):
+    def register_mp_queues(self, queues):
+        queues.pop(self.process_name, None)
         self._mp_queues.update(queues)
-        self._mp_pipe_fds.update(pipes)
     def register_mp_callback_handler(self, handler):
         self._mp_callback_handler = handler
     def get_gc_stats(self):
@@ -154,9 +135,7 @@ class SelectReactor:
         self._next_timer = min(self._next_timer, waketime)
     def register_timer(self, callback, waketime=NEVER):
         timer_handler = ReactorTimer(callback, waketime)
-        timers = list(self._timers)
-        timers.append(timer_handler)
-        self._timers = timers
+        self._timers.append(timer_handler)
         self._next_timer = min(self._next_timer, waketime)
         return timer_handler
     def unregister_timer(self, timer_handler):
@@ -208,13 +187,8 @@ class SelectReactor:
                 os.write(self._pipe_fds[1], b'.')
             except os.error:
                 pass
-        elif process in self._mp_queues.keys():
-            self._mp_queues[process].put_nowait((callback, (waketime, *args), kwargs))
-            with self._fd_lock:
-                os.write(self._mp_pipe_fds[process], b'-')
         else:
-            self.cb(self.forward_async_callback, (callback, *args),
-                {'waketime': waketime, 'process': process, **kwargs}, process='printer')
+            self._mp_queues[process].put_nowait((callback, waketime, args, kwargs))
     def cb(self, *args, process='printer', **kwargs):
         self.register_async_callback(*args, process=process, **kwargs)
     def async_complete(self, completion, result):
@@ -225,18 +199,15 @@ class SelectReactor:
             pass
     def _got_pipe_signal(self, eventtime):
         try:
-            signal = os.read(self._pipe_fds[0], 4096)
+            os.read(self._pipe_fds[0], 4096)
         except os.error:
-            raise
-        for i in range(signal.count(b'-')):
-            self._mp_callback_handler(self, eventtime)
-        if b'.' in signal:
-            while 1:
-                try:
-                    func, args, kwargs = self._async_queue.get_nowait()
-                except queue.Empty:
-                    break
-                func(*args, **kwargs)
+            pass
+        while 1:
+            try:
+                func, args, kwargs = self._async_queue.get_nowait()
+            except queue.Empty:
+                break
+            func(*args, **kwargs)
     # helper function to identify unpickleable objects during development
     def check_pickleable(self, args):
         is_kwarg = bool(type(args) is dict)
@@ -325,10 +296,16 @@ class SelectReactor:
                     eventtime = self.monotonic()
                     break
         self._g_dispatch = None
+    def _mp_dispatch_loop(self):
+        while self._process:
+            cb, waketime, args, kwargs = self._mp_queue.get()
+            self._mp_callback_handler(self, cb, waketime, self.root, *args, **kwargs)
     def run(self):
         if self._pipe_fds is None:
             self._setup_async_callbacks()
         self._process = True
+        self._mp_poll = threading.Thread(target=self._mp_dispatch_loop)
+        self._mp_poll.start()
         g_next = ReactorGreenlet(run=self._dispatch_loop)
         self._all_greenlets.append(g_next)
         g_next.switch()
@@ -344,32 +321,24 @@ class SelectReactor:
                 import logging
                 logging.exception("reactor finalize greenlet terminate")
         self._all_greenlets = []
+        self._mp_queue.put((self.run_event, 0, ("end_thread", None), {}))
+        self._mp_poll.join()
         if self._pipe_fds is not None:
             os.close(self._pipe_fds[0])
             os.close(self._pipe_fds[1])
             self._pipe_fds = None
     def close_process(self, e):
         self.end()
-        self.pause(self.monotonic() + 1)
         self.finalize()
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
-        if self.process_name != 'printer':
-            self.cb(self.forward_event, (event, params), process='printer')
-            return
         for process in self._mp_queues.keys():
             self.cb(self.run_event, event, params, process=process)
         return self.run_event(None, self.root, event, params)
     @staticmethod
     def run_event(e, root, event, params):
         return [cb(*params) for cb in root.reactor.event_handlers.get(event, [])]
-    @staticmethod
-    def forward_event(e, root, args):
-        root.reactor.send_event(event, *args)
-    @staticmethod
-    def forward_async_callback(e, root, args, kwargs):
-        root.reactor.cb(*args, **kwargs)    
 
 class PollReactor(SelectReactor):
     def __init__(self, gc_checking=False, process='printer'):

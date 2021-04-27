@@ -127,17 +127,8 @@ class Printer:
                 raise self.config_error("Unable to load module '%s'" % (section,))
             self.objects[section] = init_func(config.getsection(section))
             return self.objects[section]
+        # Create Reactor and Queue for parallel_objects to be started later in _load_parallel_object
         elif exists(parallel_module) or exists(parallel_package):
-            def start_process(module_name, init_func, object_config, default):
-                # avoid active imports changing environment - import in target process
-                mod = importlib.import_module('parallel_extras.' + module_name)
-                init_func = getattr(mod, init_func, None)
-                if init_func is None:
-                    if default is not configfile.sentinel:
-                        return default
-                    return -1
-                object_config.reactor.root = init_func(object_config)
-                object_config.reactor.run()
             # add module directory to path, so objects can be imported when unpickled
             # USE GLOBALLY UNIQUE MODULE NAMES RESPECTIVELY
             if exists(parallel_module):
@@ -146,22 +137,26 @@ class Printer:
                 site.addsitedir(dirname(parallel_package))
             object_config = config.getsection(section)
             object_config.reactor = reactor.Reactor(False, process=section)
-            object_config.reactor._setup_async_callbacks()
-            object_config.reactor.register_mp_queues(
-                {'printer': self.reactor._mp_queue},
-                {'printer': self.reactor._pipe_fds[1]})
-            self.reactor.register_mp_queues(
-                {section: object_config.reactor._mp_queue},
-                {section: object_config.reactor._pipe_fds[1]})
-            self.parallel_objects[section] = multiprocessing.Process(
-                target=start_process,
-                args=(module_name, init_func, object_config, default))
-            self.parallel_objects[section].start()
-            return self.parallel_objects[section]
+            self.reactor.register_mp_queues({section: object_config.reactor._mp_queue})
+            # temporarily used to store objets needed to create this process
+            self.parallel_objects[section] = [object_config, init_func, module_name]
+            return
         else:
             if default is not configfile.sentinel:
                 return default
             raise self.config_error("Unable to load module '%s'" % (section,))
+    def _load_parallel_object(self, section):
+        def start_process(object_config, init_func, module_name):
+            # Avoid active imports changing environment - import in target process
+            mod = importlib.import_module('parallel_extras.' + module_name)
+            init_func = getattr(mod, init_func, None)
+            object_config.reactor.root = init_func(object_config)
+            object_config.reactor.run()
+        self.parallel_objects[section][0].reactor.register_mp_queues(
+            {'printer': self.reactor._mp_queue, **self.reactor._mp_queues})
+        self.parallel_objects[section] = multiprocessing.Process(
+            target=start_process, args=self.parallel_objects[section])
+        self.parallel_objects[section].start()
     def _read_config(self):
         self.objects['configfile'] = pconfig = configfile.PrinterConfig(self)
         config = pconfig.read_main_config()
@@ -172,6 +167,8 @@ class Printer:
             m.add_printer_objects(config)
         for section_config in config.get_prefix_sections(''):
             self.load_object(config, section_config.get_name(), None)
+        for section in self.parallel_objects.keys():
+            self._load_parallel_object(section)
         for m in [toolhead]:
             m.add_printer_objects(config)
         # Validate that there are no undefined parameters in the config file
@@ -381,7 +378,7 @@ def main():
         printer = Printer(main_reactor, bglogger, start_args)
         main_reactor.root = printer
         res = printer.run()
-        time.sleep(3)
+        time.sleep(1)
         for process in printer.parallel_objects.values():
             process.join()
         logging.info("Joined all processes")

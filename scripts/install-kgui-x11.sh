@@ -21,7 +21,7 @@ install_packages()
     # ARM chip installation and building
     PKGLIST="${PKGLIST} dfu-util libnewlib-arm-none-eabi"
     PKGLIST="${PKGLIST} gcc-arm-none-eabi binutils-arm-none-eabi"
-    # PKGLIST="${PKGLIST} stm32flash" has to be installed from source to inclde latest MCUs
+    PKGLIST="${PKGLIST} stm32flash"
 
     # Kivy https://github.com/kivy/kivy/blob/master/doc/sources/installation/installation-rpi.rst
     PKGLIST="${PKGLIST} \
@@ -96,16 +96,6 @@ install_packages()
     # Install desired packages
     report_status "Installing packages..."
     sudo apt-get install -qq --yes ${PKGLIST}
-
-    # Install stm32flash from source
-    report_status "Installing stm32flash from source..."
-    cd ~
-    rm -rf stm32flash-code
-    git clone https://git.code.sf.net/p/stm32flash/code stm32flash-code
-    cd stm32flash-code
-    git checkout ee5b009
-    make
-    sudo make install
 
     report_status "Adjusting configurations..."
     # Networking
