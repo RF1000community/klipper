@@ -52,6 +52,24 @@ class ReactorCallback:
         self.completion.complete(res)
         return self.reactor.NEVER
 
+class MPCallback:
+    def __init__(self, reactor, eventtime):
+        self.reactor = reactor
+        self.timer = reactor.register_timer(self.invoke, eventtime)
+    def invoke(self, eventtime):
+        self.reactor.unregister_timer(self.timer)
+        while 1:
+            try:
+                cb, waketime, args, kwargs = self.reactor.mp_queue.get_nowait()
+            except queue.Empty:
+                import logging
+                logging.info("mp callback retry")
+                self.reactor.pause(self.reactor.monotonic() + 0.005)
+                continue
+            break
+        cb(eventtime, self.reactor.root, *args, **kwargs)
+        return self.reactor.NEVER
+
 class ReactorFileHandler:
     def __init__(self, fd, callback):
         self.fd = fd
@@ -110,21 +128,30 @@ class SelectReactor:
         self._timers = []
         self._next_timer = self.NEVER
         # Callbacks
-        self._pipe_fds = None
+        self._async_pipe = None
         self._async_queue = queue.Queue()
         # Multiprocessing
-        self._mp_queue = multiprocessing.Queue()
+        self.mp_queue = multiprocessing.Queue()
         self._mp_queues = {}
-        self._mp_callback_handler = ReactorCallback
+        self._mp_pipes_read = {}
+        self._mp_pipes_write = {}
+        self._mp_pipes_write_lock = {}
+        self._mp_pipes_read_lock = threading.Lock()
+        self._mp_callback_handler = MPCallback
         # File descriptors
         self._fds = []
         # Greenlets
         self._g_dispatch = None
         self._greenlets = []
         self._all_greenlets = []
-    def register_mp_queues(self, queues):
-        queues.pop(self.process_name, None)
-        self._mp_queues.update(queues)
+    def register_mp(self, process, queue, write_pipe, read_pipe):
+        self._mp_queues[process] = queue
+        self._mp_pipes_write[process] = write_pipe[1]
+        self._mp_pipes_read[process] = read_pipe[0]
+        # util.set_nonblock(write_pipe[1])
+        # util.set_nonblock(read_pipe[0])
+        self.register_fd(read_pipe[0], self._got_mp_pipe_signal)
+        self._mp_pipes_write_lock[process] = threading.Lock()
     def register_mp_callback_handler(self, handler):
         self._mp_callback_handler = handler
     def get_gc_stats(self):
@@ -184,22 +211,24 @@ class SelectReactor:
         if process is None or process == self.process_name:
             self._async_queue.put_nowait((ReactorCallback, (self, callback, waketime, *args), kwargs))
             try:
-                os.write(self._pipe_fds[1], b'.')
+                os.write(self._async_pipe[1], b'.')
             except os.error:
                 pass
         else:
+            with self._mp_pipes_write_lock[process]:
+                os.write(self._mp_pipes_write[process], b'.')
             self._mp_queues[process].put_nowait((callback, waketime, args, kwargs))
     def cb(self, *args, process='printer', **kwargs):
         self.register_async_callback(*args, process=process, **kwargs)
     def async_complete(self, completion, result):
         self._async_queue.put_nowait((completion.complete, (result,), {}))
         try:
-            os.write(self._pipe_fds[1], b'.')
+            os.write(self._async_pipe[1], b'.')
         except os.error:
             pass
     def _got_pipe_signal(self, eventtime):
         try:
-            os.read(self._pipe_fds[0], 4096)
+            os.read(self._async_pipe[0], 4096)
         except os.error:
             pass
         while 1:
@@ -208,6 +237,13 @@ class SelectReactor:
             except queue.Empty:
                 break
             func(*args, **kwargs)
+    def _got_mp_pipe_signal(self, eventtime):
+        signal = b''
+        with self._mp_pipes_read_lock:
+            for pipe in self._mp_pipes_read.values():
+                signal += os.read(pipe, 4096)
+        for i in range(signal.count(b'.')):
+            self._mp_callback_handler(self, eventtime)
     # helper function to identify unpickleable objects during development
     def check_pickleable(self, args):
         is_kwarg = bool(type(args) is dict)
@@ -228,10 +264,10 @@ class SelectReactor:
             args = tuple(args)
         return args
     def _setup_async_callbacks(self):
-        self._pipe_fds = os.pipe()
-        util.set_nonblock(self._pipe_fds[0])
-        util.set_nonblock(self._pipe_fds[1])
-        self.register_fd(self._pipe_fds[0], self._got_pipe_signal)
+        self._async_pipe = os.pipe()
+        util.set_nonblock(self._async_pipe[0])
+        util.set_nonblock(self._async_pipe[1])
+        self.register_fd(self._async_pipe[0], self._got_pipe_signal)
     # Greenlets
     def _sys_pause(self, waketime):
         # Pause using system sleep for when reactor not running
@@ -296,16 +332,10 @@ class SelectReactor:
                     eventtime = self.monotonic()
                     break
         self._g_dispatch = None
-    def _mp_dispatch_loop(self):
-        while self._process:
-            cb, waketime, args, kwargs = self._mp_queue.get()
-            self._mp_callback_handler(self, cb, waketime, self.root, *args, **kwargs)
     def run(self):
-        if self._pipe_fds is None:
+        if self._async_pipe is None:
             self._setup_async_callbacks()
         self._process = True
-        self._mp_poll = threading.Thread(target=self._mp_dispatch_loop)
-        self._mp_poll.start()
         g_next = ReactorGreenlet(run=self._dispatch_loop)
         self._all_greenlets.append(g_next)
         g_next.switch()
@@ -321,12 +351,10 @@ class SelectReactor:
                 import logging
                 logging.exception("reactor finalize greenlet terminate")
         self._all_greenlets = []
-        self._mp_queue.put((self.run_event, 0, ("end_thread", None), {}))
-        self._mp_poll.join()
-        if self._pipe_fds is not None:
-            os.close(self._pipe_fds[0])
-            os.close(self._pipe_fds[1])
-            self._pipe_fds = None
+        if self._async_pipe is not None:
+            os.close(self._async_pipe[0])
+            os.close(self._async_pipe[1])
+            self._async_pipe = None
     def close_process(self, e):
         self.end()
         self.finalize()

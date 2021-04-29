@@ -137,7 +137,6 @@ class Printer:
                 site.addsitedir(dirname(parallel_package))
             object_config = config.getsection(section)
             object_config.reactor = reactor.Reactor(False, process=section)
-            self.reactor.register_mp_queues({section: object_config.reactor._mp_queue})
             # temporarily used to store objets needed to create this process
             self.parallel_objects[section] = [object_config, init_func, module_name]
             return
@@ -145,6 +144,16 @@ class Printer:
             if default is not configfile.sentinel:
                 return default
             raise self.config_error("Unable to load module '%s'" % (section,))
+    def _connect_reactors(self, reactor1, reactor2):
+        pipe_1_2 = os.pipe()
+        pipe_2_1 = os.pipe()
+        reactor1.register_mp(reactor2.process_name, reactor2.mp_queue, pipe_1_2, pipe_2_1)
+        reactor2.register_mp(reactor1.process_name, reactor1.mp_queue, pipe_2_1, pipe_1_2)
+    def _connect_parallel_object(self, section):
+        self._connect_reactors(self.parallel_objects[section][0].reactor, self.reactor)
+        for name, obj in self.parallel_objects.items():
+            if name != section:
+                self._connect_reactors(self.parallel_objects[section][0].reactor, obj[0].reactor)
     def _load_parallel_object(self, section):
         def start_process(object_config, init_func, module_name):
             # Avoid active imports changing environment - import in target process
@@ -152,8 +161,6 @@ class Printer:
             init_func = getattr(mod, init_func, None)
             object_config.reactor.root = init_func(object_config)
             object_config.reactor.run()
-        self.parallel_objects[section][0].reactor.register_mp_queues(
-            {'printer': self.reactor._mp_queue, **self.reactor._mp_queues})
         self.parallel_objects[section] = multiprocessing.Process(
             target=start_process, args=self.parallel_objects[section])
         self.parallel_objects[section].start()
@@ -167,6 +174,8 @@ class Printer:
             m.add_printer_objects(config)
         for section_config in config.get_prefix_sections(''):
             self.load_object(config, section_config.get_name(), None)
+        for section in self.parallel_objects.keys():
+            self._connect_parallel_object(section)
         for section in self.parallel_objects.keys():
             self._load_parallel_object(section)
         for m in [toolhead]:
