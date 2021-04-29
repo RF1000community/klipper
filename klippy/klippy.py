@@ -137,7 +137,6 @@ class Printer:
                 site.addsitedir(dirname(parallel_package))
             object_config = config.getsection(section)
             object_config.reactor = reactor.Reactor(False, process=section)
-            self.reactor.register_mp_queues({section: object_config.reactor._mp_queue})
             # temporarily used to store objets needed to create this process
             self.parallel_objects[section] = [object_config, init_func, module_name]
             return
@@ -152,6 +151,7 @@ class Printer:
             init_func = getattr(mod, init_func, None)
             object_config.reactor.root = init_func(object_config)
             object_config.reactor.run()
+        self.reactor.register_mp_queues({section: object_config.reactor._mp_queue})
         self.parallel_objects[section][0].reactor.register_mp_queues(
             {'printer': self.reactor._mp_queue, **self.reactor._mp_queues})
         self.parallel_objects[section] = multiprocessing.Process(
