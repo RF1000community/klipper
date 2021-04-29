@@ -130,6 +130,7 @@ class SelectReactor:
         self._mp_queue = multiprocessing.Queue()
         self._mp_queues = {}
         self._mp_callback_handler = MPCallback
+        self.auto_finalize = False
         # File descriptors
         self._fds = []
         # Greenlets
@@ -310,6 +311,9 @@ class SelectReactor:
                     eventtime = self.monotonic()
                     break
         self._g_dispatch = None
+        time.sleep(1)
+        if self.auto_finalize:
+            self.finalize()
     def _mp_dispatch_loop(self):
         while self._process:
             cb, waketime, args, kwargs = self._mp_queue.get()
@@ -341,10 +345,6 @@ class SelectReactor:
             os.close(self._pipe_fds[0])
             os.close(self._pipe_fds[1])
             self._pipe_fds = None
-    def close_process(self, e):
-        self.end()
-        time.sleep(1)
-        self.finalize()
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):

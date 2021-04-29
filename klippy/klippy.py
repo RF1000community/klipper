@@ -151,7 +151,7 @@ class Printer:
             init_func = getattr(mod, init_func, None)
             object_config.reactor.root = init_func(object_config)
             object_config.reactor.run()
-        self.reactor.register_mp_queues({section: object_config.reactor._mp_queue})
+        self.reactor.register_mp_queues({section: self.parallel_objects[section][0].reactor._mp_queue})
         self.parallel_objects[section][0].reactor.register_mp_queues(
             {'printer': self.reactor._mp_queue, **self.reactor._mp_queues})
         self.parallel_objects[section] = multiprocessing.Process(
