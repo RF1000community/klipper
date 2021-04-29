@@ -6,7 +6,7 @@
 import os, gc, select, math, time, queue
 import greenlet
 import chelper, util
-import multiprocessing, pickle, threading
+import multiprocessing, pickle, threading, time
 
 _NOW = 0.
 _NEVER = 9999999999999999.
@@ -47,9 +47,23 @@ class ReactorCallback:
         self.kwargs = kwargs
         self.completion = ReactorCompletion(reactor)
     def invoke(self, eventtime):
-        self.reactor.unregister_timer(self.timer)
+        if self.timer:
+            self.reactor.unregister_timer(self.timer)
         res = self.callback(eventtime, *self.args, **self.kwargs)
         self.completion.complete(res)
+        return self.reactor.NEVER
+
+class MPCallback:
+    def __init__(self, reactor, callback, waketime, *args, **kwargs):
+        self.reactor = reactor
+        self.callback = callback
+        self.args = args
+        self.kwargs = kwargs
+        self.timer = reactor.register_timer(self.invoke, waketime)
+        os.write(reactor._pipe_fds[1], b'.') # Wake up the scheduler
+    def invoke(self, eventtime):
+        self.reactor.unregister_timer(self.timer)
+        self.callback(eventtime, *self.args, **self.kwargs)
         return self.reactor.NEVER
 
 class ReactorFileHandler:
@@ -115,7 +129,7 @@ class SelectReactor:
         # Multiprocessing
         self._mp_queue = multiprocessing.Queue()
         self._mp_queues = {}
-        self._mp_callback_handler = ReactorCallback
+        self._mp_callback_handler = MPCallback
         # File descriptors
         self._fds = []
         # Greenlets
@@ -304,8 +318,8 @@ class SelectReactor:
         if self._pipe_fds is None:
             self._setup_async_callbacks()
         self._process = True
-        self._mp_poll = threading.Thread(target=self._mp_dispatch_loop)
-        self._mp_poll.start()
+        self._mp_dispatch_thread = threading.Thread(target=self._mp_dispatch_loop)
+        self._mp_dispatch_thread.start()
         g_next = ReactorGreenlet(run=self._dispatch_loop)
         self._all_greenlets.append(g_next)
         g_next.switch()
@@ -322,13 +336,14 @@ class SelectReactor:
                 logging.exception("reactor finalize greenlet terminate")
         self._all_greenlets = []
         self._mp_queue.put((self.run_event, 0, ("end_thread", None), {}))
-        self._mp_poll.join()
+        self._mp_dispatch_thread.join()
         if self._pipe_fds is not None:
             os.close(self._pipe_fds[0])
             os.close(self._pipe_fds[1])
             self._pipe_fds = None
     def close_process(self, e):
         self.end()
+        time.sleep(1)
         self.finalize()
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
