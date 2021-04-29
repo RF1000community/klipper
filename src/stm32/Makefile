@@ -80,7 +80,7 @@ else
 BAUD_RATE = 57600
 endif
 
-# Use a GPIO Pin reset sequence if both pins are specified. E.g. RST=27 BOOT0=17 when 
+# Use a GPIO Pin reset sequence if both pins are specified. E.g. RST=27 BOOT0=17 when
 # the mcu's RESET is connected to GPIO 27 of the host ...
 RST = ""
 BOOT0 = ""
