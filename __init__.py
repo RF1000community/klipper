@@ -103,7 +103,7 @@ class mainApp(App, threading.Thread):
             return super().__init__(**kwargs)
 
         self.reactor = config.get_reactor()
-        self.reactor.register_mp_callback_handler(KivyCallback)
+        self.reactor.register_mp_callback_handler(kivy_callback)
         self.fd = config.get_printer().get_start_args().get("gcode_fd")
         # read config
         self.config_pressure_advance = config.getsection('extruder').getfloat("pressure_advance", 0)
@@ -158,6 +158,30 @@ class mainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.get_tbc)
         self.bind(print_state=self.handle_material_change)
         Clock.schedule_interval(lambda dt: self.reactor.cb(printer_cmd.update), 1)
+
+        # Check reactor latency during development
+        self.avg_count = 0
+        self.avg = 0
+        self.avg_2 = 0
+        Clock.schedule_interval(self.init_latency, 0.94)
+    def init_latency(self, dt):
+        self.start = self.reactor.monotonic()
+        self.reactor.cb(self.latency, process='printer')
+    @staticmethod
+    def latency(e, printer):
+        half_time = printer.reactor.monotonic()
+        printer.reactor.cb(mainApp.return_latency, half_time, process='kgui')
+    @staticmethod
+    def return_latency(e, kgui, half_time):
+        if kgui.start is None:
+            return logging.info("\n    big oof \n")
+        l1 = half_time - kgui.start
+        l2 = kgui.reactor.monotonic() - half_time
+        kgui.avg_count +=1
+        kgui.avg = kgui.avg*(kgui.avg_count -1)/kgui.avg_count + l1*1/kgui.avg_count
+        kgui.avg_2 = kgui.avg_2*(kgui.avg_count -1)/kgui.avg_count + l2*1/kgui.avg_count
+        logging.info(f"kivy->klipper  {l1:6.5f}, {kgui.avg}  klipper->kivy  {l2:6.5f}, {kgui.avg_2}  at {int(kgui.reactor.monotonic())}")
+        kgui.start = None
 
     def handle_ready(self):
         self.state = "ready"
@@ -265,14 +289,8 @@ class mainApp(App, threading.Thread):
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
 
-class KivyCallback:
-    def __init__(self, reactor, callback, waketime, *args, **kwargs):
-        self.callback = callback
-        self.args = args
-        self.kwargs = kwargs
-        Clock.schedule_del_safe(self.invoke)
-    def invoke(self, dt=None):
-        self.callback(dt, *self.args, **self.kwargs)
+def kivy_callback(reactor, callback, waketime, *args, **kwargs):
+    Clock.schedule_del_safe(lambda: callback(reactor.monotonic(), *args, **kwargs))
 
 # Catch KGUI exceptions and display popups
 class PopupExceptionHandler(ExceptionHandler):
