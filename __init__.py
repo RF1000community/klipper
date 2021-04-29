@@ -3,7 +3,7 @@ import site
 import threading
 import os, time
 import traceback
-import queue, time
+import queue
 from os.path import join, dirname
 from subprocess import Popen
 from kivy.config import Config
@@ -158,8 +158,12 @@ class mainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.get_tbc)
         self.bind(print_state=self.handle_material_change)
         Clock.schedule_interval(lambda dt: self.reactor.cb(printer_cmd.update), 1)
-    
+
         # Check reactor latency during development
+        import time, random
+        self.avg_count = 0
+        self.avg = 0
+        self.avg_2 = 0
         Clock.schedule_interval(self.init_latency, 0.94)
     def init_latency(self, dt):
         self.start = self.reactor.monotonic()
@@ -167,12 +171,18 @@ class mainApp(App, threading.Thread):
     @staticmethod
     def latency(e, printer):
         half_time = printer.reactor.monotonic()
+        time.sleep(random.randint(0,20)/1000)
         printer.reactor.cb(mainApp.return_latency, half_time, process='kgui')
     @staticmethod
     def return_latency(e, kgui, half_time):
         if kgui.start is None:
             return logging.info("\n    big oof \n")
-        logging.info(f"kivy->klipper  {half_time - kgui.start:6.5f}  klipper->kivy  {kgui.reactor.monotonic() - half_time:6.5f}  at {int(kgui.reactor.monotonic())}")
+        l1 = half_time - kgui.start
+        l2 = kgui.reactor.monotonic() - half_time
+        kgui.avg_count +=1
+        kgui.avg = kgui.avg*(kgui.avg_count -1)/kgui.avg_count + l1*1/kgui.avg_count
+        kgui.avg_2 = kgui.avg_2*(kgui.avg_count -1)/kgui.avg_count + l2*1/kgui.avg_count
+        logging.info(f"kivy->klipper  {l1:6.5f}, {kgui.avg}  klipper->kivy  {l2:6.5f}, {kgui.avg_2}  at {int(kgui.reactor.monotonic())}")
         kgui.start = None
 
     def handle_ready(self):
@@ -285,19 +295,6 @@ class mainApp(App, threading.Thread):
         Popen(['sudo','systemctl', 'poweroff'])
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
-
-# class KivyMPCallback:
-#     def __init__(self, reactor, eventtime):
-#         self.reactor = reactor
-#         Clock.schedule_del_safe(self.invoke)
-#     def invoke(self, dt=None):
-#         try:
-#             cb, waketime, args, kwargs = self.reactor.mp_queue.get_nowait()
-#         except queue.Empty:
-#             logging.info("kgui queue retry")
-#             Clock.schedule_once(self.invoke, 0.05)
-#             return
-#         cb(waketime, self.reactor.root, *args, **kwargs)
 
 def KivyMPCallback(reactor, eventtime):
     def invoke(dt=None):
