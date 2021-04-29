@@ -169,7 +169,7 @@ install_usb_automounting()
 {
     report_status "Configuring USB automounting..."
     mkdir -p ~/Files/USB-Device
-    sudo cp ${SRCDIR}/klippy/extras/kgui/usbmount.conf /etc/usbmount/usbmount.conf
+    sudo cp ${SRCDIR}/klippy/parallel_extras/kgui/usbmount.conf /etc/usbmount/usbmount.conf
     # https://raspberrypi.stackexchange.com/questions/100312/raspberry-4-usbmount-not-working
     # https://www.oguska.com/blog.php?p=Using_usbmount_with_ntfs_and_exfat_filesystems
 
@@ -187,9 +187,9 @@ install_lcd_driver()
     # Kivy: Add user to render group to give permission for hardware rendering
     sudo adduser "$USER" render
 
-    sudo ${SRCDIR}/klippy/extras/kgui/LCDC7-better.sh -r 90
+    sudo ${SRCDIR}/klippy/parallel_extras/kgui/LCDC7-better.sh -r 90
     # Copy the dpms configuration
-    sudo cp ${SRCDIR}/klippy/extras/kgui/10-dpms.conf /etc/X11/xorg.conf.d/
+    sudo cp ${SRCDIR}/klippy/parallel_extras/kgui/10-dpms.conf /etc/X11/xorg.conf.d/
 }
 
 
