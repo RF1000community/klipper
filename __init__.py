@@ -104,7 +104,6 @@ class mainApp(App, threading.Thread):
 
         self.reactor = config.get_reactor()
         self.reactor.register_mp_callback_handler(kivy_callback)
-        self.reactor.auto_finalize = True
         self.fd = config.get_printer().get_start_args().get("gcode_fd")
         # read config
         self.config_pressure_advance = config.getsection('extruder').getfloat("pressure_advance", 0)
@@ -171,20 +170,17 @@ class mainApp(App, threading.Thread):
     @staticmethod
     def latency(e, printer):
         half_time = printer.reactor.monotonic()
-        import random
-        time.sleep(random.randint(0,20)/1000)
-        half_time2 = printer.reactor.monotonic()
-        printer.reactor.cb(mainApp.return_latency, half_time, half_time2, process='kgui')
+        printer.reactor.cb(mainApp.return_latency, half_time, process='kgui')
     @staticmethod
-    def return_latency(e, kgui, half_time, half_time2):
+    def return_latency(e, kgui, half_time):
         if kgui.start is None:
             return logging.info("\n    big oof \n")
         l1 = half_time - kgui.start
-        l2 = kgui.reactor.monotonic() - half_time2
+        l2 = kgui.reactor.monotonic() - half_time
         kgui.avg_count +=1
         kgui.avg = kgui.avg*(kgui.avg_count -1)/kgui.avg_count + l1*1/kgui.avg_count
         kgui.avg_2 = kgui.avg_2*(kgui.avg_count -1)/kgui.avg_count + l2*1/kgui.avg_count
-        logging.info(f"kivy->klipper  {l1:6.5f}, {kgui.avg:6.5f}  klipper->kivy  {l2:6.5f}, {kgui.avg_2:6.5f}  at {int(kgui.reactor.monotonic())}")
+        logging.info(f"kivy->klipper  {l1:6.5f}, {kgui.avg}  klipper->kivy  {l2:6.5f}, {kgui.avg_2}  at {int(kgui.reactor.monotonic())}")
         kgui.start = None
 
     def handle_ready(self):
@@ -202,7 +198,7 @@ class mainApp(App, threading.Thread):
     def handle_disconnect(self):
         logging.info("Kivy app.handle_disconnect")
         self.connected = False
-        self.reactor.cb(lambda e: self.reactor.end(), process='kgui')
+        self.reactor.cb(self.reactor.close_process, process='kgui')
         self.stop()
 
     def handle_critical_error(self, message):
