@@ -53,18 +53,8 @@ class ReactorCallback:
         self.completion.complete(res)
         return self.reactor.NEVER
 
-class MPCallback:
-    def __init__(self, reactor, callback, waketime, *args, **kwargs):
-        self.reactor = reactor
-        self.callback = callback
-        self.args = args
-        self.kwargs = kwargs
-        self.timer = reactor.register_timer(self.invoke, waketime)
-        os.write(reactor._pipe_fds[1], b'.') # Wake up the scheduler
-    def invoke(self, eventtime):
-        self.reactor.unregister_timer(self.timer)
-        self.callback(eventtime, *self.args, **self.kwargs)
-        return self.reactor.NEVER
+def mp_callback(reactor, callback, waketime, *args, **kwargs):
+    reactor.register_async_callback(callback, *args, **kwargs)
 
 class ReactorFileHandler:
     def __init__(self, fd, callback):
@@ -129,7 +119,7 @@ class SelectReactor:
         # Multiprocessing
         self._mp_queue = multiprocessing.Queue()
         self._mp_queues = {}
-        self._mp_callback_handler = MPCallback
+        self._mp_callback_handler = mp_callback
         self.auto_finalize = False
         # File descriptors
         self._fds = []
