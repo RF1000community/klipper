@@ -62,7 +62,6 @@ class Printer:
         self.run_result = None
         self.objects = collections.OrderedDict()
         self.parallel_objects = {}
-        self._pending_event_handlers = {}
         # Init printer components that must be setup prior to config
         for m in [gcode, webhooks]:
             m.add_early_printer_objects(self)
@@ -127,33 +126,28 @@ class Printer:
                 raise self.config_error("Unable to load module '%s'" % (section,))
             self.objects[section] = init_func(config.getsection(section))
             return self.objects[section]
-        # Create Reactor and Queue for parallel_objects to be started later in _load_parallel_object
+        # Create Reactor for parallel_objects to be started later in _load_parallel_object
         elif exists(parallel_module) or exists(parallel_package):
             # add module directory to path, so objects can be imported when unpickled
-            # USE GLOBALLY UNIQUE MODULE NAMES RESPECTIVELY
+            # USE GLOBALLY UNIQUE MODULE NAMES FOR ALL .PY FILES IN PARALLEL_EXTRAS
             if exists(parallel_module):
                 site.addsitedir(dirname(parallel_module))
             else:
                 site.addsitedir(dirname(parallel_package))
             object_config = config.getsection(section)
             object_config.reactor = reactor.Reactor(False, process=section)
-            # temporarily used to store objets needed to create this process
+            # Temporarily used to store objets needed to create this process
             self.parallel_objects[section] = [object_config, init_func, module_name]
             return
         else:
             if default is not configfile.sentinel:
                 return default
             raise self.config_error("Unable to load module '%s'" % (section,))
-    def _connect_reactors(self, reactor1, reactor2):
-        pipe_1_2 = os.pipe()
-        pipe_2_1 = os.pipe()
-        reactor1.register_mp(reactor2.process_name, reactor2.mp_queue, pipe_1_2, pipe_2_1)
-        reactor2.register_mp(reactor1.process_name, reactor1.mp_queue, pipe_2_1, pipe_1_2)
     def _connect_parallel_object(self, section):
-        self._connect_reactors(self.parallel_objects[section][0].reactor, self.reactor)
+        self.reactor.connect_mp(self.parallel_objects[section][0].reactor, self.reactor)
         for name, obj in self.parallel_objects.items():
             if name != section:
-                self._connect_reactors(self.parallel_objects[section][0].reactor, obj[0].reactor)
+                self.reactor.connect_mp(self.parallel_objects[section][0].reactor, obj[0].reactor)
     def _load_parallel_object(self, section):
         def start_process(object_config, init_func, module_name):
             # Avoid active imports changing environment - import in target process
@@ -186,22 +180,7 @@ class Printer:
         try:
             self._read_config()
             self.send_event("klippy:mcu_identify")
-            self._pending_event_handlers = {}
-            for cb in self.reactor.event_handlers.get("klippy:connect", []):
-                if self.state_message is not message_startup:
-                    return
-                cb()
-            # run event handlers in all processes, wait for completion
-            for process in self.reactor._mp_queues.keys():
-                self._pending_event_handlers[process] = True
-                self.reactor.cb(self.send_event_and_wait, "klippy:connect", process=process)
-            while 1:
-                for pending_process in self._pending_event_handlers.values():
-                    if pending_process:
-                        self.reactor.pause(0.01)
-                        break
-                else:
-                    break
+            self.reactor.send_event_wait_check_status("klippy:connect", status=message_startup)
         except (self.config_error, pins.error) as e:
             logging.exception("Config error")
             self.send_event("klippy:critical_error", "Config error")
@@ -227,12 +206,7 @@ class Printer:
             return
         try:
             self._set_state(message_ready)
-            for cb in self.reactor.event_handlers.get("klippy:ready", []):
-                if self.state_message is not message_ready:
-                    return
-                cb()
-            for process in self.reactor._mp_queues.keys():
-                self.reactor.cb(self.send_event_and_wait, "klippy:ready", process=process)
+            self.reactor.send_event_wait_check_status("klippy:ready", status=message_ready)
         except Exception as e:
             logging.exception("Unhandled exception during ready callback")
             self.invoke_shutdown("Internal error during ready callback: %s"
@@ -297,14 +271,6 @@ class Printer:
         if self.run_result is None:
             self.run_result = result
         self.reactor.end()
-    @staticmethod
-    def send_event_and_wait(e, root, event):
-        for cb in root.reactor.event_handlers.get(event, []):
-            cb()
-        root.reactor.cb(Printer.note_event_handlers_done, root.reactor.process_name, process='printer')
-    @staticmethod
-    def note_event_handlers_done(e, printer, done_process):
-        printer._pending_event_handlers[done_process] = False
 
 ######################################################################
 # Startup
