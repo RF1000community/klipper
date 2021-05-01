@@ -6,7 +6,7 @@
 import os, gc, select, math, time, queue
 import greenlet
 import chelper, util
-import multiprocessing, pickle, threading
+import multiprocessing
 
 _NOW = 0.
 _NEVER = 9999999999999999.
@@ -50,6 +50,24 @@ class ReactorCallback:
         self.reactor.unregister_timer(self.timer)
         res = self.callback(eventtime, *self.args, **self.kwargs)
         self.completion.complete(res)
+        return self.reactor.NEVER
+
+class MPCallback:
+    def __init__(self, reactor, eventtime):
+        self.reactor = reactor
+        self.timer = reactor.register_timer(self.invoke, eventtime)
+    def invoke(self, eventtime):
+        self.reactor.unregister_timer(self.timer)
+        while 1:
+            try:
+                cb, waketime, args, kwargs = self.reactor.mp_queue.get_nowait()
+            except queue.Empty:
+                import logging
+                logging.info("mp callback retry")
+                self.reactor.pause(self.reactor.monotonic() + 0.005)
+                continue
+            break
+        cb(self.reactor.monotonic(), self.reactor.root, *args, **kwargs)
         return self.reactor.NEVER
 
 class ReactorFileHandler:
@@ -110,23 +128,34 @@ class SelectReactor:
         self._timers = []
         self._next_timer = self.NEVER
         # Callbacks
-        self._pipe_fds = None
+        self._async_pipe = None
         self._async_queue = queue.Queue()
         # Multiprocessing
-        self._mp_queue = multiprocessing.Queue()
+        self.mp_queue = multiprocessing.Queue()
         self._mp_queues = {}
-        self._mp_callback_handler = ReactorCallback
+        self._mp_pipes_read = {}
+        self._mp_pipes_write = {}
+        self._mp_callback_handler = MPCallback
+        self.auto_finalize = False
         # File descriptors
         self._fds = []
         # Greenlets
         self._g_dispatch = None
         self._greenlets = []
         self._all_greenlets = []
-    def register_mp_queues(self, queues):
-        queues.pop(self.process_name, None)
-        self._mp_queues.update(queues)
     def register_mp_callback_handler(self, handler):
         self._mp_callback_handler = handler
+    @staticmethod
+    def connect_mp(reactor_1, reactor_2):
+        pipe_1_2 = os.pipe()
+        pipe_2_1 = os.pipe()
+        reactor_1.register_mp(reactor_2.process_name, reactor_2.mp_queue, pipe_1_2, pipe_2_1)
+        reactor_2.register_mp(reactor_1.process_name, reactor_1.mp_queue, pipe_2_1, pipe_1_2)
+    def register_mp(self, process, queue, write_pipe, read_pipe):
+        self._mp_queues[process] = queue
+        self._mp_pipes_write[process] = write_pipe[1]
+        self._mp_pipes_read[process] = read_pipe[0]
+        self.register_fd(read_pipe[0], self._got_mp_pipe_signal)
     def get_gc_stats(self):
         return tuple(self._last_gc_times)
     # Timers
@@ -184,22 +213,23 @@ class SelectReactor:
         if process is None or process == self.process_name:
             self._async_queue.put_nowait((ReactorCallback, (self, callback, waketime, *args), kwargs))
             try:
-                os.write(self._pipe_fds[1], b'.')
+                os.write(self._async_pipe[1], b'.')
             except os.error:
                 pass
         else:
             self._mp_queues[process].put_nowait((callback, waketime, args, kwargs))
+            os.write(self._mp_pipes_write[process], b'.')
     def cb(self, *args, process='printer', **kwargs):
         self.register_async_callback(*args, process=process, **kwargs)
     def async_complete(self, completion, result):
         self._async_queue.put_nowait((completion.complete, (result,), {}))
         try:
-            os.write(self._pipe_fds[1], b'.')
+            os.write(self._async_pipe[1], b'.')
         except os.error:
             pass
     def _got_pipe_signal(self, eventtime):
         try:
-            os.read(self._pipe_fds[0], 4096)
+            os.read(self._async_pipe[0], 4096)
         except os.error:
             pass
         while 1:
@@ -208,30 +238,37 @@ class SelectReactor:
             except queue.Empty:
                 break
             func(*args, **kwargs)
-    # helper function to identify unpickleable objects during development
-    def check_pickleable(self, args):
-        is_kwarg = bool(type(args) is dict)
-        if is_kwarg:
-            items = args.items()
-        else:
-            args = list(args)
-            items = enumerate(args)
-        for key, value in items:
-            try:
-                pickle.dumps(value)
-            except:
-                import logging
-                logging.warning(f"couldn't pickle arg {key}, {value}")
-                args[key] = None
-                raise
-        if not is_kwarg:
-            args = tuple(args)
-        return args
+    def _got_mp_pipe_signal(self, eventtime):
+        signal = b''
+        for pipe in self._mp_pipes_read.values():
+            signal += os.read(pipe, 4096)
+        for i in range(signal.count(b'.')):
+            self._mp_callback_handler(self, eventtime)
+    # helper function to identify unpickleable arguments during development
+    # def check_pickleable(self, args):
+    #     import pickle
+    #     is_kwarg = bool(type(args) is dict)
+    #     if is_kwarg:
+    #         items = args.items()
+    #     else:
+    #         args = list(args)
+    #         items = enumerate(args)
+    #     for key, value in items:
+    #         try:
+    #             pickle.dumps(value)
+    #         except:
+    #             import logging
+    #             logging.warning(f"couldn't pickle arg {key}, {value}")
+    #             args[key] = None
+    #             raise
+    #     if not is_kwarg:
+    #         args = tuple(args)
+    #     return args
     def _setup_async_callbacks(self):
-        self._pipe_fds = os.pipe()
-        util.set_nonblock(self._pipe_fds[0])
-        util.set_nonblock(self._pipe_fds[1])
-        self.register_fd(self._pipe_fds[0], self._got_pipe_signal)
+        self._async_pipe = os.pipe()
+        util.set_nonblock(self._async_pipe[0])
+        util.set_nonblock(self._async_pipe[1])
+        self.register_fd(self._async_pipe[0], self._got_pipe_signal)
     # Greenlets
     def _sys_pause(self, waketime):
         # Pause using system sleep for when reactor not running
@@ -296,19 +333,12 @@ class SelectReactor:
                     eventtime = self.monotonic()
                     break
         self._g_dispatch = None
-        time.sleep(1)
         if self.auto_finalize:
             self.finalize()
-    def _mp_dispatch_loop(self):
-        while self._process:
-            cb, waketime, args, kwargs = self._mp_queue.get()
-            self._mp_callback_handler(self, cb, waketime, self.root, *args, **kwargs)
     def run(self):
-        if self._pipe_fds is None:
+        if self._async_pipe is None:
             self._setup_async_callbacks()
         self._process = True
-        self._mp_poll = threading.Thread(target=self._mp_dispatch_loop)
-        self._mp_poll.start()
         g_next = ReactorGreenlet(run=self._dispatch_loop)
         self._all_greenlets.append(g_next)
         g_next.switch()
@@ -324,24 +354,44 @@ class SelectReactor:
                 import logging
                 logging.exception("reactor finalize greenlet terminate")
         self._all_greenlets = []
-        self._mp_queue.put((self.run_event, 0, ("end_thread", None), {}))
-        self._mp_poll.join()
-        if self._pipe_fds is not None:
-            os.close(self._pipe_fds[0])
-            os.close(self._pipe_fds[1])
-            self._pipe_fds = None
+        if self._async_pipe is not None:
+            for pipe in (self._async_pipe
+                + tuple(self._mp_pipes_read.values())
+                + tuple(self._mp_pipes_write.values())):
+                os.close(pipe)
+            self._async_pipe = None
     def close_process(self, e):
+        self.auto_finalize = True
         self.end()
-        self.finalize()
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
         for process in self._mp_queues.keys():
             self.cb(self.run_event, event, params, process=process)
         return self.run_event(None, self.root, event, params)
+    def send_event_wait_check_status(self, event, *params, status=None):
+        # Start event handlers in all processes
+        self._pending_event_handlers = {}
+        for process in self._mp_queues.keys():
+            self._pending_event_handlers[process] = True
+            self.cb(self.send_event_wait, event, params, process=process)
+        for cb in self.event_handlers.get(event, []):
+            if self.root.state_message is not status:
+                return
+            cb()
+        # Wait for all processes to finish event handlers
+        while True in self._pending_event_handlers.values():
+            self.pause(self.monotonic() + 0.01)
     @staticmethod
     def run_event(e, root, event, params):
         return [cb(*params) for cb in root.reactor.event_handlers.get(event, [])]
+    @staticmethod
+    def send_event_wait(e, root, event, params):
+        root.reactor.run_event(e, root, event, params)
+        root.reactor.cb(root.reactor.note_event_handlers_done, root.reactor.process_name, process='printer')
+    @staticmethod
+    def note_event_handlers_done(e, printer, done_process):
+        printer.reactor._pending_event_handlers[done_process] = False
 
 class PollReactor(SelectReactor):
     def __init__(self, gc_checking=False, process='printer'):
