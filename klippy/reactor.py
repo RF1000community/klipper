@@ -6,7 +6,7 @@
 import os, gc, select, math, time, queue
 import greenlet
 import chelper, util
-import multiprocessing, pickle, threading, time
+import multiprocessing, pickle, threading
 
 _NOW = 0.
 _NEVER = 9999999999999999.
@@ -47,14 +47,10 @@ class ReactorCallback:
         self.kwargs = kwargs
         self.completion = ReactorCompletion(reactor)
     def invoke(self, eventtime):
-        if self.timer:
-            self.reactor.unregister_timer(self.timer)
+        self.reactor.unregister_timer(self.timer)
         res = self.callback(eventtime, *self.args, **self.kwargs)
         self.completion.complete(res)
         return self.reactor.NEVER
-
-def mp_callback(reactor, callback, waketime, *args, **kwargs):
-    reactor.register_async_callback(callback, *args, **kwargs)
 
 class ReactorFileHandler:
     def __init__(self, fd, callback):
@@ -119,8 +115,7 @@ class SelectReactor:
         # Multiprocessing
         self._mp_queue = multiprocessing.Queue()
         self._mp_queues = {}
-        self._mp_callback_handler = mp_callback
-        self.auto_finalize = False
+        self._mp_callback_handler = ReactorCallback
         # File descriptors
         self._fds = []
         # Greenlets
@@ -312,8 +307,8 @@ class SelectReactor:
         if self._pipe_fds is None:
             self._setup_async_callbacks()
         self._process = True
-        self._mp_dispatch_thread = threading.Thread(target=self._mp_dispatch_loop)
-        self._mp_dispatch_thread.start()
+        self._mp_poll = threading.Thread(target=self._mp_dispatch_loop)
+        self._mp_poll.start()
         g_next = ReactorGreenlet(run=self._dispatch_loop)
         self._all_greenlets.append(g_next)
         g_next.switch()
@@ -330,11 +325,14 @@ class SelectReactor:
                 logging.exception("reactor finalize greenlet terminate")
         self._all_greenlets = []
         self._mp_queue.put((self.run_event, 0, ("end_thread", None), {}))
-        self._mp_dispatch_thread.join()
+        self._mp_poll.join()
         if self._pipe_fds is not None:
             os.close(self._pipe_fds[0])
             os.close(self._pipe_fds[1])
             self._pipe_fds = None
+    def close_process(self, e):
+        self.end()
+        self.finalize()
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
