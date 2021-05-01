@@ -154,13 +154,8 @@ class mainApp(App, threading.Thread):
 
     def handle_connect(self):
         self.connected = True
-        self.reactor.cb(printer_cmd.update)
-        self.reactor.cb(printer_cmd.get_tbc)
-        self.bind(print_state=self.handle_material_change)
-        Clock.schedule_interval(lambda dt: self.reactor.cb(printer_cmd.update), 1)
 
         # Check reactor latency during development
-        import time, random
         self.avg_count = 0
         self.avg = 0
         self.avg_2 = 0
@@ -171,26 +166,29 @@ class mainApp(App, threading.Thread):
     @staticmethod
     def latency(e, printer):
         half_time = printer.reactor.monotonic()
+        import random
         time.sleep(random.randint(0,20)/1000)
-        printer.reactor.cb(mainApp.return_latency, half_time, process='kgui')
+        half_time2 = printer.reactor.monotonic()
+        printer.reactor.cb(mainApp.return_latency, half_time, half_time2, process='kgui')
     @staticmethod
-    def return_latency(e, kgui, half_time):
+    def return_latency(e, kgui, half_time, half_time2):
         if kgui.start is None:
             return logging.info("\n    big oof \n")
         l1 = half_time - kgui.start
-        l2 = kgui.reactor.monotonic() - half_time
+        l2 = kgui.reactor.monotonic() - half_time2
         kgui.avg_count +=1
         kgui.avg = kgui.avg*(kgui.avg_count -1)/kgui.avg_count + l1*1/kgui.avg_count
         kgui.avg_2 = kgui.avg_2*(kgui.avg_count -1)/kgui.avg_count + l2*1/kgui.avg_count
-        logging.info(f"kivy->klipper  {l1:6.5f}, {kgui.avg}  klipper->kivy  {l2:6.5f}, {kgui.avg_2}  at {int(kgui.reactor.monotonic())}")
+        logging.info(f"kivy->klipper  {l1:6.5f}, {kgui.avg:6.5f}  klipper->kivy  {l2:6.5f}, {kgui.avg_2:6.5f}  at {int(kgui.reactor.monotonic())}")
         kgui.start = None
 
     def handle_ready(self):
         self.state = "ready"
+        self.reactor.cb(printer_cmd.update)
         self.reactor.cb(printer_cmd.get_material, process='printer')
-    def handle_ready(self):
-        self.state = "ready"
-        self.reactor.cb(printer_cmd.get_material, process='printer')
+        self.reactor.cb(printer_cmd.get_tbc)
+        self.bind(print_state=self.handle_material_change)
+        Clock.schedule_interval(lambda dt: self.reactor.cb(printer_cmd.update), 1)
 
     # is called when system shuts down all work, either
     # to halt so the user can see what he did wrong
@@ -203,9 +201,7 @@ class mainApp(App, threading.Thread):
     def handle_disconnect(self):
         logging.info("Kivy app.handle_disconnect")
         self.connected = False
-        self.reactor.cb(lambda dt: self.reactor.end(), process='kgui')
-        time.sleep(1)
-        self.reactor.finalize()
+        self.reactor.cb(self.reactor.close_process, process='kgui')
         self.stop()
 
     def handle_critical_error(self, message):
