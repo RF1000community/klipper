@@ -108,6 +108,7 @@ class Printer:
             return [(module, self.objects[module])] + objs
         return objs
     def load_object(self, config, section, default=configfile.sentinel):
+        logging.info(f"load object {section} with config {config}")
         if section in self.objects:
             return self.objects[section]
         module_parts = section.split()
@@ -125,6 +126,7 @@ class Printer:
                     return default
                 raise self.config_error("Unable to load module '%s'" % (section,))
             self.objects[section] = init_func(config.getsection(section))
+            logging.info(f"created {self.objects[section]} object for section {section}")
             return self.objects[section]
         # Create Reactor for parallel_objects to be started later in _load_parallel_object
         elif exists(parallel_module) or exists(parallel_package):
@@ -153,11 +155,13 @@ class Printer:
             # Avoid active imports changing environment - import in target process
             mod = importlib.import_module('parallel_extras.' + module_name)
             init_func = getattr(mod, init_func, None)
-            object_config.reactor.root = init_func(object_config)
+            def start(e=None):
+                object_config.reactor.root = init_func(object_config)
+            object_config.reactor.register_callback(start)
             object_config.reactor.run()
         self.parallel_objects[section] = multiprocessing.Process(
             target=start_process, args=self.parallel_objects[section])
-        self.parallel_objects[section].start()
+        self.parallel_objects[section].start()        
     def _read_config(self):
         self.objects['configfile'] = pconfig = configfile.PrinterConfig(self)
         config = pconfig.read_main_config()

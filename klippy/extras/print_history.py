@@ -25,9 +25,9 @@ class PrintHistory:
         self.history = self.read()
         self.trim_history()
         self.printer.register_event_handler("virtual_sdcard:printjob_end", self.add)
-        self.printer.register_event_handler("klippy:connect", self.handle_connect)
+        self.printer.register_event_handler("klippy:ready", self.handle_ready)
 
-    def handle_connect(self):
+    def handle_ready(self):
         self.printer.send_event("print_history:change", self.history)
 
     def trim_history(self):
