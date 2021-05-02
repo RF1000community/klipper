@@ -122,6 +122,11 @@ class mainApp(App, threading.Thread):
             if not config.has_section(f"extruder{i}"):
                 self.extruder_count = i
                 break
+        # These are loaded a bit late, they sometimes miss the klippy:connect event
+        # klippy:ready works since it only occurs after kguis handle_connect reports back
+        self.reactor.cb(printer_cmd.load_object, "live_move")
+        self.reactor.cb(printer_cmd.load_object, "filament_manager")
+        self.reactor.cb(printer_cmd.load_object, "print_history")
         # register event handlers
         self.reactor.register_event_handler("klippy:connect", self.handle_connect) # printer_objects available
         self.reactor.register_event_handler("klippy:ready", self.handle_ready) # connect handlers have run
@@ -136,10 +141,6 @@ class mainApp(App, threading.Thread):
         self.reactor.register_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
         self.reactor.register_event_handler("print_history:change", self.handle_history_change)
         self.reactor.register_event_handler("filament_manager:material_changed", self.handle_material_change)
-        self.reactor.cb(printer_cmd.load_object, "live_move")
-        self.reactor.cb(printer_cmd.load_object, "filament_manager")
-        self.reactor.cb(printer_cmd.load_object, "print_history")
-        self.clean()
         super().__init__(**kwargs)
 
     def clean(self):
@@ -154,6 +155,7 @@ class mainApp(App, threading.Thread):
 
     def handle_connect(self):
         self.connected = True
+        self.clean() # pringjob_history should exist at this point since it is created from a callback in init
 
         # Check reactor latency during development
         self.avg_count = 0
