@@ -394,7 +394,7 @@
         BoxLayout:
             id: detailsbox
             pos_hint: {'center_x': 0.5}
-            top: thumbnail.y - p.padding
+            top: p.mars # don't show until we can properly align it
             size_hint: 0.7, None
             height: self.minimum_height
             orientation: 'vertical'
