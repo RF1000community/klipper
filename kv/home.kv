@@ -357,8 +357,8 @@
         Color:
             rgba:
                 (0,0,0,0) if app.print_state == 'no printjob' else \
-                p.green if app.print_state == 'done' else \
-                p.red if app.print_state in ('stopped', 'stopping') else \
+                p.green if app.print_state == 'finished' else \
+                p.red if app.print_state in ('aborted', 'aborting') else \
                 p.accent
         RoundedRectangle:
             radius: [dp(5)]

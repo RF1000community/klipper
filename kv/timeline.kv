@@ -35,7 +35,7 @@
             right: p.screen_width - p.h_padding + dp(12)
             y: p.tab_height + p.padding
             on_release: Factory.PrintPopup(tl.ids.tl_box.selected_object.path).open()
-            enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state in ('done', 'stopped')
+            enabled: tl.ids.tl_box.selected_object != None and tl.ids.tl_box.selected_object.state in ('finished', 'aborted')
         BtnQX:
             id: q_x
             right: p.screen_width - p.h_padding + dp(12)
@@ -82,9 +82,9 @@
             size: self.width, self.height - 1
             pos: self.pos
     #Label
-    text: app.print_time if self.state in ('printing', 'pausing', 'paused', 'stopping') else ""
+    text: app.print_time if self.state in ('printing', 'pausing', 'paused', 'aborting') else ""
     size_hint: 1, None
-    height: dp(44) if self.state == "header" else dp(150) if self.state in ('printing', 'pausing', 'paused', 'stopping') else dp(110)
+    height: dp(44) if self.state == "header" else dp(150) if self.state in ('printing', 'pausing', 'paused', 'aborting') else dp(110)
     halign: 'right'
     valign: 'bottom'
     padding: p.h_padding, dp(32)
@@ -104,7 +104,7 @@
         text_size: self.size
         font_size: p.normal_font
         color:
-            {'done': p.green, 'stopped': p.red, 'stopping': p.red, 'printing': (1,1,1,1), 'paused': (1,1,1,1),
+            {'finished': p.green, 'aborted': p.red, 'aborting': p.red, 'printing': (1,1,1,1), 'paused': (1,1,1,1),
             'pausing': (1,1,1,1), 'queued': p.medium_light_gray, 'header': (0,0,0,0)}[root.state]
     Label:
         text: root.name

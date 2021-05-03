@@ -27,7 +27,7 @@ class StatusBar(BoxLayout):
         super().__init__(**kwargs)
 
     def update_animation(self, instance, value):
-        if self.app.state in ('startup', 'shutdown') or self.app.print_state in ('pausing', 'stopping'):
+        if self.app.state in ('startup', 'shutdown') or self.app.print_state in ('pausing', 'aborting'):
             if not self.scheduled_updating:
                 self.animation_pos = 0
                 self.scheduled_updating = Clock.schedule_interval(self.update_animation_pos, 0.02)

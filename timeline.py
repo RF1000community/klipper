@@ -71,12 +71,12 @@ class Timeline(RecycleView):
         idx = len(self.app.jobs) - selected[0] - 1
         # check index since it's easy to press this button again when it should have already disappeared
         if 0 < idx + move < len(self.app.jobs):
-            self.reactor.cb(self.move_printjob, idx, self.app.jobs[idx].path, move)
+            self.reactor.cb(self.move_printjob, idx, self.app.jobs[idx].uuid, move)
             self.next_selection = selected[0] - move
 
     @staticmethod
-    def move_printjob(e, printer, idx, path, move):
-        printer.objects['virtual_sdcard'].move_printjob(idx, path, move)
+    def move_printjob(e, printer, idx, uuid, move):
+        printer.objects['virtual_sdcard'].move_printjob(idx, uuid, move)
 
     def remove(self):
         """ Remove the selcted file from the queue """
@@ -87,11 +87,11 @@ class Timeline(RecycleView):
         if idx == 0:
             StopPopup().open()
         else:
-            self.reactor.cb(self.remove_printjob, idx, self.app.jobs[idx].path, process='printer')
+            self.reactor.cb(self.remove_printjob, idx, self.app.jobs[idx].uuid, process='printer')
 
     @staticmethod
-    def remove_printjob(e, printer, idx, path):
-        printer.objects['virtual_sdcard'].remove_printjob(idx, path)
+    def remove_printjob(e, printer, idx, uuid):
+        printer.objects['virtual_sdcard'].remove_printjob(idx, uuid)
 
 
 class TimelineBox(LayoutSelectionBehavior, RecycleBoxLayout):
@@ -112,7 +112,7 @@ class TimelineItem(RecycleDataViewBehavior, Label):
     name = StringProperty()
     path = StringProperty()
     state = OptionProperty("header", options=
-        ["header", "queued", "printing", "pausing", "paused", "stopping", "stopped", "done"])
+        ["header", "queued", "printing", "pausing", "paused", "aborting", "aborted", "finished"])
     timestamp = NumericProperty(0)
     index = None
     selected = BooleanProperty(False)

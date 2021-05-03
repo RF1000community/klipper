@@ -8,10 +8,10 @@ from os.path import join, dirname
 from subprocess import Popen
 from kivy.config import Config
 
-# Read custom Kivy config. This needs an absolute path otherwise
-# config will only be loaded when working directory is the parent directory
 TESTING = "KGUI_TESTING" in os.environ
 
+# Read custom Kivy config. This needs an absolute path otherwise
+# config will only be loaded when working directory is the parent directory
 if TESTING:
     Config.read(join(dirname(__file__), "config_test.ini"))
 else:
@@ -47,16 +47,16 @@ class mainApp(App, threading.Thread):
         "ready",
         "error",
         ])
-    # this is more of a UI-state, it may be 'done' even though virtual_sdcard has no printjobs
+    # this is more of a UI-state, it may be 'finished' even though virtual_sdcard has no printjobs
     print_state = OptionProperty("no printjob", options=[
         "no printjob",
         "queued",
         "printing",
         "pausing",
         "paused",
-        "stopping",
-        "stopped",
-        "done",
+        "aborting",
+        "aborted",
+        "finished",
         ])
     homed = DictProperty() # updated by handle_home_end/start event handler
     temp = DictProperty() # {'heater_bed': [setpoint, current], 'extruder': ...}
@@ -103,7 +103,7 @@ class mainApp(App, threading.Thread):
             return super().__init__(**kwargs)
 
         self.reactor = config.get_reactor()
-        self.reactor.register_mp_callback_handler(KivyMPCallback)
+        self.reactor.register_mp_callback_handler(kivy_callback)
         self.fd = config.get_printer().get_start_args().get("gcode_fd")
         # read config
         self.config_pressure_advance = config.getsection('extruder').getfloat("pressure_advance", 0)
@@ -203,7 +203,7 @@ class mainApp(App, threading.Thread):
     def handle_disconnect(self):
         logging.info("Kivy app.handle_disconnect")
         self.connected = False
-        self.reactor.cb(self.reactor.close_process, process='kgui')
+        self.reactor.cb(self.reactor.end, process='kgui')
         self.stop()
 
     def handle_critical_error(self, message):
@@ -241,10 +241,10 @@ class mainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.get_printjob_progress, process='printer')
 
     def handle_printjob_end(self, job):
-        if 'done' == job.state:
+        if 'finished' == job.state:
             self.progress = 1
             self.print_done_time = ""
-            self.print_time = "done"
+            self.print_time = "finished"
             # show finished job for 1h
             Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 3600)
         else:
@@ -294,15 +294,17 @@ class mainApp(App, threading.Thread):
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
 
-def KivyMPCallback(reactor, eventtime):
+def kivy_callback(reactor, eventtime):
     def invoke(dt=None):
         try:
-            cb, waketime, args, kwargs = reactor.mp_queue.get_nowait()
+            cb, waketime, waiting_process, args, kwargs = reactor.mp_queue.get_nowait()
         except queue.Empty:
             logging.info("kgui queue retry")
             Clock.schedule_del_safe(invoke)
             return
-        cb(waketime, reactor.root, *args, **kwargs)
+        result = cb(waketime, reactor.root, *args, **kwargs)
+        if waiting_process:
+            reactor.cb(reactor.mp_complete, (cb, waketime), result, process=waiting_process)
     Clock.schedule_del_safe(invoke)
 
 # Catch KGUI exceptions and display popups
