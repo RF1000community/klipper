@@ -6,6 +6,7 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import logging
 import os
+from uuid import uuid4
 
 
 class Printjob:
@@ -19,12 +20,13 @@ class Printjob:
 
         self.path = path
         self.state = None
-        self.set_state('queued') # queued -> printing -> pausing -> paused -> printing -> done
-        self.file_position = 0 #                    -> stopping -> stopped
-        self.no_pause = True if not manager.jobs else no_pause
+        self.set_state('queued') # queued -> printing -> pausing -> paused -> printing -> finished
+        self.file_position = 0 #                      -> aborting -> aborted
+        self.no_pause = no_pause or not manager.jobs
         self.additional_printed_time = 0 # elapsed print time before the last pause
         self.last_start_time = 0
         self.name, ext = os.path.splitext(os.path.basename(path))
+        self.uuid = str(uuid4())
 
         try:
             self.md = self.gcode_metadata.get_metadata(self.path)
@@ -33,10 +35,10 @@ class Printjob:
         except (ValueError, FileNotFoundError) as e:
             self.reactor.send_event("klippy:error", f"Failed opening file {self.path}")
             logging.exception(f"Failed opening {ext} file: {e}")
-            self.set_state('stopped')
+            self.set_state('aborted')
 
     def __getstate__(self):
-        return {'path': self.path, 'name': self.name, 'state': self.state}
+        return {'path': self.path, 'name': self.name, 'state': self.state, 'uuid': self.uuid}
 
     def set_state(self, state):
         if self.state != state:
@@ -70,13 +72,13 @@ class Printjob:
 
     def stop(self):
         if self.state in ('printing', 'pausing'):
-            self.set_state('stopping')
-            # turn off heaters so stopping doesn't wait for temperature requests
+            self.set_state('aborting')
+            # Turn off heaters so aborting doesn't wait for temperature requests
             self.heater_manager.cmd_TURN_OFF_HEATERS(None)
             self.reactor.pause(self.reactor.monotonic() + 0.05)
             self.heater_manager.cmd_TURN_OFF_HEATERS(None)
-        else: # in case it is paused we need to do all stopping actions here
-            self.set_state('stopped')
+        else: # In case it is paused we need to do all aborting actions here
+            self.set_state('aborted')
             self.file_obj.close()
             self.heater_manager.cmd_TURN_OFF_HEATERS(None)
             self.manager.check_queue()
@@ -89,7 +91,7 @@ class Printjob:
         except:
             logging.exception("virtual_sdcard seek")
             self.gcode.respond_error("Unable to seek file")
-            self.set_state('stopping')
+            self.set_state('aborting')
         gcode_mutex = self.gcode.get_mutex()
         partial_input = ""
         lines = []
@@ -100,14 +102,14 @@ class Printjob:
                 try:
                     data = self.file_obj.read(8192).decode()
                 except:
-                    self.set_state('stopping')
+                    self.set_state('aborting')
                     logging.exception("virtual_sdcard read")
                     self.reactor.send_event("klippy:error", "Error reading File")
                     self.gcode.respond_error("Error on virtual sdcard read")
                     break
                 if not data:
                     # End of file
-                    self.set_state('done')
+                    self.set_state('finished')
                     self.gcode.respond_raw("Done printing file")
                     break
                 lines = data.split('\n')
@@ -125,30 +127,29 @@ class Printjob:
                 self.gcode.run_script(lines[-1])
             except Exception as e:
                 self.reactor.send_event("klippy:error", repr(e))
-                self.set_state('stopping')
+                self.set_state('aborting')
                 logging.exception("Virtual sdcard error dispaching command: " + repr(e))
                 break
             self.file_position += len(lines.pop()) + 1
 
         logging.info(f"Exiting SD card print in state {self.state} position {self.file_position}")
         self.additional_printed_time += self.toolhead.get_last_move_time() - self.last_start_time
-        # Finish stopping or pausing actions
+        # Finish aborting or pausing actions
         if self.state == 'pausing':
             self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
             self.set_state('paused')
         else:
-            if self.state == 'stopping':
-                self.set_state('stopped')
+            if self.state == 'aborting':
+                self.set_state('aborted')
             self.file_obj.close()
             self.heater_manager.cmd_TURN_OFF_HEATERS(None)
             self.manager.check_queue()
         return self.reactor.NEVER
 
     def get_printed_time(self, print_time=None):
-        # don't use print_time since it doesnt advance continuously
         if not print_time:
             print_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
-        if self.state in ("printing", "pausing", "stopping"):
+        if self.state in ("printing", "pausing", "aborting"):
             return self.additional_printed_time + print_time - self.last_start_time
         return self.additional_printed_time
 
@@ -167,7 +168,7 @@ class PrintjobManager:
         self.jobs = [] # Printjobs, first is current
 
     def add_printjob(self, path, no_pause=False):
-        """ add new printjob to queue """
+        """ Add new printjob to queue """
         job = Printjob(path, self, no_pause)
         self.jobs.append(job)
         self.check_queue()
@@ -183,25 +184,27 @@ class PrintjobManager:
     def resume_printjob(self, *args):
         self.jobs[0].resume()
 
-    def remove_printjob(self, idx, path):
-        if 0 < idx < len(self.jobs) and self.jobs[idx].path == path:
+    def remove_printjob(self, idx, uuid):
+        if 0 < idx < len(self.jobs) and self.jobs[idx].uuid == uuid:
             self.jobs.pop(idx)
             self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
+            return True
 
-    def move_printjob(self, idx, path, move):
-        if 0 < idx + move < len(self.jobs) and 0 < idx < len(self.jobs) and self.jobs[idx].path == path:
+    def move_printjob(self, idx, uuid, move):
+        if 0 < idx + move < len(self.jobs) and 0 < idx < len(self.jobs) and self.jobs[idx].uuid == uuid:
             to_move = self.jobs.pop(idx)
             self.jobs.insert(idx + move, to_move)
             self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
+            return True
 
     def clear_queue(self):
-        """ remove everything but the first element which is currently being printed """
+        """ Remove everything but the first element which is currently being printed """
         self.jobs = self.jobs[:1]
         self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
 
     def check_queue(self):
-        """ remove 'stopped' or 'done' printjobs from queue, start next if necessary """
-        if len(self.jobs) and self.jobs[0].state in ('done', 'stopped'):
+        """ Remove 'aborted' or 'finished' printjobs from queue, start next if necessary """
+        if len(self.jobs) and self.jobs[0].state in ('finished', 'aborted'):
             last_job = self.jobs.pop(0)
             self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
             self.printer.send_event("virtual_sdcard:printjob_end", last_job)
@@ -229,7 +232,7 @@ class PrintjobManager:
                            Upcoming ({self.jobs[0].file_position}): {repr(data[readcount:])}")
 
     def stats(self, eventtime):
-        if len(self.jobs) and self.jobs[0].state in ('printing', 'pausing', 'stopping'):
+        if len(self.jobs) and self.jobs[0].state in ('printing', 'pausing', 'aborting'):
             return True, f"sd_pos={self.jobs[0].file_position}"
         return False, ""
 

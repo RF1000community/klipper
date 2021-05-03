@@ -60,14 +60,16 @@ class MPCallback:
         self.reactor.unregister_timer(self.timer)
         while 1:
             try:
-                cb, waketime, args, kwargs = self.reactor.mp_queue.get_nowait()
+                cb, waketime, waiting_process, args, kwargs = self.reactor.mp_queue.get_nowait()
             except queue.Empty:
                 import logging
                 logging.info("mp callback retry")
                 self.reactor.pause(self.reactor.monotonic() + 0.005)
                 continue
             break
-        cb(self.reactor.monotonic(), self.reactor.root, *args, **kwargs)
+        res = cb(self.reactor.monotonic(), self.reactor.root, *args, **kwargs)
+        if waiting_process:
+            self.reactor.cb(self.reactor.mp_complete, (cb, waketime), res, process=waiting_process)
         return self.reactor.NEVER
 
 class ReactorFileHandler:
@@ -136,7 +138,7 @@ class SelectReactor:
         self._mp_pipes_read = {}
         self._mp_pipes_write = {}
         self._mp_callback_handler = MPCallback
-        self.auto_finalize = False
+        self._mp_completions = {}
         # File descriptors
         self._fds = []
         # Greenlets
@@ -209,7 +211,7 @@ class SelectReactor:
         rcb = ReactorCallback(self, callback, waketime)
         return rcb.completion
     # Asynchronous (from another thread) callbacks and completions
-    def register_async_callback(self, callback, *args, waketime=NOW, process=None, **kwargs):
+    def cb(self, callback, *args, waketime=NOW, process='printer', wait=False, **kwargs):
         if process is None or process == self.process_name:
             self._async_queue.put_nowait((ReactorCallback, (self, callback, waketime, *args), kwargs))
             try:
@@ -217,10 +219,18 @@ class SelectReactor:
             except os.error:
                 pass
         else:
-            self._mp_queues[process].put_nowait((callback, waketime, args, kwargs))
+            waiting_process = self.process_name if wait else None
+            self._mp_queues[process].put_nowait((callback, waketime, waiting_process, args, kwargs))
             os.write(self._mp_pipes_write[process], b'.')
-    def cb(self, *args, process='printer', **kwargs):
-        self.register_async_callback(*args, process=process, **kwargs)
+            if wait:
+                completion = ReactorCompletion(self)
+                self._mp_completions[(callback, waketime)] = completion
+                return completion.wait()
+    def register_async_callback(self, *args, **kwargs):
+        self.cb(*args, process=self.process_name, **kwargs)
+    @staticmethod
+    def mp_complete(e, root, reference, result):
+        root.reactor._mp_completions.pop(reference).complete(result)
     def async_complete(self, completion, result):
         self._async_queue.put_nowait((completion.complete, (result,), {}))
         try:
@@ -333,7 +343,7 @@ class SelectReactor:
                     eventtime = self.monotonic()
                     break
         self._g_dispatch = None
-        if self.auto_finalize:
+        if self.process_name != 'printer':
             self.finalize()
     def run(self):
         if self._async_pipe is None:
@@ -342,7 +352,7 @@ class SelectReactor:
         g_next = ReactorGreenlet(run=self._dispatch_loop)
         self._all_greenlets.append(g_next)
         g_next.switch()
-    def end(self):
+    def end(self, e=None):
         self._process = False
     def finalize(self):
         self._g_dispatch = None
@@ -360,9 +370,6 @@ class SelectReactor:
                 + tuple(self._mp_pipes_write.values())):
                 os.close(pipe)
             self._async_pipe = None
-    def close_process(self, e):
-        self.auto_finalize = True
-        self.end()
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):

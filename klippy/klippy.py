@@ -157,7 +157,7 @@ class Printer:
             object_config.reactor.run()
         self.parallel_objects[section] = multiprocessing.Process(
             target=start_process, args=self.parallel_objects[section])
-        self.parallel_objects[section].start()        
+        self.parallel_objects[section].start()
     def _read_config(self):
         self.objects['configfile'] = pconfig = configfile.PrinterConfig(self)
         config = pconfig.read_main_config()

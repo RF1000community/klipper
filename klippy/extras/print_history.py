@@ -16,7 +16,7 @@ class PrintHistory:
         [path, state, timestamp],
     whith path being the path of the gcode file,
     status being a string defining the outcome of the print, one of
-        "done", "stopped",
+        "finished", "aborted",
     timestamp being the time of completion in seconds since epoch.
     """
     def __init__(self, config):
@@ -31,7 +31,7 @@ class PrintHistory:
         self.printer.send_event("print_history:change", self.history)
 
     def trim_history(self):
-        """Remove all entries of deleted files, return number of removed entries"""
+        """ Remove all entries of deleted files, return number of removed entries """
         history = self.history
         to_remove = []
         for e in history:
@@ -47,7 +47,7 @@ class PrintHistory:
         return 0
 
     def read(self):
-        """Read the history file and return it as a list object"""
+        """ Read the history file and return it as a list object """
         try:
             with open(self.history_path, "r") as fp:
                 history = json.load(fp)
@@ -60,11 +60,11 @@ class PrintHistory:
         return history
 
     def verify_history(self, history):
-        """Only return True when the entire history has a correct structure"""
+        """ Only return True when the entire history has a correct structure """
         try:
             for e in history:
                 if not (isinstance(e[0], str)              # path
-                and (e[1] in ("done", "stopped"))          # state
+                and (e[1] in ("finished", "aborted"))      # state
                 and isinstance(e[2], (float, int))):       # timestamp
                     return False
         except:
@@ -72,7 +72,7 @@ class PrintHistory:
         return True
 
     def write(self, history):
-        """Write the object to the history file"""
+        """ Write the object to the history file """
         try:
             with open(self.history_path, "w") as fp:
                 json.dump(history, fp, indent=True)
@@ -80,7 +80,7 @@ class PrintHistory:
             return
 
     def add(self, job):
-        """Add a new entry to the history from the specified Printjob object"""
+        """ Add a new entry to the history from the specified Printjob object """
         self.history.append([job.path, job.state, time.time()])
         self.write(self.history)
         self.printer.send_event("print_history:change", self.history)
