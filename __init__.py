@@ -155,7 +155,7 @@ class mainApp(App, threading.Thread):
 
     def handle_connect(self):
         self.connected = True
-        self.clean() # pringjob_history should exist at this point since it is created from a callback in init
+        self.clean() # print_history should exist at this point since it is created from a callback in init
 
         # Check reactor latency during development
         self.avg_count = 0
@@ -164,7 +164,7 @@ class mainApp(App, threading.Thread):
         Clock.schedule_interval(self.init_latency, 0.94)
     def init_latency(self, dt):
         self.start = self.reactor.monotonic()
-        self.reactor.cb(self.latency, process='printer')
+        self.reactor.cb(self.latency)
     @staticmethod
     def latency(e, printer):
         half_time = printer.reactor.monotonic()
@@ -184,13 +184,26 @@ class mainApp(App, threading.Thread):
         logging.info(f"kivy->klipper  {l1:6.5f}, {kgui.avg:6.5f}  klipper->kivy  {l2:6.5f}, {kgui.avg_2:6.5f}  at {int(kgui.reactor.monotonic())}")
         kgui.start = None
 
+
     def handle_ready(self):
         self.state = "ready"
         self.reactor.cb(printer_cmd.update)
-        self.reactor.cb(printer_cmd.get_material, process='printer')
+        self.reactor.cb(printer_cmd.get_material)
         self.reactor.cb(printer_cmd.get_tbc)
         self.bind(print_state=self.handle_material_change)
         Clock.schedule_interval(lambda dt: self.reactor.cb(printer_cmd.update), 1)
+
+
+        Clock.schedule_interval(lambda dt: self.reactor.register_async_callback(self.test), 2)
+    @staticmethod
+    def get_test(e, printer):
+        return 777
+    def test(self, dt):
+        logging.info(f"start test {dt}")
+        start_time = self.reactor.monotonic()
+        result = self.reactor.cb(self.get_test, wait='true')
+        logging.info(f"got restult {result} in {self.reactor.monotonic() - start_time} seconds")
+
 
     # is called when system shuts down all work, either
     # to halt so the user can see what he did wrong
@@ -203,7 +216,7 @@ class mainApp(App, threading.Thread):
     def handle_disconnect(self):
         logging.info("Kivy app.handle_disconnect")
         self.connected = False
-        self.reactor.cb(self.reactor.end, process='kgui')
+        self.reactor.register_async_callback(self.reactor.end)
         self.stop()
 
     def handle_critical_error(self, message):
@@ -220,10 +233,12 @@ class mainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.wait_toolhead_not_busy)
 
     def handle_printjob_change(self, jobs):
-        """ this monitors changes of 2 things:
-            - the configuration of printjobs
-            - the state of 1. printjob
-            due to pass-by-reference states may be skipped """
+        """
+        This monitors changes of 2 things:
+        - The configuration of printjobs
+        - The state of 1. printjob
+        Due to pass-by-reference states may be skipped
+        """
         if len(jobs): # update print_state, unless there's no printjob
             self.print_state = jobs[0].state
         elif len(self.jobs): # if the job is already removed we still want to update state
@@ -238,7 +253,7 @@ class mainApp(App, threading.Thread):
         self.print_title = job.name
         # this only works if we are in a printing state
         # we rely on this being called after handle_printjob_change
-        self.reactor.cb(printer_cmd.get_printjob_progress, process='printer')
+        self.reactor.cb(printer_cmd.get_printjob_progress)
 
     def handle_printjob_end(self, job):
         if 'finished' == job.state:
@@ -264,7 +279,7 @@ class mainApp(App, threading.Thread):
         self.history = history
 
     def handle_material_change(self, *args):
-        self.reactor.cb(printer_cmd.get_material, process='printer')
+        self.reactor.cb(printer_cmd.get_material)
 
     def note_live_move(self, axis):
         if axis in 'xyz' and not (self.homed[axis] or self.warned_not_homed[axis]):
@@ -304,7 +319,7 @@ def kivy_callback(reactor, eventtime):
             return
         result = cb(waketime, reactor.root, *args, **kwargs)
         if waiting_process:
-            reactor.cb(reactor.mp_complete, (cb, waketime), result, process=waiting_process)
+            reactor.cb(reactor.mp_complete, (cb, waketime, "kgui"), result, process=waiting_process)
     Clock.schedule_del_safe(invoke)
 
 # Catch KGUI exceptions and display popups
