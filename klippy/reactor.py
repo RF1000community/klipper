@@ -69,7 +69,8 @@ class MPCallback:
             break
         res = cb(self.reactor.monotonic(), self.reactor.root, *args, **kwargs)
         if waiting_process:
-            self.reactor.cb(self.reactor.mp_complete, (cb, waketime), res, process=waiting_process)
+            self.reactor.cb(self.reactor.mp_complete, 
+                (cb, waketime, self.reactor.process_name), res, process=waiting_process)
         return self.reactor.NEVER
 
 class ReactorFileHandler:
@@ -210,27 +211,28 @@ class SelectReactor:
     def register_callback(self, callback, waketime=NOW):
         rcb = ReactorCallback(self, callback, waketime)
         return rcb.completion
-    # Asynchronous (from another thread) callbacks and completions
-    def cb(self, callback, *args, waketime=NOW, process='printer', wait=False, **kwargs):
-        if process is None or process == self.process_name:
-            self._async_queue.put_nowait((ReactorCallback, (self, callback, waketime, *args), kwargs))
-            try:
-                os.write(self._async_pipe[1], b'.')
-            except os.error:
-                pass
-        else:
-            waiting_process = self.process_name if wait else None
-            self._mp_queues[process].put_nowait((callback, waketime, waiting_process, args, kwargs))
-            os.write(self._mp_pipes_write[process], b'.')
-            if wait:
-                completion = ReactorCompletion(self)
-                self._mp_completions[(callback, waketime)] = completion
-                return completion.wait()
-    def register_async_callback(self, *args, **kwargs):
-        self.cb(*args, process=self.process_name, **kwargs)
+    # Multiprocessing (from another process) callbacks and completions
+    def cb(self, callback, *args, waketime=NOW, process='printer', wait=False, completion=False, **kwargs):
+        if wait or completion:
+            mp_completion = ReactorCompletion(self)
+            self._mp_completions[(callback, waketime, process)] = mp_completion
+        waiting_process = self.process_name if (wait or completion) else None
+        self._mp_queues[process].put_nowait((callback, waketime, waiting_process, args, kwargs))
+        os.write(self._mp_pipes_write[process], b'.')
+        if wait:
+            return mp_completion.wait()
+        if completion:
+            return mp_completion
     @staticmethod
     def mp_complete(e, root, reference, result):
-        root.reactor._mp_completions.pop(reference).complete(result)
+        root.reactor.async_complete(root.reactor._mp_completions.pop(reference), result)
+    # Asynchronous (from another thread) callbacks and completions
+    def register_async_callback(self, callback, *args, waketime=NOW, **kwargs):
+        self._async_queue.put_nowait((ReactorCallback, (self, callback, waketime, *args), kwargs))
+        try:
+            os.write(self._async_pipe[1], b'.')
+        except os.error:
+            pass
     def async_complete(self, completion, result):
         self._async_queue.put_nowait((completion.complete, (result,), {}))
         try:
@@ -254,26 +256,19 @@ class SelectReactor:
             signal += os.read(pipe, 4096)
         for i in range(signal.count(b'.')):
             self._mp_callback_handler(self, eventtime)
-    # helper function to identify unpickleable arguments during development
+    # Identify unpickleable arguments during development
     # def check_pickleable(self, args):
-    #     import pickle
-    #     is_kwarg = bool(type(args) is dict)
-    #     if is_kwarg:
+    #     import pickle, logging
+    #     if type(args) is dict:
     #         items = args.items()
     #     else:
-    #         args = list(args)
     #         items = enumerate(args)
     #     for key, value in items:
     #         try:
     #             pickle.dumps(value)
     #         except:
-    #             import logging
     #             logging.warning(f"couldn't pickle arg {key}, {value}")
-    #             args[key] = None
     #             raise
-    #     if not is_kwarg:
-    #         args = tuple(args)
-    #     return args
     def _setup_async_callbacks(self):
         self._async_pipe = os.pipe()
         util.set_nonblock(self._async_pipe[0])
@@ -376,29 +371,21 @@ class SelectReactor:
         for process in self._mp_queues.keys():
             self.cb(self.run_event, event, params, process=process)
         return self.run_event(None, self.root, event, params)
-    def send_event_wait_check_status(self, event, *params, status=None):
-        # Start event handlers in all processes
-        self._pending_event_handlers = {}
-        for process in self._mp_queues.keys():
-            self._pending_event_handlers[process] = True
-            self.cb(self.send_event_wait, event, params, process=process)
+    def send_event_wait(self, event, *params, check_status=None):
+        # Start event handlers in other processes
+        completions = [self.cb(self.run_event, event, params, completion=True, process=process)
+            for process in self._mp_queues]
+        # Run events in printer process
         for cb in self.event_handlers.get(event, []):
-            if self.root.state_message is not status:
+            if self.root.state_message != check_status != None:
                 return
             cb()
-        # Wait for all processes to finish event handlers
-        while True in self._pending_event_handlers.values():
-            self.pause(self.monotonic() + 0.01)
+        # Wait for other processes to finish event handlers
+        for completion in completions:
+            completion.wait()
     @staticmethod
     def run_event(e, root, event, params):
         return [cb(*params) for cb in root.reactor.event_handlers.get(event, [])]
-    @staticmethod
-    def send_event_wait(e, root, event, params):
-        root.reactor.run_event(e, root, event, params)
-        root.reactor.cb(root.reactor.note_event_handlers_done, root.reactor.process_name, process='printer')
-    @staticmethod
-    def note_event_handlers_done(e, printer, done_process):
-        printer.reactor._pending_event_handlers[done_process] = False
 
 class PollReactor(SelectReactor):
     def __init__(self, gc_checking=False, process='printer'):

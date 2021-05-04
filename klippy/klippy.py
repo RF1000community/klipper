@@ -180,7 +180,7 @@ class Printer:
         try:
             self._read_config()
             self.send_event("klippy:mcu_identify")
-            self.reactor.send_event_wait_check_status("klippy:connect", status=message_startup)
+            self.reactor.send_event_wait("klippy:connect", check_status=message_startup)
         except (self.config_error, pins.error) as e:
             logging.exception("Config error")
             self.send_event("klippy:critical_error", "Config error")
@@ -206,7 +206,7 @@ class Printer:
             return
         try:
             self._set_state(message_ready)
-            self.reactor.send_event_wait_check_status("klippy:ready", status=message_ready)
+            self.reactor.send_event_wait("klippy:ready", check_status=message_ready)
         except Exception as e:
             logging.exception("Unhandled exception during ready callback")
             self.invoke_shutdown("Internal error during ready callback: %s"
