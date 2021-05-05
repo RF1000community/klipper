@@ -319,7 +319,7 @@ def kivy_callback(reactor, eventtime):
             return
         result = cb(waketime, reactor.root, *args, **kwargs)
         if waiting_process:
-            reactor.cb(reactor.mp_complete, (cb, waketime, "kgui"), result, process=waiting_process)
+            reactor.cb(reactor.mp_complete, (cb.__name__, waketime, "kgui"), result, process=waiting_process)
     Clock.schedule_del_safe(invoke)
 
 # Catch KGUI exceptions and display popups
