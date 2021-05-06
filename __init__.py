@@ -246,7 +246,7 @@ class mainApp(App, threading.Thread):
         self.jobs = jobs
 
     def handle_printjob_added(self, job):
-        self.notify.show("Added Printjob", f"Added {job.name} to print Queue", delay=4)
+        self.notify.show("Added Print Job", f"Added {job.name} to print Queue", delay=4)
 
     def handle_printjob_start(self, job):
         self.notify.show("Started printing", f"Started printing {job.name}", delay=5)
