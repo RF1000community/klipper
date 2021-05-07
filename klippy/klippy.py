@@ -155,7 +155,7 @@ class Printer:
         mod = importlib.import_module('parallel_extras.' + module_name)
         init_func = getattr(mod, init_func, None)
         config.reactor = reactor.Reactor(process=module_name)
-        def start(*e):
+        def start(e):
             config.reactor.setup_mp_queues(mp_queues)
             config.reactor.root = init_func(config)
         config.reactor.register_callback(start)
@@ -374,4 +374,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
