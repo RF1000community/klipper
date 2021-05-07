@@ -205,15 +205,19 @@ class mainApp(App, threading.Thread):
         logging.info(f"got restult {result} in {self.reactor.monotonic() - start_time} seconds")
 
 
-    # is called when system shuts down all work, either
-    # to halt so the user can see what he did wrong
-    # or to fully exit afterwards
     def handle_shutdown(self):
+        """
+        Is called when system shuts down all work, either
+        to halt so the user can see what he did wrong
+        or to fully exit afterwards
+        """
         pass
 
-    # is called when system disconnects from mcu, this is only done at
-    # the very end, when exiting or restarting
     def handle_disconnect(self):
+        """
+        Is called when system disconnects from mcu, this is only done at
+        the very end, when exiting or restarting
+        """
         logging.info("Kivy app.handle_disconnect")
         self.connected = False
         self.reactor.register_async_callback(self.reactor.end)
@@ -309,18 +313,12 @@ class mainApp(App, threading.Thread):
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
 
-def kivy_callback(reactor, eventtime):
-    def invoke(dt=None):
-        try:
-            cb, waketime, waiting_process, args, kwargs = reactor.mp_queue.get_nowait()
-        except queue.Empty:
-            logging.info("kgui queue retry")
-            Clock.schedule_del_safe(invoke)
-            return
-        result = cb(waketime, reactor.root, *args, **kwargs)
-        if waiting_process:
-            reactor.cb(reactor.mp_complete, (cb.__name__, waketime, "kgui"), result, process=waiting_process)
-    Clock.schedule_del_safe(invoke)
+def run_callback(reactor, callback, waketime, waiting_process, *args, **kwargs):
+    res = callback(reactor.monotonic(), reactor.root, *args, **kwargs)
+    if waiting_process:
+        reactor.cb(reactor.mp_complete, (callback.__name__, waketime, "kgui"), res, process=waiting_process)
+def kivy_callback(*args, **kwargs):
+    Clock.schedule_del_safe(lambda: run_callback(*args, **kwargs))
 
 # Catch KGUI exceptions and display popups
 class PopupExceptionHandler(ExceptionHandler):
