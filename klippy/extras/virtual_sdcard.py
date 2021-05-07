@@ -1,4 +1,4 @@
-# Printjob manager providing API for local printjobs
+# Print job manager providing API for local printjobs
 # with pause-resume, cura-style compressed gcode, and queue functionality
 #
 # Copyright (C) 2020  Konstantin Vogel <konstantin.vogel@gmx.net>
@@ -9,7 +9,7 @@ import os
 from uuid import uuid4
 
 
-class Printjob:
+class PrintJob:
     def __init__(self, path, manager, no_pause):
         self.manager = manager
         self.reactor = manager.reactor
@@ -84,7 +84,7 @@ class Printjob:
             self.manager.check_queue()
 
     def work_handler(self, eventtime):
-        logging.info(f"Printjob entering work handler (position {self.file_position})")
+        logging.info(f"Print job entering work handler (position {self.file_position})")
         self.reactor.unregister_timer(self.work_timer)
         try:
             self.file_obj.seek(self.file_position)
@@ -154,7 +154,7 @@ class Printjob:
         return self.additional_printed_time
 
 
-class PrintjobManager:
+class PrintJobManager:
     def __init__(self, config):
         self.toolhead = None
         self.printer = config.get_printer()
@@ -165,11 +165,11 @@ class PrintjobManager:
         self.printer.load_object(config, 'print_stats')
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
-        self.jobs = [] # Printjobs, first is current
+        self.jobs = [] # Print jobs, first is current
 
     def add_printjob(self, path, no_pause=False):
         """ Add new printjob to queue """
-        job = Printjob(path, self, no_pause)
+        job = PrintJob(path, self, no_pause)
         self.jobs.append(job)
         self.check_queue()
         self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
@@ -237,7 +237,7 @@ class PrintjobManager:
         return False, ""
 
 
-class VirtualSD(PrintjobManager):
+class VirtualSD(PrintJobManager):
     def __init__(self, config):
         super().__init__(config)
         self.selected_file = None # str

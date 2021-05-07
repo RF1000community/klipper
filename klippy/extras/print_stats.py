@@ -1,4 +1,4 @@
-# Printjob progress estimatior for virtual_sdcard prinjobs
+# Print job progress estimatior for virtual_sdcard
 # utilizing estimations and elapsed times in gcode put by slicer to
 # give instant and accurate estimations
 #

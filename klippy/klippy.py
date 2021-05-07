@@ -11,6 +11,8 @@ import signal, traceback, site
 import multiprocessing
 from os.path import join, exists, dirname
 
+multiprocessing.set_start_method('fork') #TODO use spawn for better separation of logging etc
+
 message_ready = "Printer is ready"
 
 message_startup = """
@@ -62,6 +64,7 @@ class Printer:
         self.run_result = None
         self.objects = collections.OrderedDict()
         self.parallel_objects = {}
+        self.parallel_queues = {}
         # Init printer components that must be setup prior to config
         for m in [gcode, webhooks]:
             m.add_early_printer_objects(self)
@@ -128,36 +131,35 @@ class Printer:
             return self.objects[section]
         # Create Reactor for parallel_objects to be started later in _load_parallel_object
         elif exists(parallel_module) or exists(parallel_package):
-            # add module directory to path, so objects can be imported when unpickled
+            # Add module directory to path, so objects can be imported when unpickled
             # USE GLOBALLY UNIQUE MODULE NAMES FOR ALL .PY FILES IN PARALLEL_EXTRAS
             if exists(parallel_module):
                 site.addsitedir(dirname(parallel_module))
             else:
                 site.addsitedir(dirname(parallel_package))
-            object_config = config.getsection(section)
-            object_config.reactor = reactor.Reactor(False, process=section)
-            # Temporarily used to store objets needed to create this process
-            self.parallel_objects[section] = [object_config, init_func, module_name]
+            # Temporarily used to store args needed to create this process
+            self.parallel_queues[section] = multiprocessing.Queue()
+            self.parallel_objects[section] = [config.getsection(section), init_func, module_name]
             return
         else:
             if default is not configfile.sentinel:
                 return default
             raise self.config_error("Unable to load module '%s'" % (section,))
-    def _connect_parallel_object(self, section):
-        self.reactor.connect_mp(self.parallel_objects[section][0].reactor, self.reactor)
-        for name, obj in self.parallel_objects.items():
-            if name != section:
-                self.reactor.connect_mp(self.parallel_objects[section][0].reactor, obj[0].reactor)
     def _load_parallel_object(self, section):
-        def start_process(object_config, init_func, module_name):
-            # Avoid active imports changing environment - import in target process
-            mod = importlib.import_module('parallel_extras.' + module_name)
-            init_func = getattr(mod, init_func, None)
-            object_config.reactor.root = init_func(object_config)
-            object_config.reactor.run()
         self.parallel_objects[section] = multiprocessing.Process(
-            target=start_process, args=self.parallel_objects[section])
+            target=self.start_process, args=(*self.parallel_objects[section], self.parallel_queues))
         self.parallel_objects[section].start()
+    @staticmethod
+    def start_process(config, init_func, module_name, mp_queues):
+        # Avoid active imports changing environment - import in target process
+        mod = importlib.import_module('parallel_extras.' + module_name)
+        init_func = getattr(mod, init_func, None)
+        config.reactor = reactor.Reactor(process=module_name)
+        def start(*e):
+            config.reactor.setup_mp_queues(mp_queues)
+            config.reactor.root = init_func(config)
+        config.reactor.register_callback(start)
+        config.reactor.run()
     def _read_config(self):
         self.objects['configfile'] = pconfig = configfile.PrinterConfig(self)
         config = pconfig.read_main_config()
@@ -168,9 +170,9 @@ class Printer:
             m.add_printer_objects(config)
         for section_config in config.get_prefix_sections(''):
             self.load_object(config, section_config.get_name(), None)
-        for section in self.parallel_objects.keys():
-            self._connect_parallel_object(section)
-        for section in self.parallel_objects.keys():
+        self.parallel_queues['printer'] = multiprocessing.Queue()
+        self.reactor.setup_mp_queues(self.parallel_queues)
+        for section in self.parallel_objects:
             self._load_parallel_object(section)
         for m in [toolhead]:
             m.add_printer_objects(config)
@@ -372,3 +374,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

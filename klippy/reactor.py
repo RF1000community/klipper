@@ -3,13 +3,14 @@
 # Copyright (C) 2016-2020  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import os, gc, select, math, time, queue
+import os, gc, select, math, time, logging, queue
 import greenlet
 import chelper, util
-import multiprocessing
+import multiprocessing, threading
 
 _NOW = 0.
 _NEVER = 9999999999999999.
+
 
 class ReactorTimer:
     def __init__(self, callback, waketime):
@@ -52,26 +53,13 @@ class ReactorCallback:
         self.completion.complete(res)
         return self.reactor.NEVER
 
-class MPCallback:
-    def __init__(self, reactor, eventtime):
-        self.reactor = reactor
-        self.timer = reactor.register_timer(self.invoke, eventtime)
-    def invoke(self, eventtime):
-        self.reactor.unregister_timer(self.timer)
-        while 1:
-            try:
-                cb, waketime, waiting_process, args, kwargs = self.reactor.mp_queue.get_nowait()
-            except queue.Empty:
-                import logging
-                logging.info("mp callback retry")
-                self.reactor.pause(self.reactor.monotonic() + 0.005)
-                continue
-            break
-        res = cb(self.reactor.monotonic(), self.reactor.root, *args, **kwargs)
-        if waiting_process:
-            self.reactor.cb(self.reactor.mp_complete, 
-                (cb, waketime, self.reactor.process_name), res, process=waiting_process)
-        return self.reactor.NEVER
+def mp_callback(reactor, *args, **kwargs):
+    reactor.register_async_callback(run_mp_callback, reactor, *args, **kwargs)
+
+def run_mp_callback(e, reactor, callback, waketime, waiting_process, *args, **kwargs):
+    res = callback(e, reactor.root, *args, **kwargs)
+    if waiting_process:
+        reactor.cb(reactor.mp_complete, (callback.__name__, waketime, reactor.process_name), res, process=waiting_process)
 
 class ReactorFileHandler:
     def __init__(self, fd, callback):
@@ -134,11 +122,9 @@ class SelectReactor:
         self._async_pipe = None
         self._async_queue = queue.Queue()
         # Multiprocessing
-        self.mp_queue = multiprocessing.Queue()
-        self._mp_queues = {}
-        self._mp_pipes_read = {}
-        self._mp_pipes_write = {}
-        self._mp_callback_handler = MPCallback
+        self.mp_queue = None
+        self.mp_queues = {}
+        self._mp_callback_handler = mp_callback
         self._mp_completions = {}
         # File descriptors
         self._fds = []
@@ -148,17 +134,13 @@ class SelectReactor:
         self._all_greenlets = []
     def register_mp_callback_handler(self, handler):
         self._mp_callback_handler = handler
-    @staticmethod
-    def connect_mp(reactor_1, reactor_2):
-        pipe_1_2 = os.pipe()
-        pipe_2_1 = os.pipe()
-        reactor_1.register_mp(reactor_2.process_name, reactor_2.mp_queue, pipe_1_2, pipe_2_1)
-        reactor_2.register_mp(reactor_1.process_name, reactor_1.mp_queue, pipe_2_1, pipe_1_2)
-    def register_mp(self, process, queue, write_pipe, read_pipe):
-        self._mp_queues[process] = queue
-        self._mp_pipes_write[process] = write_pipe[1]
-        self._mp_pipes_read[process] = read_pipe[0]
-        self.register_fd(read_pipe[0], self._got_mp_pipe_signal)
+    # Start dispatching mp tasks, execute after run()
+    def setup_mp_queues(self, queues):
+        mp_queues = queues.copy()
+        self.mp_queue = mp_queues.pop(self.process_name)
+        self.mp_queues = mp_queues
+        self._mp_dispatch_thread = threading.Thread(target=self._mp_dispatch_loop)
+        self._mp_dispatch_thread.start()
     def get_gc_stats(self):
         return tuple(self._last_gc_times)
     # Timers
@@ -215,10 +197,9 @@ class SelectReactor:
     def cb(self, callback, *args, waketime=NOW, process='printer', wait=False, completion=False, **kwargs):
         if wait or completion:
             mp_completion = ReactorCompletion(self)
-            self._mp_completions[(callback, waketime, process)] = mp_completion
+            self._mp_completions[(callback.__name__, waketime, process)] = mp_completion
         waiting_process = self.process_name if (wait or completion) else None
-        self._mp_queues[process].put_nowait((callback, waketime, waiting_process, args, kwargs))
-        os.write(self._mp_pipes_write[process], b'.')
+        self.mp_queues[process].put_nowait((callback, waketime, waiting_process, args, kwargs))
         if wait:
             return mp_completion.wait()
         if completion:
@@ -250,25 +231,6 @@ class SelectReactor:
             except queue.Empty:
                 break
             func(*args, **kwargs)
-    def _got_mp_pipe_signal(self, eventtime):
-        signal = b''
-        for pipe in self._mp_pipes_read.values():
-            signal += os.read(pipe, 4096)
-        for i in range(signal.count(b'.')):
-            self._mp_callback_handler(self, eventtime)
-    # Identify unpickleable arguments during development
-    # def check_pickleable(self, args):
-    #     import pickle, logging
-    #     if type(args) is dict:
-    #         items = args.items()
-    #     else:
-    #         items = enumerate(args)
-    #     for key, value in items:
-    #         try:
-    #             pickle.dumps(value)
-    #         except:
-    #             logging.warning(f"couldn't pickle arg {key}, {value}")
-    #             raise
     def _setup_async_callbacks(self):
         self._async_pipe = os.pipe()
         util.set_nonblock(self._async_pipe[0])
@@ -340,6 +302,10 @@ class SelectReactor:
         self._g_dispatch = None
         if self.process_name != 'printer':
             self.finalize()
+    def _mp_dispatch_loop(self):
+        while self._process:
+            cb, waketime, waiting_process, args, kwargs = self.mp_queue.get()
+            self._mp_callback_handler(self, cb, waketime, waiting_process, *args, **kwargs)
     def run(self):
         if self._async_pipe is None:
             self._setup_async_callbacks()
@@ -356,25 +322,24 @@ class SelectReactor:
             try:
                 g.throw()
             except:
-                import logging
                 logging.exception("reactor finalize greenlet terminate")
+        self.mp_queue.put((self.run_event, 0, ("end_thread", None), {}))
+        self._mp_dispatch_thread.join()
         self._all_greenlets = []
         if self._async_pipe is not None:
-            for pipe in (self._async_pipe
-                + tuple(self._mp_pipes_read.values())
-                + tuple(self._mp_pipes_write.values())):
-                os.close(pipe)
+            os.close(self._async_pipe[0])
+            os.close(self._async_pipe[1])
             self._async_pipe = None
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
-        for process in self._mp_queues.keys():
+        for process in self.mp_queues:
             self.cb(self.run_event, event, params, process=process)
         return self.run_event(None, self.root, event, params)
     def send_event_wait(self, event, *params, check_status=None):
         # Start event handlers in other processes
         completions = [self.cb(self.run_event, event, params, completion=True, process=process)
-            for process in self._mp_queues]
+            for process in self.mp_queues]
         # Run events in printer process
         for cb in self.event_handlers.get(event, []):
             if self.root.state_message != check_status != None:

@@ -1,4 +1,4 @@
-# Persistent Printjob History for virtual_sdcard
+# Persistent Print Job History for virtual_sdcard
 #
 # Copyright (C) 2020  Gabriel Vogel
 #
@@ -80,7 +80,7 @@ class PrintHistory:
             return
 
     def add(self, job):
-        """ Add a new entry to the history from the specified Printjob object """
+        """ Add a new entry to the history from the specified PrintJob object """
         self.history.append([job.path, job.state, time.time()])
         self.write(self.history)
         self.printer.send_event("print_history:change", self.history)
