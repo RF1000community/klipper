@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# Main code for host side printer firmware
+#!/usr/bin/env python3 Main code for host side printer firmware
 #
 # Copyright (C) 2016-2020  Kevin O'Connor <kevin@koconnor.net>
 #
@@ -7,11 +6,8 @@
 import sys, os, gc, optparse, logging, time, collections, importlib
 import util, reactor, queuelogger, msgproto
 import gcode, configfile, pins, mcu, toolhead, webhooks
-import signal, traceback, site
-import multiprocessing
+import signal, traceback, site, multiprocessing
 from os.path import join, exists, dirname
-
-multiprocessing.set_start_method('fork') #TODO use spawn for better separation of logging etc
 
 message_ready = "Printer is ready"
 
@@ -158,8 +154,11 @@ class Printer:
         def start(e):
             config.reactor.setup_mp_queues(mp_queues)
             config.reactor.root = init_func(config)
-        config.reactor.register_callback(start)
-        config.reactor.run()
+        try:
+            config.reactor.register_callback(start)
+            config.reactor.run()
+        except Exception:
+            logging.exception("Unhandled exception during run")
     def _read_config(self):
         self.objects['configfile'] = pconfig = configfile.PrinterConfig(self)
         config = pconfig.read_main_config()

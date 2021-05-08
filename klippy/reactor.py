@@ -59,7 +59,8 @@ def mp_callback(reactor, *args, **kwargs):
 def run_mp_callback(e, reactor, callback, waketime, waiting_process, *args, **kwargs):
     res = callback(e, reactor.root, *args, **kwargs)
     if waiting_process:
-        reactor.cb(reactor.mp_complete, (callback.__name__, waketime, reactor.process_name), res, process=waiting_process)
+        reactor.cb(reactor.mp_complete,
+            (callback.__name__, waketime, reactor.process_name), res, process=waiting_process)
 
 class ReactorFileHandler:
     def __init__(self, fd, callback):
