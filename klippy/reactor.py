@@ -6,7 +6,7 @@
 import os, gc, select, math, time, logging, queue
 import greenlet
 import chelper, util
-import multiprocessing, threading
+import threading
 
 _NOW = 0.
 _NEVER = 9999999999999999.
@@ -23,14 +23,20 @@ class ReactorCompletion:
         self.reactor = reactor
         self.result = self.sentinel
         self.waiting = []
+        self.foreign_thread = False
     def test(self):
         return self.result is not self.sentinel
     def complete(self, result):
         self.result = result
-        for wait in self.waiting:
-            self.reactor.update_timer(wait.timer, self.reactor.NOW)
+        if not self.foreign_thread:
+            for wait in self.waiting:
+                self.reactor.update_timer(wait.timer, self.reactor.NOW)
     def wait(self, waketime=_NEVER, waketime_result=None):
-        if self.result is self.sentinel:
+        if threading.get_ident() != self.reactor.thread_id:
+            self.foreign_thread = True
+            while self.result is self.sentinel:
+                time.sleep(0.01)
+        elif self.result is self.sentinel:
             wait = greenlet.getcurrent()
             self.waiting.append(wait)
             self.reactor.pause(waketime)
@@ -133,6 +139,7 @@ class SelectReactor:
         self._g_dispatch = None
         self._greenlets = []
         self._all_greenlets = []
+        self.thread_id = threading.get_ident()
     def register_mp_callback_handler(self, handler):
         self._mp_callback_handler = handler
     # Start dispatching mp tasks, execute after run()
@@ -196,10 +203,12 @@ class SelectReactor:
         return rcb.completion
     # Multiprocessing (from another process) callbacks and completions
     def cb(self, callback, *args, waketime=NOW, process='printer', wait=False, completion=False, **kwargs):
+        waiting_process = None
         if wait or completion:
+            waiting_process = self.process_name
+            waketime = self.monotonic() # This gives unique reference to completion
             mp_completion = ReactorCompletion(self)
             self._mp_completions[(callback.__name__, waketime, process)] = mp_completion
-        waiting_process = self.process_name if (wait or completion) else None
         self.mp_queues[process].put_nowait((callback, waketime, waiting_process, args, kwargs))
         if wait:
             return mp_completion.wait()
@@ -319,18 +328,18 @@ class SelectReactor:
     def finalize(self):
         self._g_dispatch = None
         self._greenlets = []
-        for g in self._all_greenlets:
-            try:
-                g.throw()
-            except:
-                logging.exception("reactor finalize greenlet terminate")
-        self.mp_queue.put((self.run_event, 0, ("end_thread", None), {}))
+        self.mp_queue.put_nowait((self.run_event, 0, None, ("trigger_mp_dispatch", []), {}))
         self._mp_dispatch_thread.join()
-        self._all_greenlets = []
         if self._async_pipe is not None:
             os.close(self._async_pipe[0])
             os.close(self._async_pipe[1])
             self._async_pipe = None
+        for g in self._all_greenlets: # Seems like this exits parallel_extras, run after other cleanup
+            try:
+                g.throw()
+            except:
+                logging.exception("reactor finalize greenlet terminate")
+        self._all_greenlets = []
     def register_event_handler(self, event, callback):
         self.event_handlers.setdefault(event, []).append(callback)
     def send_event(self, event, *params):
@@ -389,6 +398,8 @@ class PollReactor(SelectReactor):
                     eventtime = self.monotonic()
                     break
         self._g_dispatch = None
+        if self.process_name != 'printer':
+            self.finalize()
 
 class EPollReactor(SelectReactor):
     def __init__(self, gc_checking=False, process='printer'):
@@ -426,6 +437,8 @@ class EPollReactor(SelectReactor):
                     eventtime = self.monotonic()
                     break
         self._g_dispatch = None
+        if self.process_name != 'printer':
+            self.finalize()
 
 # Use the poll based reactor if it is available
 try:

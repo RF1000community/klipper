@@ -10,7 +10,8 @@ class LiveMove:
         self.printer = config.get_printer()
         self.reactor = config.get_reactor()
         self.move_completion = {'x': None, 'y': None, 'z': None, 'e': None}
-        self.start_mcu_pos = {}
+        self.start_kin_spos = {}
+        self.start_mcu_pos = []
         self.speed = {'x': 5, 'y': 5, 'z': 3, 'e': 2}
         stepper_config = {'x': config.getsection('stepper_x'),
                           'y': config.getsection('stepper_y'),
@@ -42,10 +43,8 @@ class LiveMove:
             toolhead.flush_step_generation()
             steppers = toolhead.kin.get_steppers() + [extruder.stepper]
 
-            for s in steppers:
-                s.set_tag_position(s.get_commanded_position())
-
-            self.start_mcu_pos[axis] = [(s, s.get_mcu_position()) for s in steppers]
+            self.start_kin_spos = {s.get_name(): s.get_commanded_position() for s in steppers}
+            self.start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers]
             toolhead.dwell(0.010)
             toolhead.drip_move(pos, self.speed[axis], self.move_completion[axis], force=True)
 
@@ -59,12 +58,13 @@ class LiveMove:
             self.reactor.pause(self.reactor.NOW)
             toolhead.flush_step_generation()
             #                   v--start_pos     v--end_pos
-            end_mcu_pos = [(s, spos, s.get_mcu_position()) for s, spos in self.start_mcu_pos[axis]]
+            end_mcu_pos = [(s, spos, s.get_mcu_position()) for s, spos in self.start_mcu_pos]
             for s, spos, epos in end_mcu_pos:
-                md = (epos - spos) * s.get_step_dist()
-                s.set_tag_position(s.get_tag_position() + md)
-            toolhead.set_position(
-                toolhead.get_kinematics().calc_tag_position() + [extruder.stepper.get_tag_position()])
+                self.start_kin_spos[s.get_name()] += (epos - spos) * s.get_step_dist()
+
+            movepos = list(toolhead.kin.calc_position(self.start_kin_spos))
+    
+            toolhead.set_position(movepos)
             toolhead.dwell(0.050)
             if axis == 'e':
                 extruder.update_move_time(toolhead.print_time)

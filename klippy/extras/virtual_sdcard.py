@@ -1,4 +1,4 @@
-# Print job manager providing API for local printjobs
+# Print job manager providing API for local print jobs
 # with pause-resume, cura-style compressed gcode, and queue functionality
 #
 # Copyright (C) 2020  Konstantin Vogel <konstantin.vogel@gmx.net>
@@ -60,15 +60,18 @@ class PrintJob:
     def resume(self):
         if self.state == 'pausing':
             self.set_state('printing')
+            return True
         elif self.state == 'paused':
             self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1")
             self.last_start_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
             self.set_state('printing')
             self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
+            return True
 
     def pause(self):
         if self.state == 'printing':
             self.set_state('pausing')
+            return True
 
     def stop(self):
         if self.state in ('printing', 'pausing'):
@@ -77,11 +80,13 @@ class PrintJob:
             self.heater_manager.cmd_TURN_OFF_HEATERS(None)
             self.reactor.pause(self.reactor.monotonic() + 0.05)
             self.heater_manager.cmd_TURN_OFF_HEATERS(None)
+            return True
         else: # In case it is paused we need to do all aborting actions here
             self.set_state('aborted')
             self.file_obj.close()
             self.heater_manager.cmd_TURN_OFF_HEATERS(None)
             self.manager.check_queue()
+            return True
 
     def work_handler(self, eventtime):
         logging.info(f"Print job entering work handler (position {self.file_position})")
@@ -176,13 +181,16 @@ class PrintJobManager:
         self.printer.send_event("virtual_sdcard:printjob_added", job)
 
     def pause_printjob(self, *args):
-        self.jobs[0].pause()
+        if self.jobs:
+            return self.jobs[0].pause()
 
     def stop_printjob(self, *args):
-        self.jobs[0].stop()
+        if self.jobs:
+            return self.jobs[0].stop()
 
     def resume_printjob(self, *args):
-        self.jobs[0].resume()
+        if self.jobs:
+            return self.jobs[0].resume()
 
     def remove_printjob(self, idx, uuid):
         if 0 < idx < len(self.jobs) and self.jobs[idx].uuid == uuid:
@@ -212,7 +220,7 @@ class PrintJobManager:
             self.jobs[0].start()
 
     def get_status(self, eventtime=None):
-        return {'printjobs': self.jobs}
+        return {'jobs': self.jobs}
 
     def handle_ready(self):
         self.toolhead = self.printer.lookup_object('toolhead')

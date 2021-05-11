@@ -144,7 +144,8 @@ class Printer:
             raise self.config_error("Unable to load module '%s'" % (section,))
     def _load_parallel_object(self, section):
         self.parallel_objects[section] = multiprocessing.Process(
-            target=self.start_process, args=(*self.parallel_objects[section], self.parallel_queues))
+            target=self.start_process,
+            args=(*self.parallel_objects[section], self.parallel_queues))
         self.parallel_objects[section].start()
     @staticmethod
     def start_process(config, init_func, module_name, mp_queues):
@@ -159,7 +160,7 @@ class Printer:
             config.reactor.register_callback(start)
             config.reactor.run()
         except Exception:
-            logging.exception("Unhandled exception during run")
+            logging.getLogger(module_name).exception("Unhandled exception during run")
     def _read_config(self):
         self.objects['configfile'] = pconfig = configfile.PrinterConfig(self)
         config = pconfig.read_main_config()
@@ -359,9 +360,9 @@ def main():
         for process in printer.parallel_objects.values():
             process.join()
         logging.info("Joined all processes")
+        main_reactor.finalize()
         if res in ('exit', 'error_exit'):
             break
-        main_reactor.finalize()
         main_reactor = printer = None
         logging.info("Restarting printer")
         start_args['start_reason'] = res
