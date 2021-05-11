@@ -47,7 +47,7 @@ class mainApp(App, threading.Thread):
         "ready",
         "error",
         ])
-    # this is more of a UI-state, it may be 'finished' even though virtual_sdcard has no printjobs
+    # This is more of a UI-state, it may be 'finished' even though virtual_sdcard has no printjobs
     print_state = OptionProperty("no printjob", options=[
         "no printjob",
         "queued",
@@ -58,13 +58,13 @@ class mainApp(App, threading.Thread):
         "aborted",
         "finished",
         ])
-    homed = DictProperty() # updated by handle_home_end/start event handler
+    homed = DictProperty() # Updated by handle_home_end/start event handler
     temp = DictProperty() # {'heater_bed': [setpoint, current], 'extruder': ...}
     connected = BooleanProperty(False) # updated with handle_connect
     jobs = ListProperty()
     history = ListProperty()
     print_title = StringProperty()
-    print_time = StringProperty() # updated by get_printjob_progress
+    print_time = StringProperty()
     print_done_time = StringProperty()
     progress = NumericProperty(0)
     pos = ListProperty([0, 0, 0, 0])
@@ -72,14 +72,15 @@ class mainApp(App, threading.Thread):
     ui_toolhead_busy = BooleanProperty(False)
     material = DictProperty()
     tbc_to_guid = DictProperty()
-    # tuning
+    cura_connected = BooleanProperty(False)
+    # Tuning
     speed = NumericProperty(100)
     flow = NumericProperty(100)
     fan_speed = NumericProperty(0)
     z_offset = NumericProperty(0)
     acceleration = NumericProperty(0)
     pressure_advance = NumericProperty(0)
-    # config
+    # Config
     config_pressure_advance = NumericProperty(0)
     config_acceleration = NumericProperty(0)
 
@@ -87,12 +88,11 @@ class mainApp(App, threading.Thread):
         logging.info("Kivy app initializing...")
         self.network_manager = NetworkManager()
         self.notify = Notifications()
-        self.gcode_metadata = gcode_metadata.load_config(config) # beware this is not the 'right' config
+        self.gcode_metadata = gcode_metadata.load_config(config) # Beware this is not the 'right' config
         self.temp = {'extruder': [0,0], 'extruder1': [0,0], 'heater_bed': [0,0]}
         self.homed = {'x': False, 'y': False, 'z': False}
         self.warned_not_homed = {'x': False, 'y': False, 'z': False}
-        self.curaconnection = None
-        self.kv_file = join(p.kgui_dir, "kv/main.kv") # tell kivy where the root kv file is
+        self.kv_file = join(p.kgui_dir, "kv/main.kv") # Tell kivy where the root kv file is
 
         if TESTING:
             self.pos_max = {'x': 200, 'y': 0}
@@ -105,7 +105,7 @@ class mainApp(App, threading.Thread):
         self.reactor = config.get_reactor()
         self.reactor.register_mp_callback_handler(kivy_callback)
         self.fd = config.get_printer().get_start_args().get("gcode_fd")
-        # read config
+        # Read config
         self.config_pressure_advance = config.getsection('extruder').getfloat("pressure_advance", 0)
         self.config_acceleration = config.getsection('printer').getfloat("max_accel", 0)
         self.invert_z_controls = config.getboolean('invert_z_controls', False)
@@ -115,9 +115,9 @@ class mainApp(App, threading.Thread):
                           'z': config.getsection('stepper_z')}
         self.pos_max = {i: stepper_config[i].getfloat('position_max', 200) for i in 'xyz'}
         self.pos_min = {i: stepper_config[i].getfloat('position_min', 0) for i in 'xyz'}
-        # maintain this by keeping default the same as klipper
+        # Maintain this by keeping default the same as klipper
         self.min_extrude_temp = config.getsection("extruder").getfloat("min_extrude_temp", 170)
-        # count how many extruders exist
+        # Count how many extruders exist
         for i in range(1, 10):
             if not config.has_section(f"extruder{i}"):
                 self.extruder_count = i
@@ -127,7 +127,7 @@ class mainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.load_object, "live_move")
         self.reactor.cb(printer_cmd.load_object, "filament_manager")
         self.reactor.cb(printer_cmd.load_object, "print_history")
-        # register event handlers
+        # Register event handlers
         self.reactor.register_event_handler("klippy:connect", self.handle_connect) # printer_objects available
         self.reactor.register_event_handler("klippy:ready", self.handle_ready) # connect handlers have run
         self.reactor.register_event_handler("klippy:disconnect", self.handle_disconnect)
@@ -161,7 +161,8 @@ class mainApp(App, threading.Thread):
         self.avg_count = 0
         self.avg = 0
         self.avg_2 = 0
-        Clock.schedule_interval(self.init_latency, 0.94)
+        Clock.schedule_interval(self.init_latency, 11)
+        Clock.schedule_interval(lambda e: self.reactor.register_callback(self.blocking_cb), 12)
     def init_latency(self, dt):
         self.start = self.reactor.monotonic()
         self.reactor.cb(self.latency)
@@ -169,21 +170,27 @@ class mainApp(App, threading.Thread):
     def latency(e, printer):
         half_time = printer.reactor.monotonic()
         import random
-        time.sleep(random.randint(0,20)/1000)
+        time.sleep(random.randint(0, 20)/1000)
         half_time2 = printer.reactor.monotonic()
         printer.reactor.cb(mainApp.return_latency, half_time, half_time2, process='kgui')
     @staticmethod
     def return_latency(e, kgui, half_time, half_time2):
         if kgui.start is None:
-            return logging.info("\n    big oof \n")
+            return logging.info("\nbig oof\n")
         l1 = half_time - kgui.start
         l2 = kgui.reactor.monotonic() - half_time2
         kgui.avg_count +=1
         kgui.avg = kgui.avg*(kgui.avg_count -1)/kgui.avg_count + l1*1/kgui.avg_count
         kgui.avg_2 = kgui.avg_2*(kgui.avg_count -1)/kgui.avg_count + l2*1/kgui.avg_count
-        logging.info(f"kivy->klipper  {l1:6.5f}, {kgui.avg:6.5f}  klipper->kivy  {l2:6.5f}, {kgui.avg_2:6.5f}  at {int(kgui.reactor.monotonic())}")
+        logging.info(f"latency kivy->klipper {l1:6.5f} (avg. {kgui.avg:6.5f})    klipper->kivy {l2:6.5f} (avg. {kgui.avg_2:6.5f})")
         kgui.start = None
-
+    @staticmethod
+    def return_blocking(e, printer):
+        return 777
+    def blocking_cb(self, dt):
+        start_time = self.reactor.monotonic()
+        result = self.reactor.cb(self.return_blocking, wait='true')
+        logging.info(f"latency blocking cb {self.reactor.monotonic() - start_time:6.5f} got {result}")
 
     def handle_ready(self):
         self.state = "ready"
@@ -192,18 +199,6 @@ class mainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.get_tbc)
         self.bind(print_state=self.handle_material_change)
         Clock.schedule_interval(lambda dt: self.reactor.cb(printer_cmd.update), 1)
-
-
-        Clock.schedule_interval(lambda dt: self.reactor.register_async_callback(self.test), 2)
-    @staticmethod
-    def get_test(e, printer):
-        return 777
-    def test(self, dt):
-        logging.info(f"start test {dt}")
-        start_time = self.reactor.monotonic()
-        result = self.reactor.cb(self.get_test, wait='true')
-        logging.info(f"got restult {result} in {self.reactor.monotonic() - start_time} seconds")
-
 
     def handle_shutdown(self):
         """
@@ -241,11 +236,10 @@ class mainApp(App, threading.Thread):
         This monitors changes of 2 things:
         - The configuration of printjobs
         - The state of 1. printjob
-        Due to pass-by-reference states may be skipped
         """
-        if len(jobs): # update print_state, unless there's no printjob
+        if len(jobs): # Update print_state, unless there's no printjob
             self.print_state = jobs[0].state
-        elif len(self.jobs): # if the job is already removed we still want to update state
+        elif len(self.jobs): # If the job is already removed we still want to update state
             self.print_state = self.jobs[0].state
         self.jobs = jobs
 
@@ -255,7 +249,7 @@ class mainApp(App, threading.Thread):
     def handle_printjob_start(self, job):
         self.notify.show("Started printing", f"Started printing {job.name}", delay=5)
         self.print_title = job.name
-        # this only works if we are in a printing state
+        # This only works if we are in a printing state
         # we rely on this being called after handle_printjob_change
         self.reactor.cb(printer_cmd.get_printjob_progress)
 
@@ -264,7 +258,7 @@ class mainApp(App, threading.Thread):
             self.progress = 1
             self.print_done_time = ""
             self.print_time = "finished"
-            # show finished job for 1h
+            # Show finished job for 1h
             Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 3600)
         else:
             self.hide_printjob(job.name)
@@ -276,7 +270,7 @@ class mainApp(App, threading.Thread):
             self.print_time = ""
             self.progress = 0
             self.print_state = "no printjob"
-            # tuning values are only reset once print_queue has run out
+            # Tuning values are only reset once print_queue has run out
             self.reactor.cb(printer_cmd.reset_tuning)
 
     def handle_history_change(self, history):
@@ -305,11 +299,12 @@ class mainApp(App, threading.Thread):
             logging.warning("root_window wasnt available")
 
     def on_stop(self, *args):
-        # Stop networking dbus event loop
+        """Stop networking dbus event loop"""
         self.network_manager.stop()
 
     def poweroff(self):
         Popen(['sudo','systemctl', 'poweroff'])
+
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
 
@@ -317,6 +312,7 @@ def run_callback(reactor, callback, waketime, waiting_process, *args, **kwargs):
     res = callback(reactor.monotonic(), reactor.root, *args, **kwargs)
     if waiting_process:
         reactor.cb(reactor.mp_complete, (callback.__name__, waketime, "kgui"), res, process=waiting_process)
+
 def kivy_callback(*args, **kwargs):
     Clock.schedule_del_safe(lambda: run_callback(*args, **kwargs))
 
@@ -324,10 +320,9 @@ def kivy_callback(*args, **kwargs):
 class PopupExceptionHandler(ExceptionHandler):
     def handle_exception(self, exception):
         if not TESTING:
-            logging.info("UI-Exception, popup invoked")
             tr = ''.join(traceback.format_tb(exception.__traceback__))
             App.get_running_app().handle_critical_error(tr + "\n\n" + repr(exception))
-            logging.exception(exception)
+            logging.exception("UI-Exception, popup invoked")
             return ExceptionManager.PASS
 
 ExceptionManager.add_handler(PopupExceptionHandler())

@@ -322,7 +322,7 @@ class OptionDivider(BaseButton):
 
     def on_touch_down(self, touch):
         if touch.pos[1] > self.y and touch.pos[1] < self.y + self.actual_height:
-            # if self.height is 0 => Options are hidden (we might set True = True...)
+            # If self.height is 0 => Options are hidden (we might set True = True...)
             if self.height == 0:
                 self.filamentchooser.show_more[self.level] = True
             else:
@@ -334,7 +334,7 @@ class OptionDivider(BaseButton):
         return False
 
 class FilamentPopup(BasePopup):
-    """ this shows info, and an amount slider on a material coming from one of 3 sources:
+    """ This shows info, and an amount slider on a material coming from one of 3 sources:
         - chosen from library       (extruder_id, new=True, material)
         - from unloaded materials   (extruder_id, new=True, material with 'unloaded_idx')
         - currently loaded material (extruder_id, new=False, material) """

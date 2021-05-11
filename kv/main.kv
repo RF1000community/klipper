@@ -79,9 +79,9 @@ FloatLayout:
 <CuraConnectionIcon>:
     canvas:
         Color:
-            rgba: (1, 1, 1, 1) if self.connected else (0, 0, 0, 0)
+            rgba: (1, 1, 1, 1) if app.cura_connected else (0, 0, 0, 0)
         Rectangle:
             size: self.width - dp(4), self.height - dp(8)
             pos: self.x, self.y + dp(4)
             source: p.kgui_dir + "/logos/cura-32.png"
-    width: self.height - dp(4) if self.connected else 0
+    width: self.height - dp(4) if app.cura_connected else 0

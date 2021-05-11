@@ -13,6 +13,7 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
 from . import parameters as p
+from . import printer_cmd
 
 
 class StatusBar(BoxLayout):
@@ -147,16 +148,20 @@ class ConnectionIcon(Widget):
 class CuraConnectionIcon(Widget):
     """Icon indicating that there currently is a connection to Cura"""
 
-    connected = BooleanProperty(False)
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.curaconnection = App.get_running_app().curaconnection
         Clock.schedule_interval(self.update, 2)
 
-    def update(self, *args):
-        self.connected = (self.curaconnection is not None
-                          and self.curaconnection.is_connected())
+    @staticmethod
+    def get_connected(e, curaconnection):
+        connected = curaconnection.is_connected()
+        curaconnection.reactor.cb(printer_cmd.set_attribute, "cura_connected", connected, process='kgui')
+
+    def update(self, dt):
+        try:
+            App.get_running_app().reactor.cb(self.get_connected, process='klipper_cura_connection')
+        except KeyError:
+            self.connected = False
 
 
 class Notifications(FloatLayout):

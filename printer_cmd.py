@@ -1,7 +1,3 @@
-# This is where functions turn themselves into a pickle
-# They wander off to processes far away
-# They do what needs to be done
-
 import logging
 from datetime import datetime, timedelta
 
@@ -203,7 +199,6 @@ def set_printjob_progress(e, kgui, est_remaining, progress):
             done = datetime.now() + remaining
             tomorrow = datetime.now() + timedelta(days=1)
             kgui.progress = progress
-            logging.info(f"got printjob progress of {progress}, remaining {remaining.total_seconds()}")
             kgui.print_time = format_time(remaining.total_seconds()) + " remaining"
             if done.day == datetime.now().day:
                 kgui.print_done_time = done.strftime("%-H:%M")
