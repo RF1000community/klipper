@@ -95,9 +95,6 @@ timer_init(void)
 {
     // Enable Debug Watchpoint and Trace (DWT) for its 32bit timer
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-#if CONFIG_MACH_STM32H7
-    DWT->LAR = 0xC5ACCE55; // unlock access to DWT registers
-#endif
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
     DWT->CYCCNT = 0;
 
@@ -129,6 +126,7 @@ timer_dispatch_many(void)
     for (;;) {
         // Run the next software timer
         uint32_t next = sched_timer_dispatch();
+
         uint32_t now = timer_read_time();
         int32_t diff = next - now;
         if (diff > (int32_t)TIMER_MIN_TRY_TICKS)
