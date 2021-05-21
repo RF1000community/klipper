@@ -163,9 +163,6 @@ clock_setup(void)
         MODIFY_REG(RCC->PLLCKSELR, RCC_PLLCKSELR_DIVM1_Msk,
           (64000000/pll_base) << RCC_PLLCKSELR_DIVM1_Pos);
     }
-    // Default for these should already be 0
-    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1FRACEN_Msk, 0);
-    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1VCOSEL_Msk, 0);
     // Set input frequency range of PLL1 according to pll_base
     // 3 = 8-16Mhz, 2 = 4-8Mhz
     MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLL1RGE_Msk, RCC_PLLCFGR_PLL1RGE_2);
