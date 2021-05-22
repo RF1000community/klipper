@@ -15,7 +15,7 @@ class PrintJob:
         self.reactor = manager.reactor
         self.toolhead = manager.toolhead
         self.gcode = manager.gcode
-        self.heater_manager = manager.heater_manager
+        self.heaters = manager.printer.lookup_object('heaters')
         self.gcode_metadata = manager.gcode_metadata
 
         self.path = path
@@ -77,14 +77,14 @@ class PrintJob:
         if self.state in ('printing', 'pausing'):
             self.set_state('aborting')
             # Turn off heaters so aborting doesn't wait for temperature requests
-            self.heater_manager.cmd_TURN_OFF_HEATERS(None)
+            self.heaters.cmd_TURN_OFF_HEATERS(None)
             self.reactor.pause(self.reactor.monotonic() + 0.05)
-            self.heater_manager.cmd_TURN_OFF_HEATERS(None)
+            self.heaters.cmd_TURN_OFF_HEATERS(None)
             return True
         else: # In case it is paused we need to do all aborting actions here
             self.set_state('aborted')
             self.file_obj.close()
-            self.heater_manager.cmd_TURN_OFF_HEATERS(None)
+            self.heaters.cmd_TURN_OFF_HEATERS(None)
             self.manager.check_queue()
             return True
 
@@ -147,7 +147,7 @@ class PrintJob:
             if self.state == 'aborting':
                 self.set_state('aborted')
             self.file_obj.close()
-            self.heater_manager.cmd_TURN_OFF_HEATERS(None)
+            self.heaters.cmd_TURN_OFF_HEATERS(None)
             self.manager.check_queue()
         return self.reactor.NEVER
 
@@ -165,7 +165,6 @@ class PrintJobManager:
         self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object('gcode')
-        self.heater_manager = self.printer.lookup_object('heaters')
         self.gcode_metadata = self.printer.load_object(config, 'gcode_metadata')
         self.printer.load_object(config, 'print_stats')
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
