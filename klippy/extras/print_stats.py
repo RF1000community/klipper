@@ -39,7 +39,7 @@ class PrintStats:
                     (job.get_printed_time(), slicer_elapsed_time))
 
     def get_print_time_prediction(self):
-        """ we try to consider everything 'printed' that ran through gcode processing, 
+        """ we try to consider everything 'printed' that ran through gcode processing,
             time are measured using print_time
             time estimations in gcode: |....|....|....|........................|
             actual print time      |......|.....|.....|.............................|
@@ -48,7 +48,7 @@ class PrintStats:
         if self.printjob_manager.jobs:
             job = self.printjob_manager.jobs[0]
             slicer_estimated_time = job.md.get_time()
-        else:  # No print job in queue
+        else: # No print job in queue
             return None, None
         if slicer_estimated_time is None:  # No time prediction
             return None, None
@@ -68,15 +68,15 @@ class PrintStats:
             # where high variance is expected
             if len(self.slicer_elapsed_times) > 1:
                 est_remaining *= \
-                    (self.slicer_elapsed_times[-1][1] - self.slicer_elapsed_times[0][1])\
+                    (self.slicer_elapsed_times[-1][1] - self.slicer_elapsed_times[0][1]) \
                    /(self.slicer_elapsed_times[-1][0] - self.slicer_elapsed_times[0][0])
-        else:  # We dont have elapsed times
+        else: # We dont have elapsed times
             est_remaining = max(slicer_estimated_time - printed_time, 0)
 
         # Time estimation done, calculate progress, avoid zero division
         if printed_time <= 0:
             progress = 0
-        else: 
+        else:
             progress = printed_time/(printed_time + est_remaining)
 
         return est_remaining, progress

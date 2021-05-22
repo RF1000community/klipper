@@ -12,7 +12,7 @@ import logging, bisect
 
 SAMPLE_TIME = 0.001
 SAMPLE_COUNT = 8
-REPORT_TIME = 0.05
+REPORT_TIME = 0.1
 RANGE_CHECK_COUNT = 4
 
 # Interface between ADC and heater temperature callbacks

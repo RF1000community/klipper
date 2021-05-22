@@ -185,12 +185,12 @@ class MoveQueue:
             # Enough moves have been queued to reach the target flush time.
             self.flush(lazy=True)
 
-MIN_KIN_TIME = 0.100
+MIN_KIN_TIME = 0.200
 MOVE_BATCH_TIME = 0.500
 SDS_CHECK_TIME = 0.001 # step+dir+step filter in stepcompress.c
 
-DRIP_SEGMENT_TIME = 0.050
-DRIP_TIME = 0.100
+DRIP_SEGMENT_TIME = 0.100
+DRIP_TIME = 0.200
 class DripModeEndSignal(Exception):
     pass
 
