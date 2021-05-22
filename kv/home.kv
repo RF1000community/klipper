@@ -349,14 +349,14 @@
 <PrintProgressBar@Widget>:
     canvas:
         Color:
-            rgba: (0,0,0,0) if app.print_state == 'no printjob' else p.btn
+            rgba: (0,0,0,0) if app.print_state == 'no print job' else p.btn
         RoundedRectangle:
             radius: [dp(5)]
             pos: self.pos
             size: self.width, dp(10)
         Color:
             rgba:
-                (0,0,0,0) if app.print_state == 'no printjob' else \
+                (0,0,0,0) if app.print_state == 'no print job' else \
                 p.green if app.print_state == 'finished' else \
                 p.red if app.print_state in ('aborted', 'aborting') else \
                 p.accent

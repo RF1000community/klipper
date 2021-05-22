@@ -47,9 +47,9 @@ class mainApp(App, threading.Thread):
         "ready",
         "error",
         ])
-    # This is more of a UI-state, it may be 'finished' even though virtual_sdcard has no printjobs
-    print_state = OptionProperty("no printjob", options=[
-        "no printjob",
+    # This is more of a UI-state, it may be 'finished' even though virtual_sdcard has no print jobs
+    print_state = OptionProperty("no print job", options=[
+        "no print job",
         "queued",
         "printing",
         "pausing",
@@ -135,10 +135,10 @@ class mainApp(App, threading.Thread):
         self.reactor.register_event_handler("klippy:critical_error", self.handle_critical_error)
         self.reactor.register_event_handler("klippy:error", self.handle_error)
         self.reactor.register_event_handler("homing:home_rails_end", self.handle_home_end)
-        self.reactor.register_event_handler("virtual_sdcard:printjob_start", self.handle_printjob_start)
-        self.reactor.register_event_handler("virtual_sdcard:printjob_end", self.handle_printjob_end)
-        self.reactor.register_event_handler("virtual_sdcard:printjob_change", self.handle_printjob_change)
-        self.reactor.register_event_handler("virtual_sdcard:printjob_added", self.handle_printjob_added)
+        self.reactor.register_event_handler("virtual_sdcard:print_start", self.handle_print_start)
+        self.reactor.register_event_handler("virtual_sdcard:print_end", self.handle_print_end)
+        self.reactor.register_event_handler("virtual_sdcard:print_change", self.handle_print_change)
+        self.reactor.register_event_handler("virtual_sdcard:print_added", self.handle_print_added)
         self.reactor.register_event_handler("print_history:change", self.handle_history_change)
         self.reactor.register_event_handler("filament_manager:material_changed", self.handle_material_change)
         super().__init__(**kwargs)
@@ -231,45 +231,45 @@ class mainApp(App, threading.Thread):
             self.homed[rail.steppers[0].get_name(short=True)] = True
         self.reactor.cb(printer_cmd.wait_toolhead_not_busy)
 
-    def handle_printjob_change(self, jobs):
+    def handle_print_change(self, jobs):
         """
         This monitors changes of 2 things:
-        - The configuration of printjobs
-        - The state of 1. printjob
+        - The configuration of print jobs
+        - The state of 1. print job
         """
-        if len(jobs): # Update print_state, unless there's no printjob
+        if len(jobs): # Update print_state, unless there's no print job
             self.print_state = jobs[0].state
         elif len(self.jobs): # If the job is already removed we still want to update state
             self.print_state = self.jobs[0].state
         self.jobs = jobs
 
-    def handle_printjob_added(self, job):
+    def handle_print_added(self, job):
         self.notify.show("Added Print Job", f"Added {job.name} to print Queue", delay=4)
 
-    def handle_printjob_start(self, job):
+    def handle_print_start(self, job):
         self.notify.show("Started printing", f"Started printing {job.name}", delay=5)
         self.print_title = job.name
         # This only works if we are in a printing state
-        # we rely on this being called after handle_printjob_change
-        self.reactor.cb(printer_cmd.get_printjob_progress)
+        # we rely on this being called after handle_print_change
+        self.reactor.cb(printer_cmd.get_print_progress)
 
-    def handle_printjob_end(self, job):
+    def handle_print_end(self, job):
         if 'finished' == job.state:
             self.progress = 1
             self.print_done_time = ""
             self.print_time = "finished"
             # Show finished job for 1h
-            Clock.schedule_once(lambda dt: self.hide_printjob(job.name), 3600)
+            Clock.schedule_once(lambda dt: self.hide_print(job.name), 3600)
         else:
-            self.hide_printjob(job.name)
+            self.hide_print(job.name)
 
-    def hide_printjob(self, name):
+    def hide_print(self, name):
         if not self.jobs and self.print_title == name:
             self.print_title = ""
             self.print_done_time = ""
             self.print_time = ""
             self.progress = 0
-            self.print_state = "no printjob"
+            self.print_state = "no print job"
             # Tuning values are only reset once print_queue has run out
             self.reactor.cb(printer_cmd.reset_tuning)
 

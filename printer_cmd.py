@@ -29,7 +29,7 @@ def get_z_offset(e, printer):
     z_offset = printer.objects['gcode_move'].homing_position[2]
     printer.reactor.cb(set_attribute, 'z_offset', z_offset, process='kgui')
 def send_z_offset(e, printer, z_offset):
-    printer.objects['gcode'].run_script_from_command(f"SET_GCODE_OFFSET Z={z_offset} MOVE=1 MOVE_SPEED=5")
+    printer.objects['gcode'].run_script(f"SET_GCODE_OFFSET Z={z_offset} MOVE=1 MOVE_SPEED=5")
     get_z_offset(e, printer)
 
 def get_speed(e, printer):
@@ -99,7 +99,7 @@ def send_acceleration(e, printer, val):
 def update(e, printer):
     get_toolhead_busy(e, printer)
     get_homing_state(e, printer)
-    get_printjob_progress(e, printer)
+    get_print_progress(e, printer)
     get_pos(e, printer)
     get_pressure_advance(e, printer)
     get_acceleration(e, printer)
@@ -134,11 +134,10 @@ def get_homing_state(e, printer):
     homed = {axis: bool(axis in kin_status['homed_axes']) for axis in "xyz"}
     printer.reactor.cb(set_attribute, 'homed', homed, process='kgui')
 def send_home(e, printer, axis):
-    wait_toolhead_not_busy(e, printer)
-    printer.objects['gcode'].run_script_from_command("G28" + axis.upper())
+    printer.objects['gcode'].run_script("G28" + axis.upper())
 
 def send_motors_off(e, printer):
-    printer.objects['gcode'].run_script_from_command("M18")
+    printer.objects['gcode'].run_script("M18")
     get_homing_state(e, printer)
 
 def get_toolhead_busy(e, printer):
@@ -146,13 +145,6 @@ def get_toolhead_busy(e, printer):
     busy = not (est_print_time > print_time and lookahead_empty)
     printer.reactor.cb(set_attribute, 'toolhead_busy', busy, process='kgui')
     return busy
-def wait_toolhead_not_busy(e, printer):
-    while 1:
-        print_time, est_print_time, lookahead_empty = printer.objects['toolhead'].check_busy(printer.reactor.monotonic())
-        if est_print_time > print_time and lookahead_empty:
-            break
-        printer.reactor.pause(printer.reactor.monotonic() + print_time - est_print_time + 0.05)
-    printer.reactor.cb(set_attribute, 'toolhead_busy', False, process='kgui')
 
 def get_pos(e, printer):
     pos = printer.objects['toolhead'].get_position()
@@ -185,10 +177,10 @@ def send_lm_stop(e, printer, axis):
     printer.objects['live_move'].stop_move(axis)
     get_pos(e, printer)
 
-def get_printjob_progress(e, printer):
+def get_print_progress(e, printer):
     est_remaining, progress = printer.objects['print_stats'].get_print_time_prediction()
-    printer.reactor.cb(set_printjob_progress, est_remaining, progress, process='kgui')
-def set_printjob_progress(e, kgui, est_remaining, progress):
+    printer.reactor.cb(set_print_progress, est_remaining, progress, process='kgui')
+def set_print_progress(e, kgui, est_remaining, progress):
     if kgui.print_state in ('printing', 'pausing', 'paused'):
         if progress is None: # no prediction could be made yet
             kgui.progress = 0
@@ -242,16 +234,16 @@ def send_calibrate(e, printer):
     printer.objects['bed_mesh'].calibrate.cmd_BED_MESH_CALIBRATE(None)
 
 def send_print(e, printer, filepath):
-    printer.objects['virtual_sdcard'].add_printjob(filepath)
+    printer.objects['virtual_sdcard'].add_print(filepath)
 
 def send_stop(e, printer):
-    printer.objects['virtual_sdcard'].stop_printjob()
+    printer.objects['virtual_sdcard'].stop_print()
 
 def send_pause(e, printer):
-    printer.objects['virtual_sdcard'].pause_printjob()
+    printer.objects['virtual_sdcard'].pause_print()
 
 def send_resume(e, printer):
-    printer.objects['virtual_sdcard'].resume_printjob()
+    printer.objects['virtual_sdcard'].resume_print()
 
 def restart(e, printer):
     printer.request_exit('restart')
