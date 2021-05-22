@@ -43,7 +43,7 @@ class PrintJob:
     def set_state(self, state):
         if self.state != state:
             self.state = state
-            self.reactor.send_event("virtual_sdcard:printjob_change", self.manager.jobs)
+            self.reactor.send_event("virtual_sdcard:print_change", self.manager.jobs)
 
     def start(self):
         if self.state == 'queued':
@@ -55,7 +55,7 @@ class PrintJob:
             else:
                 self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
                 self.set_state('paused')
-            self.reactor.send_event("virtual_sdcard:printjob_start", self)
+            self.reactor.send_event("virtual_sdcard:print_start", self)
 
     def resume(self):
         if self.state == 'pausing':
@@ -81,7 +81,7 @@ class PrintJob:
             self.reactor.pause(self.reactor.monotonic() + 0.05)
             self.heaters.cmd_TURN_OFF_HEATERS(None)
             return True
-        else: # In case it is paused we need to do all aborting actions here
+        elif self.state == 'paused': # In case it is paused we need to do all aborting actions here
             self.set_state('aborted')
             self.file_obj.close()
             self.heaters.cmd_TURN_OFF_HEATERS(None)
@@ -171,50 +171,50 @@ class PrintJobManager:
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
         self.jobs = [] # Print jobs, first is current
 
-    def add_printjob(self, path, no_pause=False):
-        """ Add new printjob to queue """
+    def add_print(self, path, no_pause=False):
+        """ Add new print job to queue """
         job = PrintJob(path, self, no_pause)
         self.jobs.append(job)
         self.check_queue()
-        self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
-        self.printer.send_event("virtual_sdcard:printjob_added", job)
+        self.printer.send_event("virtual_sdcard:print_change", self.jobs)
+        self.printer.send_event("virtual_sdcard:print_added", job)
 
-    def pause_printjob(self, *args):
+    def pause_print(self, gcmd=None):
         if self.jobs:
             return self.jobs[0].pause()
 
-    def stop_printjob(self, *args):
+    def stop_print(self, gcmd=None):
         if self.jobs:
             return self.jobs[0].stop()
 
-    def resume_printjob(self, *args):
+    def resume_print(self, gcmd=None):
         if self.jobs:
             return self.jobs[0].resume()
 
-    def remove_printjob(self, idx, uuid):
+    def remove_print(self, idx, uuid):
         if 0 < idx < len(self.jobs) and self.jobs[idx].uuid == uuid:
             self.jobs.pop(idx)
-            self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
+            self.printer.send_event("virtual_sdcard:print_change", self.jobs)
             return True
 
-    def move_printjob(self, idx, uuid, move):
+    def move_print(self, idx, uuid, move):
         if 0 < idx + move < len(self.jobs) and 0 < idx < len(self.jobs) and self.jobs[idx].uuid == uuid:
             to_move = self.jobs.pop(idx)
             self.jobs.insert(idx + move, to_move)
-            self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
+            self.printer.send_event("virtual_sdcard:print_change", self.jobs)
             return True
 
     def clear_queue(self):
         """ Remove everything but the first element which is currently being printed """
         self.jobs = self.jobs[:1]
-        self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
+        self.printer.send_event("virtual_sdcard:print_change", self.jobs)
 
     def check_queue(self):
-        """ Remove 'aborted' or 'finished' printjobs from queue, start next if necessary """
+        """ Remove 'aborted' or 'finished' print jobs from queue, start next if necessary """
         if len(self.jobs) and self.jobs[0].state in ('finished', 'aborted'):
             last_job = self.jobs.pop(0)
-            self.printer.send_event("virtual_sdcard:printjob_change", self.jobs)
-            self.printer.send_event("virtual_sdcard:printjob_end", last_job)
+            self.printer.send_event("virtual_sdcard:print_change", self.jobs)
+            self.printer.send_event("virtual_sdcard:print_end", last_job)
         if len(self.jobs) and self.jobs[0].state in ('queued'):
             self.jobs[0].start()
 
@@ -226,7 +226,7 @@ class PrintJobManager:
 
     def handle_shutdown(self):
         if len(self.jobs) and self.jobs[0].state == 'printing':
-            self.stop_printjob()
+            self.stop_print()
             try:
                 readpos = max(self.jobs[0].file_position - 1024, 0)
                 readcount = self.jobs[0].file_position - readpos
@@ -250,9 +250,9 @@ class VirtualSD(PrintJobManager):
         self.selected_file = None # str
         sd_path = config.get('path')
         self.sdcard_dirname = os.path.normpath(os.path.expanduser(sd_path))
-        self.gcode.register_command("PAUSE", self.pause_printjob)
-        self.gcode.register_command("RESUME", self.resume_printjob)
-        self.gcode.register_command("STOP", self.stop_printjob)
+        self.gcode.register_command("PAUSE", self.pause_print)
+        self.gcode.register_command("RESUME", self.resume_print)
+        self.gcode.register_command("STOP", self.stop_print)
         self.gcode.register_command('M21', None)
         for cmd in ('M20', 'M21', 'M23', 'M24', 'M25', 'M26', 'M27'):
             self.gcode.register_command(cmd, getattr(self, 'cmd_' + cmd))
@@ -272,9 +272,9 @@ class VirtualSD(PrintJobManager):
             raise self.gcode.error("Unable to get file list")
     def is_active(self):
         return len(self.jobs) and self.jobs[0] == 'printing'
-    def cmd_error(self, params):
+    def cmd_error(self, gcmd):
         raise self.gcode.error("SD write not supported")
-    def cmd_M20(self, params):
+    def cmd_M20(self, gcmd):
         # List SD card
         files = self.get_file_list()
         gcmd.respond_raw("Begin file list")
@@ -286,10 +286,11 @@ class VirtualSD(PrintJobManager):
         gcmd.respond_raw("SD card ok")
     def cmd_M23(self, gcmd):
         # Select SD file
-        # parses filename
+        if self.jobs:
+            raise gcmd.error("SD busy")
         try:
-            orig = params['#original']
-            filename = orig[orig.find("M23")+4 : max(orig.find(".gco")+4, orig.find(".gcode")+6)].strip()
+            orig = gcmd.get_commandline()
+            filename = orig[orig.find("M23") + 4:].split()[0].strip()
             if '*' in filename:
                 filename = filename[:filename.find('*')].strip()
         except:
@@ -297,29 +298,33 @@ class VirtualSD(PrintJobManager):
         if filename.startswith('/'):
             filename = filename[1:]
         files = self.get_file_list(check_subdirs)
+        flist = [f[0] for f in files]
         files_by_lower = { fname.lower(): fname for fname, fsize in files }
-        filename = files_by_lower[filename.lower()]
-        self.selected_file = os.path.join(self.sdcard_dirname, filename)
-        self.gcode.respond_raw(f"File {filename} selected")
-    def cmd_M24(self, params):
+        fname = filename
+        if fname not in flist:
+            fname = files_by_lower[fname.lower()]
+        fname = os.path.join(self.sdcard_dirname, fname)
+        self.add_print(fname)
+        gcmd.respond_raw("File opened:%s Size:%d" % (filename, fsize))
+        gcmd.respond_raw("File selected")
+    def cmd_M24(self, gcmd):
         # Start/resume SD print
-        if self.state == 'paused':
-            self.resume_printjob()
-        elif self.state != 'printing':
-            self.clear_queue()
-            self.add_printjob(self.selected_file)
-    def cmd_M25(self, params):
+        if self.jobs:
+            self.resume_print()
+        else:
+            self.add_print(self.selected_file)
+    def cmd_M25(self, gcmd):
         # Pause SD print
-        self.pause_printjob()
-    def cmd_M26(self, params):
+        self.pause_print()
+    def cmd_M26(self, gcmd):
         # Set SD position
         if len(self.jobs):
             if self.jobs[0].state == 'printing':
-                raise self.gcode.error("SD busy")
+                raise gcmd.error("SD busy")
             else:
-                pos = self.gcode.get_int('S', params, minval=0)
+                pos = gcmd.get_int('S', minval=0)
                 self.jobs[0].file_position = pos
-    def cmd_M27(self, params):
+    def cmd_M27(self, gcmd):
         # Report SD print status
         if self.state == 'printing':
             self.gcode.respond_raw("SD printing byte %d/%d" % (

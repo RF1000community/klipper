@@ -19,37 +19,32 @@ class LiveMove:
         self.pos_max = {i: stepper_config[i].getfloat('position_max', 200) for i in 'xyz'}
         self.pos_min = {i: stepper_config[i].getfloat('position_min', 0) for i in 'xyz'}
 
-    def toolhead_busy(self):
-        toolhead = self.printer.objects['toolhead']
-        print_time, est_print_time, lookahead_empty = toolhead.check_busy(self.reactor.monotonic())
-        idle_time = est_print_time - print_time
-        return bool(not lookahead_empty or idle_time <= 0)
-
     def start_move(self, axis, direction):
         toolhead = self.printer.lookup_object('toolhead', None)
-        if toolhead and not self.toolhead_busy():
-            i = 0
-            extruder = self.printer.lookup_object(f"extruder{'' if i==0 else i}")
-            kin_status = toolhead.kin.get_status(self.reactor.monotonic())
-            self.move_completion[axis] = ReactorCompletion(self.reactor)
-            pos = toolhead.get_position()
-            idx = {'x': 0, 'y':1, 'z':2, 'e':3}[axis]
-            if axis == 'e':
-                pos[idx] += 40*direction
-            elif axis in kin_status['homed_axes']:
-                pos[idx] = (self.pos_max[axis] if direction == 1 else self.pos_min[axis])
-            else:
-                pos[idx] += (self.pos_max[axis] - self.pos_min[axis])*direction
-            toolhead.flush_step_generation()
-            steppers = toolhead.kin.get_steppers() + [extruder.stepper]
+        i = 0
+        extruder = self.printer.lookup_object(f"extruder{'' if i==0 else i}")
+        self.printer.objects['gcode'].mutex.__enter__()
+        kin_status = toolhead.kin.get_status(self.reactor.monotonic())
+        self.move_completion[axis] = ReactorCompletion(self.reactor)
+        pos = toolhead.get_position()
+        idx = {'x': 0, 'y':1, 'z':2, 'e':3}[axis]
+        if axis == 'e':
+            pos[idx] += 40*direction
+        elif axis in kin_status['homed_axes']:
+            pos[idx] = (self.pos_max[axis] if direction == 1 else self.pos_min[axis])
+        else:
+            pos[idx] += (self.pos_max[axis] - self.pos_min[axis])*direction
+        toolhead.flush_step_generation()
+        steppers = toolhead.kin.get_steppers() + [extruder.stepper]
 
-            self.start_kin_spos = {s.get_name(): s.get_commanded_position() for s in steppers}
-            self.start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers]
-            toolhead.dwell(0.010)
-            toolhead.drip_move(pos, self.speed[axis], self.move_completion[axis], force=True)
+        self.start_kin_spos = {s.get_name(): s.get_commanded_position() for s in steppers}
+        self.start_mcu_pos = [(s, s.get_mcu_position()) for s in steppers]
+        toolhead.dwell(0.010)
+        toolhead.drip_move(pos, self.speed[axis], self.move_completion[axis], force=True)
 
     def stop_move(self, axis):
         toolhead = self.printer.lookup_object('toolhead')
+        self.printer.objects['gcode'].mutex.__exit__()
         if self.move_completion[axis] != None:
             i = 0
             extruder = self.printer.lookup_object(f"extruder{'' if i==0 else i}")

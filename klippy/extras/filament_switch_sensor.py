@@ -43,7 +43,7 @@ class RunoutHelper:
         pause_prefix = ""
         if self.runout_pause:
             virtual_sdcard = self.printer.lookup_object('virtual_sdcard')
-            virtual_sdcard.pause_printjob()
+            virtual_sdcard.pause_print()
             pause_prefix = "PAUSE\n"
             self.printer.get_reactor().pause(eventtime + self.pause_delay)
         self._exec_gcode(pause_prefix, self.runout_gcode)

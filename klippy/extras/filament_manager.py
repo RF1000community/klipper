@@ -147,8 +147,7 @@ class FilamentManager:
             'state': 'loading'})
         self.write_loaded_material_json()
 
-        self.wait_toolhead_not_busy()
-        self.gcode.run_script_from_command(f"LOAD_FILAMENT TEMPERATURE={temp}")
+        self.gcode.run_script(f"LOAD_FILAMENT TEMPERATURE={temp}")
 
         self.material['loaded'][idx]['state'] = 'loaded'
         self.write_loaded_material_json()
@@ -163,8 +162,7 @@ class FilamentManager:
             temp = self.get_info(self.material['loaded'][idx]['guid'],
                    "./m:settings/m:setting[@key='print temperature']", temp)
 
-        self.wait_toolhead_not_busy()
-        self.gcode.run_script_from_command(f"UNLOAD_FILAMENT TEMPERATURE={temp}")
+        self.gcode.run_script(f"UNLOAD_FILAMENT TEMPERATURE={temp}")
 
         self.material['unloaded'].insert(0, 
             {'guid':self.material['loaded'][idx]['guid'],
@@ -178,13 +176,6 @@ class FilamentManager:
 
     def idx(self, extruder_id):
         return 0 if extruder_id == 'extruder' else int(extruder_id[-1])
-
-    def wait_toolhead_not_busy(self):
-        while 1:
-            print_time, est_print_time, lookahead_empty = self.printer.objects['toolhead'].check_busy(self.reactor.monotonic())
-            if est_print_time > print_time and lookahead_empty:
-                return
-            self.reactor.pause(self.reactor.monotonic() + print_time - est_print_time + 0.05)
 
 ######################################################################
 # store json with loaded and recently unloaded materials and their amount

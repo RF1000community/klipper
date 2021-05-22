@@ -10,11 +10,11 @@ class PrintStats:
 
     def __init__(self, config):
         self.printer = config.get_printer()
-        self.initialize_printjob()
+        self.initialize_print()
         self.printer.register_event_handler("gcode:read_metadata", self.handle_gcode_metadata)
-        self.printer.register_event_handler("virtual_sdcard:printjob_end", self.initialize_printjob)
+        self.printer.register_event_handler("virtual_sdcard:print_end", self.initialize_print)
         # this relies on no gcode being processed before the start event which is given.
-        self.printer.register_event_handler("virtual_sdcard:printjob_start", self.initialize_printjob)
+        self.printer.register_event_handler("virtual_sdcard:print_start", self.initialize_print)
         self.printer.register_event_handler("klippy:connect", self.handle_connect)
 
         # List of time estimations by the slicer inside the gcode
@@ -22,9 +22,9 @@ class PrintStats:
         self.slicer_elapsed_times = []
 
     def handle_connect(self):
-        self.printjob_manager = self.printer.lookup_object('virtual_sdcard')
+        self.virtual_sdcard = self.printer.lookup_object('virtual_sdcard')
 
-    def initialize_printjob(self, *args):
+    def initialize_print(self, *args):
         self.slicer_elapsed_times = []
 
     def handle_gcode_metadata(self, print_time, line):
@@ -32,7 +32,7 @@ class PrintStats:
         Recieves all gcode-comment-lines as they are printed,
         and searches for print-time estimations
         """
-        job = self.printjob_manager.jobs[0]
+        job = self.virtual_sdcard.jobs[0]
         slicer_elapsed_time = job.md.parse_elapsed_time(line)
         if slicer_elapsed_time is not None:
             self.slicer_elapsed_times.append(
@@ -44,9 +44,9 @@ class PrintStats:
             time estimations in gcode: |....|....|....|........................|
             actual print time      |......|.....|.....|.............................|
                                    ^ start of print   ^ current point in time       ^ prediction
-            after the printjob is done the output is undefined, normally None """
-        if self.printjob_manager.jobs:
-            job = self.printjob_manager.jobs[0]
+            after the print job is done the output is undefined, normally None """
+        if self.virtual_sdcard.jobs:
+            job = self.virtual_sdcard.jobs[0]
             slicer_estimated_time = job.md.get_time()
         else: # No print job in queue
             return None, None

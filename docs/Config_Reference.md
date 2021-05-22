@@ -1234,8 +1234,8 @@ explicit idle_timeout config section to change the default settings.
 
 ## [virtual_sdcard]
 
-The virtual_sdcard provides fully featured printjob management, 
-so Klipper can manage printjobs itself, with pause-resume
+The virtual_sdcard provides fully featured print job management, 
+so Klipper can manage print jobs itself, with pause-resume
 functionality, and a print-queue.
 It can be controlled from different frontends, and g-code commands 
 (eg. M24). It allows the Klipper host software to directly print gcode

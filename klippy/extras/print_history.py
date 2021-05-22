@@ -24,7 +24,7 @@ class PrintHistory:
         self.history_path = expanduser("~/history.json")
         self.history = self.read()
         self.trim_history()
-        self.printer.register_event_handler("virtual_sdcard:printjob_end", self.add)
+        self.printer.register_event_handler("virtual_sdcard:print_end", self.add)
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
 
     def handle_ready(self):
