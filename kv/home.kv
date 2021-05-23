@@ -208,7 +208,7 @@
             top: root.height - p.padding - p.status_bar_height
             enabled:
                 app.state == "ready" and app.homed['x'] and app.homed['y'] \
-                and not app.toolhead_busy and not app.ui_toolhead_busy
+                and not app.toolhead_busy
         BtnHome:
             axis_id: 'X'
             size: p.btn_height, p.btn_height
@@ -446,7 +446,7 @@
             app.state == "ready" \
             and app.temp[root.extruder_id][0] > app.min_extrude_temp \
             and app.temp[root.extruder_id][1] > app.min_extrude_temp \
-            and not app.toolhead_busy and not app.ui_toolhead_busy
+            and not app.toolhead_busy
         on_press: app.reactor.cb(printer_cmd.send_extrude, root.gcode_id, -1)
         on_release: app.reactor.cb(printer_cmd.send_lm_stop, 'e')
         canvas:
@@ -484,7 +484,7 @@
             app.state == "ready" \
             and app.temp[root.extruder_id][0] > app.min_extrude_temp \
             and app.temp[root.extruder_id][1] > app.min_extrude_temp \
-            and not app.toolhead_busy and not app.ui_toolhead_busy
+            and not app.toolhead_busy
         on_press: app.reactor.cb(printer_cmd.send_extrude, root.gcode_id, 1)
         on_release: app.reactor.cb(printer_cmd.send_lm_stop, 'e')
         canvas:
@@ -525,7 +525,7 @@
             app.reactor.cb(printer_cmd.send_z_go, 1 if app.invert_z_controls else -1), \
             app.note_live_move('z')
         on_release: app.reactor.cb(printer_cmd.send_lm_stop, 'z');  app.note_live_move_end('z')
-        enabled: app.state == "ready" and not app.toolhead_busy and not app.ui_toolhead_busy
+        enabled: app.state == "ready" and not app.toolhead_busy
         size: root.width, root.h1
         pos: root.x, root.y
         canvas.before:
@@ -558,7 +558,7 @@
             app.reactor.cb(printer_cmd.send_z_go, -1 if app.invert_z_controls else 1), \
             app.note_live_move('z')
         on_release: app.reactor.cb(printer_cmd.send_lm_stop, 'z'); app.note_live_move_end('z')
-        enabled: app.state == "ready" and not app.toolhead_busy and not app.ui_toolhead_busy
+        enabled: app.state == "ready" and not app.toolhead_busy
         size: root.width, root.h3
         pos: root.x, root.top - root.h3
         canvas.before:
@@ -578,7 +578,7 @@
 
 <BtnHome@RoundButton>:
     axis_id: 'Z'
-    on_release: app.reactor.cb(printer_cmd.send_home, str(self.axis_id)); app.ui_toolhead_busy = True
+    on_release: app.reactor.cb(printer_cmd.send_home, str(self.axis_id)); app.toolhead_busy = True
     enabled: app.state == "ready"
     canvas:
         Color:

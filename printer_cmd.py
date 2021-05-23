@@ -97,7 +97,6 @@ def send_acceleration(e, printer, val):
 ######################################################################
 
 def update(e, printer):
-    get_toolhead_busy(e, printer)
     get_homing_state(e, printer)
     get_print_progress(e, printer)
     get_pos(e, printer)
@@ -140,12 +139,6 @@ def send_motors_off(e, printer):
     printer.objects['gcode'].run_script("M18")
     get_homing_state(e, printer)
 
-def get_toolhead_busy(e, printer):
-    print_time, est_print_time, lookahead_empty = printer.objects['toolhead'].check_busy(e)
-    busy = not (est_print_time > print_time and lookahead_empty)
-    printer.reactor.cb(set_attribute, 'toolhead_busy', busy, process='kgui')
-    return busy
-
 def get_pos(e, printer):
     pos = printer.objects['toolhead'].get_position()
     printer.reactor.cb(set_attribute, 'pos', pos, process='kgui')
@@ -155,8 +148,8 @@ def send_pos(e, printer, x=None, y=None, z=None, speed=15):
     # check whether axes are still homed
     new_pos = [new if name in homed_axes else None for new, name in zip(new_pos, 'xyze')]
     new_pos = _fill_coord(printer, new_pos)
-    printer.objects['toolhead'].move(new_pos, speed)
-    get_toolhead_busy(e, printer)
+    with printer.objects['gcode'].mutex:
+        printer.objects['toolhead'].move(new_pos, speed)
     get_pos(e, printer)
 
 def _fill_coord(printer, new_pos):
@@ -169,10 +162,8 @@ def _fill_coord(printer, new_pos):
 
 def send_extrude(e, printer, gcode_id, direction):
     printer.objects['live_move'].start_move('e', direction)
-    get_toolhead_busy(e, printer)
 def send_z_go(e, printer, direction):
     printer.objects['live_move'].start_move('z', direction)
-    get_toolhead_busy(e, printer)
 def send_lm_stop(e, printer, axis):
     printer.objects['live_move'].stop_move(axis)
     get_pos(e, printer)

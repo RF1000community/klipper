@@ -69,7 +69,6 @@ class mainApp(App, threading.Thread):
     progress = NumericProperty(0)
     pos = ListProperty([0, 0, 0, 0])
     toolhead_busy = BooleanProperty(False)
-    ui_toolhead_busy = BooleanProperty(False)
     material = DictProperty()
     tbc_to_guid = DictProperty()
     cura_connected = BooleanProperty(False)
@@ -226,10 +225,9 @@ class mainApp(App, threading.Thread):
         ErrorPopup(message = message).open()
 
     def handle_home_end(self, homing_state, rails):
-        self.ui_toolhead_busy = False
+        self.toolhead_busy = False
         for rail in rails:
             self.homed[rail.steppers[0].get_name(short=True)] = True
-        self.reactor.cb(printer_cmd.wait_toolhead_not_busy)
 
     def handle_print_change(self, jobs):
         """
@@ -283,12 +281,10 @@ class mainApp(App, threading.Thread):
         if axis in 'xyz' and not (self.homed[axis] or self.warned_not_homed[axis]):
             self.notify.show("Axis not homed", "Proceed with care!", level="warning", delay=3)
             self.warned_not_homed['z'] = True
-        self.ui_toolhead_busy = True
         self.toolhead_busy = True
 
     def note_live_move_end(self, axis=None):
-        self.ui_toolhead_busy = False
-        self.reactor.cb(printer_cmd.wait_toolhead_not_busy)
+        self.toolhead_busy = False
 
     def on_start(self, *args):
         if self.network_manager.available:
