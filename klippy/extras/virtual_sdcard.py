@@ -147,7 +147,6 @@ class PrintJob:
             if self.state == 'aborting':
                 self.set_state('aborted')
             self.file_obj.close()
-            self.heaters.cmd_TURN_OFF_HEATERS(None)
             self.manager.check_queue()
         return self.reactor.NEVER
 

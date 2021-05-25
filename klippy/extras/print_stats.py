@@ -68,8 +68,8 @@ class PrintStats:
             # where high variance is expected
             if len(self.slicer_elapsed_times) > 1:
                 est_remaining *= \
-                    (self.slicer_elapsed_times[-1][1] - self.slicer_elapsed_times[0][1]) \
-                   /(self.slicer_elapsed_times[-1][0] - self.slicer_elapsed_times[0][0])
+                    (self.slicer_elapsed_times[-1][0] - self.slicer_elapsed_times[0][0]) \
+                   /(self.slicer_elapsed_times[-1][1] - self.slicer_elapsed_times[0][1])
         else: # We dont have elapsed times
             est_remaining = max(slicer_estimated_time - printed_time, 0)
 
