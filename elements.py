@@ -187,7 +187,7 @@ class PrintPopup(BasePopup):
         new_path = self.path
         if p.usb_mount_dir in self.path:
             new_path = join(p.sdcard_path, basename(self.path))
-            self.app.notify.show(f"Copying {basename(self.path)} to Printer...")
+            self.app.notify.show(f"Copying {basename(self.path)} to Printer...", delay=3)
             shutil.copy(self.path, new_path)
 
         self.app.reactor.cb(printer_cmd.send_print, new_path)
@@ -212,8 +212,7 @@ class DeletePopup(BasePopup):
         remove(self.path)
         app = App.get_running_app()
         # Update the filechooser and print_history
-        if app.print_history:
-            app.print_history.trim_history()
+        app.reactor.cb(app.trim_history)
         if self.filechooser:
             self.filechooser.load_files(in_background=True)
         # Clear file form the metadata cache

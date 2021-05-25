@@ -50,11 +50,18 @@ class Filechooser(RecycleView):
         usb = []
         files = []
         folders = []
-        content = os.listdir(self.path)
         # If p.usb_mount_dir folder is not empty => a usb stick is plugged in
         # (usbmount mounts to this directory)
-        usb_state = (p.usb_mount_dir in content and
-                len(os.listdir(os.path.join(self.path, p.usb_mount_dir))) > 0)
+        usb_mount_path = os.path.join(p.sdcard_path, p.usb_mount_dir)
+        usb_state = 0 < len(os.listdir(usb_mount_path))
+        # If usb stick was unplugged, reset to sdcard directory
+        if not usb_state and self.path.startswith(usb_mount_path):
+            self.path = p.sdcard_path
+        try:
+            content = os.listdir(self.path)
+        except: # Maybe usb was juuust unplugged
+            self.path = p.sdcard_path
+            content = os.listdir(self.path)
         # Only update if files have changed (loop takes 170ms, listdir 0.3ms)
         if (not in_background) or self.content != content or self.usb_state != usb_state:
             for base in content:
