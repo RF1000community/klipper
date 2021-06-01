@@ -324,22 +324,17 @@ class PrinterHeaters:
         eventtime = reactor.monotonic()
         i = 0
         while not self.printer.is_shutdown() and heater.check_busy(eventtime):
-<<<<<<< HEAD
             if i%20 == 0:
                 gcode.respond_raw(self._get_temp(eventtime))
             i += 1
-            eventtime = reactor.pause(eventtime + 0.05)
-=======
             print_time = toolhead.get_last_move_time()
-            gcode.respond_raw(self._get_temp(eventtime))
-            eventtime = reactor.pause(eventtime + 1.)
+            eventtime = reactor.pause(eventtime + 0.05)
     def set_temperature(self, heater, temp, wait=False):
         toolhead = self.printer.lookup_object('toolhead')
         toolhead.register_lookahead_callback((lambda pt: None))
         heater.set_temp(temp)
         if wait and temp:
             self._wait_for_temperature(heater)
->>>>>>> 6a16f515b523686d2bc8db002cffdc8202abec99
     cmd_TEMPERATURE_WAIT_help = "Wait for a temperature on a sensor"
     def cmd_TEMPERATURE_WAIT(self, gcmd):
         sensor_name = gcmd.get('SENSOR')

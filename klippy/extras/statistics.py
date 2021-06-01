@@ -5,24 +5,6 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import os, time, logging
 
-<<<<<<< HEAD
-def get_os_stats(eventtime):
-    # Get core usage stats
-    msg = "sysload=%.2f cputime=%.3f" % (os.getloadavg()[0],
-                                         time.process_time())
-    # Get available system memory
-    try:
-        f = open("/proc/meminfo", "rb")
-        data = f.read()
-        f.close()
-        for line in data.split('\n'):
-            if line.startswith("MemAvailable:"):
-                msg = "%s memavail=%s" % (msg, line.split()[1])
-                break
-    except:
-        pass
-    return (False, msg)
-=======
 class PrinterSysStats:
     def __init__(self, config):
         printer = config.get_printer()
@@ -66,7 +48,6 @@ class PrinterSysStats:
         return {'sysload': self.last_load_avg,
                 'cputime': self.total_process_time,
                 'memavail': self.last_mem_avail}
->>>>>>> 6a16f515b523686d2bc8db002cffdc8202abec99
 
 class PrinterStats:
     def __init__(self, config):

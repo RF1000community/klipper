@@ -20,28 +20,6 @@ def multi_complete(printer, completions):
 class HomingMove:
     def __init__(self, printer, endstops, toolhead=None):
         self.printer = printer
-<<<<<<< HEAD
-        self.toolhead = printer.lookup_object('toolhead')
-        self.changed_axes = []
-        self.verify_retract = True
-        if self.printer.get_start_args().get("debuginput"):
-            self.verify_retract = False
-    def __getstate__(self):
-        return {}
-    def set_axes(self, axes):
-        self.changed_axes = axes
-    def get_axes(self):
-        return self.changed_axes
-    def _fill_coord(self, coord):
-        # Fill in any None entries in 'coord' with current toolhead position
-        thcoord = list(self.toolhead.get_position())
-        for i in range(len(coord)):
-            if coord[i] is not None:
-                thcoord[i] = coord[i]
-        return thcoord
-    def set_homed_position(self, pos):
-        self.toolhead.set_position(self._fill_coord(pos))
-=======
         self.endstops = endstops
         if toolhead is None:
             toolhead = printer.lookup_object('toolhead')
@@ -49,7 +27,6 @@ class HomingMove:
         self.end_mcu_pos = []
     def get_mcu_endstops(self):
         return [es for es, name in self.endstops]
->>>>>>> 6a16f515b523686d2bc8db002cffdc8202abec99
     def _calc_endstop_rate(self, mcu_endstop, movepos, speed):
         startpos = self.toolhead.get_position()
         axes_d = [mp - sp for mp, sp in zip(movepos, startpos)]
