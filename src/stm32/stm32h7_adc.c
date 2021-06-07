@@ -94,7 +94,7 @@ static const uint8_t adc_pins[] = {
 
 
 // ADC timing:
-// ADC clock=30Mhz, Tconv=8.5, Tsamp=64.5, total=2.433us*OVERSAMPLES
+// ADC clock=30Mhz, Tconv=8.5, Tsamp=64.5, total=2.4333us*OVERSAMPLES
 
 struct gpio_adc
 gpio_adc_setup(uint32_t pin)
