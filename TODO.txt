@@ -5,6 +5,14 @@ Features to be implemented
     better error handling (klipper)
         fix unknown command error silently stalling printjob
     finish Gcode console
+    active cooldown after print
+    auto start consecutive print when not interfering and correct material, otherwise print with offset, when option enabled
+
 Bugs
     live_extrusion leaves inconsistent state
     cura showing old printjobs after klipper restart
+    must home axis first after long paused print
+    wait for temp forever after adjustment, before reaching setpoint
+    fix memory leak
+    Avoid Print Bed Bolts
+    fix progress bar when consecutive print is paused
