@@ -16,3 +16,4 @@ Bugs
     fix memory leak
     Avoid Print Bed Bolts
     fix progress bar when consecutive print is paused
+    BadZipFile Error in gcode metadata when files tab open during gcode upload
