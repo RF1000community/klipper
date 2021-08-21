@@ -154,7 +154,7 @@ class Printer:
         # Avoid active imports changing environment - import in target process
         mod = importlib.import_module('parallel_extras.' + module_name)
         init_func = getattr(mod, init_func, None)
-        config.reactor = reactor.Reactor(process=module_name)
+        config.reactor = reactor.Reactor(process=module_name, gc_checking=True)
         def start(e):
             config.reactor.setup_mp_queues(mp_queues)
             config.reactor.root = init_func(config)
