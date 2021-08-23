@@ -369,7 +369,8 @@ def main():
         main_reactor.root = printer
         res = printer.run()
         time.sleep(1)
-        for process in printer.parallel_objects.values():
+        for name, process in printer.parallel_objects.items():
+            logging.info(f"Joining {name}")
             process.join()
         logging.info("Joined all processes")
         main_reactor.finalize()
