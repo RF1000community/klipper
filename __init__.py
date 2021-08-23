@@ -157,41 +157,6 @@ class mainApp(App, threading.Thread):
         self.connected = True
         self.clean() # print_history should exist at this point since it is created from a callback in init
 
-        # Check reactor latency during development
-        self.avg_count = 0
-        self.avg = 0
-        self.avg_2 = 0
-        Clock.schedule_interval(self.init_latency, 11)
-        Clock.schedule_interval(lambda e: self.reactor.register_callback(self.blocking_cb), 12)
-    def init_latency(self, dt):
-        self.start = self.reactor.monotonic()
-        self.reactor.cb(self.latency)
-    @staticmethod
-    def latency(e, printer):
-        half_time = printer.reactor.monotonic()
-        import random
-        time.sleep(random.randint(0, 20)/1000)
-        half_time2 = printer.reactor.monotonic()
-        printer.reactor.cb(mainApp.return_latency, half_time, half_time2, process='kgui')
-    @staticmethod
-    def return_latency(e, kgui, half_time, half_time2):
-        if kgui.start is None:
-            return logging.info("\nbig oof\n")
-        l1 = half_time - kgui.start
-        l2 = kgui.reactor.monotonic() - half_time2
-        kgui.avg_count +=1
-        kgui.avg = kgui.avg*(kgui.avg_count -1)/kgui.avg_count + l1*1/kgui.avg_count
-        kgui.avg_2 = kgui.avg_2*(kgui.avg_count -1)/kgui.avg_count + l2*1/kgui.avg_count
-        logging.info(f"latency kivy->klipper {l1:6.5f} (avg. {kgui.avg:6.5f})    klipper->kivy {l2:6.5f} (avg. {kgui.avg_2:6.5f})")
-        kgui.start = None
-    @staticmethod
-    def return_blocking(e, printer):
-        return 777
-    def blocking_cb(self, dt):
-        start_time = self.reactor.monotonic()
-        result = self.reactor.cb(self.return_blocking, wait='true')
-        logging.info(f"latency blocking cb {self.reactor.monotonic() - start_time:6.5f} got {result}")
-
     def handle_ready(self):
         self.state = "ready"
         self.reactor.cb(printer_cmd.update)
@@ -232,27 +197,27 @@ class mainApp(App, threading.Thread):
 
     def handle_print_change(self, jobs):
         """
-        This monitors changes of 2 things:
-        - The configuration of print jobs
-        - The state of 1. print job
+        Update the configuration of print jobs and the state of 1. print job
+        If there is no print job, the 'finished' state is retained until hide_print is executed
         """
-        if len(jobs): # Update print_state, unless there's no print job
+        if len(jobs):
             self.print_state = jobs[0].state
-        elif len(self.jobs): # If the job is already removed we still want to update state
-            self.print_state = self.jobs[0].state
         self.jobs = jobs
 
-    def handle_print_added(self, job):
-        self.notify.show("Added Print Job", f"Added {job.name} to print Queue", delay=4)
+    def handle_print_added(self, jobs, job):
+        self.handle_print_change(jobs)
+        if len(self.jobs) > 1:
+            self.notify.show("Added Print Job", f"Added {job.name} to print Queue", delay=4)
 
-    def handle_print_start(self, job):
+    def handle_print_start(self, jobs, job):
+        self.handle_print_change(jobs)
         self.notify.show("Started printing", f"Started printing {job.name}", delay=5)
         self.print_title = job.name
         # This only works if we are in a printing state
-        # we rely on this being called after handle_print_change
         self.reactor.cb(printer_cmd.get_print_progress)
 
-    def handle_print_end(self, job):
+    def handle_print_end(self, jobs, job):
+        self.handle_print_change(jobs)
         if 'finished' == job.state:
             self.progress = 1
             self.print_done_time = ""

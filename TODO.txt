@@ -3,6 +3,7 @@ Features to be implemented
     custom gcode macro buttons
     finish Gcode console
     active cooldown after print
+    avoid Print Bed Bolts
     auto start consecutive print when not interfering and correct material type, and enough material, otherwise print with offset, when option enabled
         maybe with following config options:
             printhead_x_min
@@ -15,12 +16,7 @@ Features to be implemented
             gantry_z_min
 
 Bugs
-    unknown command error silently stalling printjob
     live_extrusion leaves inconsistent state
     cura showing old printjobs after klipper restart
     must home axis first error after long paused print
-    wait for temp forever after adjustment, before reaching setpoint
-    memory leak
-    avoid Print Bed Bolts
-    fix progress bar when consecutive print is paused
-    BadZipFile Error in gcode metadata when file tab open during ufp upload
+    systemd / firmware_restart not working after certain errors

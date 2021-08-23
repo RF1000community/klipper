@@ -363,7 +363,7 @@
         RoundedRectangle:
             radius: [dp(5)]
             pos: self.pos
-            size: self.width*app.progress, dp(10)
+            size: self.width*app.progress + 0.0001, dp(10) # cannot set width to 0
 
 # BUTTONS
 
