@@ -40,7 +40,7 @@ class PrintStats:
 
     def get_print_time_prediction(self):
         """ we try to consider everything 'printed' that ran through gcode processing,
-            time are measured using print_time
+            time is measured using print_time
             time estimations in gcode: |....|....|....|........................|
             actual print time      |......|.....|.....|.............................|
                                    ^ start of print   ^ current point in time       ^ prediction

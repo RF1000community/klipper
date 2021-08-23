@@ -25,6 +25,8 @@ class HomingMove:
             toolhead = printer.lookup_object('toolhead')
         self.toolhead = toolhead
         self.end_mcu_pos = []
+    def __getstate__(self):
+        return {}
     def get_mcu_endstops(self):
         return [es for es, name in self.endstops]
     def _calc_endstop_rate(self, mcu_endstop, movepos, speed):
@@ -107,6 +109,8 @@ class Homing:
         self.printer = printer
         self.toolhead = printer.lookup_object('toolhead')
         self.changed_axes = []
+    def __getstate__(self):
+        return {}
     def set_axes(self, axes):
         self.changed_axes = axes
     def get_axes(self):

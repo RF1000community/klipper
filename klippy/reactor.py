@@ -214,6 +214,21 @@ class SelectReactor:
             return mp_completion.wait()
         if completion:
             return mp_completion
+    # def check_pickleable(self, args):
+    #     import pickle
+    #     is_kwarg = bool(type(args) is dict)
+    #     if is_kwarg:
+    #         items = args.items()
+    #     else:
+    #         args = list(args)
+    #         items = enumerate(args)
+    #     for key, value in items:
+    #         try:
+    #             pickle.dumps(value)
+    #         except:
+    #             import logging
+    #             logging.warning(f"couldn't pickle arg {key}, {value}")
+    #             raise
     @staticmethod
     def mp_complete(e, root, reference, result):
         root.reactor.async_complete(root.reactor._mp_completions.pop(reference), result)

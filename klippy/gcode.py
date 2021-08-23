@@ -279,6 +279,7 @@ class GCodeDispatch:
             # Don't warn about requests to turn off fan when fan not present
             return
         gcmd.respond_info('Unknown command:"%s"' % (cmd,))
+        self.printer.send_event("klippy:error", f"Unknown command {cmd}")
     def _cmd_mux(self, gcmd):
         key, values = self.mux_commands[gcmd.get_command()]
         if None in values:

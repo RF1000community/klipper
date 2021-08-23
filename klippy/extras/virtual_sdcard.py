@@ -55,7 +55,7 @@ class PrintJob:
             else:
                 self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
                 self.set_state('paused')
-            self.reactor.send_event("virtual_sdcard:print_start", self)
+            self.reactor.send_event("virtual_sdcard:print_start", self.manager.jobs, self)
 
     def resume(self):
         if self.state == 'pausing':
@@ -175,8 +175,7 @@ class PrintJobManager:
         job = PrintJob(path, self, no_pause)
         self.jobs.append(job)
         self.check_queue()
-        self.printer.send_event("virtual_sdcard:print_change", self.jobs)
-        self.printer.send_event("virtual_sdcard:print_added", job)
+        self.printer.send_event("virtual_sdcard:print_added", self.jobs, job)
 
     def pause_print(self, gcmd=None):
         if self.jobs:
@@ -212,8 +211,7 @@ class PrintJobManager:
         """ Remove 'aborted' or 'finished' print jobs from queue, start next if necessary """
         if len(self.jobs) and self.jobs[0].state in ('finished', 'aborted'):
             last_job = self.jobs.pop(0)
-            self.printer.send_event("virtual_sdcard:print_change", self.jobs)
-            self.printer.send_event("virtual_sdcard:print_end", last_job)
+            self.printer.send_event("virtual_sdcard:print_end", self.jobs, last_job)
         if len(self.jobs) and self.jobs[0].state in ('queued'):
             self.jobs[0].start()
 

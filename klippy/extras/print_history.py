@@ -79,7 +79,7 @@ class PrintHistory:
         except IOError:
             return
 
-    def add(self, job):
+    def add(self, jobs, job):
         """ Add a new entry to the history from the specified PrintJob object """
         self.history.append([job.path, job.state, time.time()])
         self.write(self.history)
