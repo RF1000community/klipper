@@ -4,6 +4,7 @@ Features to be implemented
     finish Gcode console
     active cooldown after print
     avoid Print Bed Bolts
+    show large thumbnail behind text on homescreen. Add blur or frosted glass effect to hide low res and keep text readable, maybe with kivy effectWidget or python-pil
     auto start consecutive print when not interfering and correct material type, and enough material, otherwise print with offset, when option enabled
         maybe with following config options:
             printhead_x_min
@@ -19,4 +20,3 @@ Bugs
     live_extrusion leaves inconsistent state
     cura showing old printjobs after klipper restart
     must home axis first error after long paused print
-    systemd / firmware_restart not working after certain errors
