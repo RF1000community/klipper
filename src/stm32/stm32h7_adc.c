@@ -22,7 +22,7 @@
 #define ADC_ISR_LDORDY_Msk                 (0x1UL << ADC_ISR_LDORDY_Pos)
 #define ADC_ISR_LDORDY                     ADC_ISR_LDORDY_Msk
 
-DECL_CONSTANT("ADC_MAX", 65535);
+DECL_CONSTANT("ADC_MAX", 4095);
 
 // GPIOs like A0_C are not covered!
 // This always gives the pin connected to the positive channel
