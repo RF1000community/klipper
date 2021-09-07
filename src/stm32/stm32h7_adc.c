@@ -1,4 +1,4 @@
-// ADC functions on STM32
+// ADC functions on STM32H7
 //
 // Copyright (C) 2020 Konstantin Vogel <konstantin.vogel@gmx.net>
 //
