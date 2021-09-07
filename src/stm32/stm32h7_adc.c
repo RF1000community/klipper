@@ -94,7 +94,7 @@ static const uint8_t adc_pins[] = {
 
 
 // ADC timing:
-// ADC clock=30Mhz, Tconv=8.5, Tsamp=64.5, total=2.4333us*OVERSAMPLES
+// ADC clock=30Mhz, Tconv=6.5, Tsamp=64.5, total=2.3666us*OVERSAMPLES
 
 struct gpio_adc
 gpio_adc_setup(uint32_t pin)
@@ -174,6 +174,8 @@ gpio_adc_setup(uint32_t pin)
                    | (aticks << 27));
         // Disable Continuous Mode
         MODIFY_REG(adc->CFGR, ADC_CFGR_CONT_Msk, 0);
+        // Set to 12 bit
+        MODIFY_REG(adc->CFGR, ADC_CFGR_RES_Msk, 0b110 << ADC_CFGR_RES_Pos);
         // Set hardware oversampling
         MODIFY_REG(adc->CFGR2, ADC_CFGR2_ROVSE_Msk, ADC_CFGR2_ROVSE);
         MODIFY_REG(adc->CFGR2, ADC_CFGR2_OVSR_Msk,
@@ -206,8 +208,8 @@ gpio_adc_sample(struct gpio_adc g)
     // Start sample
     adc->SQR1 = (g.chan << 6);
     adc->CR |= ADC_CR_ADSTART;
-    // Should take 2.4333us, add 1us for clock synchronisation etc.
-    return timer_from_us(1 + 2.4333*OVERSAMPLES);
+    // Should take 2.3666us, add 1us for clock synchronisation etc.
+    return timer_from_us(1 + 2.3666*OVERSAMPLES);
 }
 
 // Read a value; use only after gpio_adc_sample() returns zero
