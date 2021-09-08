@@ -369,30 +369,38 @@
 
 <BtnExtruder@BaseButton>:
     #:set esh 17
-    size: dp(icon_center)*2 + dp(10), p.btn_height
+    size: dp(icon_center)*2 + dp(5), p.btn_height
     gcode_id: 'T0'
     selected: False
     canvas:
         Color:
             rgba: p.nozzle_selected if self.selected else p.nozzle
-        RoundedRectangle:
-            size: self.width, self.height - dp(esh)
-            pos: self.x, self.y + dp(esh)
-            radius: (p.icon_radius,)
+        Rectangle:
+            size: self.width - 2*p.icon_radius, self.height - dp(esh) - p.icon_radius
+            pos: self.x + p.icon_radius, self.y + dp(esh)
         Triangle:
             points:
-                self.center_x - dp(esh), self.y + dp(esh), \
-                self.center_x, self.y, \
-                self.center_x + dp(esh), self.y + dp(esh)
-    # this needs a new label instance since the properties set in BaseButton
-    # cannot be overwritten in rule definition (only in instance)
+                self.x + p.icon_radius, self.y + dp(esh), \
+                self.center_x, self.y + p.icon_radius - dp(2), \
+                self.right - p.icon_radius, self.y + dp(esh)
+        Line:
+            width: p.icon_radius
+            points:
+                self.x + p.icon_radius, self.y + dp(esh), \
+                self.center_x, self.y + p.icon_radius - dp(2), \
+                self.right - p.icon_radius, self.y + dp(esh), \
+                self.right - p.icon_radius, self.top - p.icon_radius, \
+                self.x + p.icon_radius, self.top - p.icon_radius
+            close: True
+    # this needs a new label instance since the properties set in BaseButton cannot
+    # be overwritten in rule definition (only in instance)
     Label:
         text: str(int(root.gcode_id[1]) + 1)
         bold: True
         color: p.background
         center_x: root.center_x
-        center_y: root.center_y + dp(esh)/2
-        font_size: p.large_font + 4
+        center_y: root.center_y + dp(2)      
+        font_size: p.large_font + dp(4)
 
 <BtnTriple>:
     w1: 0
