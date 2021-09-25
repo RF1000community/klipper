@@ -130,6 +130,7 @@ class LoadCellProbe:
         self._last_force = 0.
         self._last_time = None
         self._stiffness_points = []
+        self._force_callbacks = []
 
         # subscribe to ADC callback
         max_val = self._max_abs_force / self._force_calibration
@@ -241,6 +242,9 @@ class LoadCellProbe:
         return pos[0], pos[1], pos[2]
 
 
+    def subscribe_force(self, force_callback):
+        self._force_callbacks.append(force_callback)
+
     def _handle_ready(self):
         # obtain toolhead object
         self.tool = self._printer.lookup_object('toolhead')
@@ -255,6 +259,9 @@ class LoadCellProbe:
         self._last_time = time
         # Store zero offset compensated value for display
         self._last_force = self._last_uncompensated_force - self._force_offset
+        # Send value to subscribers
+        for cb in self._force_callbacks :
+          cb(self._last_force)
 
 
     def _adc_wait_conversion_ready(self, gcmd):
@@ -608,4 +615,7 @@ class LoadCellProbe:
 def load_config(config):
     probe = LoadCellProbe(config)
     config.printer.add_object('probe', probe)
+    # Add second "load_cell" object to make load cell measurement available to
+    # other modules (e.g. z_sense_offset)
+    config.printer.add_object('load_cell', probe)
     return probe
