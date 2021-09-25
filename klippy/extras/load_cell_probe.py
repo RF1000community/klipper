@@ -136,6 +136,7 @@ class LoadCellProbe:
         self._last_force = 0.0
         self._last_time = None
         self._stiffness_points = []
+        self._force_callbacks = []
 
         # subscribe to ADC callback
         max_val = self._max_abs_force / self._force_calibration
@@ -259,6 +260,9 @@ class LoadCellProbe:
 
     def pull_probed_results(self):
         return self._results
+
+    def subscribe_force(self, force_callback):
+        self._force_callbacks.append(force_callback)
 
     def _handle_ready(self):
         # obtain toolhead object
