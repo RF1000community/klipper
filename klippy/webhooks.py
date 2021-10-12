@@ -14,15 +14,17 @@ REQUEST_LOG_SIZE = 20
 #
 # https://stackoverflow.com/questions/956867/
 #
-def byteify(data, ignore_dicts=False):
-    if isinstance(data, unicode):
-        return data.encode('utf-8')
-    if isinstance(data, list):
-        return [byteify(i, True) for i in data]
-    if isinstance(data, dict) and not ignore_dicts:
-        return {byteify(k, True): byteify(v, True)
-                for k, v in data.items()}
-    return data
+json_loads_byteify = None
+if sys.version_info.major < 3:
+    def json_loads_byteify(data, ignore_dicts=False):
+        if isinstance(data, unicode):
+            return data.encode('utf-8')
+        if isinstance(data, list):
+            return [json_loads_byteify(i, True) for i in data]
+        if isinstance(data, dict) and not ignore_dicts:
+            return {json_loads_byteify(k, True): json_loads_byteify(v, True)
+                    for k, v in data.items()}
+        return data
 
 class WebRequestError(gcode.CommandError):
     def __init__(self, message,):
@@ -40,7 +42,7 @@ class WebRequest:
     error = WebRequestError
     def __init__(self, client_conn, request):
         self.client_conn = client_conn
-        base_request = json.loads(request)
+        base_request = json.loads(request, object_hook=json_loads_byteify)
         if type(base_request) != dict:
             raise ValueError("Not a top-level dictionary")
         self.id = base_request.get('id', None)
@@ -255,8 +257,8 @@ class ClientConnection:
         self.send(result)
 
     def send(self, data):
-        frame = json.dumps(data, separators=(',', ':')).encode() + b"\x03"
-        self.send_buffer += frame
+        jmsg = json.dumps(data, separators=(',', ':'))
+        self.send_buffer += jmsg.encode() + b"\x03"
         if not self.is_sending_data:
             self.is_sending_data = True
             self.reactor.register_callback(self._do_send)

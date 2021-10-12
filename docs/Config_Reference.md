@@ -707,10 +707,10 @@ sensor_pin:
 #   The resistance (in ohms) of the pullup attached to the thermistor.
 #   This parameter is only valid when the sensor is a thermistor. The
 #   default is 4700 ohms.
-#smooth_time: 2.0
+#smooth_time: 1.0
 #   A time value (in seconds) over which temperature measurements will
 #   be smoothed to reduce the impact of measurement noise. The default
-#   is 2 seconds.
+#   is 1 seconds.
 control:
 #   Control algorithm (either pid or watermark). This parameter must
 #   be provided.
@@ -1303,12 +1303,10 @@ explicit idle_timeout config section to change the default settings.
 
 ### [virtual_sdcard]
 
-The virtual_sdcard provides fully featured print job management, 
-so Klipper can manage print jobs itself, with pause-resume
-functionality, and a print-queue.
-It can be controlled from different frontends, and g-code commands 
-(eg. M24). It allows the Klipper host software to directly print gcode
-files stored in any directory.
+A virtual sdcard may be useful if the host machine is not fast enough
+to run OctoPrint well. It allows the Klipper host software to directly
+print gcode files stored in a directory on the host using standard
+sdcard G-Code commands (eg, M24).
 
 ```
 [virtual_sdcard]
@@ -3242,6 +3240,11 @@ lcd_type:
 #encoder_pins:
 #   The pins connected to encoder. 2 pins must be provided when using
 #   encoder. This parameter must be provided when using menu.
+#encoder_steps_per_detent:
+#   How many steps the encoder emits per detent ("click"). If the
+#   encoder takes two detents to move between entries or moves two
+#   entries from one detent, try changing this. Allowed values are 2
+#   (half-stepping) or 4 (full-stepping). The default is 4.
 #click_pin:
 #   The pin connected to 'enter' button or encoder 'click'. This
 #   parameter must be provided when using menu. The presence of an

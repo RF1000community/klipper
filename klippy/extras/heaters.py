@@ -34,7 +34,7 @@ class Heater:
                          is not None)
         self.can_extrude = self.min_extrude_temp <= 0. or is_fileoutput
         self.max_power = config.getfloat('max_power', 1., above=0., maxval=1.)
-        self.smooth_time = config.getfloat('smooth_time', 2., above=0.)
+        self.smooth_time = config.getfloat('smooth_time', 1., above=0.)
         self.inv_smooth_time = 1. / self.smooth_time
         self.lock = threading.Lock()
         self.last_temp = self.smoothed_temp = self.target_temp = 0.
@@ -50,7 +50,7 @@ class Heater:
         heater_pin = config.get('heater_pin')
         ppins = self.printer.lookup_object('pins')
         self.mcu_pwm = ppins.setup_pin('pwm', heater_pin)
-        pwm_cycle_time = config.getfloat('pwm_cycle_time', 0.05, above=0.,
+        pwm_cycle_time = config.getfloat('pwm_cycle_time', 0.100, above=0.,
                                          maxval=self.pwm_delay)
         self.mcu_pwm.setup_cycle_time(pwm_cycle_time)
         self.mcu_pwm.setup_max_duration(MAX_HEAT_TIME)
@@ -180,6 +180,7 @@ class ControlPID:
         self.Ki = config.getfloat('pid_Ki') / PID_PARAM_BASE
         self.Kd = config.getfloat('pid_Kd') / PID_PARAM_BASE
         self.min_deriv_time = heater.get_smooth_time()
+        config.deprecate('pid_integral_max')
         imax = config.getfloat('pid_integral_max', self.heater_max_power,
                                minval=0.)
         self.temp_integ_max = 0.
