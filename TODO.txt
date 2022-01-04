@@ -8,21 +8,16 @@ Features to be implemented
     red warning text on shutdown popup when there is a print ongoing or paused
     show large thumbnail behind text on homescreen. Add blur or frosted glass effect to hide low res and keep text readable, maybe with kivy effectWidget or python-pil
     auto start consecutive print when not interfering and correct material type, and enough material, otherwise print with offset, when option enabled
-        maybe with following config options:
-            printhead_x_min
-            printhead_x_max
-            printhead_y_min
-            printhead_y_max
-            gantry_orientation (x|y)
-            gantry_xy_min
-            gantry_xy_max
-            gantry_z_min
     add TMC-261C support (+ pull request to klipper)
         the mcu should communicate to the drivers via spi, to set current and set control registers
         see extras/tmc.py, should hopefully be similar to other drivers in extras/tmc*.py (some of them also use spi)
         https://www.trinamic.com/fileadmin/assets/Products/ICs_Documents/TMC261C_Datasheet_Rev1.02.pdf
             (we use spi-programmed mode, not standalone)
             (step-direction pins are used for sending position, not via spi)
+        use e.g. "cat >> /tmp/printer" and then "G1 Z100 F300 FORCE"
+        or "M84" to turn on steppers, "M18" to turn off steppers (they should hold their position when on)
+        klipperui_klipboard_tmc261 config
+
 Bugs
     live_extrusion leaves inconsistent state
     cura showing old printjobs after klipper restart
