@@ -17,6 +17,7 @@ Features to be implemented
         use e.g. "cat >> /tmp/printer" and then "G1 Z100 F300 FORCE"
         or "M84" to turn on steppers, "M18" to turn off steppers (they should hold their position when on)
         klipperui_klipboard_tmc261 config
+        https://www.maximintegrated.com/en/design/technical-documents/app-notes/3/3947.html
 
 Bugs
     live_extrusion leaves inconsistent state
