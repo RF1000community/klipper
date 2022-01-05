@@ -71,7 +71,7 @@ To obtain the single stepper benchmarks, the same configuration
 sequence is used, but only the first block of the above test is
 cut-and-paste into the console.py window.
 
-To produce the benchmarks found in the Features.md document, the total
+To produce the benchmarks found in the [Features](Features.md) document, the total
 number of steps per second is calculated by multiplying the number of
 active steppers with the nominal mcu frequency and dividing by the
 final ticks parameter. The results are rounded to the nearest K. For
@@ -247,6 +247,25 @@ results were obtained by running an STM32F407 binary on an STM32F446
 | -------------------- | ----- |
 | 1 stepper            | 46    |
 | 3 stepper            | 205   |
+
+### STM32G0B1 step rate benchmark
+
+The following configuration sequence is used on the STM32G0B1:
+```
+allocate_oids count=3
+config_stepper oid=0 step_pin=PB13 dir_pin=PB12 invert_step=-1 step_pulse_ticks=0
+config_stepper oid=1 step_pin=PB10 dir_pin=PB2 invert_step=-1 step_pulse_ticks=0
+config_stepper oid=2 step_pin=PB0 dir_pin=PC5 invert_step=-1 step_pulse_ticks=0
+finalize_config crc=0
+```
+
+The test was last run on commit `247cd753` with gcc version
+`arm-none-eabi-gcc (Fedora 10.2.0-4.fc34) 10.2.0`.
+
+| stm32f042        | ticks |
+| ---------------- | ----- |
+| 1 stepper        | 58    |
+| 3 stepper        | 243   |
 
 ### LPC176x step rate benchmark
 
