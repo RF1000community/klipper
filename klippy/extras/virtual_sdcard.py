@@ -53,7 +53,7 @@ class PrintJob:
                 self.set_state('printing')
                 self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
             else:
-                self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
+                self.gcode.run_script_from_command("SAVE_GCODE_STATE NAME=PAUSE_STATE")
                 self.set_state('paused')
             self.reactor.send_event("virtual_sdcard:print_start", self.manager.jobs, self)
 
@@ -62,7 +62,7 @@ class PrintJob:
             self.set_state('printing')
             return True
         elif self.state == 'paused':
-            self.gcode.run_script_from_command("RESTORE_GCODE_STATE STATE=PAUSE_STATE MOVE=1")
+            self.gcode.run_script_from_command("RESTORE_GCODE_STATE NAME=PAUSE_STATE MOVE=1")
             self.last_start_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
             self.set_state('printing')
             self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
@@ -141,7 +141,7 @@ class PrintJob:
         self.additional_printed_time += self.toolhead.get_last_move_time() - self.last_start_time
         # Finish aborting or pausing actions
         if self.state == 'pausing':
-            self.gcode.run_script_from_command("SAVE_GCODE_STATE STATE=PAUSE_STATE")
+            self.gcode.run_script_from_command("SAVE_GCODE_STATE NAME=PAUSE_STATE")
             self.set_state('paused')
         else:
             if self.state == 'aborting':
