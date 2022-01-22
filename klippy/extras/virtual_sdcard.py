@@ -22,7 +22,6 @@ class PrintJob:
         self.state = None
         self.set_state('queued') # queued -> printing -> pausing -> paused -> printing -> finished
         self.file_position = 0 #                      -> aborting -> aborted
-        self.queue_empty = not manager.jobs
         self.additional_printed_time = 0 # elapsed print time before the last pause
         self.last_start_time = 0
         self.name, ext = os.path.splitext(os.path.basename(path))
