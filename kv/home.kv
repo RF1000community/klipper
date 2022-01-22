@@ -59,6 +59,11 @@
             size: btn_stop.size
             y: btn_stop.y
             right: btn_stop.x
+        BtnClear:
+            on_release: app.reactor.cb(printer_cmd.clear_buildplate)
+            size: btn_stop.size
+            center_y: progress_bar.top + p.padding + p.btn_stop/2
+            center_x: p.screen_width - p.btn_stop/2 - p.h_padding
         Label:
             id: l_filename
             text: app.print_title
@@ -692,6 +697,20 @@
             pos: self.center_x + p.btn_stop/2 - 0.4*p.btn_stop, self.center_y - p.btn_stop/2
             size: 0.39*p.btn_stop, p.btn_stop
             radius: (p.icon_radius,)
+
+<BtnClear@RoundButton>:
+    enabled: app.print_state in ('finished')
+    canvas:
+        Color:
+            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
+
+        Line:
+            width: p.icon_radius
+            points:
+                self.center_x - dp(pw), self.center_y - dp(ph), \
+                self.center_x - dp(pw), self.center_y + dp(ph), \
+                self.center_x + dp(pw), self.center_y
+            close: True
 
 # POPUPS
 

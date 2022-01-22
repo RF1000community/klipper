@@ -223,19 +223,17 @@ class mainApp(App, threading.Thread):
             self.print_done_time = ""
             self.print_time = "finished"
             # Show finished job for 1h
-            Clock.schedule_once(lambda dt: self.hide_print(job.name), 3600)
-        else:
-            self.hide_print(job.name)
+            #Clock.schedule_once(lambda dt: self.hide_print(job.name), 3600)
 
-    def hide_print(self, name):
-        if not self.jobs and self.print_title == name:
-            self.print_title = ""
-            self.print_done_time = ""
-            self.print_time = ""
-            self.progress = 0
-            self.print_state = "no print job"
-            # Tuning values are only reset once print_queue has run out
-            self.reactor.cb(printer_cmd.reset_tuning)
+    # def hide_print(self, name):
+    #     if not self.jobs and self.print_title == name:
+    #         self.print_title = ""
+    #         self.print_done_time = ""
+    #         self.print_time = ""
+    #         self.progress = 0
+    #         self.print_state = "no print job"
+    #         # Tuning values are only reset once print_queue has run out
+    #         self.reactor.cb(printer_cmd.reset_tuning)
 
     def handle_history_change(self, history):
         self.history = history

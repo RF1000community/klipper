@@ -25,6 +25,9 @@ def reset_tuning(e, printer):
     reset_pressure_advance(e, printer)
     update(e, printer)
 
+def clear_buildplate(e, printer):
+    printer.lookup_object('collision').clear_printjobs()
+
 def get_z_offset(e, printer):
     z_offset = printer.objects['gcode_move'].homing_position[2]
     printer.reactor.cb(set_attribute, 'z_offset', z_offset, process='kgui')
