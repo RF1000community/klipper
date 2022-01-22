@@ -10,7 +10,7 @@ from uuid import uuid4
 
 
 class PrintJob:
-    def __init__(self, path, manager, no_pause):
+    def __init__(self, path, manager):
         self.manager = manager
         self.reactor = manager.reactor
         self.toolhead = manager.toolhead
@@ -22,7 +22,7 @@ class PrintJob:
         self.state = None
         self.set_state('queued') # queued -> printing -> pausing -> paused -> printing -> finished
         self.file_position = 0 #                      -> aborting -> aborted
-        self.no_pause = no_pause or not manager.jobs
+        self.queue_empty = not manager.jobs
         self.additional_printed_time = 0 # elapsed print time before the last pause
         self.last_start_time = 0
         self.name, ext = os.path.splitext(os.path.basename(path))
@@ -47,14 +47,10 @@ class PrintJob:
 
     def start(self):
         if self.state == 'queued':
-            if self.no_pause:
-                self.last_start_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
-                # set_state only after last_start_time is set but before entering work handler
-                self.set_state('printing')
-                self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
-            else:
-                self.gcode.run_script_from_command("SAVE_GCODE_STATE NAME=PAUSE_STATE")
-                self.set_state('paused')
+            self.last_start_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
+            # set_state only after last_start_time is set but before entering work handler
+            self.set_state('printing')
+            self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
             self.reactor.send_event("virtual_sdcard:print_start", self.manager.jobs, self)
 
     def resume(self):
@@ -170,9 +166,9 @@ class PrintJobManager:
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
         self.jobs = [] # Print jobs, first is current
 
-    def add_print(self, path, no_pause=False):
+    def add_print(self, path):
         """ Add new print job to queue """
-        job = PrintJob(path, self, no_pause)
+        job = PrintJob(path, self)
         self.jobs.append(job)
         self.check_queue()
         self.printer.send_event("virtual_sdcard:print_added", self.jobs, job)
@@ -213,7 +209,11 @@ class PrintJobManager:
             last_job = self.jobs.pop(0)
             self.printer.send_event("virtual_sdcard:print_end", self.jobs, last_job)
         if len(self.jobs) and self.jobs[0].state in ('queued'):
-            self.jobs[0].start()
+            collision = self.printer.lookup_object('collision')
+            available, offset = collision.check_available(self.jobs[0])
+            logging.info(f"offset is {offset}")
+            if available:
+                self.jobs[0].start()
 
     def get_status(self, eventtime=None):
         return {'jobs': self.jobs}

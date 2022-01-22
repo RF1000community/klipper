@@ -356,6 +356,8 @@ class PrinterConfig:
                     raise gcode.error(msg)
     cmd_SAVE_CONFIG_help = "Overwrite config file and restart"
     def cmd_SAVE_CONFIG(self, gcmd):
+        self.save_config()
+    def save_config(self, restart=True):
         if not self.autosave.fileconfig.sections():
             return
         gcode = self.printer.lookup_object('gcode')
@@ -400,4 +402,5 @@ class PrinterConfig:
             logging.exception(msg)
             raise gcode.error(msg)
         # Request a restart
-        gcode.request_restart('restart')
+        if restart:
+            gcode.request_restart('restart')
