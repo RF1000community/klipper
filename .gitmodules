@@ -8,3 +8,6 @@
 [submodule "klippy/extras/gcode_metadata"]
 	path = klippy/extras/gcode_metadata
 	url = https://github.com/Gobbel2000/gcode_metadata.git
+[submodule "klippy/extras/collision"]
+	path = klippy/extras/collision
+	url = https://github.com/Gobbel2000/collision
