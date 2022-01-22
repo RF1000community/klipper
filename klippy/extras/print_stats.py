@@ -32,11 +32,12 @@ class PrintStats:
         Recieves all gcode-comment-lines as they are printed,
         and searches for print-time estimations
         """
-        job = self.virtual_sdcard.jobs[0]
-        slicer_elapsed_time = job.md.parse_elapsed_time(line)
-        if slicer_elapsed_time is not None:
-            self.slicer_elapsed_times.append(
-                    (job.get_printed_time(), slicer_elapsed_time))
+        if self.virtual_sdcard.jobs:
+            job = self.virtual_sdcard.jobs[0]
+            slicer_elapsed_time = job.md.parse_elapsed_time(line)
+            if slicer_elapsed_time is not None:
+                self.slicer_elapsed_times.append(
+                        (job.get_printed_time(), slicer_elapsed_time))
 
     def get_print_time_prediction(self):
         """ we try to consider everything 'printed' that ran through gcode processing,
