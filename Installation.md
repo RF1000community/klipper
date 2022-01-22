@@ -1,7 +1,7 @@
 Installation Guide
 ==================
 
-##### This is still in development and may have bugs. (see bugs in TODO.txt) #####
+##### This is still in development and may have bugs.
 
 ### Requirements ###
 * Raspberry pi 4 (raspberry pi 3 is not tested, and may require different GL driver settings in kgui/\_\_init\_\_.py)
