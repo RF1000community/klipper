@@ -27,6 +27,13 @@ def reset_tuning(e, printer):
 
 def clear_buildplate(e, printer):
     printer.lookup_object('collision').clear_printjobs()
+def get_collision_config(e, printer):
+    continuous_printing, reposition, condition = printer.lookup_object('collision').get_config()
+    printer.reactor.cb(set_attribute, 'continuous_printing', continuous_printing, process='kgui')
+    printer.reactor.cb(set_attribute, 'reposition', reposition, process='kgui')
+    printer.reactor.cb(set_attribute, 'condition', condition, process='kgui')
+def set_collision_config(e, printer, *args):
+    printer.lookup_object('collision').set_config(*args)
 
 def get_z_offset(e, printer):
     z_offset = printer.objects['gcode_move'].homing_position[2]
@@ -228,6 +235,9 @@ def send_calibrate(e, printer):
     printer.objects['bed_mesh'].calibrate.cmd_BED_MESH_CALIBRATE(None)
 
 def send_print(e, printer, filepath):
+    virtual_sdcard = printer.objects['virtual_sdcard']
+    if not virtual_sdcard.jobs: # starting from ui is an implicit confirmation the buildplate is clear
+        printer.lookup_object('collision').clear_printjobs()
     printer.objects['virtual_sdcard'].add_print(filepath)
 
 def send_stop(e, printer):
@@ -244,10 +254,6 @@ def restart(e, printer):
 
 def firmware_restart(e, printer):
     printer.request_exit('firmware_restart')
-
-def quit(e, printer):
-    """ Stop klipper and GUI, returns to tty """
-    printer.request_exit('exit')
 
 def format_time(seconds):
     seconds = int(seconds)

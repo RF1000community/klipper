@@ -1,9 +1,8 @@
 import logging
 import site
 import threading
-import os, time
+import os
 import traceback
-import queue
 from os.path import join, dirname
 from subprocess import Popen
 from kivy.config import Config
@@ -83,6 +82,9 @@ class mainApp(App, threading.Thread):
     # Config
     config_pressure_advance = NumericProperty(0)
     config_acceleration = NumericProperty(0)
+    continuous_printing = BooleanProperty(False)
+    reposition = BooleanProperty(False)
+    condition = StringProperty("")
 
     def __init__(self, config, **kwargs):
         logging.info("Kivy app initializing...")
@@ -162,6 +164,7 @@ class mainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.update)
         self.reactor.cb(printer_cmd.get_material)
         self.reactor.cb(printer_cmd.get_tbc)
+        self.reactor.cb(printer_cmd.get_collision_config)
         self.bind(print_state=self.handle_material_change)
         Clock.schedule_interval(lambda dt: self.reactor.cb(printer_cmd.update), 1)
 
@@ -220,20 +223,20 @@ class mainApp(App, threading.Thread):
         self.handle_print_change(jobs)
         if 'finished' == job.state:
             self.progress = 1
-            self.print_done_time = ""
-            self.print_time = "finished"
-            # Show finished job for 1h
-            #Clock.schedule_once(lambda dt: self.hide_print(job.name), 3600)
+            self.print_done_time = "confirm build plate is clear"
+            self.print_time = ""
+        elif 'aborted' == job.state:
+            self.hide_print()
 
-    # def hide_print(self, name):
-    #     if not self.jobs and self.print_title == name:
-    #         self.print_title = ""
-    #         self.print_done_time = ""
-    #         self.print_time = ""
-    #         self.progress = 0
-    #         self.print_state = "no print job"
-    #         # Tuning values are only reset once print_queue has run out
-    #         self.reactor.cb(printer_cmd.reset_tuning)
+    def hide_print(self):
+        self.print_title = ""
+        self.print_done_time = ""
+        self.print_time = ""
+        self.progress = 0
+        self.print_state = "no print job"
+        if not self.jobs:
+            # Tuning values are only reset once print_queue has run out
+            self.reactor.cb(printer_cmd.reset_tuning)
 
     def handle_history_change(self, history):
         self.history = history

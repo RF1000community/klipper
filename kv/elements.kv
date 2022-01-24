@@ -72,6 +72,43 @@
 #            pos: self.pos
 #            size: self.size
 
+<BtnToggle@Widget>:
+    width: wdt - 2*rad + 2*Rad
+    enabled: True
+    active: False
+    canvas:
+        Color:
+            rgba: p.btn if not self.enabled else p.medium_light_gray
+        #: set wdt 60
+        #: set rad 11
+        #: set Rad 16
+        RoundedRectangle:
+            size: dp(wdt), dp(rad*2)
+            pos: int(self.center_x - dp(wdt/2)), self.center_y - dp(rad)
+            radius: (dp(rad),)
+        Color:
+            rgba: (1,1,1,1) if self.active and self.enabled else p.medium_light_gray
+        Ellipse:
+            size: dp(Rad*2), dp(Rad*2)
+            pos: self.right - 2*Rad if self.active else self.x , self.center_y - dp(Rad)
+
+<BtnRadio@Widget>:
+    selected: False
+    enabled: True
+    size_hint: None, None
+    size: dp(50), dp(50)
+    canvas:
+        Color:
+            rgba: p.btn_outline
+        Line:
+            width: 1
+            ellipse: self.x + dp(7), self.y + dp(7),   self.width - dp(14), self.height - dp(14)
+        Color:
+            rgba: (0,0,0,0) if not self.selected else (1,1,1,1) if self.enabled else p.medium_light_gray
+        Ellipse:
+            pos: self.x + dp(13), self.y + dp(13)
+            size: self.width - dp(26), self.height - dp(26)
+
 <BtnOutline@RoundButton>:
     canvas.before:
         Color:

@@ -247,6 +247,18 @@ class ConnectionPopup(BasePopup):
         self.dismiss()
 
 
+class ContinuousPrintingPopup(BasePopup):
+    changed = BooleanProperty(False)
+    def __init__(self, **kwargs):
+        self.app = App.get_running_app()
+        self.reactor = self.app.reactor
+        self.reactor.cb(printer_cmd.get_collision_config)
+        super().__init__(**kwargs)
+
+    def confirm(self):
+        self.reactor.cb(printer_cmd.set_collision_config, self.app.continuous_printing, self.app.reposition, self.app.condition)
+        self.dismiss()
+
 class SITimezone(SetItem):
 
     def __init__(self, **kwargs):

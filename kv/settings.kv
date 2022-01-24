@@ -50,9 +50,14 @@
             size_hint_y: None
             Divider:
                 pos_hint: {'center_x': 0.5}
+            # SetItem:
+            #     left_title: "Gcode Console"
+            #     on_release: root.manager.current = "ConsoleScreen"
             SetItem:
-                left_title: "Gcode Console"
-                on_release: root.manager.current = "ConsoleScreen"
+                left_title: "Continuous Printing"
+                right_title: "Enabled" if app.continuous_printing else "Disabled"
+                enabled: app.connected
+                on_release: Factory.ContinuousPrintingPopup().open()
             SetItem:
                 left_title: "Max. printhead Acceleration"
                 right_title: "{:6.0f}mm/s²".format(app.config_acceleration)
@@ -240,25 +245,10 @@
         text: "Update"
         on_release: root.fetch()
 
-# <BtnRadio@BaseButton>:
-#     selected: True
-#     size_hint: None, None
-#     size: 36, 35
-#     canvas:
-#         Color:
-#             rgba: p.btn_outline
-#         Line:
-#             width: 1
-#             ellipse: self.x, self.y,   self.width, self.height
-#         Color:
-#             rgba: p.medium_light_gray if self.selected else (0,0,0,0)
-#         Ellipse:
-#             pos: self.x + 6, self.y + 6
-#             size: self.width - 12, self.height - 12
-
 # SETITEMS
 
 <SetItem>:
+    enabled: True
     size_hint_y: None
     height: dp(110)
     width: p.screen_width
@@ -270,6 +260,7 @@
     halign: 'left'
     pos: self.pos
     padding_x: p.padding
+    color: (1,1,1,1) if self.enabled else p.medium_light_gray
     Label:
         id: right_label
         text: root.right_title
@@ -285,14 +276,40 @@
         padding_x: p.padding
     Divider:
         top: root.y
+        width: root.width - 2*p.small_padding
+        center_x: root.center_x
 
-<SISwitch@SetItem>:
-    enabled: False
-    Switch:
+<SIToggle@SetItem>:
+    enabled: True
+    active: False
+    on_release: self.active = not self.active
+    BtnToggle:
         id: knopf
         size_hint: None, None
         pos_hint: {'center_y': 0.5}
-        right: p.screen_width-p.padding +p.small_padding # to increase touch area
+        right: root.right - p.padding
+        active: root.active
+        enabled: root.enabled
+
+<SIRadio@RectangleButton>:
+    size_hint: None, None
+    height: dp(78)
+    width: p.screen_width
+    font_size: p.normal_font
+    text_size: self.size
+    valign: 'middle'
+    halign: 'left'
+    pos: self.pos
+    padding_x: p.padding
+    selected: False
+    enabled: False
+    color: (1,1,1,1) if self.enabled else p.medium_light_gray
+    BtnRadio:
+        size_hint: None, None
+        center_y: root.center_y
+        right: root.right - p.padding
+        selected: root.selected
+        enabled: root.enabled
 
 <SITimezone>:
     left_title: "Timezone"
@@ -396,14 +413,14 @@
 <PowerPopup@BasePopup>:
     title: "Shutdown..."
     title_size: p.large_font
-    size_hint: 0.67, 0.5
+    size_hint: 0.67, 0.433
     FloatLayout:
         Divider:
             width: root.width
-            pos: btn_quit.x, btn_quit.top
+            pos: btn_restart.x, btn_restart.top
         RectangleButton:
-            id: btn_restart_klipper
-            text: "Restart Klipper"
+            id: btn_restart
+            text: "Restart"
             size: btn_poweroff.size
             pos: btn_poweroff.x, btn_reboot.top
             on_release: app.reactor.cb(printer_cmd.firmware_restart)
@@ -411,23 +428,14 @@
             width: root.width
             pos: btn_reboot.pos
         RectangleButton:
-            id: btn_quit
-            text: "Quit to Terminal"
-            size: btn_poweroff.size
-            pos: btn_poweroff.x, btn_restart_klipper.top
-            on_release: app.reactor.cb(printer_cmd.quit)
-        Divider:
-            width: root.width
-            pos: btn_quit.pos
-        RectangleButton:
             id: btn_reboot
-            text: "Reboot"
+            text: "Full Reboot"
             size: btn_poweroff.size
             pos: btn_poweroff.x, btn_poweroff.top
             on_release: app.reboot()
         Divider:
             width: root.width
-            pos: btn_restart_klipper.pos
+            pos: btn_restart.pos
         RectangleButton:
             id: btn_poweroff
             text: "Shutdown"
@@ -441,6 +449,83 @@
             width: root.width
             pos: root.pos
             on_release: root.dismiss()
+
+<ContinuousPrintingPopup>:
+    size_hint: 0.92, 0.65
+    title: "Continuous Printing"
+    FloatLayout:
+        size_hint: None, None
+        size: root.size
+        pos: root.pos
+        Divider:
+            pos_hint: {'center_x': 0.5}
+            width: root.width - 2*p.small_padding
+            y: enable_toggle.top
+            center_x: root.center_x
+        SIToggle:
+            text: "Enabled" if self.active else "Disabled"
+            height: dp(105)
+            id: enable_toggle
+            size_hint: None, None
+            width: root.width
+            active: app.continuous_printing
+            on_active: root.changed = True; app.continuous_printing = self.active
+            y: reposition_toggle.top
+            x: root.x
+        SIToggle:
+            text: "Reposition Prints when needed"
+            height: dp(105)
+            id: reposition_toggle
+            enabled: enable_toggle.active
+            active: app.reposition
+            size_hint: None, None
+            width: root.width
+            on_active: root.changed = True; app.reposition = self.active
+            y: exact_radio.top
+            x: root.x
+        SIRadio:
+            id: exact_radio
+            text: "Exact Material Match"
+            value: "exact"
+            selected: app.condition == self.value
+            enabled: enable_toggle.active
+            size_hint: None, None
+            width: root.width
+            on_release: root.changed = True; app.condition = self.value
+            y: type_radio.top
+            x: root.x
+        SIRadio:
+            id: type_radio
+            text: "Material Type Match (PLA, PETG, ...)"
+            value: "type"
+            selected: app.condition == self.value
+            enabled: enable_toggle.active
+            size_hint: None, None
+            width: root.width
+            on_release: root.changed = True; app.condition = self.value
+            y: any_radio.top
+            x: root.x
+        SIRadio:
+            id: any_radio
+            text: "Ignore Material"
+            value: "any"
+            selected: app.condition == self.value
+            enabled: enable_toggle.active
+            size_hint: None, None
+            width: root.width
+            on_release: root.changed = True; app.condition = self.value
+            y: btn_confirm.top
+            x: root.x
+        BtnPCancel:
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            id: btn_confirm
+            enabled: root.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.confirm()
 
 <TimezonePopup>:
     size_hint: 0.94, 0.7
