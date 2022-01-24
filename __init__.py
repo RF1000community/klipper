@@ -223,7 +223,7 @@ class mainApp(App, threading.Thread):
         self.handle_print_change(jobs)
         if 'finished' == job.state:
             self.progress = 1
-            self.print_done_time = "confirm build plate is clear"
+            self.print_done_time = "Confirm Build Plate is clear"
             self.print_time = ""
         elif 'aborted' == job.state:
             self.hide_print()

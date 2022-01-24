@@ -1,7 +1,9 @@
+from ast import Str
 import logging
 import os
 import re
 import subprocess
+from tokenize import String
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -15,7 +17,7 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 from kivy.uix.tabbedpanel import TabbedPanelItem
 
-from .elements import BaseButton, BasePopup, RectangleButton
+from .elements import BasePopup, RectangleButton
 from . import printer_cmd
 from util import set_nonblock
 
@@ -247,17 +249,21 @@ class ConnectionPopup(BasePopup):
         self.dismiss()
 
 
-class ContinuousPrintingPopup(BasePopup):
-    changed = BooleanProperty(False)
-    def __init__(self, **kwargs):
+class ContinuousPrintingScreen(Screen):
+
+    def on_pre_enter(self):
         self.app = App.get_running_app()
         self.reactor = self.app.reactor
-        self.reactor.cb(printer_cmd.get_collision_config)
-        super().__init__(**kwargs)
+        self.ids.enable_toggle.active = self.app.continuous_printing
+        self.ids.reposition_toggle.active = self.app.reposition
 
-    def confirm(self):
+    def update(self):
+        Clock.schedule_once(self.update_config, 0) # wait for the switch to go into active state
+
+    def update_config(self, dt):
+        self.app.continuous_printing = self.ids.enable_toggle.active
+        self.app.reposition = self.ids.reposition_toggle.active
         self.reactor.cb(printer_cmd.set_collision_config, self.app.continuous_printing, self.app.reposition, self.app.condition)
-        self.dismiss()
 
 class SITimezone(SetItem):
 

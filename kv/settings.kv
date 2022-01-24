@@ -17,7 +17,7 @@
         TitleBar:
             title:
                 {'SettingScreen': "Settings", 'ConsoleScreen':"Gcode Console",
-                'WifiScreen': "Wifi", 'UpdateScreen': "System Update"}[screen_man.current]
+                'WifiScreen': "Wifi", 'UpdateScreen': "System Update", "ContinuousPrintingScreen": "Continuous Printing"}[screen_man.current]
             enabled: screen_man.current != 'SettingScreen'
             on_release: screen_man.current = 'SettingScreen'
             pos_hint: {'x': 0, 'top': 1}
@@ -33,6 +33,8 @@
                 id: wifi_screen
             UpdateScreen:
                 id: update_screen
+            ContinuousPrintingScreen:
+                id: continuous_printing_screen
 
 <SettingScreen@Screen>:
     name: 'SettingScreen'
@@ -57,14 +59,16 @@
                 left_title: "Continuous Printing"
                 right_title: "Enabled" if app.continuous_printing else "Disabled"
                 enabled: app.connected
-                on_release: Factory.ContinuousPrintingPopup().open()
+                on_release: root.manager.current = "ContinuousPrintingScreen"
             SetItem:
                 left_title: "Max. printhead Acceleration"
                 right_title: "{:6.0f}mm/s²".format(app.config_acceleration)
+                enabled: app.connected
                 on_release: Factory.AccConfPopup(val=app.config_acceleration).open()
             SetItem:
                 left_title: "Pressure Advance"
                 right_title: "{:4.3f}s".format(app.config_pressure_advance)
+                enabled: app.connected
                 on_release: Factory.PressureAdvanceConfPopup(val=app.config_pressure_advance).open()
             SIWifi:
                 left_title: "Wifi"
@@ -122,6 +126,56 @@
         width: root.width - 2*p.padding
         pos_hint: {'center_x': 0.5}
         y: (0.34-0.02)*p.screen_height - p.tab_height + p.padding # Keyboard height is 0.34 (style.kv)
+
+<ContinuousPrintingScreen>:
+    name: "ContinuousPrintingScreen"
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0, 0 
+            size: self.size
+    BoxLayout:
+        id: setting_box
+        orientation:'vertical'
+        height: self.minimum_height
+        y: root.height - self.minimum_height
+        x: 0
+        size_hint_y: None
+        Divider:
+        SIToggle:
+            id: enable_toggle
+            text: "Enabled" if self.active else "Disabled"
+            size_hint: None, None
+            on_release: root.update()
+        SIToggle:
+            id: reposition_toggle
+            text: "Reposition Prints"
+            enabled: enable_toggle.active
+            size_hint: None, None
+            on_release: root.update()
+        SIRadio:
+            text: "Exact Material Match"
+            value: "exact"
+            selected: app.condition == self.value
+            enabled: enable_toggle.active
+            size_hint: None, None
+            on_release: app.condition = self.value; root.update()
+        SIRadio:
+            text: "Material Type Match (PLA, PETG, ...)"
+            value: "type"
+            selected: app.condition == self.value
+            enabled: enable_toggle.active
+            size_hint: None, None
+            on_release: app.condition = self.value; root.update()
+        SIRadio:
+            text: "No Material Match required"
+            value: "any"
+            selected: app.condition == self.value
+            enabled: enable_toggle.active
+            size_hint: None, None
+            on_release: app.condition = self.value; root.update()
+        Divider:
 
 <WifiScreen>:
     name: 'WifiScreen'
@@ -284,9 +338,8 @@
     active: False
     on_release: self.active = not self.active
     BtnToggle:
-        id: knopf
         size_hint: None, None
-        pos_hint: {'center_y': 0.5}
+        center_y: root.center_y
         right: root.right - p.padding
         active: root.active
         enabled: root.enabled
@@ -429,7 +482,7 @@
             pos: btn_reboot.pos
         RectangleButton:
             id: btn_reboot
-            text: "Full Reboot"
+            text: "System Reboot"
             size: btn_poweroff.size
             pos: btn_poweroff.x, btn_poweroff.top
             on_release: app.reboot()
@@ -449,83 +502,6 @@
             width: root.width
             pos: root.pos
             on_release: root.dismiss()
-
-<ContinuousPrintingPopup>:
-    size_hint: 0.92, 0.65
-    title: "Continuous Printing"
-    FloatLayout:
-        size_hint: None, None
-        size: root.size
-        pos: root.pos
-        Divider:
-            pos_hint: {'center_x': 0.5}
-            width: root.width - 2*p.small_padding
-            y: enable_toggle.top
-            center_x: root.center_x
-        SIToggle:
-            text: "Enabled" if self.active else "Disabled"
-            height: dp(105)
-            id: enable_toggle
-            size_hint: None, None
-            width: root.width
-            active: app.continuous_printing
-            on_active: root.changed = True; app.continuous_printing = self.active
-            y: reposition_toggle.top
-            x: root.x
-        SIToggle:
-            text: "Reposition Prints when needed"
-            height: dp(105)
-            id: reposition_toggle
-            enabled: enable_toggle.active
-            active: app.reposition
-            size_hint: None, None
-            width: root.width
-            on_active: root.changed = True; app.reposition = self.active
-            y: exact_radio.top
-            x: root.x
-        SIRadio:
-            id: exact_radio
-            text: "Exact Material Match"
-            value: "exact"
-            selected: app.condition == self.value
-            enabled: enable_toggle.active
-            size_hint: None, None
-            width: root.width
-            on_release: root.changed = True; app.condition = self.value
-            y: type_radio.top
-            x: root.x
-        SIRadio:
-            id: type_radio
-            text: "Material Type Match (PLA, PETG, ...)"
-            value: "type"
-            selected: app.condition == self.value
-            enabled: enable_toggle.active
-            size_hint: None, None
-            width: root.width
-            on_release: root.changed = True; app.condition = self.value
-            y: any_radio.top
-            x: root.x
-        SIRadio:
-            id: any_radio
-            text: "Ignore Material"
-            value: "any"
-            selected: app.condition == self.value
-            enabled: enable_toggle.active
-            size_hint: None, None
-            width: root.width
-            on_release: root.changed = True; app.condition = self.value
-            y: btn_confirm.top
-            x: root.x
-        BtnPCancel:
-            width: root.width/2
-            pos: root.pos
-            on_release: root.dismiss()
-        BtnPConfirm:
-            id: btn_confirm
-            enabled: root.changed
-            width: root.width/2
-            pos: root.center_x, root.y
-            on_release: root.confirm()
 
 <TimezonePopup>:
     size_hint: 0.94, 0.7

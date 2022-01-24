@@ -39,7 +39,7 @@
             text_size: self.size
             font_size: p.normal_font
             x: p.h_padding - 2
-            top: progress_bar.y - dp(5)
+            top: progress_bar.y - dp(5) if app.print_state in ('printing', 'pausing', 'paused', 'aborting') else progress_bar.y + dp(12)
             color: p.btn_disabled
             halign: 'right'
             valign: 'bottom'
@@ -60,10 +60,10 @@
             y: btn_stop.y
             right: btn_stop.x
         BtnClear:
-            on_release: app.hide_print; app.reactor.cb(printer_cmd.clear_buildplate)
+            on_release: app.hide_print(); app.reactor.cb(printer_cmd.clear_buildplate)
             size: btn_stop.size
             y: btn_stop.y
-            x: btn_stop.x
+            right: p.screen_width - p.h_padding
         Label:
             id: l_filename
             text: app.print_title
@@ -354,16 +354,16 @@
 <PrintProgressBar@Widget>:
     canvas:
         Color:
-            rgba: (0,0,0,0) if app.print_state == 'no print job' else p.btn
+            rgba: p.btn if app.print_state in ('printing', 'pausing', 'paused', 'aborting') else (0,0,0,0)
         RoundedRectangle:
             radius: [dp(5)]
             pos: self.pos
             size: self.width, dp(10)
         Color:
             rgba:
-                (0,0,0,0) if app.print_state in ('no print job', 'finished') else \
-                p.red if app.print_state in ('aborted', 'aborting') else \
-                p.accent
+                p.accent if app.print_state in ('printing', 'pausing', 'paused') else \
+                p.red if app.print_state == 'aborting' else \
+                (0,0,0,0)
         RoundedRectangle:
             radius: [dp(5)]
             pos: self.pos
@@ -698,16 +698,16 @@
             radius: (p.icon_radius,)
 
 <BtnClear@RoundButton>:
-    enabled: app.print_state in ('finished')
+    enabled: app.print_state in ('finished', 'queued')
     canvas:
         Color:
             rgba: p.green if self.enabled else (0,0,0,0)
         Line:
-            width: p.icon_radius*1.5
+            width: p.icon_radius*2.2
             points:
-                self.center_x - dp(pw), self.center_y, \
-                self.center_x - dp(pw)/3, self.center_y - dp(pw), \
-                self.center_x + dp(pw), self.center_y + dp(pw)
+                self.center_x - dp(ph*1.5), self.center_y, \
+                self.center_x - dp(ph/2), self.center_y - dp(ph), \
+                self.center_x + dp(ph*1.5), self.center_y + dp(ph)
             close: False
 
 # POPUPS
