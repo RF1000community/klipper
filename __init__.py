@@ -129,21 +129,32 @@ class mainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.load_object, "live_move")
         self.reactor.cb(printer_cmd.load_object, "filament_manager")
         self.reactor.cb(printer_cmd.load_object, "print_history")
-        # Register event handlers
-        self.reactor.register_event_handler("klippy:connect", self.handle_connect) # printer_objects available
-        self.reactor.register_event_handler("klippy:ready", self.handle_ready) # connect handlers have run
-        self.reactor.register_event_handler("klippy:disconnect", self.handle_disconnect)
-        self.reactor.register_event_handler("klippy:shutdown", self.handle_shutdown)
-        self.reactor.register_event_handler("klippy:critical_error", self.handle_critical_error)
-        self.reactor.register_event_handler("klippy:error", self.handle_error)
-        self.reactor.register_event_handler("homing:home_rails_end", self.handle_home_end)
-        self.reactor.register_event_handler("virtual_sdcard:print_start", self.handle_print_start)
-        self.reactor.register_event_handler("virtual_sdcard:print_end", self.handle_print_end)
-        self.reactor.register_event_handler("virtual_sdcard:print_change", self.handle_print_change)
-        self.reactor.register_event_handler("virtual_sdcard:print_added", self.handle_print_added)
-        self.reactor.register_event_handler("print_history:change", self.handle_history_change)
-        self.reactor.register_event_handler("filament_manager:material_changed", self.handle_material_change)
         super().__init__(**kwargs)
+        self.reactor.cb(self.request_event_history)
+
+    @staticmethod
+    def request_event_history(e, root):
+        events = root.reactor.get_event_history()
+        root.reactor.cb(mainApp.receive_event_history, events, process='kgui')
+
+    @staticmethod
+    def receive_event_history(e, root, events):
+        # Register event handlers
+        root.reactor.register_event_handler("klippy:connect", root.handle_connect) # printer_objects available
+        root.reactor.register_event_handler("klippy:ready", root.handle_ready) # connect handlers have run
+        root.reactor.register_event_handler("klippy:disconnect", root.handle_disconnect)
+        root.reactor.register_event_handler("klippy:shutdown", root.handle_shutdown)
+        root.reactor.register_event_handler("klippy:critical_error", root.handle_critical_error)
+        root.reactor.register_event_handler("klippy:error", root.handle_error)
+        root.reactor.register_event_handler("homing:home_rails_end", root.handle_home_end)
+        root.reactor.register_event_handler("virtual_sdcard:print_start", root.handle_print_start)
+        root.reactor.register_event_handler("virtual_sdcard:print_end", root.handle_print_end)
+        root.reactor.register_event_handler("virtual_sdcard:print_change", root.handle_print_change)
+        root.reactor.register_event_handler("virtual_sdcard:print_added", root.handle_print_added)
+        root.reactor.register_event_handler("print_history:change", root.handle_history_change)
+        root.reactor.register_event_handler("filament_manager:material_changed", root.handle_material_change)
+        for event, params in events:
+            root.reactor.run_event(e, root, event, params)
 
     def clean(self):
         ndel, freed = freedir(p.sdcard_path)
