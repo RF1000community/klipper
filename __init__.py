@@ -221,12 +221,10 @@ class mainApp(App, threading.Thread):
 
     def handle_print_end(self, jobs, job):
         self.handle_print_change(jobs)
-        if 'finished' == job.state:
-            self.progress = 1
+        if job.state in ('finished', 'aborted'):
+            self.progress = 0
             self.print_done_time = "Confirm Build Plate is clear"
             self.print_time = ""
-        elif 'aborted' == job.state:
-            self.hide_print()
 
     def hide_print(self):
         self.print_title = ""

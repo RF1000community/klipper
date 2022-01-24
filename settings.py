@@ -1,9 +1,7 @@
-from ast import Str
 import logging
 import os
 import re
 import subprocess
-from tokenize import String
 
 from kivy.app import App
 from kivy.clock import Clock
