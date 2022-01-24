@@ -115,6 +115,7 @@ class SelectReactor:
     def __init__(self, gc_checking=False, process='printer'):
         # Main code
         self.event_handlers = {}
+        self.event_history = [] if process == 'printer' else None
         self.root = None
         self._process = False
         self.monotonic = chelper.get_ffi()[1].get_monotonic
@@ -375,8 +376,13 @@ class SelectReactor:
             completion.wait()
     @staticmethod
     def run_event(e, root, event, params):
+        if root.reactor.event_history != None:
+            root.reactor.event_history.append((event, params))
         return [cb(*params) for cb in root.reactor.event_handlers.get(event, [])]
-
+    def get_event_history(self):
+        event_history = self.event_history
+        self.event_history = None
+        return event_history
 class PollReactor(SelectReactor):
     def __init__(self, gc_checking=False, process='printer'):
         SelectReactor.__init__(self, gc_checking, process)
