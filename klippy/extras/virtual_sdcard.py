@@ -52,12 +52,15 @@ class PrintJob:
             self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
             self.reactor.send_event("virtual_sdcard:print_start", self.manager.jobs, self)
 
-    def resume(self):
+    def resume(self, gcmd):
         if self.state == 'pausing':
             self.set_state('printing')
             return True
         elif self.state == 'paused':
-            self.gcode.run_script_from_command("RESTORE_GCODE_STATE NAME=PAUSE_STATE MOVE=1")
+            if gcmd == None:
+                self.gcode.run_script("RESTORE_GCODE_STATE NAME=PAUSE_STATE MOVE=1")
+            else:
+                self.gcode.run_script_from_command("RESTORE_GCODE_STATE NAME=PAUSE_STATE MOVE=1")
             self.last_start_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
             self.set_state('printing')
             self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
@@ -136,7 +139,8 @@ class PrintJob:
         self.additional_printed_time += self.toolhead.get_last_move_time() - self.last_start_time
         # Finish aborting or pausing actions
         if self.state == 'pausing':
-            self.gcode.run_script_from_command("SAVE_GCODE_STATE NAME=PAUSE_STATE")
+            self.gcode.run_script("SAVE_GCODE_STATE NAME=PAUSE_STATE")
+            self.gcode.run_script("SET_GCODE_OFFSET X=0 Y=0")
             self.set_state('paused')
         else:
             if self.state == 'aborting':
@@ -182,7 +186,7 @@ class PrintJobManager:
 
     def resume_print(self, gcmd=None):
         if self.jobs:
-            return self.jobs[0].resume()
+            return self.jobs[0].resume(gcmd)
 
     def remove_print(self, idx, uuid):
         if 0 < idx < len(self.jobs) and self.jobs[idx].uuid == uuid:
@@ -211,6 +215,7 @@ class PrintJobManager:
             collision = self.printer.lookup_object('collision')
             available, offset = collision.check_available(self.jobs[0])
             logging.info(f"offset is {offset}")
+            self.gcode.run_script(f"SET_GCODE_OFFSET X={offset[0]} Y={offset[1]}")
             if available:
                 self.jobs[0].start()
 
@@ -306,7 +311,7 @@ class VirtualSD(PrintJobManager):
     def cmd_M24(self, gcmd):
         # Start/resume SD print
         if self.jobs:
-            self.resume_print()
+            self.resume_print(gcmd)
         else:
             self.add_print(self.selected_file)
     def cmd_M25(self, gcmd):
