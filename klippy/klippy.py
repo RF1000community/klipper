@@ -151,6 +151,7 @@ class Printer:
         self.parallel_objects[section].start()
     @staticmethod
     def start_process(config, init_func, module_name, mp_queues):
+        os.nice(config.getint("nice", 10))
         # Avoid active imports changing environment - import in target process
         mod = importlib.import_module('parallel_extras.' + module_name)
         init_func = getattr(mod, init_func, None)
