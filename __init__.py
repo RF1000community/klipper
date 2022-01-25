@@ -8,7 +8,6 @@ from subprocess import Popen
 from kivy.config import Config
 
 TESTING = "KGUI_TESTING" in os.environ
-os.nice(10)
 
 # Read custom Kivy config. This needs an absolute path otherwise
 # config will only be loaded when working directory is the parent directory
