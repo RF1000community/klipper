@@ -698,7 +698,7 @@
             radius: (p.icon_radius,)
 
 <BtnClear@RoundButton>:
-    enabled: app.print_state in ('finished', 'queued')
+    enabled: app.print_state in ('finished', 'aborted', 'queued')
     canvas:
         Color:
             rgba: p.green if self.enabled else (0,0,0,0)

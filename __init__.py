@@ -124,8 +124,7 @@ class mainApp(App, threading.Thread):
             if not config.has_section(f"extruder{i}"):
                 self.extruder_count = i
                 break
-        # These are loaded a bit late, they sometimes miss the klippy:connect event
-        # klippy:ready works since it only occurs after kguis handle_connect reports back
+        # These are loaded a bit late
         self.reactor.cb(printer_cmd.load_object, "live_move")
         self.reactor.cb(printer_cmd.load_object, "filament_manager")
         self.reactor.cb(printer_cmd.load_object, "print_history")
@@ -231,6 +230,7 @@ class mainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.get_print_progress)
 
     def handle_print_end(self, jobs, job):
+        self.print_state = job.state # in case the following handle_print_change doesnt update because there is no job
         self.handle_print_change(jobs)
         if job.state in ('finished', 'aborted'):
             self.progress = 0
