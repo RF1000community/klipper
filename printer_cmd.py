@@ -79,8 +79,8 @@ def send_pressure_advance(e, printer, val):
     for i in range(10):
         extruder_id = f"extruder{'' if i==0 else i}"
         if extruder_id in printer.objects:
-            printer.objects[extruder_id]._set_pressure_advance(
-                val, printer.objects[extruder_id].pressure_advance_smooth_time)
+            printer.objects[extruder_id].extruder_stepper._set_pressure_advance(
+                val, printer.objects[extruder_id].extruder_stepper.pressure_advance_smooth_time)
         else:
             break
     get_pressure_advance(e, printer)
@@ -91,7 +91,7 @@ def reset_pressure_advance(e, printer):
             extruder = printer.objects[extruder_id]
             klipper_config = printer.objects['configfile'].read_main_config()
             pa = klipper_config.getsection(extruder.name).getfloat('pressure_advance', 0., minval=0.)
-            extruder._set_pressure_advance(pa, extruder.pressure_advance_smooth_time)
+            extruder.extruder_stepper._set_pressure_advance(pa, extruder.extruder_stepper.pressure_advance_smooth_time)
 
 def get_acceleration(e, printer):
     acceleration = printer.objects['toolhead'].max_accel
