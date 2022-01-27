@@ -214,9 +214,9 @@ class PrintJobManager:
         if len(self.jobs) and self.jobs[0].state in ('queued'):
             collision = self.printer.lookup_object('collision')
             available, offset = collision.check_available(self.jobs[0])
-            logging.info(f"offset is {offset}")
-            self.gcode.run_script(f"SET_GCODE_OFFSET X={offset[0]} Y={offset[1]}")
             if available:
+                logging.info(f"offset is {offset}")
+                self.gcode.run_script(f"SET_GCODE_OFFSET X={offset[0]} Y={offset[1]}")
                 self.jobs[0].start()
 
     def get_status(self, eventtime=None):
