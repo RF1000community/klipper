@@ -16,7 +16,6 @@ TESTING = "KGUI_TESTING" in os.environ
 if TESTING:
     Config.read(join(dirname(__file__), "config_test.ini"))
 else:
-    Config.read(join(dirname(__file__), "config.ini"))
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'sdl2'
     os.environ['KIVY_METRICS_DENSITY'] = str(Config.getint('graphics', 'width')/600)
