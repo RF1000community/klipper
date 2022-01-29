@@ -16,8 +16,6 @@ from kivy.uix.widget import Widget
 from . import parameters as p
 from . import printer_cmd
 
-logger = logging.getLogger("kgui")
-
 class Divider(Widget):
     pass
 

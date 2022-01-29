@@ -195,6 +195,7 @@ class mainApp(App, threading.Thread):
         logger.info("Kivy app.handle_disconnect")
         self.connected = False
         self.reactor.register_async_callback(self.reactor.end)
+        self.reactor.mp_logger.stop()
         self.stop()
 
     def handle_critical_error(self, message):

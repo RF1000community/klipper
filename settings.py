@@ -56,7 +56,6 @@ class ConsoleScreen(Screen):
         self.app = App.get_running_app()
         self.reactor = self.app.reactor
         Clock.schedule_once(self.init_drawing, 0)
-        logger.info(f"GCOOOOOOODE FD IS {self.app.fd} with type {type(self.app.fd)}")
 
     def init_drawing(self, *args):
         self.ids.console_input.bind(on_text_validate=self.confirm)
