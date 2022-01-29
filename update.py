@@ -9,6 +9,7 @@ from .git_update import githelper
 from . import parameters as p
 from .settings import SetItem
 
+logger = logging.getLogger("kgui")
 
 class SIUpdate(SetItem):
     """Entry in SettingScreen, opens UpdateScreen"""

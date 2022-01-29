@@ -14,6 +14,8 @@ from .elements import PrintPopup
 from . import parameters as p
 from . import printer_cmd
 
+logger = logging.getLogger("kgui")
+
 class Filechooser(RecycleView):
 
     path = StringProperty()

@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime, timedelta
 
+logger = logging.getLogger("kgui")
+
 def set_attribute(e, root, property_name, val):
     setattr(root, property_name, val)
 

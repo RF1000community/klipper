@@ -15,6 +15,7 @@ from kivy.uix.widget import Widget
 from . import parameters as p
 from . import printer_cmd
 
+logger = logging.getLogger("kgui")
 
 class StatusBar(BoxLayout):
 
@@ -260,16 +261,16 @@ class Notifications(FloatLayout):
         if log:
             if title:
                 if level in("info", "success"):
-                    logging.info("Notify: " + title)
+                    logger.info("Notify: " + title)
                 elif level == "warning":
-                    logging.warning("Notify: " + title)
+                    logger.warning("Notify: " + title)
                 elif level == "error":
                     logging.error("Notify: " + title)
             if message:
                 if level in("info", "success"):
-                    logging.info("Notify: " + message)
+                    logger.info("Notify: " + message)
                 elif level == "warning":
-                    logging.warning("Notify: " + message)
+                    logger.warning("Notify: " + message)
                 elif level == "error":
                     logging.error("Notify: " + message)
 

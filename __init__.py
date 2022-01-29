@@ -7,6 +7,8 @@ from os.path import join, dirname
 from subprocess import Popen
 from kivy.config import Config
 
+logger = logging.getLogger("kgui")
+
 TESTING = "KGUI_TESTING" in os.environ
 
 # Read custom Kivy config. This needs an absolute path otherwise
@@ -86,7 +88,7 @@ class mainApp(App, threading.Thread):
     condition = StringProperty("")
 
     def __init__(self, config, **kwargs):
-        logging.info("Kivy app initializing...")
+        logger.info("Kivy app initializing...")
         self.network_manager = NetworkManager()
         self.notify = Notifications()
         self.gcode_metadata = gcode_metadata.load_config(config) # Beware this is not the 'right' config
@@ -190,7 +192,7 @@ class mainApp(App, threading.Thread):
         Is called when system disconnects from mcu, this is only done at
         the very end, when exiting or restarting
         """
-        logging.info("Kivy app.handle_disconnect")
+        logger.info("Kivy app.handle_disconnect")
         self.connected = False
         self.reactor.register_async_callback(self.reactor.end)
         self.stop()
@@ -267,7 +269,7 @@ class mainApp(App, threading.Thread):
         try:
             self.root_window.set_vkeyboard_class(UltraKeyboard)
         except:
-            logging.warning("root_window wasnt available")
+            logger.warning("root_window wasnt available")
 
     def on_stop(self, *args):
         """Stop networking dbus event loop"""
@@ -293,7 +295,7 @@ class PopupExceptionHandler(ExceptionHandler):
         if not TESTING:
             tr = ''.join(traceback.format_tb(exception.__traceback__))
             App.get_running_app().handle_critical_error(tr + "\n\n" + repr(exception))
-            logging.exception("UI-Exception, popup invoked")
+            logger.exception("UI-Exception, popup invoked")
             return ExceptionManager.PASS
 
 ExceptionManager.add_handler(PopupExceptionHandler())
@@ -311,6 +313,6 @@ for fname in ("style.kv", "overwrites.kv", "elements.kv", "home.kv", "timeline.k
 # Entry point, order of execution: __init__()  run()  main.kv  on_start()  handle_connect()  handle_ready()
 def load_config(config):
     kgui_object = mainApp(config)
-    logging.info("Kivy app.run")
+    logger.info("Kivy app.run")
     kgui_object.start()
     return kgui_object
