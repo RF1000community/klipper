@@ -5,6 +5,10 @@ import os
 import traceback
 from os.path import join, dirname
 from subprocess import Popen
+import importlib
+
+os.environ['KIVY_NO_CONSOLELOG'] = '1'  # Only use file logging
+
 from kivy.config import Config
 
 TESTING = "KGUI_TESTING" in os.environ
@@ -27,6 +31,7 @@ from kivy.config import Config
 from kivy.lang import Builder
 from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
                             NumericProperty, ListProperty, StringProperty)
+from kivy.logger import Logger as logger
 from .elements import UltraKeyboard, CriticalErrorPopup, ErrorPopup
 from .freedir import freedir
 from .nm_dbus import NetworkManager
