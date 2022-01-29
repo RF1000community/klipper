@@ -147,11 +147,14 @@ class Printer:
     def _load_parallel_object(self, section):
         self.parallel_objects[section] = multiprocessing.Process(
             target=self.start_process,
-            args=(*self.parallel_objects[section], self.parallel_queues))
+            args=(*self.parallel_objects[section], self.parallel_queues, self.start_args['log_file']))
         self.parallel_objects[section].start()
     @staticmethod
-    def start_process(config, init_func, module_name, mp_queues):
+    def start_process(config, init_func, module_name, mp_queues, log_file):
         os.nice(config.getint("nice", 10))
+        log_path, log_ext = os.path.splitext(log_file)
+        log_file = log_path + "_" + module_name + log_ext
+        queuelogger.setup_mp_logging(log_file, logging.INFO, module_name)
         # Avoid active imports changing environment - import in target process
         mod = importlib.import_module('parallel_extras.' + module_name)
         init_func = getattr(mod, init_func, None)
@@ -342,7 +345,7 @@ def main():
         import_test()
     if len(args) != 1:
         opts.error("Incorrect number of arguments")
-    start_args = {'config_file': args[0], 'apiserver': options.apiserver,
+    start_args = {'config_file': args[0], 'log_file': options.logfile, 'apiserver': options.apiserver,
                   'start_reason': 'startup'}
 
     debuglevel = logging.INFO

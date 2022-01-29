@@ -3,6 +3,7 @@
 # Copyright (C) 2016-2019  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
+from concurrent.futures import process
 import logging, logging.handlers, threading, queue, time
 
 # Class to forward all messages through a queue to a background thread
@@ -56,6 +57,16 @@ class QueueListener(logging.handlers.TimedRotatingFileHandler):
             {'msg': "\n".join(lines), 'level': logging.INFO}))
 
 MainQueueHandler = None
+
+def setup_mp_logging(filename, debuglevel, process_name):
+    ql = QueueListener(filename)
+    MainQueueHandler = QueueHandler(ql.bg_queue)
+    logger = logging.getLogger(process_name)
+    logger.addHandler(MainQueueHandler)
+    logger.setLevel(debuglevel)
+
+def clear_mp_logging(process_name):
+    logging.getLogger(process_name).handlers.clear()
 
 def setup_bg_logging(filename, debuglevel):
     global MainQueueHandler
