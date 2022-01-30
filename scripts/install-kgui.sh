@@ -158,6 +158,13 @@ create_virtualenv()
 
 
 
+setup_kivy_config()
+{
+    cp ${SRCDIR}/klippy/parallel_extras/kgui/config.ini ~/.kivy/config.ini
+}
+
+
+
 install_klipper_service()
 {
     report_status "Installing systemd service klipper.service..."
@@ -234,6 +241,7 @@ set -e
 verify_ready
 install_packages
 create_virtualenv
+setup_kivy_config
 install_klipper_service
 install_usb_automounting
 install_lcd_driver
