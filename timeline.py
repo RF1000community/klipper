@@ -12,6 +12,7 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 
 from .elements import StopPopup
 
+
 class Timeline(RecycleView):
     path = StringProperty()
     def __init__(self, **kwargs):

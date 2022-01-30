@@ -11,7 +11,6 @@ from kivy.properties import StringProperty, ListProperty
 from .elements import ErrorPopup
 from . import parameters as p
 
-logger = logging.getLogger("kgui")
 
 class GitHelper(EventDispatcher):
 
@@ -63,7 +62,7 @@ class GitHelper(EventDispatcher):
         self.fetch_clock = Clock.schedule_once(self.fetch, 86400)
 
         self._fetch_retries = retries
-        logger.info("Git: Fetching updates")
+        logging.info("Git: Fetching updates")
         cmd = self._base_cmd + ["fetch", "--recurse-submodules", self.REMOTE]
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE, text=True)
@@ -73,7 +72,7 @@ class GitHelper(EventDispatcher):
         if proc.poll() is None:
             Clock.schedule_once(lambda dt: self.poll(proc), 0.5)
         elif proc.returncode != 0:
-            logger.warning("Git: fetching failed: " +
+            logging.warning("Git: fetching failed: " +
                     proc.stdout.read() + " " + proc.stderr.read())
             self.dispatch("on_fetch_failed")
         else:
@@ -197,7 +196,7 @@ class GitHelper(EventDispatcher):
     def install(self):
         """Run the installation script"""
         if self._install_process is not None: # Install is currently running
-            logger.warning("Update: Attempted to install while script is running")
+            logging.warning("Update: Attempted to install while script is running")
             return
         # Capture both stderr and stdout in stdout
         self._install_process = subprocess.Popen(self.INSTALL_SCRIPT, text=True,
@@ -215,7 +214,7 @@ class GitHelper(EventDispatcher):
         while True:
             if self._terminate_installation:
                 self._install_process.terminate()
-                logger.info("Update: Installation aborted!")
+                logging.info("Update: Installation aborted!")
                 self.dispatch("on_install_finished", None)
                 self._terminate_installation = False
                 self._install_process = None

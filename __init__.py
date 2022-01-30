@@ -7,8 +7,6 @@ from os.path import join, dirname
 from subprocess import Popen
 from kivy.config import Config
 
-logger = logging.getLogger("kgui")
-
 TESTING = "KGUI_TESTING" in os.environ
 
 # Read custom Kivy config. This needs an absolute path otherwise
@@ -16,6 +14,7 @@ TESTING = "KGUI_TESTING" in os.environ
 if TESTING:
     Config.read(join(dirname(__file__), "config_test.ini"))
 else:
+    Config.read(join(dirname(__file__), "config.ini"))
     os.environ['KIVY_WINDOW'] = 'sdl2'
     os.environ['KIVY_GL_BACKEND'] = 'sdl2'
     os.environ['KIVY_METRICS_DENSITY'] = str(Config.getint('graphics', 'width')/600)
@@ -87,7 +86,7 @@ class mainApp(App, threading.Thread):
     condition = StringProperty("")
 
     def __init__(self, config, **kwargs):
-        logger.info("Kivy app initializing...")
+        logging.info("Kivy app initializing...")
         self.network_manager = NetworkManager()
         self.notify = Notifications()
         self.gcode_metadata = gcode_metadata.load_config(config) # Beware this is not the 'right' config
@@ -191,10 +190,9 @@ class mainApp(App, threading.Thread):
         Is called when system disconnects from mcu, this is only done at
         the very end, when exiting or restarting
         """
-        logger.info("Kivy app.handle_disconnect")
+        logging.info("Kivy app.handle_disconnect")
         self.connected = False
         self.reactor.register_async_callback(self.reactor.end)
-        self.reactor.mp_logger.stop()
         self.stop()
 
     def handle_critical_error(self, message):
@@ -269,7 +267,7 @@ class mainApp(App, threading.Thread):
         try:
             self.root_window.set_vkeyboard_class(UltraKeyboard)
         except:
-            logger.warning("root_window wasnt available")
+            logging.warning("root_window wasnt available")
 
     def on_stop(self, *args):
         """Stop networking dbus event loop"""
@@ -295,7 +293,7 @@ class PopupExceptionHandler(ExceptionHandler):
         if not TESTING:
             tr = ''.join(traceback.format_tb(exception.__traceback__))
             App.get_running_app().handle_critical_error(tr + "\n\n" + repr(exception))
-            logger.exception("UI-Exception, popup invoked")
+            logging.exception("UI-Exception, popup invoked")
             return ExceptionManager.PASS
 
 ExceptionManager.add_handler(PopupExceptionHandler())
@@ -313,6 +311,6 @@ for fname in ("style.kv", "overwrites.kv", "elements.kv", "home.kv", "timeline.k
 # Entry point, order of execution: __init__()  run()  main.kv  on_start()  handle_connect()  handle_ready()
 def load_config(config):
     kgui_object = mainApp(config)
-    logger.info("Kivy app.run")
+    logging.info("Kivy app.run")
     kgui_object.start()
     return kgui_object

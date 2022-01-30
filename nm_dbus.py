@@ -16,6 +16,7 @@ from kivy.event import EventDispatcher
 from kivy.properties import OptionProperty, StringProperty
 from pydbus import SystemBus
 
+
 _NM = "org.freedesktop.NetworkManager"
 
 class NetworkManager(EventDispatcher, Thread):

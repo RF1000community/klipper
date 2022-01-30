@@ -19,7 +19,6 @@ from .elements import BasePopup, RectangleButton
 from . import printer_cmd
 from util import set_nonblock
 
-logger = logging.getLogger("kgui")
 
 class SettingTab(TabbedPanelItem):
 
@@ -56,6 +55,7 @@ class ConsoleScreen(Screen):
         self.app = App.get_running_app()
         self.reactor = self.app.reactor
         Clock.schedule_once(self.init_drawing, 0)
+        logging.info(f"GCOOOOOOODE FD IS {self.app.fd} with type {type(self.app.fd)}")
 
     def init_drawing(self, *args):
         self.ids.console_input.bind(on_text_validate=self.confirm)
@@ -314,7 +314,7 @@ class TimezoneRV(RecycleView):
             if folder in region_folders:
                 region_folders.remove(folder)
             else:
-                logger.warning(f"Please update Timezones: {folder} could not be removed from list")
+                logging.warning(f"Please update Timezones: {folder} could not be removed from list")
         self.data = [{'text': region} for region in region_folders]
 
 
@@ -371,7 +371,7 @@ class HostnamePopup(BasePopup):
                        + str(proc.returncode),
                        level="error",
                        delay=30)
-            logger.warning("hostnamectl: " + proc.stdout + " " + proc.stderr)
+            logging.warning("hostnamectl: " + proc.stdout + " " + proc.stderr)
         else:
             self.dismiss()
             App.get_running_app().reactor.cb(printer_cmd.restart)

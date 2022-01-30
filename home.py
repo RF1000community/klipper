@@ -11,7 +11,6 @@ from .printer_cmd import hex_to_rgba, calculate_filament_color
 from . import parameters as p
 from . import printer_cmd
 
-logger = logging.getLogger("kgui")
 
 class XyField(Widget):
 
