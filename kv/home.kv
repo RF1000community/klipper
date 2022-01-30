@@ -13,9 +13,18 @@
             size: dp(60), dp(60)
             pos: dp(75 - 30), dp(20)
     FloatLayout:
-        Background:
-            pos_hint: {'x': 0, 'y': 0}
-            size_hint: 1, 1
+        canvas.before:
+            Color:
+                rgba: p.background
+            Rectangle:
+                size: p.screen_width, p.screen_height - p.tab_height - p.status_bar_height
+                pos: 0, p.tab_height
+            Color:
+                rgba: (0.65,0.65,0.65,1)
+            Rectangle:
+                source: app.thumbnail
+                size: dp(420), dp(420)
+                pos: (p.screen_width - dp(420))/2, dp(360)
         PrintProgressBar:
             id: progress_bar
             size_hint: None, None
@@ -424,14 +433,9 @@
         Color:
             rgba: self.filament_color
         RoundedRectangle:
-            size: self.size
+            size: self.width*self.filament_amount, self.height
             pos: self.pos
-            radius: (p.radius,)
-        Color:
-            rgba: p.background
-        Rectangle:
-            size: self.width * (1-self.filament_amount), self.height
-            pos: self.x + self.filament_amount * self.width, self.y
+            radius: [p.radius] + ([0, 0] if self.width*self.filament_amount < self.width - p.radius else [p.radius, p.radius]) + [p.radius]
         Color:
             rgba: p.btn_outline
         Line:

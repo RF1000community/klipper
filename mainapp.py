@@ -5,7 +5,6 @@ import os
 import traceback
 from os.path import join, dirname
 from subprocess import Popen
-import importlib
 
 os.environ['KIVY_NO_CONSOLELOG'] = '1'  # Only use file logging
 
@@ -26,11 +25,9 @@ from kivy import kivy_data_dir
 from kivy.app import App
 from kivy.base import ExceptionHandler, ExceptionManager
 from kivy.clock import Clock
-from kivy.config import Config
 from kivy.lang import Builder
 from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
                             NumericProperty, ListProperty, StringProperty)
-from kivy.logger import Logger as logger
 from .elements import UltraKeyboard, CriticalErrorPopup, ErrorPopup
 from .freedir import freedir
 from .nm_dbus import NetworkManager
@@ -75,6 +72,7 @@ class MainApp(App, threading.Thread):
     material = DictProperty()
     tbc_to_guid = DictProperty()
     cura_connected = BooleanProperty(False)
+    thumbnail = StringProperty(p.kgui_dir + '/logos/transparent.png')
     # Tuning
     speed = NumericProperty(100)
     flow = NumericProperty(100)
@@ -202,6 +200,7 @@ class MainApp(App, threading.Thread):
         self.handle_print_change(jobs)
         self.notify.show("Started printing", f"Started printing {job.name}", delay=5)
         self.print_title = job.name
+        self.thumbnail = self.gcode_metadata.get_metadata(job.path).get_thumbnail_path()
         # This only works if we are in a printing state
         self.reactor.cb(printer_cmd.get_print_progress)
 
@@ -209,6 +208,7 @@ class MainApp(App, threading.Thread):
         self.print_state = job.state # in case the following handle_print_change doesnt update because there is no job
         self.handle_print_change(jobs)
         if job.state in ('finished', 'aborted'):
+            self.thumbnail = p.kgui_dir + '/logos/transparent.png'
             self.progress = 0
             self.print_done_time = "Confirm Build Plate is clear"
             self.print_time = ""

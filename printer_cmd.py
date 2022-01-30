@@ -271,13 +271,13 @@ def format_time(seconds):
         return f"{minutes} min"
     return f"{seconds} sec"
 
-def calculate_filament_color(filament_color):
+def calculate_filament_color(c):
     """ Calculate filament color thats not to light for text.
         Also the lightness of an rgb color.
         This is equal to the average between the minimum and
         maximum value."""
     #lightness = 0.5*(max(filament_color) + min(filament_color))
-    return  [c*0.6 for c in filament_color]
+    return [c[0]*0.6, c[1]*0.6, c[2]*0.6, 1]
 
 def hex_to_rgba(h):
     """ Converts hex color to rgba float format
