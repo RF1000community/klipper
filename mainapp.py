@@ -43,7 +43,7 @@ from . import files, home, settings, status, timeline, update, printer_cmd
 site.addsitedir(join(p.klipper_dir, "klippy/extras/")) # gcode_metadata
 import gcode_metadata
 
-class mainApp(App, threading.Thread):
+class MainApp(App, threading.Thread):
     # Property for controlling the state as shown in the statusbar
     state = OptionProperty("startup", options=[
         # Every string set has to be in this list
@@ -133,41 +133,13 @@ class mainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.load_object, "filament_manager")
         self.reactor.cb(printer_cmd.load_object, "print_history")
         super().__init__(**kwargs)
-        self.reactor.cb(self.request_event_history)
-
-    @staticmethod
-    def request_event_history(e, root):
-        events = root.reactor.get_event_history()
-        root.reactor.cb(mainApp.receive_event_history, events, process='kgui')
-
-    @staticmethod
-    def receive_event_history(e, root, events):
-        # Register event handlers
-        root.reactor.register_event_handler("klippy:connect", root.handle_connect) # printer_objects available
-        root.reactor.register_event_handler("klippy:ready", root.handle_ready) # connect handlers have run
-        root.reactor.register_event_handler("klippy:disconnect", root.handle_disconnect)
-        root.reactor.register_event_handler("klippy:shutdown", root.handle_shutdown)
-        root.reactor.register_event_handler("klippy:critical_error", root.handle_critical_error)
-        root.reactor.register_event_handler("klippy:error", root.handle_error)
-        root.reactor.register_event_handler("homing:home_rails_end", root.handle_home_end)
-        root.reactor.register_event_handler("virtual_sdcard:print_start", root.handle_print_start)
-        root.reactor.register_event_handler("virtual_sdcard:print_end", root.handle_print_end)
-        root.reactor.register_event_handler("virtual_sdcard:print_change", root.handle_print_change)
-        root.reactor.register_event_handler("virtual_sdcard:print_added", root.handle_print_added)
-        root.reactor.register_event_handler("print_history:change", root.handle_history_change)
-        root.reactor.register_event_handler("filament_manager:material_changed", root.handle_material_change)
-        for event, params in events:
-            root.reactor.run_event(e, root, event, params)
+        self.reactor.cb(printer_cmd.request_event_history)
 
     def clean(self):
         ndel, freed = freedir(p.sdcard_path)
         if ndel:
             self.notify.show("Disk space freed", f"Deleted {ndel} files, freeing {freed} MiB")
-            self.reactor.cb(self.trim_history, process='printer')
-
-    @staticmethod
-    def trim_history(e, printer):
-        printer.objects['print_history'].trim_history()
+            self.reactor.cb(printer_cmd.trim_history, process='printer')
 
     def handle_connect(self):
         self.connected = True
@@ -181,6 +153,7 @@ class mainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.get_collision_config)
         self.bind(print_state=self.handle_material_change)
         Clock.schedule_interval(lambda dt: self.reactor.cb(printer_cmd.update), 1)
+        logging.info("Kivy app running")
 
     def handle_shutdown(self):
         """
@@ -284,6 +257,7 @@ class mainApp(App, threading.Thread):
     def reboot(self):
         Popen(['sudo','systemctl', 'reboot'])
 
+
 def run_callback(reactor, callback, waketime, waiting_process, *args, **kwargs):
     res = callback(reactor.monotonic(), reactor.root, *args, **kwargs)
     if waiting_process:
@@ -309,13 +283,6 @@ site.addsitedir(p.kgui_dir)
 # load a custom style.kv with changes to popup and more
 Builder.unload_file(join(kivy_data_dir, "style.kv"))
 # All files to read (order is important), main.kv is read first, automatically
-for fname in ("style.kv", "overwrites.kv", "elements.kv", "home.kv", "timeline.kv", "files.kv", "settings.kv"):
+for fname in ("style.kv", "overwrites.kv", "elements.kv", "home.kv",
+              "timeline.kv", "files.kv", "settings.kv"):
     Builder.load_file(join(p.kgui_dir, "kv", fname))
-
-
-# Entry point, order of execution: __init__()  run()  main.kv  on_start()  handle_connect()  handle_ready()
-def load_config(config):
-    kgui_object = mainApp(config)
-    logging.info("Kivy app.run")
-    kgui_object.start()
-    return kgui_object
