@@ -7,6 +7,7 @@ import os, gc, select, math, time, logging, queue
 import greenlet
 import chelper, util
 import threading
+import queuelogger
 
 _NOW = 0.
 _NEVER = 9999999999999999.

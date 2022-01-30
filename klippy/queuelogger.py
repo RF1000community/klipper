@@ -64,7 +64,7 @@ def setup_mp_logging(filename, debuglevel, process_name):
     MainQueueHandler = QueueHandler(ql.bg_queue)
     logger = logging.getLogger(process_name)
     logger.handlers = [MainQueueHandler]
-    logger.propagate = 0
+    logger.propagete = False
     logger.setLevel(debuglevel)
     return ql
 
@@ -74,7 +74,6 @@ def setup_bg_logging(filename, debuglevel):
     MainQueueHandler = QueueHandler(ql.bg_queue)
     root = logging.getLogger()
     root.addHandler(MainQueueHandler)
-    root.propagate = 0
     root.setLevel(debuglevel)
     return ql
 
