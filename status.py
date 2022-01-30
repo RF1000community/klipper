@@ -152,14 +152,9 @@ class CuraConnectionIcon(Widget):
         super().__init__(**kwargs)
         Clock.schedule_interval(self.update, 2)
 
-    @staticmethod
-    def get_connected(e, curaconnection):
-        connected = curaconnection.is_connected()
-        curaconnection.reactor.cb(printer_cmd.set_attribute, "cura_connected", connected, process='kgui')
-
     def update(self, dt):
         try:
-            App.get_running_app().reactor.cb(self.get_connected, process='klipper_cura_connection')
+            App.get_running_app().reactor.cb(printer_cmd.get_connected, process='klipper_cura_connection')
         except KeyError:
             self.connected = False
 
