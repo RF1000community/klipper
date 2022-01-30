@@ -152,11 +152,13 @@ class Printer:
     @staticmethod
     def start_process(config, init_func, module_name, mp_queues, log_file):
         os.nice(config.getint("nice", 10))
-        mp_logger = queuelogger.setup_mp_logging(log_file, logging.INFO, module_name)
+        log_path, log_ext = os.path.splitext(log_file)
+        log_file = log_path + "_" + module_name + log_ext
+        queuelogger.setup_mp_logging(log_file, logging.INFO, module_name)
         # Avoid active imports changing environment - import in target process
         mod = importlib.import_module('parallel_extras.' + module_name)
         init_func = getattr(mod, init_func, None)
-        config.reactor = reactor.Reactor(process=module_name, gc_checking=True, mp_logger=mp_logger)
+        config.reactor = reactor.Reactor(process=module_name, gc_checking=True)
         def start(e):
             config.reactor.setup_mp_queues(mp_queues)
             config.reactor.root = init_func(config)

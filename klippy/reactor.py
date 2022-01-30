@@ -7,7 +7,6 @@ import os, gc, select, math, time, logging, queue
 import greenlet
 import chelper, util
 import threading
-import queuelogger
 
 _NOW = 0.
 _NEVER = 9999999999999999.
@@ -113,7 +112,7 @@ class ReactorMutex:
 class SelectReactor:
     NOW = _NOW
     NEVER = _NEVER
-    def __init__(self, gc_checking=False, process='printer', mp_logger=None):
+    def __init__(self, gc_checking=False, process='printer'):
         # Main code
         self.event_handlers = {}
         self.event_history = [] if process == 'printer' else None
@@ -121,7 +120,6 @@ class SelectReactor:
         self._process = False
         self.monotonic = chelper.get_ffi()[1].get_monotonic
         self.process_name = process
-        self.mp_logger = mp_logger
         # Python garbage collection
         self._check_gc = gc_checking
         self._last_gc_times = [0., 0., 0.]
@@ -388,8 +386,8 @@ class SelectReactor:
         self.event_history = None
         return event_history
 class PollReactor(SelectReactor):
-    def __init__(self, gc_checking=False, process='printer', mp_logger=None):
-        SelectReactor.__init__(self, gc_checking, process, mp_logger)
+    def __init__(self, gc_checking=False, process='printer'):
+        SelectReactor.__init__(self, gc_checking, process)
         self._poll = select.poll()
         self._fds = {}
     # File descriptors
@@ -427,8 +425,8 @@ class PollReactor(SelectReactor):
             self.finalize()
 
 class EPollReactor(SelectReactor):
-    def __init__(self, gc_checking=False, process='printer', mp_logger=None):
-        SelectReactor.__init__(self, gc_checking, process, mp_logger)
+    def __init__(self, gc_checking=False, process='printer'):
+        SelectReactor.__init__(self, gc_checking, process)
         self._epoll = select.epoll()
         self._fds = {}
     # File descriptors

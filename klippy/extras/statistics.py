@@ -64,9 +64,9 @@ class PrinterStats:
             reactor.update_timer(self.stats_timer, reactor.NOW)
     def generate_stats(self, eventtime):
         stats = [cb(eventtime) for cb in self.stats_cb]
-        if max([s[0] for s in stats]):
-            logging.info("Stats %.1f: %s", eventtime,
-                         ' '.join([s[1] for s in stats]))
+        # if max([s[0] for s in stats]):
+        #     logging.info("Stats %.1f: %s", eventtime,
+        #                  ' '.join([s[1] for s in stats]))
         return eventtime + 1.
 
 def load_config(config):
