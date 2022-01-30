@@ -2,7 +2,7 @@
 # the Klipper host software (Klippy).  These package requirements are
 # typically installed via the command:
 #   pip install -r klippy-requirements.txt
-cffi==1.14.6
+cffi==1.14
 pyserial==3.4
 greenlet
 Jinja2==2.11.3
