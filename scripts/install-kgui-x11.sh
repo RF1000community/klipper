@@ -139,7 +139,7 @@ create_virtualenv()
 
 setup_kivy_config()
 {
-    sudo cp ${SRCDIR}/klippy/parallel_extras/kgui/config.ini ~/.kivy/config.ini
+    sudo cp ${SRCDIR}/klippy/parallel_extras/kgui/usbmount.conf ~/.kivy/config.ini
 }
 
 
