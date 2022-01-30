@@ -130,12 +130,6 @@ class Printer:
             return self.objects[section]
         # Create Reactor for parallel_objects to be started later in _load_parallel_object
         elif exists(parallel_module) or exists(parallel_package):
-            # Add module directory to path, so objects can be imported when unpickled
-            # USE GLOBALLY UNIQUE MODULE NAMES FOR ALL .PY FILES IN PARALLEL_EXTRAS
-            if exists(parallel_module):
-                site.addsitedir(dirname(parallel_module))
-            else:
-                site.addsitedir(dirname(parallel_package))
             # Temporarily used to store args needed to create this process
             self.parallel_queues[section] = multiprocessing.Queue()
             self.parallel_objects[section] = [config.getsection(section), init_func, module_name]
