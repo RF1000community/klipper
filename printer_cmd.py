@@ -310,3 +310,22 @@ def receive_event_history(e, kgui, events):
     kgui.reactor.register_event_handler("filament_manager:material_changed", kgui.handle_material_change)
     for event, params in events:
         kgui.reactor.run_event(e, kgui, event, params)
+
+def move_print(e, printer, idx, uuid, move):
+    printer.objects['virtual_sdcard'].move_print(idx, uuid, move)
+
+def remove_print(e, printer, idx, uuid):
+    printer.objects['virtual_sdcard'].remove_print(idx, uuid)
+
+
+def load(e, printer, *args, **kwargs):
+    printer.objects['filament_manager'].load(*args, **kwargs)
+    get_material(e, printer)
+
+def unload(e, printer, *args, **kwargs):
+    printer.objects['filament_manager'].unload(*args, **kwargs)
+    get_material(e, printer)
+
+def get_connected(e, curaconnection):
+    connected = curaconnection.is_connected()
+    curaconnection.reactor.cb(set_attribute, "cura_connected", connected, process='kgui')

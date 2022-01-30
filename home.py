@@ -350,21 +350,12 @@ class FilamentPopup(BasePopup):
 
     def confirm(self):
         if self.new:
-            self.reactor.cb(self.load, self.extruder_id, guid=self.material['guid'],
+            self.reactor.cb(printer_cmd.load, self.extruder_id, guid=self.material['guid'],
                 amount=self.ids.filament_slider.val/1000, unloaded_idx=self.unloaded_idx)
         else:
-            self.reactor.cb(self.unload, self.extruder_id)
+            self.reactor.cb(printer_cmd.unload, self.extruder_id)
         self.dismiss()
 
-    @staticmethod
-    def load(e, printer, *args, **kwargs):
-        printer.objects['filament_manager'].load(*args, **kwargs)
-        printer_cmd.get_material(e, printer)
-
-    @staticmethod
-    def unload(e, printer, *args, **kwargs):
-        printer.objects['filament_manager'].unload(*args, **kwargs)
-        printer_cmd.get_material(e, printer)
 
 class FilamentSlider(UltraSlider):
 
