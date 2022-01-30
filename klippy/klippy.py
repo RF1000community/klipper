@@ -152,6 +152,9 @@ class Printer:
     @staticmethod
     def start_process(config, init_func, module_name, mp_queues):
         os.nice(config.getint("nice", 10))
+        # Reset logging module so that all processes can use the root logger
+        logging.shutdown()
+        importlib.reload(logging)
         # Avoid active imports changing environment - import in target process
         mod = importlib.import_module('parallel_extras.' + module_name)
         init_func = getattr(mod, init_func, None)
