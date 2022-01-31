@@ -160,7 +160,7 @@ class Printer:
             config.reactor.register_callback(start)
             config.reactor.run()
         except Exception:
-            logging.getLogger(module_name).exception("Unhandled exception during run")
+            logging.exception("Unhandled exception during run")
     def _read_config(self):
         self.objects['configfile'] = pconfig = configfile.PrinterConfig(self)
         config = pconfig.read_main_config()
