@@ -2,7 +2,7 @@
 #:import Factory kivy.factory.Factory
 #:import screenmanager kivy.uix.screenmanager
 #:import p parameters
-#:import printer_cmd printer_cmd
+#:import printer_cmd parallel_extras.kgui.printer_cmd
 
 <SettingTab>:
     background_down: ''
@@ -86,6 +86,11 @@
                 left_title: "Change Hostname"
                 right_title: platform.node()
                 on_release: Factory.HostnamePopup().open()
+            SetItem:
+                left_title: "LED Brightness"
+                height: dp(110)
+                hidden: app.led_controls == None
+                on_release: Factory.LedPopup(val=app.led_brightness*100).open()
 
 <ConsoleScreen>:
     name: 'ConsoleScreen'
@@ -304,10 +309,10 @@
 <SetItem>:
     enabled: True
     size_hint_y: None
-    height: dp(110)
+    height: 0 if self.hidden else dp(110)
     width: p.screen_width
     # Button Label
-    text: self.left_title
+    text: "" if root.hidden else self.left_title
     font_size: p.normal_font
     text_size: self.size
     valign: 'middle'
@@ -315,9 +320,10 @@
     pos: self.pos
     padding_x: p.padding
     color: (1,1,1,1) if self.enabled else p.medium_light_gray
+    hidden: False
     Label:
         id: right_label
-        text: root.right_title
+        text: "" if root.hidden else root.right_title
         font_size: p.normal_font
         text_size: self.size
         color: p.medium_light_gray
@@ -330,6 +336,7 @@
         padding_x: p.padding
     Divider:
         top: root.y
+        hidden: root.hidden
         width: root.width - 2*p.small_padding
         center_x: root.center_x
 
@@ -551,6 +558,31 @@
     color: (1,1,1,1)
     valign: 'middle'
     halign: 'left'
+
+<LedPopup@BasePopup>:
+    title: "Set LED Brightness"
+    size_hint: 0.94, 0.4
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            val_min: 0
+            val_max: 100
+            unit: "%"
+            round_to: 0
+            buttons: [[0,0,"off",None]]
+            id: slider
+            pos_hint: {'center_x':0.5, 'y':0.6}
+            on_val: app.set_led_brightness(slider.val/100)
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.set_config, f"output_pin {app.led_controls}", "value", slider.val/100), root.dismiss()
 
 <AccConfPopup@BasePopup>:
     title: "Configure Acceleration"

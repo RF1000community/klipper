@@ -1,3 +1,4 @@
+from asyncore import write
 import logging
 import site
 import threading
@@ -73,6 +74,7 @@ class MainApp(App, threading.Thread):
     tbc_to_guid = DictProperty()
     cura_connected = BooleanProperty(False)
     thumbnail = StringProperty(p.kgui_dir + '/logos/transparent.png')
+    led_brightness = NumericProperty()
     # Tuning
     speed = NumericProperty(100)
     flow = NumericProperty(100)
@@ -113,6 +115,10 @@ class MainApp(App, threading.Thread):
         self.config_acceleration = config.getsection('printer').getfloat("max_accel", 0)
         self.invert_z_controls = config.getboolean('invert_z_controls', False)
         self.xy_homing_controls = config.getboolean('xy_homing_controls', True)
+        self.led_controls = config.get('led_controls', None)
+        self.led_update_time = 0
+        if self.led_controls:
+            self.led_brightness = config.getsection(f'output_pin {self.led_controls}').getfloat('value')
         stepper_config = {'x': config.getsection('stepper_x'),
                           'y': config.getsection('stepper_y'),
                           'z': config.getsection('stepper_z')}
@@ -237,6 +243,16 @@ class MainApp(App, threading.Thread):
 
     def note_live_move_end(self, axis=None):
         self.toolhead_busy = False
+
+    def set_led_brightness(self, val):
+        self.led_brightness = val
+        now = self.reactor.monotonic()
+        if now > self.led_update_time:
+            self.led_update_time = max(self.led_update_time + 0.025, now)
+            Clock.schedule_once(self.apply_led_brightness, 0.025)
+
+    def apply_led_brightness(self, dt):
+        self.reactor.cb(printer_cmd.run_script, f"SET_PIN PIN={self.led_controls} VALUE={self.led_brightness}")
 
     def on_start(self, *args):
         if self.network_manager.available:

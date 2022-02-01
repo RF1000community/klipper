@@ -329,3 +329,11 @@ def unload(e, printer, *args, **kwargs):
 def get_connected(e, curaconnection):
     connected = curaconnection.is_connected()
     curaconnection.reactor.cb(set_attribute, "cura_connected", connected, process='kgui')
+
+def run_script(e, printer, gcode):
+    printer.objects['gcode'].run_script(gcode)
+
+def set_config(e, printer, section, key, value):
+    configfile = printer.lookup_object('configfile')
+    configfile.set(section, key, value)
+    configfile.save_config(restart=False)

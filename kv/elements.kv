@@ -1,7 +1,7 @@
 #:import Factory kivy.factory.Factory
 
 #:import p parameters
-#:import printer_cmd printer_cmd
+#:import printer_cmd parallel_extras.kgui.printer_cmd
 
 # Read before the main kv files, used to define custom base widget rules
 
@@ -315,11 +315,12 @@
 <Divider>:
     size_hint: None, None
     height: 1
+    hidden: False
     width: p.screen_width - 2*p.small_padding
     x: p.small_padding
     canvas:
         Color:
-            rgba: p.divider
+            rgba: (0,0,0,0) if self.hidden else p.divider
         Rectangle:
             pos: self.pos
             size: self.width, 1
