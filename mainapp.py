@@ -1,4 +1,3 @@
-from asyncore import write
 import logging
 import site
 import threading
@@ -248,7 +247,7 @@ class MainApp(App, threading.Thread):
         self.led_brightness = val
         now = self.reactor.monotonic()
         if now > self.led_update_time:
-            self.led_update_time = max(self.led_update_time + 0.025, now)
+            self.led_update_time = max(self.led_update_time + 0.025, now + 0.025)
             Clock.schedule_once(self.apply_led_brightness, 0.025)
 
     def apply_led_brightness(self, dt):
