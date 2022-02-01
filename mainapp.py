@@ -194,6 +194,9 @@ class MainApp(App, threading.Thread):
         """
         if len(jobs):
             self.print_state = jobs[0].state
+            if self.print_state == 'aborting':
+                self.print_done_time = ""
+                self.print_time = ""
         self.jobs = jobs
 
     def handle_print_added(self, jobs, job):
@@ -251,7 +254,7 @@ class MainApp(App, threading.Thread):
             Clock.schedule_once(self.apply_led_brightness, 0.025)
 
     def apply_led_brightness(self, dt):
-        self.reactor.cb(printer_cmd.run_script, f"SET_PIN PIN={self.led_controls} VALUE={self.led_brightness}")
+        self.reactor.cb(printer_cmd.run_script_from_command, f"SET_PIN PIN={self.led_controls} VALUE={self.led_brightness}")
 
     def on_start(self, *args):
         if self.network_manager.available:

@@ -363,7 +363,7 @@
 <PrintProgressBar@Widget>:
     canvas:
         Color:
-            rgba: p.btn if app.print_state in ('printing', 'pausing', 'paused', 'aborting') else (0,0,0,0)
+            rgba: p.btn if app.print_state in ('printing', 'pausing', 'paused') else (0,0,0,0)
         RoundedRectangle:
             radius: [dp(5)]
             pos: self.pos
@@ -371,7 +371,6 @@
         Color:
             rgba:
                 p.accent if app.print_state in ('printing', 'pausing', 'paused') else \
-                p.red if app.print_state == 'aborting' else \
                 (0,0,0,0)
         RoundedRectangle:
             radius: [dp(5)]

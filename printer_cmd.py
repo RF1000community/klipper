@@ -333,6 +333,9 @@ def get_connected(e, curaconnection):
 def run_script(e, printer, gcode):
     printer.objects['gcode'].run_script(gcode)
 
+def run_script_from_command(e, printer, gcode):
+    printer.objects['gcode'].run_script_from_command(gcode)
+
 def set_config(e, printer, section, key, value):
     configfile = printer.lookup_object('configfile')
     configfile.set(section, key, value)
