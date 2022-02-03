@@ -26,6 +26,7 @@ class PrintJob:
         self.last_start_time = 0
         self.name, ext = os.path.splitext(os.path.basename(path))
         self.uuid = str(uuid4())
+        self.print_end_time = None
 
         try:
             self.md = self.gcode_metadata.get_metadata(self.path)
@@ -41,6 +42,10 @@ class PrintJob:
 
     def set_state(self, state):
         if self.state != state:
+            if (state in ("aborted", "finished") and
+                self.state not in ("aborted", "finished")):
+                self.reactor.send_event("virtual_sdcard:print_end",
+                        self.manager.jobs, self)
             self.state = state
             self.reactor.send_event("virtual_sdcard:print_change", self.manager.jobs)
 
@@ -145,6 +150,7 @@ class PrintJob:
         else:
             if self.state == 'aborting':
                 self.set_state('aborted')
+            self.print_end_time = self.reactor.monotonic()
             self.file_obj.close()
             self.manager.check_queue()
         return self.reactor.NEVER
@@ -167,14 +173,42 @@ class PrintJobManager:
         self.printer.load_object(config, 'print_stats')
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
+        #TODO Listen for loaded material change events to check queue (maybe?)
         self.jobs = [] # Print jobs, first is current
 
-    def add_print(self, path):
-        """ Add new print job to queue """
+    def add_print(self, path, assume_clear_after=None):
+        """Add new print job to queue
+
+        By specifying a timespan in seconds for assume_clear_after the print
+        can be forced to start if the queue is empty but the last print job
+        has not been confirmed clear yet. If 0 is specified, the print always
+        starts in that case, otherwise only if that many seconds have passed,
+        since the last print has concluded.
+        """
+        if (len(self.jobs) == 1 and
+                self.jobs[0].state in ('finished', 'aborted') and
+                assume_clear_after is not None):
+            # Queue is empty but last print has not been confirmed clear
+            if assume_clear_after == 0:
+                self.clear_buildplate()
+            else:
+                now = self.reactor.monotonic()
+                if (self.jobs[0].print_end_time is not None and
+                    (now - self.jobs[0].print_end_time) > assume_clear_after):
+                    self.clear_buildplate()
+
         job = PrintJob(path, self)
         self.jobs.append(job)
         self.check_queue()
         self.printer.send_event("virtual_sdcard:print_added", self.jobs, job)
+
+    def clear_buildplate(self):
+        collision = self.printer.lookup_object('collision', None)
+        if collision:
+            collision.clear_printjobs()
+        if self.jobs and self.jobs[0].state in ('finished', 'aborted'):
+            del self.jobs[0]
+        self.check_queue()
 
     def pause_print(self, gcmd=None):
         if self.jobs:
@@ -190,7 +224,7 @@ class PrintJobManager:
 
     def remove_print(self, idx, uuid):
         if 0 < idx < len(self.jobs) and self.jobs[idx].uuid == uuid:
-            self.jobs.pop(idx)
+            del self.jobs[idx]
             self.printer.send_event("virtual_sdcard:print_change", self.jobs)
             return True
 
@@ -207,17 +241,22 @@ class PrintJobManager:
         self.printer.send_event("virtual_sdcard:print_change", self.jobs)
 
     def check_queue(self):
-        """ Remove 'aborted' or 'finished' print jobs from queue, start next if necessary """
-        if len(self.jobs) and self.jobs[0].state in ('finished', 'aborted'):
-            last_job = self.jobs.pop(0)
-            self.printer.send_event("virtual_sdcard:print_end", self.jobs, last_job)
-        if len(self.jobs) and self.jobs[0].state in ('queued'):
-            collision = self.printer.lookup_object('collision')
-            available, offset = collision.check_available(self.jobs[0])
-            if available:
-                logging.info(f"offset is {offset}")
-                self.gcode.run_script(f"SET_GCODE_OFFSET X={offset[0]} Y={offset[1]}")
-                self.jobs[0].start()
+        """Check if the next queued print can be started"""
+        if self.jobs and self.jobs[0].state in ('queued'):
+            self.jobs[0].start()
+        elif len(self.jobs) > 1 and self.jobs[0].state in ('aborted', 'finished'):
+            # Last print is done but not confirmed clear
+            collision = self.printer.lookup_object('collision', None)
+            if collision:
+                available, offset = collision.check_available(self.jobs[1])
+                if available:
+                    del self.jobs[0]
+                    if offset is not None:
+                        logging.info(f"Printing with offset: {offset}")
+                    else:
+                        offset = (0, 0)
+                    self.gcode.run_script(f"SET_GCODE_OFFSET X={offset[0]} Y={offset[1]}")
+                    self.jobs[0].start()
 
     def get_status(self, eventtime=None):
         return {'jobs': self.jobs}
