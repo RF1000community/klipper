@@ -162,24 +162,24 @@
         SIRadio:
             text: "Exact Material Match"
             value: "exact"
-            selected: app.condition == self.value
+            selected: app.material_condition == self.value
             enabled: enable_toggle.active
             size_hint: None, None
-            on_release: app.condition = self.value; root.update()
+            on_release: app.material_condition = self.value; root.update()
         SIRadio:
             text: "Material Type Match (PLA, PETG, ...)"
             value: "type"
-            selected: app.condition == self.value
+            selected: app.material_condition == self.value
             enabled: enable_toggle.active
             size_hint: None, None
-            on_release: app.condition = self.value; root.update()
+            on_release: app.material_condition = self.value; root.update()
         SIRadio:
             text: "No Material Match required"
             value: "any"
-            selected: app.condition == self.value
+            selected: app.material_condition == self.value
             enabled: enable_toggle.active
             size_hint: None, None
-            on_release: app.condition = self.value; root.update()
+            on_release: app.material_condition = self.value; root.update()
         Divider:
 
 <WifiScreen>:

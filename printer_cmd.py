@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime, timedelta
 
 def set_attribute(e, root, property_name, val):
@@ -26,12 +25,12 @@ def reset_tuning(e, printer):
     update(e, printer)
 
 def clear_buildplate(e, printer):
-    printer.lookup_object('collision').clear_printjobs()
+    printer.lookup_object('virtual_sdcard').clear_buildplate()
 def get_collision_config(e, printer):
     continuous_printing, reposition, condition = printer.lookup_object('collision').get_config()
     printer.reactor.cb(set_attribute, 'continuous_printing', continuous_printing, process='kgui')
     printer.reactor.cb(set_attribute, 'reposition', reposition, process='kgui')
-    printer.reactor.cb(set_attribute, 'condition', condition, process='kgui')
+    printer.reactor.cb(set_attribute, 'material_condition', condition, process='kgui')
 def set_collision_config(e, printer, *args):
     printer.lookup_object('collision').set_config(*args)
 
@@ -235,10 +234,7 @@ def send_calibrate(e, printer):
     printer.objects['bed_mesh'].calibrate.cmd_BED_MESH_CALIBRATE(None)
 
 def send_print(e, printer, filepath):
-    virtual_sdcard = printer.objects['virtual_sdcard']
-    if not virtual_sdcard.jobs: # starting from ui is an implicit confirmation the buildplate is clear
-        printer.lookup_object('collision').clear_printjobs()
-    printer.objects['virtual_sdcard'].add_print(filepath)
+    printer.objects['virtual_sdcard'].add_print(filepath, assume_clear_after=0)
 
 def send_stop(e, printer):
     printer.objects['virtual_sdcard'].stop_print()

@@ -47,7 +47,7 @@ class MainApp(App, threading.Thread):
         "ready",
         "error",
         ])
-    # This is more of a UI-state, it may be 'finished' even though virtual_sdcard has no print jobs
+    # State of first print job in virtual_sdcard.jobs, or "no print job"
     print_state = OptionProperty("no print job", options=[
         "no print job",
         "queued",
@@ -86,7 +86,7 @@ class MainApp(App, threading.Thread):
     config_acceleration = NumericProperty(0)
     continuous_printing = BooleanProperty(False)
     reposition = BooleanProperty(False)
-    condition = StringProperty("")
+    material_condition = StringProperty("")
 
     def __init__(self, config, **kwargs):
         logging.info("Kivy app initializing...")
@@ -190,13 +190,14 @@ class MainApp(App, threading.Thread):
     def handle_print_change(self, jobs):
         """
         Update the configuration of print jobs and the state of 1. print job
-        If there is no print job, the 'finished' state is retained until hide_print is executed
         """
-        if len(jobs):
+        if jobs:
             self.print_state = jobs[0].state
             if self.print_state == 'aborting':
                 self.print_done_time = ""
                 self.print_time = ""
+        else:
+            self.print_stat = "no print job"
         self.jobs = jobs
 
     def handle_print_added(self, jobs, job):
@@ -213,7 +214,6 @@ class MainApp(App, threading.Thread):
         self.reactor.cb(printer_cmd.get_print_progress)
 
     def handle_print_end(self, jobs, job):
-        self.print_state = job.state # in case the following handle_print_change doesnt update because there is no job
         self.handle_print_change(jobs)
         if job.state in ('finished', 'aborted'):
             self.thumbnail = p.kgui_dir + '/logos/transparent.png'
@@ -226,7 +226,6 @@ class MainApp(App, threading.Thread):
         self.print_done_time = ""
         self.print_time = ""
         self.progress = 0
-        self.print_state = "no print job"
         if not self.jobs:
             # Tuning values are only reset once print_queue has run out
             self.reactor.cb(printer_cmd.reset_tuning)

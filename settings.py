@@ -255,12 +255,17 @@ class ContinuousPrintingScreen(Screen):
         self.ids.reposition_toggle.active = self.app.reposition
 
     def update(self):
-        Clock.schedule_once(self.update_config, 0) # wait for the switch to go into active state
+        # Wait for the switch to go into active state
+        Clock.schedule_once(self.update_config, 0)
 
     def update_config(self, dt):
         self.app.continuous_printing = self.ids.enable_toggle.active
         self.app.reposition = self.ids.reposition_toggle.active
-        self.reactor.cb(printer_cmd.set_collision_config, self.app.continuous_printing, self.app.reposition, self.app.condition)
+        self.reactor.cb(printer_cmd.set_collision_config,
+                self.app.continuous_printing,
+                self.app.reposition,
+                self.app.material_condition)
+
 
 class SITimezone(SetItem):
 
