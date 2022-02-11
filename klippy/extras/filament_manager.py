@@ -34,9 +34,6 @@ class FilamentManager:
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
         self.printer.register_event_handler("filament_switch_sensor:runout", self.unload)
 
-        # xml files for each material
-        self.material_dir = expanduser('~/materials')
-
         if not os.path.exists(self.material_dir):
             os.mkdir(self.material_dir)
 
@@ -48,7 +45,7 @@ class FilamentManager:
         # json object of loaded and unloaded material
         # {'loaded': [{'guid': None if nothing is loaded,
         #           'amount': amount in kg,
-        #           'state': loading | loaded | unloading | no material ,
+        #           'state': loading | loaded | unloading | no material,
         #           'all_time_extruded_length': mm}, ...],
         # 'unloaded': [{'guid': None if nothing is loaded,
         #           'amount': amount in kg}, ...]}
@@ -167,7 +164,7 @@ class FilamentManager:
         idx = self.idx(extruder_id)
         if self.material['loaded'][idx]['state'] != "no material":
             return
-
+        finalize = False
         material = {
             'guid': None,
             'amount': 0,
@@ -175,17 +172,18 @@ class FilamentManager:
             'unloaded_idx': None,
             'temp': 200}
         if extruder_id in self.preselected_material:
+            finalize = True
             material = self.preselected_material[extruder_id]
+        else:
+            self.printer.send_event('filament_manager:request_material_choice', extruder_id)
         self.material['loaded'][idx].update(
             {'guid': material['guid'],
             'amount': material['amount'],
             'state': 'loading'})
         self.printer.send_event("filament_manager:material_changed", self.material)
         self.gcode.run_script(f"LOAD_FILAMENT TEMPERATURE={material['temp']}")
-        if extruder_id in self.preselected_material:
+        if finalize:
             self._finalize_loading(extruder_id)
-        else:
-            self.printer.send_event('filament_manager:request_material_choice', extruder_id)
 
     def _finalize_loading(self, extruder_id):
         idx = self.idx(extruder_id)
