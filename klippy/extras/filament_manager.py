@@ -4,16 +4,21 @@
 # Copyright (C) 2020  Konstantin Vogel <konstantin.vogel@gmx.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
+import functools
 import os
 import json
 import logging
 
-from xml.etree import ElementTree
-from os.path import expanduser, join
 from math import pi
+from xml.etree import ElementTree
 
 
 class FilamentManager:
+
+    # Contains xml files for each material
+    material_dir = os.path.expanduser('~/materials')
+    loaded_material_path = os.path.join(material_dir, "loaded_material.json")
+
     def __init__(self, config):
         self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
@@ -31,13 +36,16 @@ class FilamentManager:
 
         # xml files for each material
         self.material_dir = expanduser('~/materials')
+
         if not os.path.exists(self.material_dir):
             os.mkdir(self.material_dir)
-        self.tbc_to_guid = {} # [Type][Brand][Color] = guid, a dict tree for choosing filaments
+
+        # [Type][Brand][Color] = guid, a dict tree for choosing filaments
+        self.tbc_to_guid = {}
         self.guid_to_path = {}
         self.read_material_library_xml()
-        # json list of loaded and unloaded material
-        self.loaded_material_path = join(self.material_dir, "loaded_material.json")
+
+        # json object of loaded and unloaded material
         # {'loaded': [{'guid': None if nothing is loaded,
         #           'amount': amount in kg,
         #           'state': loading | loaded | unloading | no material ,
@@ -45,13 +53,16 @@ class FilamentManager:
         # 'unloaded': [{'guid': None if nothing is loaded,
         #           'amount': amount in kg}, ...]}
         self.material = {
-            'loaded':[{'guid': None, 'state': "no material",
+            'loaded': [{'guid': None, 'state': "no material",
                         'amount': 0, 'all_time_extruded_length': 0}] * extruder_count,
-            'unloaded':[]}
+            'unloaded': []}
         self.read_loaded_material_json()
-        # set state for all materials to loaded in case power was lost during loading or unloading
+
+        # set state for all materials to loaded in case
+        # power was lost during loading or unloading
         for material in self.material['loaded']:
-            if material['state'] == 'loading': material['state'] = 'loaded'
+            if material['state'] == 'loading':
+                material['state'] = 'loaded'
 
     def handle_ready(self):
         self.heater_manager = self.printer.lookup_object('heaters')
@@ -72,55 +83,61 @@ class FilamentManager:
 ######################################################################
 
     def read_material_library_xml(self):
-        self.guid_to_path = {}
-        self.tbc_to_guid = {}
+        self.guid_to_path.clear()
+        self.tbc_to_guid.clear()
         files = os.listdir(self.material_dir)
         for f in files:
             if f.endswith(".xml.fdm_material"):
                 self.read_single_file(os.path.join(self.material_dir, f))
 
     def read_single_file(self, f_path):
-        try:
-            f_root = ElementTree.parse(f_path).getroot()
-        except:
-            logging.info(f"failed to parse xml-material-file {f_path}")
-            return
-
-        ns = {'m': 'http://www.ultimaker.com/material'}
-        f_guid     = f_root.find('./m:metadata/m:GUID', ns).text
-        f_diameter = f_root.find('./m:properties/m:diameter', ns).text
+        f_guid = self.get_info(f_path, './m:metadata/m:GUID')
+        if not f_guid:
+            logging.debug(f"Filament Manager: Couldn't get GUID from {f_path}")
+            return -1
         # generate path lookup
         self.guid_to_path[f_guid] = f_path
 
         # only add to the tbc dict if the diameter is correct, use the same check as cura
         # cura/Settings/ExtruderStack.py -> getApproximateMaterialDiameter()
+        f_diameter = self.get_info(f_path, './m:properties/m:diameter', -1)
         if round(self.config_diameter) != round(float(f_diameter)):
-            return
-        f_type  = f_root.find('./m:metadata/m:name/m:material', ns).text
-        f_brand = f_root.find('./m:metadata/m:name/m:brand', ns).text
-        f_color = f_root.find('./m:metadata/m:color_code', ns).text
-        if self.tbc_to_guid.get(f_type):
-            if self.tbc_to_guid[f_type].get(f_brand):#type and brand already there, add color entry
-                self.tbc_to_guid[f_type][f_brand][f_color] = f_guid
-            else: #type already there, add dict for this brand with color entry
-                self.tbc_to_guid[f_type][f_brand] = {f_color: f_guid}
-        else: #add dict for this type ..
-            self.tbc_to_guid[f_type] = {f_brand: {f_color: f_guid}}
+            return -1
+
+        f_type  = self.get_info(f_path, './m:metadata/m:name/m:material')
+        f_brand = self.get_info(f_path, './m:metadata/m:name/m:brand')
+        f_color = self.get_info(f_path, './m:metadata/m:color_code')
+        if not (f_type and f_brand and f_color):
+            logging.debug(f"Filament Manager: Missing data in {f_path}")
+            return -1
+
+        tbc = self.tbc_to_guid
+        if f_type in tbc:
+            if f_brand in tbc[f_type]:
+                # type and brand already there, add color entry
+                tbc[f_type][f_brand][f_color] = f_guid
+            else:
+                # type already there, add dict for this brand with color entry
+                tbc[f_type][f_brand] = {f_color: f_guid}
+        else:
+            # add dict for this type
+            tbc[f_type] = {f_brand: {f_color: f_guid}}
+
+    # Caches the 10 most recent calls to ElementTree.parse
+    cached_parse = staticmethod(functools.lru_cache(maxsize=10)(ElementTree.parse))
 
     def get_info(self, material, xpath, default=None):
         """material can be either GUID or filepath"""
         fpath = self.guid_to_path.get(material) or material
         try:
-            root = ElementTree.parse(fpath).getroot()
-        except:
-            logging.warning(f"Failed to parse {fpath}")
+            tree = self.cached_parse(fpath)
+        except: 
+            logging.warning(f"Filament Manager: Failed to parse {fpath}",
+                    exc_info=True)
+            return default
         else:
             ns = {'m': 'http://www.ultimaker.com/material'}
-            node = root.find(xpath, ns)
-            if node is not None:
-                return node.text
-        logging.warning(f"Filament Manager returned default value for material {material}, xpath {xpath}")
-        return default
+            return tree.findtext(xpath, default, ns)
 
 ######################################################################
 # loading and unloading api
@@ -220,10 +237,10 @@ class FilamentManager:
         try:
             with open(self.loaded_material_path, "r") as f:
                 material = json.load(f)
-                if not self.verify_loaded_material_json(material):
-                    logging.info("Filament-Manager: Malformed material file at " + self.loaded_material_path)
-                else:
-                    self.material = material
+            if not self.verify_loaded_material_json(material):
+                logging.info("Filament-Manager: Malformed material file at " + self.loaded_material_path)
+            else:
+                self.material = material
         except (IOError, ValueError): # No file or incorrect JSON
             logging.info("Filament-Manager: Couldn't read loaded-material-file at " + self.loaded_material_path)
 
@@ -232,7 +249,7 @@ class FilamentManager:
         try:
             for mat in material['loaded']:
                 if not (
-                    isinstance(mat['state'], str) and
+                    mat['state'] in {'loaded', 'loading', 'unloading', 'no material'} and
                     isinstance(mat['guid'], (str, type(None))) and
                     isinstance(mat['amount'], (float, int)) and
                     isinstance(mat['all_time_extruded_length'], (float, int))):
@@ -253,23 +270,24 @@ class FilamentManager:
                 json.dump(self.material, f, indent=True)
         except IOError:
             logging.warning("Filament-Manager: Couldn't write loaded-material-file at "
-                    + self.loaded_material_path)
+                    + self.loaded_material_path, exc_info=True)
         self.printer.send_event("filament_manager:material_changed", self.material)
 
     # only call in klipper thread else extruded_length += x can cause additional extruded_length
     def update_loaded_material_amount(self):
         for extruder_id in self.extruders:
             idx = self.idx(extruder_id)
+            mat = self.material['loaded'][idx]
             extruded_length = self.extruders[extruder_id].untracked_extruded_length
             self.extruders[extruder_id].untracked_extruded_length = 0
-            guid = self.material['loaded'][idx]['guid']
+            guid = mat['guid']
             if guid:
                 density = float(self.get_info(guid, './m:properties/m:density', '1.24'))
                 diameter = float(self.get_info(guid, './m:properties/m:diameter', '1.75'))
-                area = pi * (diameter/2.)**2
-                extruded_weight = extruded_length*area*density/1000000. # convert from mm^2 to m^2
-                self.material['loaded'][idx]['amount'] -= extruded_weight
-                self.material['loaded'][idx]['all_time_extruded_length'] += extruded_length
+                area = pi * (diameter/2)**2
+                extruded_weight = extruded_length*area*density/1e6 # convert from mm^2 to m^2
+                mat['amount'] -= extruded_weight
+                mat['all_time_extruded_length'] += extruded_length
 
 
 def load_config(config):
