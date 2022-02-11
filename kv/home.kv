@@ -483,7 +483,7 @@
         pos: root.x + root.w1, root.y
         enabled: app.state == "ready" and app.material
         on_release:
-            Factory.FilamentChooserPopup(root.extruder_id).open() if not root.material['guid'] else \
+            Factory.FilamentChooserPopup(root.extruder_id).open() if root.material['state'] == "no material" else \
             Factory.FilamentPopup(root.extruder_id, False, root.material).open() if root.material['state'] == 'loaded' else None
         color: (1,1,1,1) if self.enabled else p.btn_disabled
         text: root.title
