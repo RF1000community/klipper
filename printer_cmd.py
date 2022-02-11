@@ -208,13 +208,13 @@ def get_material(e, printer):
     for m in material['unloaded']:
         m.update({
             'material_type': fm.get_info(m['guid'], "./m:metadata/m:name/m:material", ""),
-            'hex_color': fm.get_info(m['guid'], "./m:metadata/m:color_code", "#ffffff"),
+            'hex_color': fm.get_info(m['guid'], "./m:metadata/m:color_code", None),
             'brand': fm.get_info(m['guid'], './m:metadata/m:name/m:brand', "")})
     for m in material['loaded']:
         if m['guid']:
             m.update({
             'material_type': fm.get_info(m['guid'], "./m:metadata/m:name/m:material", ""),
-            'hex_color': fm.get_info(m['guid'], "./m:metadata/m:color_code", "#ffffff"),
+            'hex_color': fm.get_info(m['guid'], "./m:metadata/m:color_code", None),
             'brand': fm.get_info(m['guid'], './m:metadata/m:name/m:brand', ""),
             'print_temp': fm.get_info(m['guid'], "./m:settings/m:setting[@key='print temperature']", 0),
             'bed_temp': fm.get_info(m['guid'], "./m:settings/m:setting[@key='heated bed temperature']", 0)})
@@ -277,11 +277,11 @@ def calculate_filament_color(c):
         This is equal to the average between the minimum and
         maximum value."""
     #lightness = 0.5*(max(filament_color) + min(filament_color))
-    return [c[0]*0.6, c[1]*0.6, c[2]*0.6, 1]
+    return [c[0]*0.6, c[1]*0.6, c[2]*0.6, c[3]]
 
 def hex_to_rgba(h):
     """ Converts hex color to rgba float format
-        accepts strings like '#ffffff' or "#FFFFFF" """
+        accepts strings like #ffffff or #FFFFFF"""
     if not h:
         return (0,0,0,0)
     return [int(h[i:i + 2], 16) / 255. for i in (1, 3, 5)] + [1]
@@ -308,6 +308,8 @@ def receive_event_history(e, kgui, events):
     kgui.reactor.register_event_handler("virtual_sdcard:print_added", kgui.handle_print_added)
     kgui.reactor.register_event_handler("print_history:change", kgui.handle_history_change)
     kgui.reactor.register_event_handler("filament_manager:material_changed", kgui.handle_material_change)
+    kgui.reactor.register_event_handler("filament_manager:request_material_choice", kgui.handle_request_material_choice)
+    kgui.reactor.register_event_handler("filament_switch_sensor:runout", kgui.handle_material_runout)
     for event, params in events:
         kgui.reactor.run_event(e, kgui, event, params)
 
@@ -317,14 +319,11 @@ def move_print(e, printer, idx, uuid, move):
 def remove_print(e, printer, idx, uuid):
     printer.objects['virtual_sdcard'].remove_print(idx, uuid)
 
-
-def load(e, printer, *args, **kwargs):
-    printer.objects['filament_manager'].load(*args, **kwargs)
-    get_material(e, printer)
+def load(e, printer, extruder_id, material):
+    printer.objects['filament_manager'].select_loading_material(extruder_id, material)
 
 def unload(e, printer, *args, **kwargs):
     printer.objects['filament_manager'].unload(*args, **kwargs)
-    get_material(e, printer)
 
 def get_connected(e, curaconnection):
     connected = curaconnection.is_connected()

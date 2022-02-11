@@ -905,6 +905,7 @@
 <FilamentChooserPopup>:
     size_hint: 0.96, 0.865
     title: "Load Material"
+    auto_dismiss: not self.already_loaded
     FloatLayout:
         id: container
         RectangleButton:
@@ -946,14 +947,16 @@
         BtnPCancel:
             id: btn_cancel
             width: root.width/2
-            pos: root.pos
+            x: p.mars if root.already_loaded else root.x
+            y: root.y
             on_release: root.dismiss()
         BtnPConfirm:
             id: btn_confirm
             enabled: False
             text: "Select"
-            width: root.width/2
-            pos: root.center_x, root.y
+            width: root.width if root.already_loaded else root.width/2
+            y: root.y
+            right: root.right
             on_release: root.confirm()
 
 <Option>:
@@ -1013,6 +1016,7 @@
 <FilamentPopup>:
     size_hint: 0.96, 0.5
     title: "{} {}".format(self.material['brand'], self.material['material_type'])
+    auto_dismiss: not self.already_loaded
     FloatLayout:
         FilamentSlider:
             active: root.new
@@ -1024,15 +1028,29 @@
         BtnPCancel:
             id: btn_cancel
             width: root.width/2
-            pos: root.pos
+            x: p.mars if root.already_loaded else root.x
+            y: root.y
             on_release: root.dismiss()
         BtnPConfirm:
             id: btn_confirm
             enabled: True
             text: "Load" if root.new else "Unload"
-            width: root.width/2
-            pos: root.center_x, root.y
+            width: root.width if root.already_loaded else root.width/2
+            y: root.y
+            right: root.right
             on_release: root.confirm()
+
+<FilamentRunoutPopup>:
+    size_hint: 0.9, 0.4
+    title: f"Filament Runout detected, please load new Material"
+    FloatLayout:
+        BtnPConfirm:
+            id: btn_confirm
+            enabled: True
+            text: "0k"
+            width: root.width
+            pos: root.pos
+            on_release: root.dismiss()
 
 <-FilamentSlider>:
     size_hint: None, None
