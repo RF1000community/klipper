@@ -11,6 +11,7 @@ class RunoutHelper:
         self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object('gcode')
+        self.filament_manager = None
         # Read config
         self.runout_pause = config.getboolean('pause_on_runout', True)
         self.runout_gcode = self.insert_gcode = None
@@ -23,6 +24,7 @@ class RunoutHelper:
                 config, 'insert_gcode')
         self.pause_delay = config.getfloat('pause_delay', .5, above=.0)
         self.event_delay = config.getfloat('event_delay', 3., above=0.)
+        self.extruder_id = config.get('extruder', 'extruder')
         # Internal state
         self.min_event_systime = self.reactor.NEVER
         self.filament_present = False
@@ -38,16 +40,18 @@ class RunoutHelper:
             self.cmd_SET_FILAMENT_SENSOR,
             desc=self.cmd_SET_FILAMENT_SENSOR_help)
     def _handle_ready(self):
+        self.filament_manager = self.printer.lookup_object('filament_manager', None)
         self.min_event_systime = self.reactor.monotonic() + 2.
     def _runout_event_handler(self, eventtime):
-        pause_prefix = ""
         if self.runout_pause:
             virtual_sdcard = self.printer.lookup_object('virtual_sdcard')
             virtual_sdcard.pause_print()
-            pause_prefix = "PAUSE\n"
             self.printer.get_reactor().pause(eventtime + self.pause_delay)
-        self._exec_gcode(pause_prefix, self.runout_gcode)
+        self._exec_gcode(self.runout_gcode)
+        self.printer.send_event("filament_switch_sensor:runout", self.extruder_id)
     def _insert_event_handler(self, eventtime):
+        if self.filament_manager:
+            self.filament_manager.start_loading(self.extruder_id)
         self._exec_gcode("", self.insert_gcode)
     def _exec_gcode(self, prefix, template):
         try:
@@ -66,8 +70,9 @@ class RunoutHelper:
             # when the sensor is disabled
             return
         # Determine "printing" status
-        idle_timeout = self.printer.lookup_object("idle_timeout")
-        is_printing = idle_timeout.get_status(eventtime)["state"] == "Printing"
+        is_printing = False
+        jobs = self.printer.lookup_object('virtual_sdcard').get_status()['jobs']
+        is_printing = jobs and jobs[0].state in ('printing', 'pausing')
         # Perform filament action associated with status change (if any)
         if is_filament_present:
             if not is_printing and self.insert_gcode is not None:
