@@ -165,11 +165,16 @@ class BtnTriple(Widget):
     material = DictProperty({'guid': None, 'state': "no material", 'amount': 0,
                                 'material_type': "", 'hex_color': None, 'brand': ""})
 
+class FilamentRunoutPopup(BasePopup):
+    def __init__(self, extruder_id):
+        self.extruder_id = extruder_id
+        super().__init__()
+
 class FilamentChooserPopup(BasePopup):
     sel = ListProperty()
     sel_2 = DictProperty()
     tab_2 = BooleanProperty(False)
-    def __init__(self, extruder_id, **kwargs):
+    def __init__(self, extruder_id, already_loaded=False, **kwargs):
         self.app = App.get_running_app()
         self.reactor = self.app.reactor
         self.extruder_id = extruder_id
@@ -177,6 +182,7 @@ class FilamentChooserPopup(BasePopup):
         self.sel = [None, None, None, None] # selected [type, brand, color, guid]
         self.sel_2 = {}
         self.widgets = [[], [], []]
+        self.already_loaded = already_loaded
         super().__init__(**kwargs)
         Clock.schedule_once(self.draw_options, 0)
 
@@ -288,7 +294,7 @@ class FilamentChooserPopup(BasePopup):
                 'hex_color': self.sel[2],
                 'guid': self.sel[3],
                 'amount': 1}
-        FilamentPopup(self.extruder_id, True, material).open()
+        FilamentPopup(self.extruder_id, True, material, already_loaded=self.already_loaded).open()
         self.dismiss()
 
 class Option(BaseButton):
@@ -338,7 +344,7 @@ class FilamentPopup(BasePopup):
         - chosen from library       (extruder_id, new=True, material)
         - from unloaded materials   (extruder_id, new=True, material with 'unloaded_idx')
         - currently loaded material (extruder_id, new=False, material) """
-    def __init__(self, extruder_id, new, material, **kwargs):
+    def __init__(self, extruder_id, new, material, already_loaded=False, **kwargs):
         self.app = App.get_running_app()
         self.reactor = self.app.reactor
         self.extruder_id = extruder_id
@@ -346,12 +352,15 @@ class FilamentPopup(BasePopup):
         self.material = material
         self.unloaded_idx = None if not 'unloaded_idx' in material else material['unloaded_idx']
         self.filament_color = calculate_filament_color(hex_to_rgba(material['hex_color']))
+        self.already_loaded = already_loaded
         super().__init__(**kwargs)
 
     def confirm(self):
         if self.new:
-            self.reactor.cb(printer_cmd.load, self.extruder_id, guid=self.material['guid'],
-                amount=self.ids.filament_slider.val/1000, unloaded_idx=self.unloaded_idx)
+            self.reactor.cb(printer_cmd.load, self.extruder_id,
+                {'guid': self.material['guid'],
+                'amount': self.ids.filament_slider.val/1000,
+                'unloaded_idx': self.unloaded_idx})
         else:
             self.reactor.cb(printer_cmd.unload, self.extruder_id)
         self.dismiss()

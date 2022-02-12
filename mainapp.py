@@ -29,6 +29,7 @@ from kivy.lang import Builder
 from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
                             NumericProperty, ListProperty, StringProperty)
 from .elements import UltraKeyboard, CriticalErrorPopup, ErrorPopup
+from .home import FilamentChooserPopup, FilamentRunoutPopup
 from .freedir import freedir
 from .nm_dbus import NetworkManager
 from .status import Notifications
@@ -194,7 +195,7 @@ class MainApp(App, threading.Thread):
         if jobs:
             self.print_state = jobs[0].state
             if self.print_state == 'aborting':
-                self.print_done_time = ""
+                self.print_done_time = "Aborting..."
                 self.print_time = ""
         else:
             self.print_stat = "no print job"
@@ -235,6 +236,12 @@ class MainApp(App, threading.Thread):
 
     def handle_material_change(self, *args):
         self.reactor.cb(printer_cmd.get_material)
+
+    def handle_request_material_choice(self, extruder_id):
+        FilamentChooserPopup(extruder_id, already_loaded=True).open()
+
+    def handle_material_runout(self, extruder_id):
+        FilamentRunoutPopup(extruder_id).open()
 
     def note_live_move(self, axis):
         if axis in 'xyz' and not (self.homed[axis] or self.warned_not_homed[axis]):
