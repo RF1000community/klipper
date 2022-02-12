@@ -100,7 +100,7 @@
                 Color:
                     rgba: p.nozzle
                 Rectangle:
-                    source: p.kgui_dir + f'/logos/extruder2.png'
+                    source: p.kgui_dir + '/logos/extruder2.png'
                     size: self.height, self.height
                     pos: self.x - dp(15), self.y
             id: temp_T1
@@ -117,7 +117,7 @@
                 Color:
                     rgba: p.nozzle
                 Rectangle:
-                    source: p.kgui_dir + f'/logos/extruder1.png'
+                    source: p.kgui_dir + '/logos/extruder1.png'
                     size: self.height, self.height
                     pos: self.x - dp(15), self.y
             id: temp_T0
@@ -134,7 +134,7 @@
                 Color:
                     rgba: p.nozzle
                 Rectangle:
-                    source: p.kgui_dir + f'/logos/bed.png'
+                    source: p.kgui_dir + '/logos/bed.png'
                     size: self.height, self.height
                     pos: self.x - dp(15), self.y
             on_release: Factory.BedTempPopup(creator=self, val=app.temp).open()
