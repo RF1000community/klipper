@@ -23,6 +23,8 @@ class FilamentManager:
         self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
         self.config_diameter = config.getsection("extruder").getfloat("filament_diameter", 1.75)
+        self.filament_switch_sensor = True #TODO
+        self.preselected_material = {}
         for i in range(1, 10):
             if not config.has_section(f"extruder{i}"):
                 extruder_count = i
@@ -30,6 +32,7 @@ class FilamentManager:
         self.extruders = {}
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
         self.printer.register_event_handler("klippy:shutdown", self.handle_shutdown)
+        self.printer.register_event_handler("filament_switch_sensor:runout", self.unload)
 
         if not os.path.exists(self.material_dir):
             os.mkdir(self.material_dir)
@@ -55,7 +58,7 @@ class FilamentManager:
         # set state for all materials to loaded in case
         # power was lost during loading or unloading
         for material in self.material['loaded']:
-            if material['guid']:
+            if material['state'] == 'loading':
                 material['state'] = 'loaded'
 
     def handle_ready(self):
@@ -144,51 +147,81 @@ class FilamentManager:
     def get_tbc(self):
         return self.tbc_to_guid
 
-    def load(self, extruder_id, temp=None, amount=None, unloaded_idx=None, guid=None):
-        """
-        physically load a material, either from unloaded material list or a new one from a guid
-        """
-        self.extruders[extruder_id].untracked_extruded_length = 0
+    def select_loading_material(self, extruder_id, material):
         idx = self.idx(extruder_id)
-        if unloaded_idx is not None:
-            unloaded = self.material['unloaded'].pop(unloaded_idx)
-            guid = guid or unloaded['guid']
-            amount = amount or unloaded['amount']
-        amount = amount or 1
-        temp = temp or self.get_info(guid, "./m:settings/m:setting[@key='print temperature']", 200)
+        material['amount'] = material['amount'] or 1
+        material['temp'] = self.get_info(material['guid'], "./m:settings/m:setting[@key='print temperature']", 200)
+        if material['unloaded_idx'] is not None:
+            unloaded = self.material['unloaded'].pop(material['unloaded_idx'])
+            material['guid'] = material['guid'] or unloaded['guid']
+        self.preselected_material[extruder_id] = material
+        if self.material['loaded'][idx]['state'] == "loading":
+            self._finalize_loading(extruder_id)
+        elif not self.filament_switch_sensor:
+            self.start_loading(extruder_id)
+
+    def start_loading(self, extruder_id):
+        idx = self.idx(extruder_id)
+        if self.material['loaded'][idx]['state'] != "no material":
+            return
+        finalize = False
+        material = {
+            'guid': None,
+            'amount': 0,
+            'state': 'loading',
+            'unloaded_idx': None,
+            'temp': 200}
+        if extruder_id in self.preselected_material:
+            finalize = True
+            material = self.preselected_material[extruder_id]
+        else:
+            self.printer.send_event('filament_manager:request_material_choice', extruder_id)
         self.material['loaded'][idx].update(
-            {'guid': guid,
-             'amount': amount,
-             'state': 'loading'})
-        self.write_loaded_material_json()
+            {'guid': material['guid'],
+            'amount': material['amount'],
+            'state': 'loading'})
+        self.printer.send_event("filament_manager:material_changed", self.material)
+        self.gcode.run_script(f"LOAD_FILAMENT TEMPERATURE={material['temp']}")
+        if finalize:
+            self._finalize_loading(extruder_id)
 
-        self.gcode.run_script(f"LOAD_FILAMENT TEMPERATURE={temp}")
-
+    def _finalize_loading(self, extruder_id):
+        idx = self.idx(extruder_id)
+        self.extruders[extruder_id].untracked_extruded_length = 0
+        material = self.preselected_material[extruder_id]
+        self.material['loaded'][idx].update(
+            {'guid': material['guid'],
+            'amount': material['amount'],
+            'state': 'loading'})
+        self.preselected_material.pop(extruder_id)
+        self.printer.send_event("filament_manager:material_changed", self.material)
+        self.gcode.run_script(f"PRIME_FILAMENT TEMPERATURE={material['temp']}")
         self.material['loaded'][idx]['state'] = 'loaded'
+        self.printer.send_event("filament_manager:material_changed", self.material)
         self.write_loaded_material_json()
 
     def unload(self, extruder_id):
-        self.update_loaded_material_amount()
-        temp = 200 # Default value
         idx = self.idx(extruder_id)
-        mat = self.material['loaded'][idx]
-        if mat['guid']:
-            mat['state'] = 'unloading'
+        if self.material['loaded'][idx]['state'] == 'loaded':
+            self.update_loaded_material_amount()
+            temp = 200 # Default value
+            if self.material['loaded'][idx]['state'] == 'loaded':
+                self.material['loaded'][idx]['state'] = 'unloading'
+                self.write_loaded_material_json()
+                temp = self.get_info(self.material['loaded'][idx]['guid'],
+                    "./m:settings/m:setting[@key='print temperature']", temp)
+            self.gcode.run_script(f"UNLOAD_FILAMENT TEMPERATURE={temp}")
+            if self.material['loaded'][idx]['guid']:
+                self.material['unloaded'].insert(0,
+                    {'guid':self.material['loaded'][idx]['guid'],
+                    'amount':self.material['loaded'][idx]['amount']})
+            self.material['loaded'][idx].update(
+                {'guid': None,
+                'amount': 0,
+                'state': 'no material'})
+            self.material['unloaded'] = self.material['unloaded'][:15] # only store recent materials
+            self.printer.send_event("filament_manager:material_changed", self.material)
             self.write_loaded_material_json()
-            temp = self.get_info(mat['guid'],
-                   "./m:settings/m:setting[@key='print temperature']", temp)
-
-        self.gcode.run_script(f"UNLOAD_FILAMENT TEMPERATURE={temp}")
-
-        self.material['unloaded'].insert(0, 
-            {'guid': mat['guid'],
-             'amount': mat['amount']})
-        mat.update(
-            {'guid': None,
-             'amount': 0,
-             'state': 'no material'})
-        self.material['unloaded'] = self.material['unloaded'][:15] # only store recent materials
-        self.write_loaded_material_json()
 
     def idx(self, extruder_id):
         return 0 if extruder_id == 'extruder' else int(extruder_id[-1])
@@ -205,9 +238,7 @@ class FilamentManager:
             if not self.verify_loaded_material_json(material):
                 logging.info("Filament-Manager: Malformed material file at " + self.loaded_material_path)
             else:
-                self.material['unloaded'] = material['unloaded']
-                for i, new in enumerate(material['loaded']):
-                    self.material['loaded'][i] = new
+                self.material = material
         except (IOError, ValueError): # No file or incorrect JSON
             logging.info("Filament-Manager: Couldn't read loaded-material-file at " + self.loaded_material_path)
 

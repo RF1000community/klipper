@@ -15,13 +15,13 @@ class PrintStats:
         self.printer.register_event_handler("virtual_sdcard:print_end", self.initialize_print)
         # this relies on no gcode being processed before the start event which is given.
         self.printer.register_event_handler("virtual_sdcard:print_start", self.initialize_print)
-        self.printer.register_event_handler("klippy:connect", self.handle_connect)
+        self.printer.register_event_handler("klippy:ready", self.handle_ready)
 
         # List of time estimations by the slicer inside the gcode
         # [[time actually printed, elapsed time put by slicer], ...]
         self.slicer_elapsed_times = []
 
-    def handle_connect(self):
+    def handle_ready(self):
         self.virtual_sdcard = self.printer.lookup_object('virtual_sdcard')
 
     def initialize_print(self, *args):
