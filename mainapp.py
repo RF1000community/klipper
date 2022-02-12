@@ -198,7 +198,7 @@ class MainApp(App, threading.Thread):
                 self.print_done_time = "Aborting..."
                 self.print_time = ""
         else:
-            self.print_stat = "no print job"
+            self.print_state = "no print job"
         self.jobs = jobs
 
     def handle_print_added(self, jobs, job):

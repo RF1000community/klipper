@@ -26,6 +26,7 @@ def reset_tuning(e, printer):
 
 def clear_buildplate(e, printer):
     printer.lookup_object('virtual_sdcard').clear_buildplate()
+
 def get_collision_config(e, printer):
     continuous_printing, reposition, condition = printer.lookup_object('collision').get_config()
     printer.reactor.cb(set_attribute, 'continuous_printing', continuous_printing, process='kgui')
@@ -95,7 +96,7 @@ def reset_pressure_advance(e, printer):
 def get_acceleration(e, printer):
     acceleration = printer.objects['toolhead'].max_accel
     printer.reactor.cb(set_attribute, 'acceleration', acceleration, process='kgui')
-# with dynamic acceleration control (M204) this becomes useless (sets limit)
+
 def send_acceleration(e, printer, val):
     printer.objects['toolhead'].max_accel = val
     printer.objects['toolhead']._calc_junction_deviation()
