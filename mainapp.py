@@ -196,7 +196,7 @@ class MainApp(App, threading.Thread):
         if len(jobs):
             self.print_state = jobs[0].state
             if self.print_state == 'aborting':
-                self.print_done_time = ""
+                self.print_done_time = "Aborting..."
                 self.print_time = ""
         self.jobs = jobs
 
