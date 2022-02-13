@@ -81,7 +81,7 @@ class PrintHistory:
 
     def add(self, jobs, job):
         """ Add a new entry to the history from the specified PrintJob object """
-        self.history.append([job.path, job.state, time.time()])
+        self.history.append([job.path, job.state, time.time(), job.continuous])
         self.write(self.history)
         self.printer.send_event("print_history:change", self.history)
 

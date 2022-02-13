@@ -10,7 +10,7 @@ from uuid import uuid4
 
 
 class PrintJob:
-    def __init__(self, path, manager):
+    def __init__(self, path, manager, no_material_check_when_discontinuos):
         self.manager = manager
         self.reactor = manager.reactor
         self.toolhead = manager.toolhead
@@ -18,6 +18,8 @@ class PrintJob:
         self.heaters = manager.printer.lookup_object('heaters')
         self.gcode_metadata = manager.gcode_metadata
 
+        self.continuous = False #TODO set predictively, hide dividers
+        self.no_material_check_when_discontinuos = no_material_check_when_discontinuos
         self.path = path
         self.state = None
         self.set_state('queued') # queued -> printing -> pausing -> paused -> printing -> finished
@@ -38,7 +40,7 @@ class PrintJob:
             self.set_state('aborted')
 
     def __getstate__(self):
-        return {'path': self.path, 'name': self.name, 'state': self.state, 'uuid': self.uuid}
+        return {'path': self.path, 'name': self.name, 'state': self.state, 'uuid': self.uuid, 'continuous': self.continuous}
 
     def set_state(self, state):
         if self.state != state:
@@ -48,9 +50,14 @@ class PrintJob:
                 self.reactor.send_event("virtual_sdcard:print_end",
                         self.manager.jobs, self)
 
-    def start(self, paused_start):
+    def start(self):
         if self.state == 'queued':
-            if paused_start:
+            # TODO check_material()
+            materials =        [{'amount': 0.4, 'type': "PLA", 'brand': "Generic", 'hex_color': "#ff4433"}, {'amount': 0.4, 'type': "PLA", 'brand': "Generic", "hex_color": "#ffffff"}]
+            needed_materials = [{'amount': 0.8, 'type': "PLA", 'brand': "Generic", 'hex_color': "#ff4433"}, {'amount': 0.6, 'type': "PVA", 'brand': "Generic", "hex_color": "#ffffff"}]
+            mismatch = True
+            if mismatch and not (self.no_material_check_when_discontinuos and not self.continuous):
+                self.reactor.send_event("virtual_sdcard:material_mismatch", materials, needed_materials)
                 self.gcode.run_script_from_command("SAVE_GCODE_STATE NAME=PAUSE_STATE")
                 self.set_state('paused')
             else:
@@ -178,7 +185,7 @@ class PrintJobManager:
         #TODO Listen for loaded material change events to check queue (maybe?)
         self.jobs = [] # Print jobs, first is current
 
-    def add_print(self, path, assume_clear_after=None):
+    def add_print(self, path, assume_clear_after=None, no_material_check_when_discontinuous=False):
         """Add new print job to queue
 
         By specifying a timespan in seconds for assume_clear_after the print
@@ -199,7 +206,8 @@ class PrintJobManager:
                     (now - self.jobs[0].print_end_time) > assume_clear_after):
                     self.clear_buildplate()
 
-        job = PrintJob(path, self)
+        job = PrintJob(path, self, no_material_check_when_discontinuous)
+        job.continuous = not self.jobs or (len(self.jobs) == 1 and self.jobs[0].state in ('finished', 'aborted'))
         self.jobs.append(job)
         self.check_queue()
         self.printer.send_event("virtual_sdcard:print_added", self.jobs, job)
@@ -245,9 +253,8 @@ class PrintJobManager:
 
     def check_queue(self):
         """Check if the next queued print can be started"""
-        paused_start = False
         if self.jobs and self.jobs[0].state in ('queued'):
-            self.jobs[0].start(paused_start)
+            self.jobs[0].start()
         elif len(self.jobs) > 1 and self.jobs[0].state in ('aborted', 'finished'):
             # Last print is done but not confirmed clear
             collision = self.printer.lookup_object('collision', None)
@@ -257,7 +264,7 @@ class PrintJobManager:
                     del self.jobs[0]
                     logging.info(f"Printing with offset: {offset}")
                     self.gcode.run_script(f"SET_GCODE_OFFSET X={offset[0]} Y={offset[1]}")
-                    self.jobs[0].start(paused_start)
+                    self.jobs[0].start()
 
     def get_status(self, eventtime=None):
         return {'jobs': self.jobs}
