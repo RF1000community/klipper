@@ -5,9 +5,9 @@ import os
 import site
 import time
 site.addsitedir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-import klipper_cura_connection
+import cura_connection
 
-module = klipper_cura_connection.load_config(None)
+module = cura_connection.load_config(None)
 module.handle_ready()
 while True:
     try:

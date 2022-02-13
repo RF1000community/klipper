@@ -40,11 +40,11 @@ git clone --recurse-submodules https://github.com/D4SK/klipperui
 - Change the resolution in the kivy config according to the screen you are using. (default is 1024x600) E.g. "height = 800" and "width = 480" ```nano ~/klipperui/klippy/parallel_extras/kgui/config.ini```
 - If the UI appears upside down, rotate your screen. Alternatively you can change the rotation parameter of the kivy config from "rotation = 90" to "rotation = 270" ```nano ~/klipperui/klippy/parallel_extras/kgui/config.ini```
 
-### Install klipper_cura_connection (recommended) ###
-- Add the necessary config section ```[klipper_cura_connection]```
+### Install cura_connection (recommended) ###
+- Add the necessary config section ```[cura_connection]```
 - Run the install script
 ```bash
-~/klipperui/klippy/parallel_extras/klipper_cura_connection/install.sh
+~/klipperui/klippy/parallel_extras/cura_connection/install.sh
 ```
 
 

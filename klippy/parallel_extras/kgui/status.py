@@ -154,7 +154,7 @@ class CuraConnectionIcon(Widget):
 
     def update(self, dt):
         try:
-            App.get_running_app().reactor.cb(printer_cmd.get_connected, process='klipper_cura_connection')
+            App.get_running_app().reactor.cb(printer_cmd.get_connected, process='cura_connection')
         except KeyError:
             self.connected = False
 

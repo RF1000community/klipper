@@ -19,7 +19,7 @@ from .contentmanager import ContentManager
 from . import server
 from .zeroconfhandler import ZeroConfHandler
 
-LOGFILE = "/tmp/klipper_cura_connection.log"
+LOGFILE = "/tmp/cura_connection.log"
 
 class CuraConnectionModule:
 

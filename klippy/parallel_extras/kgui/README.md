@@ -1,7 +1,7 @@
 # kgui is the clean touch UI for your 3D printer running Klipper.
 Kgui works on most touchscreens compatible with the raspberry pi. It is fully written in Python enabling direct and fast communication with all aspects of Klipper.
-This plugin works best in conjunction with the [klipper_cura_connection](https://github.com/Gobbel2000/klipper_cura_connection) plugin.
 A modified version of klipper is used, so other web-interfaces may have limited compatibility.
+
 # Features
 * Filemanager for printing from USB-sticks
 * Easy setup of Wifi, timezone and hostname
