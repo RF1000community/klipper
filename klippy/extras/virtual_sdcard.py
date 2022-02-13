@@ -10,7 +10,7 @@ from uuid import uuid4
 
 
 class PrintJob:
-    def __init__(self, path, manager, no_material_check_when_discontinuos):
+    def __init__(self, path, manager, no_material_check):
         self.manager = manager
         self.reactor = manager.reactor
         self.toolhead = manager.toolhead
@@ -19,7 +19,7 @@ class PrintJob:
         self.gcode_metadata = manager.gcode_metadata
 
         self.continuous = False #TODO set predictively, hide dividers
-        self.no_material_check_when_discontinuos = no_material_check_when_discontinuos
+        self.no_material_check = no_material_check
         self.path = path
         self.state = None
         self.set_state('queued') # queued -> printing -> pausing -> paused -> printing -> finished
@@ -56,15 +56,16 @@ class PrintJob:
             materials =        [{'amount': 0.4, 'type': "PLA", 'brand': "Generic", 'hex_color': "#ff4433"}, {'amount': 0.4, 'type': "PLA", 'brand': "Generic", "hex_color": "#ffffff"}]
             needed_materials = [{'amount': 0.8, 'type': "PLA", 'brand': "Generic", 'hex_color': "#ff4433"}, {'amount': 0.6, 'type': "PVA", 'brand': "Generic", "hex_color": "#ffffff"}]
             mismatch = True
-            if mismatch and not (self.no_material_check_when_discontinuos and not self.continuous):
-                self.reactor.send_event("virtual_sdcard:material_mismatch", materials, needed_materials)
+            if mismatch and not self.no_material_check:
                 self.gcode.run_script_from_command("SAVE_GCODE_STATE NAME=PAUSE_STATE")
                 self.set_state('paused')
+                self.reactor.send_event("virtual_sdcard:print_start", self.manager.jobs, self)
+                self.reactor.send_event("virtual_sdcard:material_mismatch", materials, needed_materials)
             else:
                 self.last_start_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
                 self.set_state('printing') # set_state only after last_start_time is set but before entering work handler
+                self.reactor.send_event("virtual_sdcard:print_start", self.manager.jobs, self)
                 self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
-            self.reactor.send_event("virtual_sdcard:print_start", self.manager.jobs, self)
 
     def resume(self, gcmd):
         if self.state == 'pausing':
@@ -185,7 +186,7 @@ class PrintJobManager:
         #TODO Listen for loaded material change events to check queue (maybe?)
         self.jobs = [] # Print jobs, first is current
 
-    def add_print(self, path, assume_clear_after=None, no_material_check_when_discontinuous=False):
+    def add_print(self, path, assume_clear_after=None, no_material_check_when_first=False):
         """Add new print job to queue
 
         By specifying a timespan in seconds for assume_clear_after the print
@@ -205,8 +206,8 @@ class PrintJobManager:
                 if (self.jobs[0].print_end_time is not None and
                     (now - self.jobs[0].print_end_time) > assume_clear_after):
                     self.clear_buildplate()
-
-        job = PrintJob(path, self, no_material_check_when_discontinuous)
+        no_material_check = (not len(self.jobs) or len(self.jobs) == 1 and self.jobs[0].state in ('finished', 'aborted')) and no_material_check_when_first
+        job = PrintJob(path, self, no_material_check)
         job.continuous = not self.jobs or (len(self.jobs) == 1 and self.jobs[0].state in ('finished', 'aborted'))
         self.jobs.append(job)
         self.check_queue()

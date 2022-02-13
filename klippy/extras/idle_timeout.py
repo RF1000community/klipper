@@ -38,6 +38,7 @@ class IdleTimeout:
         return { "state": self.state, "printing_time": printing_time }
     def handle_ready(self):
         self.toolhead = self.printer.lookup_object('toolhead')
+        self.virtual_sdcard = self.printer.lookup_object('virtual_sdcard')
         self.timeout_timer = self.reactor.register_timer(self.timeout_handler)
         self.printer.register_event_handler("toolhead:sync_print_time",
                                             self.handle_sync_print_time)
@@ -68,6 +69,9 @@ class IdleTimeout:
         if self.gcode.get_mutex().test():
             # Gcode class busy
             return eventtime + 1.
+        print_jobs = self.virtual_sdcard.get_status()['jobs']
+        if print_jobs and print_jobs[0].state in ('printing', 'pausing', 'paused', 'aborting'):
+            return eventtime + self.idle_timeout
         # Idle timeout has elapsed
         return self.transition_idle_state(eventtime)
     def timeout_handler(self, eventtime):
