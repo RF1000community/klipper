@@ -25,7 +25,7 @@ class Timeline(RecycleView):
         self.app.bind(jobs=self.load_all, history=self.load_all)
 
     def load_all(self, *args, clear_scroll_pos=False, clear_selection=True):
-        queue = [{'name': job.name, 'path': job.path, 'state': job.state, 'continuouse': job.continuous,
+        queue = [{'name': job.name, 'path': job.path, 'state': job.state, 'continuous': job.continuous,
             'thumbnail': self.app.gcode_metadata.get_metadata(job.path).get_thumbnail_path()}
             for job in reversed(self.app.jobs)]
 

@@ -106,33 +106,21 @@ class TempSlider(UltraSlider):
         if self.gcode_id == 'B':
             self.val_min = 30
             self.val_max = 140
+            self.buttons = []
             if self.app.material:
                 loaded_material = self.app.material['loaded']
                 for material in loaded_material:
                     if material['guid']:
                         self.buttons.append([float(material['bed_temp']), 0, material['material_type'], None])
-            else: # show some generic temperatures
-                self.buttons = [
-                    [0,0,"Off",None],
-                    [60,0,"PLA",None],
-                    [90,0,"PETG",None],
-                    [110,0,"ABS",None]]
         else:
             self.val_min = 40
             self.val_max = 280
+            self.buttons = []
             if self.app.material:
                 tool_idx = int(self.gcode_id[-1])
                 material = self.app.material['loaded'][tool_idx]
                 if material['guid']:
                     self.buttons.append([float(material['print_temp']), 0, material['material_type'], None])
-            else:
-                self.buttons = [
-                    [0,14,"Off",None],
-                    [70,0,"PLA\ncold pull",None],
-                    [90,-68/2,"ABS/PETG\ncold pull",None],
-                    [210,68/2,"PLA",None],
-                    [230,0,"PETG",None],
-                    [250,-68/2,"ABS",None]]
         super().init_drawing()
 
     def get_val_from_px(self, x):
