@@ -1,0 +1,9 @@
+[Unit]
+Description=A server for streaming Motion-JPEG from a video capture device
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/mjpg_streamer -i 'input_raspicam.so -fps 24 -x 800 -y 600' -o 'output_http.so -p 8080'
+
+[Install]
+WantedBy=multi-user.target
