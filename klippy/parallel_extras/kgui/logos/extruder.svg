@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="60"
+   height="60"
+   viewBox="0 0 60 60"
+   version="1.1"
+   id="svg8"
+   inkscape:version="1.1.2 (b8e25be833, 2022-02-05)"
+   sodipodi:docname="extruder.svg"
+   inkscape:export-filename="C:\Users\konst\Desktop\extruder2.png"
+   inkscape:export-xdpi="256"
+   inkscape:export-ydpi="256"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs2">
+    <inkscape:path-effect
+       effect="powermask"
+       id="path-effect30313"
+       is_visible="true"
+       lpeversion="1"
+       uri="#mask-powermask-path-effect30313"
+       invert="false"
+       hide_mask="false"
+       background="true"
+       background_color="#ffffffff" />
+    <inkscape:path-effect
+       effect="powermask"
+       id="path-effect26917"
+       is_visible="true"
+       lpeversion="1"
+       uri="#mask-powermask-path-effect26917"
+       invert="false"
+       hide_mask="false"
+       background="true"
+       background_color="#ffffffff" />
+    <inkscape:path-effect
+       effect="powermask"
+       id="path-effect5720"
+       is_visible="true"
+       lpeversion="0"
+       uri="#mask-powermask-path-effect5720"
+       invert="false"
+       hide_mask="false"
+       background="false"
+       background_color="#ffffffff" />
+    <mask
+       maskUnits="userSpaceOnUse"
+       id="mask5714">
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:35.8476px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.896194"
+         x="19.292566"
+         y="38.837643"
+         id="text5718"
+         inkscape:export-filename="C:\Users\konst\Desktop\extruder2.png"
+         inkscape:export-xdpi="128"
+         inkscape:export-ydpi="128"><tspan
+           sodipodi:role="line"
+           id="tspan5716"
+           style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-size:35.8476px;font-family:Roboto;-inkscape-font-specification:'Roboto, Heavy';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.896194"
+           x="19.292566"
+           y="38.837643">2</tspan></text>
+    </mask>
+    <mask
+       maskUnits="userSpaceOnUse"
+       id="mask-powermask-path-effect5720">
+      <path
+         id="path875"
+         style="fill:#ffffff;fill-opacity:1"
+         d="M 7,0.5 H 53 V 59.500543 H 7 Z" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:35.8476px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.896194"
+         x="19.292566"
+         y="38.837643"
+         id="text879"
+         inkscape:export-filename="C:\Users\konst\Desktop\extruder2.png"
+         inkscape:export-xdpi="128"
+         inkscape:export-ydpi="128"><tspan
+           sodipodi:role="line"
+           id="tspan877"
+           style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-size:35.8476px;font-family:Roboto;-inkscape-font-specification:'Roboto, Heavy';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.896194"
+           x="19.292566"
+           y="38.837643">2</tspan></text>
+    </mask>
+    <mask
+       maskUnits="userSpaceOnUse"
+       id="mask-powermask-path-effect26917">
+      <path
+         id="mask-powermask-path-effect26917_box"
+         style="fill:#ffffff;fill-opacity:1"
+         d="m 6.75,0.2497924 h 46.5 V 59.249879 H 6.75 Z" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:35.7698px;line-height:1.25;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.894244"
+         x="19"
+         y="39"
+         id="text26915"><tspan
+           sodipodi:role="line"
+           id="tspan26913"
+           x="19"
+           y="39"
+           style="stroke-width:0.894244">2</tspan></text>
+    </mask>
+    <filter
+       id="mask-powermask-path-effect26917_inverse"
+       inkscape:label="filtermask-powermask-path-effect26917"
+       style="color-interpolation-filters:sRGB"
+       height="100"
+       width="100"
+       x="-50"
+       y="-50">
+      <feColorMatrix
+         id="mask-powermask-path-effect26917_primitive1"
+         values="1"
+         type="saturate"
+         result="fbSourceGraphic" />
+      <feColorMatrix
+         id="mask-powermask-path-effect26917_primitive2"
+         values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0 "
+         in="fbSourceGraphic" />
+    </filter>
+    <mask
+       maskUnits="userSpaceOnUse"
+       id="mask-powermask-path-effect30313">
+      <path
+         id="mask-powermask-path-effect30313_box"
+         style="fill:#ffffff;fill-opacity:1"
+         d="m 6.75,0.2497924 h 46.5 V 59.249879 H 6.75 Z" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:35.7698px;line-height:1.25;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.894244"
+         x="19"
+         y="39"
+         id="text30311"><tspan
+           sodipodi:role="line"
+           id="tspan30309"
+           x="19"
+           y="39"
+           style="stroke-width:0.894244">1</tspan></text>
+    </mask>
+    <filter
+       id="mask-powermask-path-effect30313_inverse"
+       inkscape:label="filtermask-powermask-path-effect30313"
+       style="color-interpolation-filters:sRGB"
+       height="100"
+       width="100"
+       x="-50"
+       y="-50">
+      <feColorMatrix
+         id="mask-powermask-path-effect30313_primitive1"
+         values="1"
+         type="saturate"
+         result="fbSourceGraphic" />
+      <feColorMatrix
+         id="mask-powermask-path-effect30313_primitive2"
+         values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0 "
+         in="fbSourceGraphic" />
+    </filter>
+  </defs>
+  <sodipodi:namedview
+     inkscape:snap-others="true"
+     inkscape:snap-nodes="true"
+     inkscape:snap-intersection-paths="true"
+     inkscape:object-paths="true"
+     inkscape:snap-page="false"
+     inkscape:snap-text-baseline="true"
+     inkscape:snap-smooth-nodes="true"
+     inkscape:snap-midpoints="true"
+     inkscape:snap-center="true"
+     inkscape:snap-object-midpoints="true"
+     id="base"
+     pagecolor="#8a8a8a"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="16"
+     inkscape:cx="0"
+     inkscape:cy="30.875"
+     inkscape:document-units="px"
+     inkscape:current-layer="g26932"
+     showgrid="true"
+     units="px"
+     inkscape:window-width="3840"
+     inkscape:window-height="2054"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
+     inkscape:window-maximized="1"
+     inkscape:pagecheckerboard="true"
+     inkscape:document-rotation="0"
+     objecttolerance="10000"
+     guidetolerance="10000"
+     inkscape:snap-bbox="true"
+     showborder="true"
+     inkscape:showpageshadow="false"
+     borderlayer="false">
+    <inkscape:grid
+       type="xygrid"
+       id="grid106426"
+       enabled="false"
+       visible="false" />
+    <inkscape:grid
+       type="xygrid"
+       id="grid106960"
+       originy="0"
+       spacingx="1"
+       spacingy="1"
+       empspacing="1" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     style="display:none"
+     inkscape:label="Nozzle"
+     id="layer3"
+     inkscape:groupmode="layer">
+    <path
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 48,5.4997924 H 12 V 39 L 29,54 48,40 V 5.4997924"
+       id="path26201" />
+  </g>
+  <g
+     style="display:none"
+     inkscape:label="Nozzle copy 1"
+     id="g26932"
+     inkscape:groupmode="layer">
+    <path
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 48,5.4997924 H 12 V 39 L 29,54 48,40 V 5.4997924"
+       id="path26930"
+       mask="url(#mask-powermask-path-effect30313)"
+       inkscape:path-effect="#path-effect30313"
+       inkscape:original-d="M 48,5.4997924 H 12 V 39 L 29,54 48,40 V 5.4997924"
+       inkscape:export-filename="C:\Users\konst\Desktop\extruder1.png"
+       inkscape:export-xdpi="128"
+       inkscape:export-ydpi="128" />
+  </g>
+  <g
+     style="display:inline"
+     inkscape:label="Nozzle copy"
+     id="g26903"
+     inkscape:groupmode="layer">
+    <path
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 48,5.4997924 H 12 V 39 L 29,54 48,40 V 5.4997924"
+       id="path26901"
+       mask="url(#mask-powermask-path-effect26917)"
+       inkscape:path-effect="#path-effect26917"
+       inkscape:original-d="M 48,5.4997924 H 12 V 39 L 29,54 48,40 V 5.4997924"
+       inkscape:export-filename="C:\Users\konst\Desktop\extruder2.png"
+       inkscape:export-xdpi="128"
+       inkscape:export-ydpi="128" />
+  </g>
+  <g
+     style="display:none"
+     inkscape:label="Number"
+     id="layer4"
+     inkscape:groupmode="layer">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:35.7698px;line-height:1.25;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.894244"
+       x="19"
+       y="39"
+       id="text18338"><tspan
+         sodipodi:role="line"
+         id="tspan18336"
+         x="19"
+         y="39"
+         style="stroke-width:0.894244">2</tspan></text>
+  </g>
+  <g
+     style="display:none"
+     inkscape:label="Number copy 1"
+     id="g26927"
+     inkscape:groupmode="layer" />
+  <g
+     style="display:none"
+     inkscape:label="Number copy"
+     id="g26909"
+     inkscape:groupmode="layer" />
+</svg>

@@ -1,0 +1,12 @@
+#:import p parameters
+
+<-TabbedPanelStrip>:
+    canvas:
+        Color:
+            rgba: (0, 0, 0, 1) # black colour of the strip behind all 3 tab buttons
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+<StripLayout>: #a child of Gridlayout which is used by tabbedpanel, this disables padding
+    padding: (0,0,0,0)

@@ -1,0 +1,92 @@
+#:import basename os.path.basename
+#:import dirname os.path.dirname
+#:import relpath os.path.relpath
+
+#:import screenmanager kivy.uix.screenmanager
+
+#:import p parameters
+#:import printer_cmd parallel_extras.kgui.printer_cmd
+
+<FileTab@TabbedPanelItem>:
+    background_down: ''
+    background_color: p.background
+    canvas:
+        Rectangle:
+            source: p.kgui_dir+'/logos/files.png'
+            size: dp(60), dp(60)
+            pos: dp(375 - 30), dp(20)
+    FloatLayout:
+        pos: 0, p.tab_height
+        canvas.before:
+            Color:
+                rgba: p.background
+            Rectangle:
+                size: p.screen_width, p.screen_height - p.tab_height - p.status_bar_height
+                pos: 0, p.tab_height
+        TitleBar:
+            id: title_bar
+            enabled: gc.path != p.sdcard_path
+            on_release: gc.back()
+            pos_hint: {'x':0, 'top':1}
+            title: relpath(gc.path, dirname(p.sdcard_path))
+        Filechooser:
+            id: gc
+            viewclass: 'FilechooserItem'
+            size_hint: None, None
+            size: p.screen_width, p.screen_height - title_bar.height - p.tab_height - p.status_bar_height
+            pos: 0, p.tab_height
+
+<Filechooser>:
+    FilechooserGrid:
+        id: gc_grid
+        cols: 3
+        padding: (dp(15),)
+        spacing:(dp(15),)
+        default_size: dp(180), dp(180)
+        size_hint: None, None
+        width: p.screen_width
+        height: self.minimum_height
+        orientation: 'lr-tb'
+        multiselect: False
+        touch_multiselect: False
+
+<FilechooserItem>:
+    canvas:
+        Color:
+            rgba: (1,1,1,1) if self.thumbnail else p.medium_light_gray
+        Rectangle:
+            source:
+                self.thumbnail or p.kgui_dir + \
+                {'file':"/logos/file.png", 'usb':"/logos/usb.png", 'folder':"/logos/folder.png"}[self.item_type]
+            size: dp(84), dp(84)
+            pos: self.center_x - dp(42), self.center_y - dp(5)
+        Color:
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+        RoundedRectangle:
+            radius: (p.radius,)
+            size: self.size
+            pos: self.pos
+    #Label
+    text: root.details
+    halign: 'center'
+    valign: 'bottom'
+    max_lines: 1
+    padding_x: 0
+    padding_y: dp(6)
+    text_size: self.size
+    font_size: p.normal_font - dp(3)
+    color: p.medium_light_gray
+    Label:
+        text: root.name
+        shorten: False
+        multiline: True
+        halign: 'center'
+        valign: 'top'
+        max_lines: 2
+        padding_x: 0
+        padding_y: 0
+        size: root.width, dp(80)
+        pos: root.pos
+        text_size: self.size
+        font_size: p.normal_font - dp(3)
+        color: (1,1,1,1)

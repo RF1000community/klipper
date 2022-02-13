@@ -1,0 +1,1091 @@
+#:import Factory kivy.factory.Factory
+#:import screenmanager kivy.uix.screenmanager
+
+#:import p parameters
+#:import printer_cmd parallel_extras.kgui.printer_cmd
+
+<HomeTab@TabbedPanelItem>:
+    background_down: ''
+    background_color: p.background
+    canvas:
+        Rectangle:
+            source: p.kgui_dir + '/logos/home.png'
+            size: dp(60), dp(60)
+            pos: dp(75 - 30), dp(20)
+    FloatLayout:
+        canvas.before:
+            Color:
+                rgba: p.background
+            Rectangle:
+                size: p.screen_width, p.screen_height - p.tab_height - p.status_bar_height
+                pos: 0, p.tab_height
+            Color:
+                rgba: (0.65,0.65,0.65,1)
+            Rectangle:
+                source: app.thumbnail
+                size: dp(420), dp(420)
+                pos: (p.screen_width - dp(420))/2, dp(360)
+        PrintProgressBar:
+            id: progress_bar
+            size_hint: None, None
+            size: p.screen_width - 2*p.h_padding + 2, p.progress_bar_height
+            pos: p.h_padding - 1, p.tab_height + p.padding
+        Label:
+            text: app.print_time
+            size_hint: None, None
+            size: p.screen_width - 2*p.padding, p.normal_font
+            text_size: self.size
+            font_size: p.normal_font
+            x: p.h_padding - 2
+            top: progress_bar.y - dp(5)
+            color: (1,1,1,1)
+            halign: 'left'
+            valign: 'bottom'
+        Label:
+            text: app.print_done_time
+            size_hint: None, None
+            size: p.screen_width - 2*p.padding, p.normal_font
+            text_size: self.size
+            font_size: p.normal_font
+            x: p.h_padding - 2
+            top: progress_bar.y - dp(5) if app.print_state in ('printing', 'pausing', 'paused') else progress_bar.y + dp(12)
+            color: p.btn_disabled
+            halign: 'right'
+            valign: 'bottom'
+        BtnStop:
+            on_release: Factory.StopPopup().open()
+            id: btn_stop
+            size: dp(118), dp(118)
+            center_y: progress_bar.top + p.padding + p.btn_stop/2
+            center_x: p.screen_width - p.btn_stop/2 - p.h_padding
+        BtnPlay:
+            on_release: app.reactor.cb(printer_cmd.send_resume)
+            size: btn_stop.size
+            y: btn_stop.y
+            right: btn_stop.x
+        BtnPause:
+            on_release: app.reactor.cb(printer_cmd.send_pause)
+            size: btn_stop.size
+            y: btn_stop.y
+            right: btn_stop.x
+        BtnClear:
+            on_release: app.hide_print(); app.reactor.cb(printer_cmd.clear_buildplate)
+            size: btn_stop.size
+            y: btn_stop.y
+            right: p.screen_width - p.h_padding
+        Label:
+            id: l_filename
+            text: app.print_title
+            color: (1,1,1,1)
+            size_hint: None, None
+            size: dp(280), dp(134)
+            text_size: self.size
+            font_size: p.large_font
+            x: p.h_padding - dp(3)
+            center_y: btn_stop.center_y
+            shorten: True
+            halign: 'left'
+            valign: 'middle'
+        ScreenManager:
+            current: 'printingscreen' if app.print_state == 'printing' else 'homescreen'
+            transition: screenmanager.NoTransition()
+            id: hs_manager
+            size_hint: None, None
+            size: (p.screen_width, p.screen_height - btn_stop.center_y - p.btn_stop/2)
+            pos: root.x, btn_stop.center_y + p.btn_stop/2
+            HomeScreen:
+            PrintingScreen:
+        BtnTemp:
+            canvas:
+                Color:
+                    rgba: p.nozzle
+                Rectangle:
+                    source: p.kgui_dir + '/logos/extruder2.png'
+                    size: self.height, self.height
+                    pos: self.x - dp(15), self.y
+            id: temp_T1
+            gcode_id: "T1"
+            heater_id: "extruder1"
+            on_release: Factory.ExtTempPopup(creator=self, val=app.temp).open()
+            large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
+            small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
+            red: app.temp[self.heater_id][1] > 50
+            right: temp_bed.right if app.extruder_count > 1 else p.mars
+            y: p.tab_height + p.padding*3 + p.progress_bar_height + p.btn_stop
+        BtnTemp:
+            canvas:
+                Color:
+                    rgba: p.nozzle
+                Rectangle:
+                    source: p.kgui_dir + '/logos/extruder1.png'
+                    size: self.height, self.height
+                    pos: self.x - dp(15), self.y
+            id: temp_T0
+            gcode_id: "T0"
+            heater_id: "extruder"
+            on_release: Factory.ExtTempPopup(creator=self, val=app.temp).open()
+            large_value: "{:3.0f}°C".format(app.temp[self.heater_id][1])
+            small_value: "{:3.0f}".format(app.temp[self.heater_id][0]) if app.temp[self.heater_id][0] != 0 else "Off"
+            red: app.temp[self.heater_id][1] > 50
+            right: temp_bed.right
+            y: p.tab_height + p.progress_bar_height + 4*p.padding + p.btn_height + p.btn_stop
+        BtnTemp:
+            canvas:
+                Color:
+                    rgba: p.nozzle
+                Rectangle:
+                    source: p.kgui_dir + '/logos/bed.png'
+                    size: self.height, self.height
+                    pos: self.x - dp(15), self.y
+            on_release: Factory.BedTempPopup(creator=self, val=app.temp).open()
+            id: temp_bed
+            large_value: "{:3.0f}°C".format(app.temp['heater_bed'][1])
+            small_value: "{:3.0f}".format(app.temp['heater_bed'][0]) if app.temp['heater_bed'][0] != 0 else "Off"
+            red: app.temp['heater_bed'][1] > 50
+            x: p.h_padding
+            y: p.tab_height + p.progress_bar_height + 5*p.padding + 2*p.btn_height + p.btn_stop
+
+<HomeScreen@Screen>:
+    name: "homescreen"
+    FloatLayout:
+        BtnTriple:
+            w1: p.btn_height
+            w2: p.btn_width - 2*p.btn_height
+            w3: p.btn_height
+            gcode_id: 'T1'
+            tool_idx: 1
+            extruder_id: 'extruder1'
+            material:
+                self.material if not (app.material and len(app.material['loaded']) > self.tool_idx) \
+                else app.material['loaded'][self.tool_idx]
+            y: p.padding if app.extruder_count > 1 else p.mars
+            right: p.screen_width - p.h_padding
+        BtnTriple:
+            w1: p.btn_height
+            w2: p.btn_width - 2*p.btn_height
+            w3: p.btn_height
+            id: btn_tr_T0
+            gcode_id: 'T0'
+            tool_idx: 0
+            extruder_id: 'extruder'
+            material:
+                self.material if not (app.material and len(app.material['loaded']) > self.tool_idx) \
+                else app.material['loaded'][self.tool_idx]
+            y: p.padding*2 + p.btn_height
+            right: p.screen_width - p.h_padding
+        BtnOutline:
+            id: btn_calibrate
+            on_release: app.reactor.cb(printer_cmd.send_calibrate)
+            enabled: app.state == "ready"
+            text: "Mesh Bed Leveling"
+            size: btn_tr_T0.size
+            pos: btn_tr_T0.x, 3*p.padding + 2*p.btn_height
+        BtnTripleZ:
+            id: btn_tr_Z
+            height: xy_field.height
+            h1: self.height/3
+            h2: self.height/3
+            h3: self.height/3
+            width: p.btn_height*p.disp_vertical_stretch
+            right: root.right - p.h_padding
+            top: root.height - p.padding - p.status_bar_height
+        XyField:
+            id: xy_field
+            size_hint: None, None
+            height: p.btn_height*3
+            width: self.height + dp(40)
+            x: p.h_padding
+            top: root.height - p.padding - p.status_bar_height
+            enabled:
+                app.state == "ready" and app.homed['x'] and app.homed['y'] \
+                and not app.toolhead_busy
+        BtnHome:
+            axis_id: 'X'
+            size: p.btn_height, p.btn_height
+            x: xy_field.right if app.xy_homing_controls else p.mars
+            y: xy_field.y
+        BtnHome:
+            axis_id: 'Y'
+            size: p.btn_height, p.btn_height
+            x: xy_field.right if app.xy_homing_controls else p.mars
+            y: xy_field.y + p.btn_height
+        RoundButton:
+            id: btn_off
+            on_release: app.reactor.cb(printer_cmd.send_motors_off)
+            enabled: app.state == "ready"
+            size: p.btn_height, p.btn_height
+            x: xy_field.right if app.xy_homing_controls else p.mars
+            top: xy_field.top
+            text: "Off"
+            color: (1,1,1,1) if btn_off.enabled else p.btn_disabled
+            text_size: self.size
+            font_size: p.large_font
+            halign: 'center'
+            valign: 'middle'
+
+<PrintingScreen@Screen>:
+    name: "printingscreen"
+    FloatLayout:
+        BtnTemp:
+            id: fan
+            on_release: Factory.FanPopup(val=app.fan_speed).open()
+            large_value: "{:3.0f}%".format(app.fan_speed)
+            small_value: "Print Cooling"
+            right: p.screen_width - p.h_padding
+            center_y: p.padding + p.btn_height/2 + p.btn_spacing
+        BtnTemp:
+            id: z_offset
+            on_release: Factory.ZOffsetPopup(val=app.z_offset).open()
+            large_value: "{:3.2f}mm".format(app.z_offset)
+            small_value: "Z Calibration"
+            right: p.screen_width - p.h_padding
+            center_y: fan.center_y + p.btn_spacing
+        BtnTemp:
+            id: pressure_advance
+            on_release: Factory.PressureAdvancePopup(val=app.pressure_advance).open()
+            large_value: "{:4.3f}s".format(app.pressure_advance)
+            small_value: "Pressure Advance"
+            right: p.screen_width - p.h_padding
+            center_y: z_offset.center_y + p.btn_spacing
+        BtnTemp:
+            id: acceleration
+            on_release: Factory.AccPopup(val=app.acceleration).open()
+            large_value: "{:6.0f}mm/s²".format(app.acceleration)
+            small_value: "Acceleration"
+            right: p.screen_width - p.h_padding
+            center_y: pressure_advance.center_y + p.btn_spacing
+        BtnTemp:
+            id: speed
+            on_release: Factory.SpeedPopup(val=app.speed).open()
+            large_value: "{:3.0f}%".format(app.speed)
+            small_value: "Print Speed"
+            x: p.h_padding
+            center_y: acceleration.center_y
+        BtnTemp:
+            id: flow
+            on_release: Factory.FlowPopup(val=app.flow).open()
+            large_value: "{:3.0f}%".format(app.flow - 0.00001) # always round down
+            small_value: "Material Flow"
+            x: p.h_padding
+            center_y: pressure_advance.center_y
+
+<XyField>:
+    mm: [0, 0, 0]
+    px: [0, 0]
+    canvas.after:
+        # Outline with xy homing buttons
+        Color:
+            rgba: p.btn_outline if app.xy_homing_controls else (0,0,0,0)
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width + p.btn_height, self.height, p.radius)
+        Line:
+            points:
+                self.right, self.top - p.btn_divider_padding, \
+                self.right, self.y + p.btn_divider_padding
+        Line:
+            points:
+                self.right + p.btn_divider_padding, self.y + 2*p.btn_height, \
+                self.right + p.btn_height - p.btn_divider_padding, self.y + 2*p.btn_height
+        Line:
+            points:
+                self.right + p.btn_divider_padding, self.y + p.btn_height, \
+                self.right + p.btn_height - p.btn_divider_padding, self.y + p.btn_height
+        # Outline without xy homing buttons
+        Color:
+            rgba: (0,0,0,0) if app.xy_homing_controls else p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+
+        Color:
+            rgba: p.btn_outline if self.pressed else (0,0,0,0)
+        Line:
+            width: 1
+            points: self.x, self.px[1],   self.right, self.px[1]
+        Line:
+            width: 1
+            points: self.px[0], self.y,   self.px[0], self.top
+        Color:
+            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
+        Ellipse:
+            pos: self.px[0] - self.point_radius, self.px[1] - self.point_radius
+            size: (self.point_radius*2, self.point_radius*2)
+    Label:
+        id: xy_pos
+        text: "X{:.1f} Y{:.1f} ".format(root.mm[0], root.mm[1])
+        size_hint: None, None
+        size: self.texture_size
+        pos: root.x + 7, root.y + 4
+        font_size: p.normal_font
+        color: (1,1,1,1) if root.pressed else p.nozzle
+    Label:
+        id: z_pos
+        text: "Z{:.1f} ".format(root.mm[2])
+        size_hint: None, None
+        size: self.texture_size
+        pos: xy_pos.right, xy_pos.y
+        font_size: p.normal_font
+        color: p.nozzle
+    Label:
+        id: ext_pos
+        text: "E{:.1f}".format(app.pos[3]%100)
+        size_hint: None, None
+        size: self.texture_size
+        pos: z_pos.right, xy_pos.y
+        font_size: p.normal_font
+        color: p.nozzle
+
+<PrintProgressBar@Widget>:
+    canvas:
+        Color:
+            rgba: p.btn if app.print_state in ('printing', 'pausing', 'paused') else (0,0,0,0)
+        RoundedRectangle:
+            radius: [dp(5)]
+            pos: self.pos
+            size: self.width, dp(10)
+        Color:
+            rgba:
+                p.accent if app.print_state in ('printing', 'pausing', 'paused') else \
+                (0,0,0,0)
+        RoundedRectangle:
+            radius: [dp(5)]
+            pos: self.pos
+            size: self.width*app.progress + 0.0001, dp(10) # cannot set width to 0
+
+# BUTTONS
+
+<BtnTriple>:
+    w1: 0
+    w2: 0
+    w3: 0
+    filament_amount: self.material['amount']
+    filament_color: printer_cmd.calculate_filament_color(printer_cmd.hex_to_rgba(self.material['hex_color']))
+    title:
+        {'loading': "Loading...",
+        'unloading': "Unloading...",
+        'loaded': f"{self.material['amount']*1000:3.0f}g {self.material['material_type']}\n(unload)",
+        'no material': "Load Material"}[self.material['state']]
+    size_hint: None, None
+    size: self.w1 + self.w2 + self.w3, p.btn_height
+    #:set w 19
+    canvas:
+        Color:
+            rgba: self.filament_color
+        RoundedRectangle:
+            size: self.width*self.filament_amount, self.height
+            pos: self.pos
+            radius: [p.radius] + ([0, 0] if self.width*self.filament_amount < self.width - p.radius else [p.radius, p.radius]) + [p.radius]
+        Color:
+            rgba: p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+        Line:
+            points:
+                self.x + self.w1, self.y + p.btn_divider_padding, \
+                self.x + self.w1, self.top - p.btn_divider_padding
+        Line:
+            points:
+                self.x + self.w1 + 1 + self.w2, self.y + p.btn_divider_padding, \
+                self.x + self.w1 + 1 + self.w2, self.top - p.btn_divider_padding
+        Color:
+            rgba: p.btn_outline if self.filament_amount else (0,0,0,0)
+        Line:
+            points:
+                self.x + self.filament_amount * self.width, self.y + p.btn_divider_padding, \
+                self.x + self.filament_amount * self.width, self.top - p.btn_divider_padding
+    BaseButton:
+        size: root.w1, root.height
+        pos: root.pos
+        enabled:
+            app.state == "ready" \
+            and app.temp[root.extruder_id][0] > app.min_extrude_temp \
+            and app.temp[root.extruder_id][1] > app.min_extrude_temp \
+            and not app.toolhead_busy
+        on_press: app.reactor.cb(printer_cmd.send_extrude, root.gcode_id, -1)
+        on_release: app.reactor.cb(printer_cmd.send_lm_stop, 'e')
+        canvas:
+            Color:
+                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
+            Triangle:
+                points:
+                    self.x + self.width/2 + w/2, self.center_y - dp(w), self.x + self.width/2 + dp(w)/2, \
+                    self.center_y + dp(w), self.x + self.width/2 - dp(w)/2, self.center_y
+            Color:
+                rgba: p.translucent_white if self.pressed else (0,0,0,0)
+            RoundedRectangle:
+                radius: (p.radius, 0, 0, p.radius)
+                size: self.size
+                pos: self.pos
+    RectangleButton:
+        id: btn_load
+        size: root.w2, root.height
+        pos: root.x + root.w1, root.y
+        enabled: app.state == "ready" and app.material
+        on_release:
+            Factory.FilamentChooserPopup(root.extruder_id).open() if root.material['state'] == "no material" else \
+            Factory.FilamentPopup(root.extruder_id, False, root.material).open() if root.material['state'] == 'loaded' else None
+        color: (1,1,1,1) if self.enabled else p.btn_disabled
+        text: root.title
+        text_size: self.size
+        font_size: p.normal_font
+        halign: 'center'
+        valign: 'middle'
+        padding_y: 8
+    BaseButton:
+        size: root.w3, root.height
+        pos: root.x + root.w1 + root.w2, root.y
+        enabled:
+            app.state == "ready" \
+            and app.temp[root.extruder_id][0] > app.min_extrude_temp \
+            and app.temp[root.extruder_id][1] > app.min_extrude_temp \
+            and not app.toolhead_busy
+        on_press: app.reactor.cb(printer_cmd.send_extrude, root.gcode_id, 1)
+        on_release: app.reactor.cb(printer_cmd.send_lm_stop, 'e')
+        canvas:
+            Color:
+                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
+            Triangle:
+                points:
+                    self.x + self.width/2 - dp(w)/2, self.center_y - dp(w), \
+                    self.x + self.width/2 - dp(w)/2, self.center_y + dp(w), \
+                    self.x + self.width/2 + dp(w)/2, self.center_y
+            Color:
+                rgba: p.translucent_white if self.pressed else (0,0,0,0)
+            RoundedRectangle:
+                radius: (0,p.radius,p.radius,0)
+                size: self.size
+                pos: self.pos
+
+<BtnTripleZ@Widget>:
+    h1: 0
+    h2: 0
+    h3: 0
+    size_hint: None, None
+    canvas:
+        Color:
+            rgba: p.btn_outline
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+        Rectangle:
+            pos: self.x + p.btn_divider_padding, self.y + self.h1 - 1
+            size: self.width - 2*p.btn_divider_padding, 1
+        Rectangle:
+            pos: self.x + p.btn_divider_padding, self.y + self.h1 + self.h2 - 1
+            size: self.width - 2*p.btn_divider_padding, 1
+    #:set t 9.5
+    #:set u 19 # Triangle has this size x2
+    BaseButton:
+        on_press:
+            app.reactor.cb(printer_cmd.send_z_go, 1 if app.invert_z_controls else -1), \
+            app.note_live_move('z')
+        on_release: app.reactor.cb(printer_cmd.send_lm_stop, 'z');  app.note_live_move_end('z')
+        enabled: app.state == "ready" and not app.toolhead_busy
+        size: root.width, root.h1
+        pos: root.x, root.y
+        canvas.before:
+            Color:
+                rgba: p.translucent_white if self.pressed else (0,0,0,0)
+            RoundedRectangle:
+                radius: (0,0,p.radius,p.radius)
+                size: self.size
+                pos: self.pos
+            Color:
+                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
+            Triangle:
+                points:
+                    self.center_x - dp(u), self.center_y + dp(t), \
+                    self.center_x + dp(u), self.center_y + dp(t), \
+                    self.center_x, self.center_y - dp(t)
+    BtnHome:
+        axis_id: 'Z'
+        size: root.width, root.h2
+        pos: root.x, root.h1 + root.y
+        canvas.after:
+            Clear
+            Color:
+                rgba: p.translucent_white if self.pressed else (0,0,0,0)
+            Rectangle:
+                size: self.size
+                pos: self.pos
+    BaseButton:
+        on_press:
+            app.reactor.cb(printer_cmd.send_z_go, -1 if app.invert_z_controls else 1), \
+            app.note_live_move('z')
+        on_release: app.reactor.cb(printer_cmd.send_lm_stop, 'z'); app.note_live_move_end('z')
+        enabled: app.state == "ready" and not app.toolhead_busy
+        size: root.width, root.h3
+        pos: root.x, root.top - root.h3
+        canvas.before:
+            Color:
+                rgba: p.translucent_white if self.pressed else (0,0,0,0)
+            RoundedRectangle:
+                radius: (p.radius,p.radius,0,0)
+                size: self.size
+                pos: self.pos
+            Color:
+                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
+            Triangle:
+                points:
+                    self.center_x - dp(u), self.center_y - dp(t), \
+                    self.center_x + dp(u), self.center_y - dp(t), \
+                    self.center_x, self.center_y + dp(t)
+
+<BtnHome@RoundButton>:
+    axis_id: 'Z'
+    on_release: app.reactor.cb(printer_cmd.send_home, str(self.axis_id)); app.toolhead_busy = True
+    enabled: app.state == "ready"
+    canvas:
+        Color:
+            rgba: (1,1,1,1) if self.enabled else p.btn_disabled
+        Rectangle:
+            source: p.kgui_dir + '/logos/home_axis.png'
+            size: dp(66), dp(66)
+            pos: self.center_x - dp(32), self.center_y - dp(32)
+        Color:
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    Label:
+        pos: root.x, root.y - dp(2)
+        text: root.axis_id
+        color: p.background
+        font_size: p.normal_font
+        bold: True
+        size: root.size
+        text_size: self.size
+        center_x: root.center_x
+        center_y: root.center_y
+        halign: 'center'
+        valign: 'middle'
+
+<BtnTemp@BaseButton>:
+    red: False
+    enabled: app.state == "ready"
+    large_value: "-"
+    small_value: "-"
+    size: p.btn_temp_width, p.btn_height
+    canvas.after:
+        Color:
+            rgba: p.translucent_white if self.pressed and self.enabled else (0,0,0,0)
+        RoundedRectangle:
+            radius: (p.radius,)
+            size: self.width + dp(40), self.height + dp(40)
+            pos: self.x - dp(20), self.y - dp(20)
+    Label:
+        color: p.red if root.red else (1,1,1,1) if root.enabled else p.btn_disabled
+        text: root.large_value
+        size_hint: None, None
+        size: root.width + dp(50), root.height
+        text_size: self.size
+        y: root.y + dp(5)
+        right: root.right
+        font_size: p.large_font
+        valign: 'top'
+        halign: 'right'
+    Label:
+        color: p.btn_disabled
+        text: root.small_value
+        size_hint: None, None
+        size: root.width + dp(50), root.height
+        text_size: self.size
+        y: root.y - dp(3)
+        right: root.right
+        font_size: p.normal_font
+        valign: 'bottom'
+        halign: 'right'
+
+<BtnStop@RoundButton>:
+    enabled: app.print_state in ('printing', 'pausing', 'paused')
+    canvas.before:
+        Color:
+            rgba: p.red if self.enabled else (0,0,0,0)
+        RoundedRectangle:
+            pos: self.center_x - p.btn_stop/2, self.center_y - p.btn_stop/2
+            size: p.btn_stop, p.btn_stop
+            radius: (p.icon_radius,)
+
+<BtnPlay@RoundButton>:
+    #:set ph (p.btn_stop - 2*p.icon_radius)/2
+    #:set pw ph/1.155
+    enabled: app.print_state in ('pausing', 'paused')
+    canvas:
+        Color:
+            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
+        Triangle:
+            points:
+                self.center_x - dp(pw), self.center_y - dp(ph), \
+                self.center_x - dp(pw), self.center_y + dp(ph), \
+                self.center_x + dp(pw), self.center_y
+        Line:
+            width: p.icon_radius
+            points:
+                self.center_x - dp(pw), self.center_y - dp(ph), \
+                self.center_x - dp(pw), self.center_y + dp(ph), \
+                self.center_x + dp(pw), self.center_y
+            close: True
+
+<BtnPause@RoundButton>:
+    enabled: app.print_state == 'printing'
+    canvas:
+        Color:
+            rgba: (1,1,1,1) if self.enabled else (0,0,0,0)
+        RoundedRectangle:
+            pos: self.center_x - p.btn_stop/2, self.center_y - p.btn_stop/2
+            size: 0.39*p.btn_stop,p.btn_stop
+            radius: (p.icon_radius,)
+        RoundedRectangle:
+            pos: self.center_x + p.btn_stop/2 - 0.4*p.btn_stop, self.center_y - p.btn_stop/2
+            size: 0.39*p.btn_stop, p.btn_stop
+            radius: (p.icon_radius,)
+
+<BtnClear@RoundButton>:
+    enabled: app.print_state in ('finished', 'aborted', 'queued')
+    canvas:
+        Color:
+            rgba: p.green if self.enabled else (0,0,0,0)
+        Line:
+            width: p.icon_radius*2.2
+            points:
+                self.center_x - dp(ph*1.5), self.center_y, \
+                self.center_x - dp(ph/2), self.center_y - dp(ph), \
+                self.center_x + dp(ph*1.5), self.center_y + dp(ph)
+            close: False
+
+# POPUPS
+
+<ZOffsetPopup@BasePopup>:
+    size_hint: 0.94, 0.4
+    title: "Calibrate Z Height"
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            buttons: [[0,0,"default", None]]
+            val_min: -0.5
+            val_max: 0.5
+            unit: "mm"
+            round_to: 2
+            round_style: 5
+            id: slider
+            pos_hint: {'center_x': 0.5, 'y': 0.6}
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.send_z_offset, slider.val), root.dismiss()
+
+<PressureAdvancePopup@BasePopup>:
+    size_hint: 0.94, 0.4
+    title: "Pressure Advance"
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            buttons: []
+            val_min: 0
+            val_max: 0.05
+            unit: "mm/mm/s"
+            round_to: 3
+            id: slider
+            pos_hint: {'center_x': 0.5, 'y': 0.6}
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.send_pressure_advance, slider.val), root.dismiss()
+
+<AccPopup@BasePopup>:
+    title: "Acceleration"
+    size_hint: 0.94, 0.4
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            val_min: 2000
+            val_max: 50000
+            unit: "mm/s²"
+            round_to: -2
+            buttons: [[36000,0,"default",None]]
+            id: slider
+            pos_hint: {'center_x': 0.5, 'y': 0.6}
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.send_acceleration, slider.val), root.dismiss()
+
+<SpeedPopup@BasePopup>:
+    size_hint: 0.94, 0.4
+    title: "Speed Factor"
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            buttons: [[100,0,"no multiplier",None]]
+            val_min: 10
+            val_max: 500
+            unit: "%"
+            round_to: 0
+            id: slider
+            pos_hint: {'center_x': 0.5, 'y': 0.6}
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.send_speed, slider.val), root.dismiss()
+
+<FlowPopup@BasePopup>:
+    size_hint: 0.94, 0.4
+    title: "Material Flow"
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            buttons: [[100,0,"no multiplier",None]]
+            val_min: 90
+            val_max: 110
+            unit: "%"
+            round_to: 1
+            round_style: 5
+            id: slider
+            pos_hint: {'center_x': 0.5, 'y': 0.6}
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.send_flow, slider.val), root.dismiss()
+
+<FanPopup@BasePopup>:
+    size_hint: 0.94, 0.4
+    title: "Part Cooling"
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            buttons: [[0,0,"Off",None]]
+            val_min: 0
+            val_max: 100
+            unit: "%"
+            round_to: 0
+            id: slider
+            pos_hint: {'center_x': 0.5, 'y': 0.6}
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.send_fan, slider.val), root.dismiss()
+
+<BedTempPopup@BasePopup>:
+    size_hint: 0.94, 0.4
+    title: "Buildplate Temperature"
+    FloatLayout:
+        TempSlider:
+            id: slider
+            gcode_id: 'B'
+            val: root.val['heater_bed'][0]
+            pos_hint: {'center_x': 0.5, 'y': 0.6}
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.send_temp, slider.val, 'heater_bed'); root.dismiss()
+
+<MaterialMismatchPopup>:
+    size_hint: 0.92, 0.54
+    FloatLayout:
+        BoxLayout:
+            pos_hint: {'center_x': 0.5}
+            size_hint: None, None
+            height: self.minimum_height
+            orientation: 'vertical'
+            id: material_box
+            spacing: p.padding
+            center_y: 2*p.mars
+            width: dp(450)
+        BtnPConfirm:
+            enabled: True
+            text: "Ok"
+            width: root.width
+            pos: root.pos
+            on_release: root.dismiss()
+
+<Material>:
+    size: dp(450), dp(80)
+    text: "<" if "amount" in self.problems else "≠" if self.problems else ""
+    text_size: self.size
+    font_size: p.large_font + 6
+    valign: 'middle'
+    halign: 'center'
+    size_hint: None, None
+    canvas.before:
+        Color:
+            rgba: printer_cmd.calculate_filament_color(printer_cmd.hex_to_rgba(self.material['hex_color']))
+        RoundedRectangle:
+            size: dp(160)*self.material['amount'], self.height
+            pos: self.x, self.y
+            radius: [p.radius] + ([0, 0] if dp(160)*self.material['amount'] < dp(160) - p.radius else [p.radius, p.radius]) + [p.radius]
+        Color:
+            rgba: p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, dp(160), self.height, p.radius)
+    Label:
+        size: root.size
+        y: root.y
+        center_x: root.right - dp(160/2)
+        text: f"{root.needed_material['amount']*1000:.0f}g {root.needed_material['type']}"
+        font_size: p.normal_font
+        valign: 'middle'
+        halign: 'center'
+        color: (1,1,1,1) if root.problems else p.light_gray
+    Label:
+        size: root.size
+        y: root.y
+        center_x: root.x + dp(160/2)
+        valign: 'middle'
+        halign: 'center'
+        font_size: p.normal_font
+        text: f"{root.material['amount']*1000:.0f}g {root.material['type']}"
+        color: (1,1,1,1) if root.problems else p.light_gray
+
+<ExtTempPopup@BasePopup>:
+    size_hint: 0.94, 0.4
+    title: "Extruder {} Temperature".format(int(self.creator.gcode_id[1]) + 1)
+    FloatLayout:
+        TempSlider:
+            val: root.val[root.creator.heater_id][0]
+            id: slider
+            gcode_id: root.creator.gcode_id
+            pos_hint: {'center_x': 0.5, 'y': 0.6}
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.send_temp, slider.val, root.creator.heater_id); root.dismiss()
+
+ #: set o_padding 10
+<FilamentChooserPopup>:
+    size_hint: 0.96, 0.865
+    title: "Load Material"
+    auto_dismiss: not self.already_loaded
+    FloatLayout:
+        id: container
+        RectangleButton:
+            on_press: root.tab_2 = False
+            id: left_title
+            text: "New Material"
+            font_size: p.normal_font
+            size_hint: None, None
+            size: root.width/2, dp(70)
+            pos_hint: {'top': 1, 'x': 0}
+            color:  p.medium_light_gray if root.tab_2 else (1,1,1,1)
+            valign: 'middle'
+            halign: 'center'
+        RectangleButton:
+            on_press: root.tab_2 = True
+            id: right_title
+            text: "Your Materials"
+            font_size: p.normal_font
+            size_hint: None, None
+            size: root.width/2, dp(70)
+            pos_hint: {'top': 1, 'right': 1}
+            color: (1,1,1,1) if root.tab_2 else p.medium_light_gray
+            valign: 'middle'
+            halign: 'center'
+        Divider:
+            width: root.width
+            pos: root.x, left_title.y
+        ScrollView:
+            id: scroll_view
+            size_hint: None, None
+            size: root.width, container.height - btn_cancel.height - left_title.height
+            pos: root.x, btn_cancel.top
+            StackLayout:
+                id: option_stack
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: (2*o_padding,)
+                padding: (30,)
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            x: p.mars if root.already_loaded else root.x
+            y: root.y
+            on_release: root.dismiss()
+        BtnPConfirm:
+            id: btn_confirm
+            enabled: False
+            text: "Select"
+            width: root.width if root.already_loaded else root.width/2
+            y: root.y
+            right: root.right
+            on_release: root.confirm()
+
+<Option>:
+    size: dp(86), dp(60)
+    selected:
+        (self.filamentchooser.sel_2 and self.filamentchooser.sel_2['unloaded_idx'] == self.key) \
+        or (self.filamentchooser.sel[self.level] == self.key)
+    font_size: p.normal_font - 2
+    option_color: (0,0,0,0)
+    amount: 1
+    canvas.before:
+        Color:
+            rgba: self.option_color
+        RoundedRectangle:
+            size: self.width*self.amount, self.height
+            pos: self.x, self.y
+            radius: (p.icon_radius,)
+        Color:
+            rgba: (1,1,1,0.25) if self.selected else p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.icon_radius)
+        Color:
+            rgba: p.translucent_white if self.selected else (0,0,0,0)
+        RoundedRectangle:
+            size: self.width + 2*o_padding, self.height + 2*o_padding
+            pos: self.x - o_padding, self.y - o_padding
+            radius: (p.radius,)
+
+<OptionDivider>:
+    #: set od_h 10
+    size_hint: 1, None
+    height: p.padding # is redundantly set in many places, since height can be set to 0
+    actual_height: p.padding
+    canvas.before:
+        Color:
+            rgba: p.popup
+        Rectangle:
+            size: self.width + 2*o_padding, p.padding
+            pos: self.x - o_padding, self.y
+        Color:
+            rgba: p.medium_light_gray
+    Label:
+        id: label
+        size: root.width, p.padding
+        pos: root.pos
+        color: p.medium_light_gray
+        text:
+            "show more ..." if (not root.filamentchooser.show_more[root.level] and root.height == 0) else \
+            "show less" if root.filamentchooser.show_more[root.level] else ""
+        text_size: self.size
+        font_size: p.normal_font
+        padding_y: dp(5)
+        valign: 'top'
+        halign: 'center'
+
+<FilamentPopup>:
+    size_hint: 0.96, 0.5
+    title: "{} {}".format(self.material['brand'], self.material['material_type'])
+    auto_dismiss: not self.already_loaded
+    FloatLayout:
+        FilamentSlider:
+            active: root.new
+            id: filament_slider
+            center_x: root.center_x
+            y: btn_cancel.top + dp(90)
+            val: root.material['amount'] * 1000
+            filament_color: root.filament_color
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            x: p.mars if root.already_loaded else root.x
+            y: root.y
+            on_release: root.dismiss()
+        BtnPConfirm:
+            id: btn_confirm
+            enabled: True
+            text: "Load" if root.new else "Unload"
+            width: root.width if root.already_loaded else root.width/2
+            y: root.y
+            right: root.right
+            on_release: root.confirm()
+
+<FilamentRunoutPopup>:
+    size_hint: 0.9, 0.4
+    title: f"Filament Runout detected, please load new Material"
+    FloatLayout:
+        BtnPConfirm:
+            id: btn_confirm
+            enabled: True
+            text: "0k"
+            width: root.width
+            pos: root.pos
+            on_release: root.dismiss()
+
+<-FilamentSlider>:
+    size_hint: None, None
+    size: p.screen_width - 2*p.small_padding - 2*p.padding, dp(100)
+    px: self.x
+    canvas:
+        Color:
+            rgba: self.filament_color
+        RoundedRectangle:
+            size: self.width, self.height
+            pos: self.x, self.y
+            radius: (p.radius,)
+        Color:
+            rgba: p.popup
+        Rectangle:
+            size: self.right - self.px, self.height
+            pos: self.px, self.y
+        Color:
+            rgba: p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+        Color:
+            rgba: p.btn_outline if not self.active else (1,1,1,1)
+        Line:
+            width: 1 if not self.active else 5 if self.pressed else 4
+            points: self.px, self.y, self.px, self.top
+    Label:
+        id: value_label
+        text: root.disp
+        max_lines: 1
+        size_hint: None, None
+        pos_hint: None, None
+        size: root.size
+        pos: root.x, root.top + dp(50)
+        font_size: p.large_font + dp(10)
+        color: (1,1,1,1)
+        valign: 'middle'
+        halign: 'center'

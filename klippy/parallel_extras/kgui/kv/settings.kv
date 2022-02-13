@@ -1,0 +1,738 @@
+#:import platform platform
+#:import Factory kivy.factory.Factory
+#:import screenmanager kivy.uix.screenmanager
+#:import p parameters
+#:import printer_cmd parallel_extras.kgui.printer_cmd
+
+<SettingTab>:
+    background_down: ''
+    background_color: p.background
+    canvas:
+        Rectangle:
+            source: p.kgui_dir+'/logos/settings.png'
+            size: dp(60*p.disp_vertical_stretch), dp(60)
+            pos: dp(525 - 30 * p.disp_vertical_stretch), dp(20)
+    BoxLayout:
+        orientation: 'vertical'
+        TitleBar:
+            title:
+                {'SettingScreen': "Settings", 'ConsoleScreen':"Gcode Console",
+                'WifiScreen': "Wifi", 'UpdateScreen': "System Update", "ContinuousPrintingScreen": "Continuous Printing"}[screen_man.current]
+            enabled: screen_man.current != 'SettingScreen'
+            on_release: screen_man.current = 'SettingScreen'
+            pos_hint: {'x': 0, 'top': 1}
+        ScreenManager:
+            id: screen_man
+            name: 'SettingScreenManager'
+            transition: screenmanager.NoTransition()
+            SettingScreen:
+                id: setting_screen
+            ConsoleScreen:
+                id: console_screen
+            WifiScreen:
+                id: wifi_screen
+            UpdateScreen:
+                id: update_screen
+            ContinuousPrintingScreen:
+                id: continuous_printing_screen
+
+<SettingScreen@Screen>:
+    name: 'SettingScreen'
+    ScrollView:
+        canvas.before:
+            Color:
+                rgba: p.background
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        BoxLayout:
+            orientation:'vertical'
+            height: self.minimum_height
+            pos: 0, root.height - self.height
+            size_hint_y: None
+            Divider:
+                pos_hint: {'center_x': 0.5}
+            # SetItem:
+            #     left_title: "Gcode Console"
+            #     on_release: root.manager.current = "ConsoleScreen"
+            SetItem:
+                left_title: "Continuous Printing"
+                right_title: "Enabled" if app.continuous_printing else "Disabled"
+                enabled: app.connected
+                on_release: root.manager.current = "ContinuousPrintingScreen"
+            SetItem:
+                left_title: "Max. printhead Acceleration"
+                right_title: "{:6.0f}mm/s²".format(app.config_acceleration)
+                enabled: app.connected
+                on_release: Factory.AccConfPopup(val=app.config_acceleration).open()
+            SetItem:
+                left_title: "Pressure Advance"
+                right_title: "{:4.3f}s".format(app.config_pressure_advance)
+                enabled: app.connected
+                on_release: Factory.PressureAdvanceConfPopup(val=app.config_pressure_advance).open()
+            SIWifi:
+                left_title: "Wifi"
+                enabled: self.network_manager.available
+                on_release: root.manager.current = "WifiScreen"
+            SITimezone:
+                id: si_timezone
+            SetItem:
+                left_title: "Shutdown..."
+                on_release: Factory.PowerPopup().open()
+            SIUpdate:
+                left_title: "Update"
+                on_release: root.manager.current = "UpdateScreen"
+            SetItem:
+                left_title: "Change Hostname"
+                right_title: platform.node()
+                on_release: Factory.HostnamePopup().open()
+            SetItem:
+                left_title: "LED Brightness"
+                height: dp(110)
+                hidden: app.led_controls == None
+                on_release: Factory.LedPopup(val=app.led_brightness*100).open()
+
+<ConsoleScreen>:
+    name: 'ConsoleScreen'
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0, 0 # screens are relative layouts
+            size: self.size
+    ScrollView:
+        id: console_scroll
+        pos: 0, console_input.top
+        size_hint: 1, None
+        height: root.height - console_input.top
+        Label:
+            id: console_label
+            text: "GCODE TERMINAL\n"
+            font_size: p.normal_font
+            size: self.texture_size
+            size_hint: 1, None
+            valign: 'bottom'
+            halign: 'left'
+            padding_x: p.padding
+            padding_y: p.padding - dp(10)
+            pos_hint: {'x': 0, 'y': 0}
+            color: p.medium_light_gray
+    TextInput:
+        id: console_input
+        multiline: False
+        text_validate_unfocus: False
+        font_size: p.normal_font
+        foreground_color: (1,1,1,1)
+        padding: (15,12,25,12)
+        height: self.minimum_height
+        background_color: p.medium_gray
+        cursor_color: (1,1,1,1)
+        size_hint: None, None
+        width: root.width - 2*p.padding
+        pos_hint: {'center_x': 0.5}
+        y: (0.34-0.02)*p.screen_height - p.tab_height + p.padding # Keyboard height is 0.34 (style.kv)
+
+<ContinuousPrintingScreen>:
+    name: "ContinuousPrintingScreen"
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0, 0 
+            size: self.size
+    BoxLayout:
+        id: setting_box
+        orientation:'vertical'
+        height: self.minimum_height
+        y: root.height - self.minimum_height
+        x: 0
+        size_hint_y: None
+        Divider:
+        SIToggle:
+            id: enable_toggle
+            text: "Enabled" if self.active else "Disabled"
+            size_hint: None, None
+            on_release: root.update()
+        SIToggle:
+            id: reposition_toggle
+            text: "Reposition Prints"
+            enabled: enable_toggle.active
+            size_hint: None, None
+            on_release: root.update()
+        SIRadio:
+            text: "Exact Material Match"
+            value: "exact"
+            selected: app.material_condition == self.value
+            enabled: enable_toggle.active
+            size_hint: None, None
+            on_release: app.material_condition = self.value; root.update()
+        SIRadio:
+            text: "Material Type Match (PLA, PETG, ...)"
+            value: "type"
+            selected: app.material_condition == self.value
+            enabled: enable_toggle.active
+            size_hint: None, None
+            on_release: app.material_condition = self.value; root.update()
+        SIRadio:
+            text: "No Material Match required"
+            value: "any"
+            selected: app.material_condition == self.value
+            enabled: enable_toggle.active
+            size_hint: None, None
+            on_release: app.material_condition = self.value; root.update()
+        Divider:
+
+<WifiScreen>:
+    name: 'WifiScreen'
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0, 0 # screens are relative layouts
+            size: self.size
+    Wifi:
+        id: wifi
+        viewclass: 'WifiItem'
+    Label:
+        id: wifi_message
+        text: wifi.message
+        font_size: p.normal_font
+        text_size: self.size
+        size_hint: 1, 0.2
+        valign: 'top'
+        halign: 'left'
+        padding_x: p.padding
+        padding_y: p.padding - dp(10)
+        pos_hint: {'x':0, 'top':1}
+        color: p.medium_light_gray
+
+<Wifi>:
+    message: ""
+    WifiBox:
+        id: wifi_box
+        default_size: None, None
+        default_size_hint: 1, None
+        size_hint_y: None
+        width: p.screen_width
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False
+
+<WifiItem>:
+    canvas:
+        Color:
+            rgba: p.translucent_white if self.pressed else (0,0,0,0)
+        Rectangle:
+            size: self.width, self.height - 1
+            pos: self.pos
+    #Label
+    text: "" if not self.ap else "Connected" if self.ap.in_use else "Saved" if self.ap.saved else ""
+    halign: 'right'
+    valign: 'bottom'
+    padding: p.h_padding, dp(32)
+    size_hint: 1, None
+    height: 1 if not self.ap else dp(150) if self.ap.in_use or self.ap.saved else dp(110)
+    text_size: self.size
+    font_size: p.normal_font
+    color: p.medium_light_gray
+    Label:
+        text: "" if not root.ap else root.ap.ssid
+        size_hint: None, None
+        size: root.width, dp(110)
+        top: root.top
+        x: root.x
+        halign: 'right'
+        valign: 'middle'
+        max_lines: 1
+        padding_x: p.h_padding
+        text_size: self.size
+        font_size: p.normal_font
+    Label:
+        text: "" if not root.ap else str(root.ap.signal)
+        shorten: True
+        halign: 'left'
+        valign: 'middle'
+        padding_x: p.h_padding
+        size_hint: None, None
+        size: root.width, dp(110)
+        top: root.top
+        x: root.x
+        text_size: self.size
+        font_size: p.normal_font
+        color: p.medium_light_gray
+    Divider:
+        top: root.y
+
+<UpdateScreen>:
+    name: 'UpdateScreen'
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0, 0
+            size: self.size
+    Divider:
+        pos_hint: {'center_x': 0.5, 'top': 1}
+    #Label:
+    #    id: message
+    #    text: ""
+    #    font_size: p.normal_font
+    #    text_size: self.size
+    #    size_hint: 1, 0.1
+    #    valign: 'top'
+    #    halign: 'left'
+    #    padding_x: p.padding
+    #    padding_y: p.padding - 10
+    #    pos_hint: {'x':0, 'top':1}
+    #    color: p.medium_light_gray
+    ScrollView:
+        size_hint: 1, 1
+        pos_hint: {'x': 0, 'y': 0}
+        do_scroll_x: False
+        BoxLayout:
+            id: box
+            orientation: 'vertical'
+            height: self.minimum_height
+            size_hint_y: None
+    FloatingButton:
+        id: btn_update
+        btn_color: p.medium_gray
+        y: p.padding
+        right: root.right - p.padding
+        size: dp(85*p.disp_vertical_stretch), dp(85)
+        text: "Update"
+        on_release: root.fetch()
+
+# SETITEMS
+
+<SetItem>:
+    enabled: True
+    size_hint_y: None
+    height: 0 if self.hidden else dp(110)
+    width: p.screen_width
+    # Button Label
+    text: "" if root.hidden else self.left_title
+    font_size: p.normal_font
+    text_size: self.size
+    valign: 'middle'
+    halign: 'left'
+    pos: self.pos
+    padding_x: p.padding
+    color: (1,1,1,1) if self.enabled else p.medium_light_gray
+    hidden: False
+    Label:
+        id: right_label
+        text: "" if root.hidden else root.right_title
+        font_size: p.normal_font
+        text_size: self.size
+        color: p.medium_light_gray
+        size: dp(350), root.height
+        size_hint: None, None
+        valign: 'middle'
+        halign: 'right'
+        y: root.y
+        right: p.screen_width
+        padding_x: p.padding
+    Divider:
+        top: root.y
+        hidden: root.hidden
+        width: root.width - 2*p.small_padding
+        center_x: root.center_x
+
+<SIToggle@SetItem>:
+    enabled: True
+    active: False
+    on_release: self.active = not self.active
+    BtnToggle:
+        size_hint: None, None
+        center_y: root.center_y
+        right: root.right - p.padding
+        active: root.active
+        enabled: root.enabled
+
+<SIRadio@RectangleButton>:
+    size_hint: None, None
+    height: dp(78)
+    width: p.screen_width
+    font_size: p.normal_font
+    text_size: self.size
+    valign: 'middle'
+    halign: 'left'
+    pos: self.pos
+    padding_x: p.padding
+    selected: False
+    enabled: False
+    color: (1,1,1,1) if self.enabled else p.medium_light_gray
+    BtnRadio:
+        size_hint: None, None
+        center_y: root.center_y
+        right: root.right - p.padding
+        selected: root.selected
+        enabled: root.enabled
+
+<SITimezone>:
+    left_title: "Timezone"
+    on_release: Factory.TimezonePopup().open()
+
+<SIRelease>:
+    # Highlight the currently installed version
+    canvas:
+        Color:
+            rgba: p.translucent_white if self.release.current else (0, 0, 0, 0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+# POPUPS
+
+<PasswordPopup>:
+    txt_input: pwd_input
+    size_hint: 0.87, 0.32
+    FloatLayout:
+        Label:
+            text: 'Password'
+            font_size: p.normal_font
+            color: p.light_gray
+            size: self.texture_size
+            size_hint: None, None
+            pos_hint: {'x': 0.07, 'y': 0.77}
+        TextInput:
+            id: pwd_input
+            multiline: False
+            password: True
+            font_size: p.normal_font
+            foreground_color: (1,1,1,1)
+            padding: (15,12,25,12)
+            height: self.minimum_height
+            background_color: p.medium_gray
+            cursor_color: (1,1,1,1)
+            size_hint: 0.72, None
+            pos_hint: {'x': 0.07, 'center_y': 0.63}
+        BaseButton:
+            on_press:
+                pwd_input.password = not pwd_input.password
+                lb_show.text = "show" if pwd_input.password else "hide"
+            on_release:
+                pwd_input.focus = True
+            id: btn_s
+            height: pwd_input.height-1
+            size_hint: 0.11, None
+            pos_hint: {'right': 0.93, 'center_y': 0.63}
+            Label:
+                id: lb_show
+                size: btn_s.size
+                pos: btn_s.pos
+                text_size: self.size
+                text: "show"
+                font_size: p.normal_font
+                halign: 'center'
+                valign: 'middle'
+                color: p.light_gray
+        BtnPCancel:
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: len(pwd_input.text) >= 8
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.confirm()
+
+<ConnectionPopup>:
+    title: self.ap.ssid
+    size_hint: 0.67, 0.38
+    FloatLayout:
+        Divider:
+            size_hint: None, None
+            size: btn_toggle_connect.width, 1
+            pos: btn_toggle_connect.x, btn_toggle_connect.top
+        RectangleButton:
+            id: btn_toggle_connect
+            text: 'Disconnect' if root.ap.in_use else 'Connect'
+            size: btn_cancel.size
+            pos: root.x, btn_delete.top
+            on_release: root.toggle_connected()
+        Divider:
+            size_hint: None, None
+            size: btn_toggle_connect.width, 1
+            pos: btn_toggle_connect.pos
+        RectangleButton:
+            id: btn_delete
+            text: 'Delete Connection'
+            size: btn_cancel.size
+            pos: root.x, btn_cancel.top
+            on_release: root.delete()
+        BtnPCancel:
+            id: btn_cancel
+            single: True
+            width: root.width
+            pos: root.pos
+            on_release: root.dismiss()
+
+<PowerPopup@BasePopup>:
+    title: "Shutdown..."
+    title_size: p.large_font
+    size_hint: 0.67, 0.433
+    FloatLayout:
+        Divider:
+            width: root.width
+            pos: btn_restart.x, btn_restart.top
+        RectangleButton:
+            id: btn_restart
+            text: "Restart"
+            size: btn_poweroff.size
+            pos: btn_poweroff.x, btn_reboot.top
+            on_release: app.reactor.cb(printer_cmd.firmware_restart)
+        Divider:
+            width: root.width
+            pos: btn_reboot.pos
+        RectangleButton:
+            id: btn_reboot
+            text: "System Reboot"
+            size: btn_poweroff.size
+            pos: btn_poweroff.x, btn_poweroff.top
+            on_release: app.reboot()
+        Divider:
+            width: root.width
+            pos: btn_restart.pos
+        RectangleButton:
+            id: btn_poweroff
+            text: "Shutdown"
+            size_hint: 1, None
+            height: btn_cancel.height
+            pos: root.x, btn_cancel.top
+            on_release: app.poweroff()
+        BtnPCancel:
+            id: btn_cancel
+            single: True
+            width: root.width
+            pos: root.pos
+            on_release: root.dismiss()
+
+<TimezonePopup>:
+    size_hint: 0.94, 0.7
+    title: "Choose Region"
+    FloatLayout:
+        id: maincontainer
+        TimezoneRV:
+            id: rv
+            viewclass: 'TimezoneRVItem'
+            size_hint: None, None
+            size: root.width, maincontainer.height-btn_cancel.height
+            pos: root.x, btn_cancel.top
+            TimezoneRVBox:
+                id: rv_box
+                default_size: None, dp(70)
+                default_size_hint: 1, None
+                size_hint_y: None
+                height: self.minimum_height
+                orientation: 'vertical'
+                multiselect: False
+                touch_multiselect: False
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: bool(rv_box.selected_nodes)
+            id: btn_confirm
+            title: "Confirm"
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.confirm()
+
+<TimezoneRVItem>:
+    # Draw a background to indicate selection
+    canvas:
+        Color:
+            rgba: p.translucent_white if self.selected else (0,0,0,0)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    size_hint: None, None
+    padding_x: p.h_padding
+    font_size: p.normal_font
+    text_size: self.size
+    color: (1,1,1,1)
+    valign: 'middle'
+    halign: 'left'
+
+<LedPopup@BasePopup>:
+    title: "LED Brightness"
+    size_hint: 0.94, 0.4
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            val_min: 0
+            val_max: 100
+            unit: "%"
+            round_to: 0
+            buttons: [[0,0,"off",None]]
+            id: slider
+            pos_hint: {'center_x':0.5, 'y':0.6}
+            on_val: app.set_led_brightness(slider.val/100)
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.set_config, f"output_pin {app.led_controls}", "value", slider.val/100), root.dismiss()
+
+<AccConfPopup@BasePopup>:
+    title: "Configure default Acceleration"
+    size_hint: 0.94, 0.4
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            val_min: 2000
+            val_max: 50000
+            unit: "mm/s²"
+            round_to: -2
+            buttons: [[36000,0,"default",None],]
+            id: slider
+            pos_hint: {'center_x':0.5, 'y':0.6}
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            text: "Set and restart"
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.write_config, 'printer', 'max_accel', slider.val), root.dismiss()
+
+<PressureAdvanceConfPopup@BasePopup>:
+    size_hint: 0.94, 0.4
+    title: "Configure default Pressure Advance"
+    FloatLayout:
+        UltraSlider:
+            val: root.val
+            buttons: []
+            val_min: 0
+            val_max: 0.05
+            unit: "mm/mm/s"
+            round_to: 3
+            id: slider
+            pos_hint: {'center_x': 0.5, 'y': 0.6}
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            text: "Set and restart"
+            enabled: slider.changed
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: app.reactor.cb(printer_cmd.write_pressure_advance, slider.val, app.extruder_count), root.dismiss()
+
+<ReleasePopup>:
+    size_hint: 0.94, 0.4
+    title: "Install"
+    FloatLayout:
+        id: f_layout
+        Label:
+            text: root.release.version + "\n" +  root.release.date
+            halign: 'center'
+            valign: 'middle'
+            size_hint: 0.8, None
+            pos_hint: {'center_x': 0.5, 'center_y': 0.8}
+            text_size: self.size
+            font_size: p.large_font
+            color: p.light_gray
+        BtnPCancel:
+            id: btn_cancel
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            id: btn_update
+            text:
+                ('Update' if root.release.newer else
+                'Reinstall' if root.release.current else
+                'Downgrade')
+            enabled: True
+            width: root.width/2
+            pos: btn_cancel.right, root.y
+            on_release: root.install()
+
+<InstallPopup>:
+    size_hint: 0.94, 0.68
+    title: "Install"
+    auto_dismiss: False
+    FloatLayout:
+        id: content
+        ScrollView:
+            id: output_scroll
+            size_hint: 1, None
+            pos_hint: {'x': 0}
+            y: btn_abort.top
+            height: content.height - btn_abort.height
+            do_scroll_x: False
+            Label:
+                id: output_label
+                markup: True
+                halign: 'left'
+                valign: 'top'
+                padding: p.small_padding, p.small_padding
+                text_size: output_scroll.width, None
+                size_hint_y: None
+                width: output_scroll.width
+                pos: output_scroll.pos
+                height: self.texture_size[1]
+                font_size: p.small_font
+                color: p.light_gray
+        BtnPCancel:
+            id: btn_abort
+            text: "Abort"
+            width: root.width
+            pos: root.pos
+            on_release: root.terminate()
+        BtnPCancel:
+            id: btn_cancel
+            text: "Reboot later"
+            width: root.width/2
+            pos: root.x, p.mars
+            on_release: root.dismiss()
+        BtnPConfirm:
+            id: btn_reboot
+            enabled: True
+            text: "Reboot now"
+            width: root.width/2
+            pos: btn_cancel.right, p.mars
+            on_release: app.reboot()
+
+<HostnamePopup>:
+    txt_input: hostname_input
+    size_hint: 0.87, 0.32
+    title: "Change Hostname"
+    FloatLayout:
+        HostnameTextInput:
+            id: hostname_input
+            multiline: False
+            font_size: p.normal_font
+            foreground_color: (1,1,1,1)
+            padding: (15,12,25,12)
+            height: self.minimum_height
+            background_color: p.medium_gray
+            cursor_color: (1,1,1,1)
+            size_hint: 0.8, None
+            pos_hint: {'center_x': 0.5, 'center_y': 0.63}
+        BtnPCancel:
+            width: root.width/2
+            pos: root.pos
+            on_release: root.dismiss()
+        BtnPConfirm:
+            text: "Set and restart"
+            enabled: len(hostname_input.text) >= 1
+            width: root.width/2
+            pos: root.center_x, root.y
+            on_release: root.confirm()
