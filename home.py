@@ -5,6 +5,7 @@ from kivy.clock import Clock
 from kivy.properties import ListProperty, NumericProperty, StringProperty, \
     BooleanProperty, DictProperty
 from kivy.uix.widget import Widget
+from kivy.uix.label import Label
 
 from .elements import BaseButton, BasePopup, UltraSlider
 from .printer_cmd import hex_to_rgba, calculate_filament_color
@@ -164,6 +165,40 @@ class BtnTriple(Widget):
     extruder_id = StringProperty()
     material = DictProperty({'guid': None, 'state': "no material", 'amount': 0,
                                 'material_type': "", 'hex_color': None, 'brand': ""})
+
+class MaterialMismatchPopup(BasePopup):
+    def __init__(self, loaded_materials, needed_materials):
+        super().__init__()
+        app = App.get_running_app()
+        problems = []
+        for material, needed_material in zip(loaded_materials, needed_materials):
+            material_widget = Material(material, needed_material)
+            self.ids.material_box.add_widget(material_widget)
+            problems.extend(material_widget.problems)
+        if "amount" in problems:
+            self.title = f"Insufficient Material for {app.print_title}"
+        else:
+            self.title = f"Material Change required for {app.print_title}"
+        Clock.schedule_once(self._align, 0)
+
+    def _align(self, dt):
+        self.ids.material_box.center_y = self.center_y
+
+class Material(Label):
+    def __init__(self, material, needed_material):
+        app = App.get_running_app()
+        self.material = material
+        self.needed_material = needed_material
+        self.problems = []
+        if material['amount'] - app.material_tolerance < needed_material['amount']:
+            self.problems.append("amount")
+        if material['type'] != needed_material['type'] and app.material_condition in ("type", "exact"):
+            self.problems.append("type")
+        if material['brand'] != needed_material['brand'] and app.material_condition == "exact":
+            self.problems.append("brand")
+        if material['hex_color'] != needed_material['hex_color'] and app.material_condition == "exact":
+            self.problems.append("color")
+        super().__init__()
 
 class FilamentRunoutPopup(BasePopup):
     def __init__(self, extruder_id):

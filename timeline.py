@@ -25,7 +25,7 @@ class Timeline(RecycleView):
         self.app.bind(jobs=self.load_all, history=self.load_all)
 
     def load_all(self, *args, clear_scroll_pos=False, clear_selection=True):
-        queue = [{'name': job.name, 'path': job.path, 'state': job.state,
+        queue = [{'name': job.name, 'path': job.path, 'state': job.state, 'continuouse': job.continuous,
             'thumbnail': self.app.gcode_metadata.get_metadata(job.path).get_thumbnail_path()}
             for job in reversed(self.app.jobs)]
 
@@ -45,7 +45,8 @@ class Timeline(RecycleView):
                     "state": job[1],
                     "timestamp": job[2],
                     "name": splitext(basename(job[0]))[0],
-                    'thumbnail': md.get_thumbnail_path()}
+                    'thumbnail': md.get_thumbnail_path(),
+                    'continuous': job[3]}
                 history.append(new)
             # Also show the newest date, but not if the last print happened today
             if new_date != date.today():
@@ -106,6 +107,7 @@ class TimelineItem(RecycleDataViewBehavior, Label):
     path = StringProperty()
     state = OptionProperty("header", options=
         ["header", "queued", "printing", "pausing", "paused", "aborting", "aborted", "finished"])
+    continuous = BooleanProperty()
     timestamp = NumericProperty(0)
     index = None
     selected = BooleanProperty(False)
@@ -116,7 +118,7 @@ class TimelineItem(RecycleDataViewBehavior, Label):
         # Catch and handle the view changes
         self.index = index
         # Default has to be explicitly set for some reason
-        default_data = {'name': "", 'path': "", 'selected': False, "state": 'header', "timestamp": 0}
+        default_data = {'name': "", 'path': "", 'selected': False, "state": 'header', "timestamp": 0, "continuous": False}
         default_data.update(data)
         return super().refresh_view_attrs(rv, index, default_data)
 

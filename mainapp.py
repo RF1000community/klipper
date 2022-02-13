@@ -1,3 +1,4 @@
+from ast import Num
 import logging
 import site
 import threading
@@ -29,7 +30,7 @@ from kivy.lang import Builder
 from kivy.properties import (OptionProperty, BooleanProperty, DictProperty,
                             NumericProperty, ListProperty, StringProperty)
 from .elements import UltraKeyboard, CriticalErrorPopup, ErrorPopup
-from .home import FilamentChooserPopup, FilamentRunoutPopup
+from .home import FilamentChooserPopup, FilamentRunoutPopup, MaterialMismatchPopup
 from .freedir import freedir
 from .nm_dbus import NetworkManager
 from .status import Notifications
@@ -88,6 +89,7 @@ class MainApp(App, threading.Thread):
     continuous_printing = BooleanProperty(False)
     reposition = BooleanProperty(False)
     material_condition = StringProperty("")
+    material_tolerance = NumericProperty()
 
     def __init__(self, config, **kwargs):
         logging.info("Kivy app initializing...")
@@ -242,6 +244,9 @@ class MainApp(App, threading.Thread):
 
     def handle_material_runout(self, extruder_id):
         FilamentRunoutPopup(extruder_id).open()
+    
+    def handle_material_mismatch(self, loaded_materials, needed_materials):
+        MaterialMismatchPopup(loaded_materials, needed_materials).open()
 
     def note_live_move(self, axis):
         if axis in 'xyz' and not (self.homed[axis] or self.warned_not_homed[axis]):

@@ -307,6 +307,7 @@ def receive_event_history(e, kgui, events):
     kgui.reactor.register_event_handler("filament_manager:material_changed", kgui.handle_material_change)
     kgui.reactor.register_event_handler("filament_manager:request_material_choice", kgui.handle_request_material_choice)
     kgui.reactor.register_event_handler("filament_switch_sensor:runout", kgui.handle_material_runout)
+    kgui.reactor.register_event_handler("virtual_sdcard:material_mismatch", kgui.handle_material_mismatch)
     for event, params in events:
         kgui.reactor.run_event(e, kgui, event, params)
 
