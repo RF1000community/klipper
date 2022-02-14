@@ -106,7 +106,6 @@ class TempSlider(UltraSlider):
         if self.gcode_id == 'B':
             self.val_min = 30
             self.val_max = 140
-            self.buttons = []
             if self.app.material:
                 loaded_material = self.app.material['loaded']
                 for material in loaded_material:
@@ -115,7 +114,6 @@ class TempSlider(UltraSlider):
         else:
             self.val_min = 40
             self.val_max = 280
-            self.buttons = []
             if self.app.material:
                 tool_idx = int(self.gcode_id[-1])
                 material = self.app.material['loaded'][tool_idx]
