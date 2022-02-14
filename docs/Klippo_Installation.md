@@ -93,11 +93,13 @@ invert_z_controls: False
 gcode:
     SAVE_GCODE_STATE NAME=UNLOAD_STATE ; Store previoius gcode state
     M83 ; use relative extrusion mode
+    M220 S100 ; reset speed factor
+    M221 S100 ; reset extrude factor
     M109 S{params.TEMPERATURE} ; set temperature and wait
-    G1 E-60 F5 FORCE ; slowly retract from nozzle
+    G1 E-60 F300 FORCE ; slowly retract from nozzle
     M400 ; wait until move is done
     M104 S0 ; switch off heater
-    G1 E-700 F50 FORCE ; pull filament out of bowden tube
+    G1 E-750 F4000 FORCE ; pull filament out of bowden tube
     RESTORE_GCODE_STATE NAME=UNLOAD_STATE
     M400 ; wait till everything is done
 
@@ -105,11 +107,18 @@ gcode:
 gcode:
     SAVE_GCODE_STATE NAME=LOAD_STATE
     M83
-    M104 S{params.TEMPERATURE} ; set temperature and don't wait
-    G1 E30 F5 FORCE  ; slowly grab the filament
-    G1 E600 F50 FORCE ; quickly move filament through bowden tube (needs to be at least this length!)
-    M109 S{params.TEMPERATURE} ; set temperature and wait
-    G1 E100 F5 FORCE ; prime nozzle
+    M220 S100
+    M221 S100
+    M104 S{params.TEMPERATURE}
+    G1 E30 F300 FORCE
+    G1 E400 F4000 FORCE
+    RESTORE_GCODE_STATE NAME=LOAD_STATE
+
+[gcode_macro PRIME_FILAMENT]
+gcode:
+    SAVE_GCODE_STATE NAME=LOAD_STATE
+    M109 S{params.TEMPERATURE}
+    G1 E200 F300 FORCE
     RESTORE_GCODE_STATE NAME=LOAD_STATE
     M400
     M104 S0
