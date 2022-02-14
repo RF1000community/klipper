@@ -9,7 +9,7 @@ Additional Installation Steps for Klippo
    - Chinese 7" 1024x600 touchscreens. These screens can be purchased for around 35$ on Aliexpress, Ebay, or Banggood. Make sure to get one with an IPS panel (much better image quality)
 
 ### Prepare OS ###
-- Flash [Raspberry Pi OS lite](https://www.raspberrypi.org/software/operating-systems/) 2021-01-11 to SD-Card
+- Flash [Raspberry Pi OS lite](https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-01-12/2021-01-11-raspios-buster-armhf-lite.zip) 2021-01-11 to SD-Card
 - Add new file named "ssh" (with no file extension) to the boot folder to enable ssh
 - Boot your pi and run the following commands via SSH
 - An ethernet connection is currently necessary during the installation (installing wifi dependencies disconnects any wifi connection, terminating the ssh session)
