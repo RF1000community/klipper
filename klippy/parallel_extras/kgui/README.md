@@ -1,6 +1,7 @@
-# kgui is the clean touch UI for your 3D printer running Klipper.
-Kgui works on most touchscreens compatible with the raspberry pi. It is fully written in Python enabling direct and fast communication with all aspects of Klipper.
-A modified version of klipper is used, so other web-interfaces may have limited compatibility.
+# kgui is a touch UI for klipper
+# Compatibility
+* Raspberry pi 4
+* Most touchscreens compatible with the raspberry pi
 
 # Features
 * Filemanager for printing from USB-sticks
@@ -17,8 +18,6 @@ A modified version of klipper is used, so other web-interfaces may have limited 
 * Material tracking, keep track of your spools and material use by choosing which material you load with the automatic loading procedure
 * A print queue. Add as many print jobs as you like, new jobs will start in paused state
 * A print job history, to easily find and reprint past print jobs
-
-[Installation Guide](https://github.com/D4SK/kgui/blob/master/Installation.md)
 
 <img src="logos/screenshot.png" height="512" width="300">
 
