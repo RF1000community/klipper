@@ -23,7 +23,7 @@ class FilamentManager:
         self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
         self.config_diameter = config.getsection("extruder").getfloat("filament_diameter", 1.75)
-        self.filament_switch_sensor = True #TODO
+        self.filament_switch_sensor = bool(config.get_prefix_sections("filament_switch_sensor"))
         self.preselected_material = {}
         for i in range(1, 10):
             if not config.has_section(f"extruder{i}"):
