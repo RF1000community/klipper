@@ -1,9 +1,8 @@
-# Klipper Cura Connection
+# Cura Connection
 
-Klipper module that allows network connection with the Ultimaker Cura slicer
+Allows network connection with the Ultimaker Cura slicer
 software.
 
-This is meant to be used in [D4SK/klipperui](https://github.com/D4SK/klipperui).
 When running, this printer can be added as a networked printer in Cura, showing
 the status of the current print and any queued print jobs. Print jobs can be
 sent from Cura to a connected printer using the _Print over Network_ button that
