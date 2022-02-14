@@ -212,7 +212,7 @@ class MainApp(App, threading.Thread):
         self.handle_print_change(jobs)
         self.notify.show("Started printing", f"Started printing {job.name}", delay=5)
         self.print_title = job.name
-        self.thumbnail = self.gcode_metadata.get_metadata(job.path).get_thumbnail_path() or  p.kgui_dir + '/logos/transparent.png'
+        self.thumbnail = self.gcode_metadata.get_metadata(job.path).get_thumbnail_path() or p.kgui_dir + '/logos/transparent.png'
         # This only works if we are in a printing state
         self.reactor.cb(printer_cmd.get_print_progress)
 

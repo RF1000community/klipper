@@ -1,16 +1,6 @@
-Welcome to the Klipper project!
+Welcome to the Klippo project!
 
 [![Klipper](docs/img/klipper-logo-small.png)](https://www.klipper3d.org/)
 
-https://www.klipper3d.org/
-
-Klipper is a 3d-Printer firmware. It combines the power of a general
-purpose computer with one or more micro-controllers. See the
-[features document](https://www.klipper3d.org/Features.html) for more
-information on why you should use Klipper.
-
-To begin using Klipper start by
-[installing](https://www.klipper3d.org/Installation.html) it.
-
-Klipper is Free Software. See the [license](COPYING) or read the
-[documentation](https://www.klipper3d.org/Overview.html).
+Klippo is a fork of the popular Klipper 3D printing software, adding a touchscreen UI and integration with Cura. Due to its modifications other webinterfaces are not compatible.
+Installation requires a few extra steps, see the [Klippo Installation Guide](https://github.com/D4SK/klippo/blob/master/docs/Klippo_Installation.md).
