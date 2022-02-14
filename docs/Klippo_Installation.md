@@ -1,4 +1,4 @@
-Additional Installation Steps for Klippo
+Klippo Installation
 ==================
 
 
