@@ -1,14 +1,14 @@
-Additional Installation Steps for Klippo
+Klippo Installation
 ==================
 
 
-### Requirements ###
+## Requirements ##
 * Raspberry pi 4 (raspberry pi 3 is not tested, and may require different GL driver settings in kgui/\_\_init\_\_.py)
 * One of the supported touchscreens:
    - Official Raspberry pi 7" touchscreen 800x480
    - Chinese 7" 1024x600 touchscreens. These screens can be purchased for around 35$ on Aliexpress, Ebay, or Banggood. Make sure to get one with an IPS panel (much better image quality)
 
-### Prepare OS ###
+## Prepare OS ##
 - Flash [Raspberry Pi OS lite](https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-01-12/2021-01-11-raspios-buster-armhf-lite.zip) 2021-01-11 to SD-Card
 - Add new file named "ssh" (with no file extension) to the boot folder to enable ssh
 - Boot your pi and run the following commands via SSH
@@ -26,33 +26,31 @@ sudo raspi-config
    - Localisation Options -> Locale: Add your local Locale (UTF8 version) as well as `en_GB.UTF8 UTF-8` by selecting with the spacebar, confirm and set `en_GB.UTF8 UTF-8` as default.
 - (If the Pi fails to boot, try briefly disconnecting the printer mainboards USB cable)
 
-### Install Klippo ###
+## Installation ##
 ```bash
 cd ~
 
 git clone https://github.com/D4SK/klippo
+
 ./klippo/scripts/install-klippo-x11.sh
 ```
-
-- If you haven't flashed your printer-mainboards firmware yet follow [klipper/Installation.md](https://github.com/D4SK/klippo/blob/master/docs/Installation.md) (Building and flashing the micro-controller)
-- Move your printer configuration (printer.cfg) to /home/pi and add the necessary sections to activate the KGUI UI
-- Change the resolution in the kivy config according to the screen you are using. (default is 1024x600) E.g. "height = 800" and "width = 480" ```nano ~/klippo/klippy/parallel_extras/kgui/config.ini```
-- If the UI appears upside down, rotate your screen. Alternatively you can change the rotation parameter of the kivy config from "rotation = 90" to "rotation = 270" ```nano ~/klippo/klippy/parallel_extras/kgui/config.ini```
-
-### Install cura_connection (recommended) ###
-- Add the necessary config section ```[cura_connection]```
-- Run the install script
+- Run the Cura Connection install script when using cura connection (recommended)
 ```bash
 ~/klippo/klippy/parallel_extras/cura_connection/install.sh
 ```
+- If you haven't flashed your printer-mainboards firmware yet follow [klipper/Installation.md](https://github.com/D4SK/klippo/blob/master/docs/Installation.md) (Building and flashing the micro-controller)
+- Move your printer configuration (printer.cfg) to /home/pi and add the necessary sections
+- Change the resolution in the kivy config according to the screen you are using. (default is 1024x600) E.g. "height = 800" and "width = 480" ```nano ~/klippo/klippy/parallel_extras/kgui/config.ini```
+- If the UI appears upside down, rotate your screen. Alternatively you can change the rotation parameter of the kivy config from "rotation = 90" to "rotation = 270" ```nano ~/klippo/klippy/parallel_extras/kgui/config.ini```
+
+
 
 
 - Reboot ``` sudo reboot  ```
 
 
-### Additional Config Sections ###
-```bash
-
+## Additional Config Sections ##
+```
 # (needed)
 [virtual_sdcard]
 
