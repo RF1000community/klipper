@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script installs Klipperui on a Raspberry Pi 4
+# This script installs klippo on a Raspberry Pi 4
 
 # Find SRCDIR from the pathname of this script
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
@@ -130,7 +130,7 @@ create_virtualenv()
     [ ! -d ${PYTHONDIR} ] && python3 -m venv ${PYTHONDIR}
     report_status "Installing pip packages..."
     # Install/update dependencies                      v  custom KGUI list of pip packages
-    ${PYTHONDIR}/bin/pip3 install -q -r ${SRCDIR}/scripts/klippy-kgui-requirements.txt
+    ${PYTHONDIR}/bin/pip3 install -q -r ${SRCDIR}/scripts/klippo-requirements.txt
     # Use the python-gi module from the system installation
     ln -sf /usr/lib/python3/dist-packages/gi ${PYTHONDIR}/lib/python3.?/site-packages/
 }
