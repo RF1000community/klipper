@@ -57,7 +57,8 @@ class PrintJob:
             needed_materials = [{'amount': 0.8, 'type': "PLA", 'brand': "Generic", 'hex_color': "#ff4433"}, {'amount': 0.6, 'type': "PVA", 'brand': "Generic", "hex_color": "#ffffff"}]
             mismatch = True
             if mismatch and not self.no_material_check:
-                self.gcode.run_script_from_command("SAVE_GCODE_STATE NAME=PAUSE_STATE")
+                self.gcode.run_script("SAVE_GCODE_STATE NAME=PAUSE_STATE")
+                self.gcode.run_script("SET_GCODE_OFFSET X=0 Y=0")
                 self.set_state('paused')
                 self.reactor.send_event("virtual_sdcard:print_start", self.manager.jobs, self)
                 self.reactor.send_event("virtual_sdcard:material_mismatch", materials, needed_materials)
@@ -67,17 +68,16 @@ class PrintJob:
                 self.reactor.send_event("virtual_sdcard:print_start", self.manager.jobs, self)
                 self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
 
-    def resume(self, gcmd):
+    def resume(self):
         if self.state == 'pausing':
             self.set_state('printing')
             return True
         elif self.state == 'paused':
-            if gcmd == None:
-                self.gcode.run_script("RESTORE_GCODE_STATE NAME=PAUSE_STATE MOVE=1")
-            else:
-                self.gcode.run_script_from_command("RESTORE_GCODE_STATE NAME=PAUSE_STATE MOVE=1")
             self.last_start_time = self.toolhead.mcu.estimated_print_time(self.reactor.monotonic())
             self.set_state('printing')
+            if "PRINT_RESUME" in self.gcode.gcode_handlers:
+                self.gcode.run_script("PRINT_RESUME")
+            self.gcode.run_script_from_command("RESTORE_GCODE_STATE NAME=PAUSE_STATE MOVE=1")
             self.work_timer = self.reactor.register_timer(self.work_handler, self.reactor.NOW)
             return True
 
@@ -156,6 +156,8 @@ class PrintJob:
         if self.state == 'pausing':
             self.gcode.run_script("SAVE_GCODE_STATE NAME=PAUSE_STATE")
             self.gcode.run_script("SET_GCODE_OFFSET X=0 Y=0")
+            if "PRINT_PAUSE" in self.gcode.gcode_handlers:
+                self.gcode.run_script("PRINT_PAUSE")
             self.set_state('paused')
         else:
             if self.state == 'aborting':
@@ -222,17 +224,17 @@ class PrintJobManager:
             self.printer.send_event("virtual_sdcard:print_change", self.jobs)
         self.check_queue()
 
-    def pause_print(self, gcmd=None):
+    def pause_print(self):
         if self.jobs:
             return self.jobs[0].pause()
 
-    def stop_print(self, gcmd=None):
+    def stop_print(self):
         if self.jobs:
             return self.jobs[0].stop()
 
-    def resume_print(self, gcmd=None):
+    def resume_print(self):
         if self.jobs:
-            return self.jobs[0].resume(gcmd)
+            return self.jobs[0].resume()
 
     def remove_print(self, idx, uuid):
         if 0 < idx < len(self.jobs) and self.jobs[idx].uuid == uuid:
