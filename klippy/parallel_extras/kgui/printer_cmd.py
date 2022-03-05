@@ -153,13 +153,12 @@ def get_pos(e, printer):
     pos = printer.objects['toolhead'].get_position()
     printer.reactor.cb(set_attribute, 'pos', pos, process='kgui')
 def send_pos(e, printer, x=None, y=None, z=None, speed=15):
-    new_pos = [x,y,z,e]
+    new_pos = [x,y,z]
     homed_axes = printer.objects['toolhead'].get_status(e)['homed_axes']
     # check whether axes are still homed
-    new_pos = [new if name in homed_axes else None for new, name in zip(new_pos, 'xyze')]
+    new_pos = [new if name in homed_axes else None for new, name in zip(new_pos, 'xyz')]
     new_pos = _fill_coord(printer, new_pos)
-    with printer.objects['gcode'].mutex:
-        printer.objects['toolhead'].move(new_pos, speed)
+    printer.objects['gcode'].run_script(f"G1 X{new_pos[0]} Y{new_pos[1]} Z{new_pos[2]} F{speed*60}")
     get_pos(e, printer)
 
 def _fill_coord(printer, new_pos):
