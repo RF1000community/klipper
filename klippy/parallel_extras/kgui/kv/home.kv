@@ -3,6 +3,7 @@
 
 #:import p parameters
 #:import printer_cmd parallel_extras.kgui.printer_cmd
+#:import pi math.pi
 
 <HomeTab@TabbedPanelItem>:
     background_down: ''
@@ -194,21 +195,21 @@
     FloatLayout:
         BtnTemp:
             id: flow
-            on_release: Factory.FlowPopup(val=app.flow).open()
-            large_value: "{:3.0f}%".format(app.flow - 0.00001) # always round down
+            on_release: Factory.FlowPopup(val=app.flow_factor).open()
+            large_value: "{:3.0f}mm³/s".format(app.flow*pi*(app.filament_diameter/2)**2)
             small_value: "Material Flow"
             right: p.screen_width - p.h_padding
             center_y: z_offset.center_y + 4*p.btn_spacing
         BtnTemp:
             id: speed
-            on_release: Factory.SpeedPopup(val=app.speed).open()
-            large_value: "{:3.0f}%".format(app.speed)
+            on_release: Factory.SpeedPopup(val=app.speed_factor).open()
+            large_value: "{:3.0f}mm/s".format(app.speed)
             small_value: "Print Speed"
             right: p.screen_width - p.h_padding
             center_y: z_offset.center_y + 3*p.btn_spacing
         BtnTemp:
             id: acceleration
-            on_release: Factory.AccPopup(val=app.acceleration).open()
+            on_release: Factory.AccPopup(val=app.acceleration_factor).open()
             large_value: "{:6.0f}mm/s²".format(app.acceleration)
             small_value: "Acceleration"
             right: p.screen_width - p.h_padding
@@ -280,7 +281,11 @@
         RoundedRectangle:
             size: self.width*self.filament_amount, self.height
             pos: self.pos
-            radius: [p.radius] + ([0, 0] if self.width*self.filament_amount < self.width - p.radius else [p.radius, p.radius]) + [p.radius]
+            radius: 
+                [p.radius, \
+                max(0, p.radius - self.width + self.width*self.filament_amount), \
+                max(0, p.radius - self.width + self.width*self.filament_amount), \
+                p.radius]
         Color:
             rgba: p.btn_outline
         Line:
@@ -438,16 +443,16 @@
             on_release: app.reactor.cb(printer_cmd.send_pressure_advance, slider.val), root.dismiss()
 
 <AccPopup@BasePopup>:
-    title: "Acceleration"
+    title: "Acceleration Factor"
     size_hint: 0.94, 0.4
     FloatLayout:
         UltraSlider:
             val: root.val
-            val_min: 2000
-            val_max: 50000
-            unit: "mm/s²"
-            round_to: -2
-            buttons: [[36000,0,"default",None]]
+            val_min: 20
+            val_max: 500
+            unit: "%"
+            round_to: -1
+            buttons: [[100,0,"no multiplier",None]]
             id: slider
             pos_hint: {'center_x': 0.5, 'y': 0.6}
         BtnPCancel:
@@ -472,6 +477,7 @@
             val_max: 500
             unit: "%"
             round_to: 0
+            round_style: 5
             id: slider
             pos_hint: {'center_x': 0.5, 'y': 0.6}
         BtnPCancel:
@@ -521,6 +527,7 @@
             val_max: 100
             unit: "%"
             round_to: 0
+            round_style: 5
             id: slider
             pos_hint: {'center_x': 0.5, 'y': 0.6}
         BtnPCancel:
@@ -581,7 +588,6 @@
 <CalibrationPopup>:
     size_hint: 0.92, 0.54
     FloatLayout:
-
         BtnPCancel:
             text: "Close"
             width: root.width
@@ -738,7 +744,11 @@
         RoundedRectangle:
             size: self.width*self.amount, self.height
             pos: self.x, self.y
-            radius: (p.icon_radius,)
+            radius: 
+                [p.icon_radius, \
+                max(0, p.icon_radius - self.width + self.width*self.amount), \
+                max(0, p.icon_radius - self.width + self.width*self.amount), \
+                p.icon_radius]
         Color:
             rgba: (1,1,1,0.25) if self.selected else p.btn_outline
         Line:
@@ -825,14 +835,13 @@
         Color:
             rgba: self.filament_color
         RoundedRectangle:
-            size: self.width, self.height
+            size: self.px - self.x, self.height
             pos: self.x, self.y
-            radius: (p.radius,)
-        Color:
-            rgba: p.popup
-        Rectangle:
-            size: self.right - self.px, self.height
-            pos: self.px, self.y
+            radius: 
+                [p.radius, \
+                max(0, p.radius - self.right + self.px), \
+                max(0, p.radius - self.right + self.px), \
+                p.radius]
         Color:
             rgba: p.btn_outline
         Line:

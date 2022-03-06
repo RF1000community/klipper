@@ -5,7 +5,7 @@ import subprocess
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.properties import ObjectProperty, StringProperty, BooleanProperty
+from kivy.properties import ObjectProperty, StringProperty, BooleanProperty, NumericProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
@@ -15,6 +15,7 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 from kivy.uix.tabbedpanel import TabbedPanelItem
+from kivy.uix.textinput import TextInput
 
 from .elements import BasePopup, RectangleButton
 from . import printer_cmd
@@ -91,6 +92,14 @@ class ConsoleScreen(Screen):
         self.ids.console_label.text += cmd
         self.ids.console_scroll.scroll_y = 0
 
+class MoveScreen(Screen):
+    pass
+    # def on_pre_enter(self):
+    #     self.updating = Clock.schedule_interval(self.update, 0.2)
+    # def update(self):
+    #     App.get_running_app().reactor.cb(printer_cmd.get_pos)
+    # def on_leave(self):
+    #     Clock.unschedule(self.updating)
 
 class XyField(Widget):
 
@@ -168,6 +177,25 @@ class XyField(Widget):
         self.px = [(self.limits[0] - self.origin[0]) * float(mm[0]) / self.printer_dimensions[0] + self.origin[0],
                    (self.limits[1] - self.origin[1]) * float(mm[1]) / self.printer_dimensions[1] + self.origin[1]]
 
+# class CoordinateInput(TextInput):
+#     name = StringProperty('X')
+#     axis_id = StringProperty('x')
+#     axis_idx = NumericProperty(0)
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.app = App.get_running_app()
+#         self.reactor = self.app.reactor
+#         self.bind(on_text_validate=self.confirm)
+#         self.app.bind(on_pos=self.update)
+
+#     def update(self, instance, pos):
+#         if not self.focus:
+#             self.text = pos[self.axis_idx]
+
+#     def confirm(self, *args):
+#         pos = {self.axis_id, self.text}
+#         self.reactor.cb(printer_cmd.send_pos, **pos)
+#         self.focus = False
 
 class WifiScreen(Screen):
 

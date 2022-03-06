@@ -212,6 +212,7 @@ class ToolHead:
         # Velocity and acceleration control
         self.max_velocity = config.getfloat('max_velocity', above=0.)
         self.max_accel = config.getfloat('max_accel', above=0.)
+        self.accel_factor = 1
         self.requested_accel_to_decel = config.getfloat(
             'max_accel_to_decel', self.max_accel * 0.5, above=0.)
         self.max_accel_to_decel = self.requested_accel_to_decel
@@ -507,6 +508,7 @@ class ToolHead:
                      'position': self.Coord(*self.commanded_pos),
                      'max_velocity': self.max_velocity,
                      'max_accel': self.max_accel,
+                     'accel_factor': self.accel_factor,
                      'max_accel_to_decel': self.requested_accel_to_decel,
                      'square_corner_velocity': self.square_corner_velocity})
         return res
@@ -561,7 +563,7 @@ class ToolHead:
         if max_velocity is not None:
             self.max_velocity = max_velocity
         if max_accel is not None:
-            self.max_accel = max_accel
+            self.max_accel = max_accel * self.accel_factor
         if square_corner_velocity is not None:
             self.square_corner_velocity = square_corner_velocity
         if requested_accel_to_decel is not None:
@@ -592,7 +594,7 @@ class ToolHead:
                                   % (gcmd.get_commandline(),))
                 return
             accel = min(p, t)
-        self.max_accel = accel
+        self.max_accel = accel * self.accel_factor
         self._calc_junction_deviation()
 
 def add_printer_objects(config):

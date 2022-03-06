@@ -209,83 +209,105 @@
             on_release: app.material_condition = self.value; root.update()
         Divider:
 
-<MoveScreen@Screen>:
+<MoveScreen>:
     name: "MoveScreen"
-    canvas.before:
-        Color:
-            rgba: p.background
-        Rectangle:
-            pos: 0, 0 
-            size: self.size
-    FloatLayout:
-        XyField:
-            id: xy_field
-            size_hint: None, None
-            height: dp(260)
-            width: dp(260)
-            x: p.h_padding
-            top: root.height - p.small_padding # screens are relative layouts
-            enabled:
-                app.state == "ready" and app.homed['x'] and app.homed['y'] \
-                and not app.toolhead_busy
-        RoundButton:
-            id: btn_off
-            on_release: app.reactor.cb(printer_cmd.send_motors_off)
-            enabled: app.state == "ready"
-            size: p.btn_height, p.btn_height
-            right: root.right - p.h_padding
-            top: root.height # screens are relative layouts
-            text: "Off"
-            color: (1,1,1,1) if btn_off.enabled else p.btn_disabled
-            text_size: self.size
-            font_size: p.large_font
-            halign: 'center'
-            valign: 'middle'
-        BtnHome:
-            id: btn_z
-            axis_id: 'Z'
-            size: p.btn_height, p.btn_height
-            right: root.right - p.h_padding
-            top: btn_off.y - p.small_padding
-        BtnHome:
-            id: btn_x
-            axis_id: 'X'
-            size: p.btn_height, p.btn_height
-            right: root.right - p.h_padding if app.xy_homing_controls else p.mars
-            top: btn_z.y - p.small_padding
-        BtnHome:
-            id: btn_y
-            axis_id: 'Y'
-            size: p.btn_height, p.btn_height
-            right: root.right - p.h_padding if app.xy_homing_controls else p.mars
-            top: btn_x.y - p.small_padding
+    # canvas.before:
+    #     Color:
+    #         rgba: p.background
+    #     Rectangle:
+    #         pos: 0, 0 
+    #         size: self.size
+    # FloatLayout:
+    #     XyField:
+    #         id: xy_field
+    #         size_hint: None, None
+    #         height: dp(260)
+    #         width: dp(260)
+    #         x: p.h_padding
+    #         top: root.height - p.small_padding # screens are relative layouts
+    #         enabled:
+    #             app.state == "ready" and app.homed['x'] and app.homed['y'] \
+    #             and not app.toolhead_busy
+    #     RoundButton:
+    #         id: btn_off
+    #         on_release: app.reactor.cb(printer_cmd.send_motors_off)
+    #         enabled: app.state == "ready"
+    #         size: p.btn_height, p.btn_height
+    #         right: root.right - p.h_padding
+    #         top: root.height # screens are relative layouts
+    #         text: "Off"
+    #         color: (1,1,1,1) if btn_off.enabled else p.btn_disabled
+    #         text_size: self.size
+    #         font_size: p.large_font
+    #         halign: 'center'
+    #         valign: 'middle'
+    #     BtnHome:
+    #         id: btn_z
+    #         axis_id: 'Z'
+    #         size: p.btn_height, p.btn_height
+    #         right: root.right - p.h_padding
+    #         top: btn_off.y - p.small_padding
+    #     BtnHome:
+    #         id: btn_x
+    #         axis_id: 'X'
+    #         size: p.btn_height, p.btn_height
+    #         right: root.right - p.h_padding if app.xy_homing_controls else p.mars
+    #         top: btn_z.y - p.small_padding
+    #     BtnHome:
+    #         id: btn_y
+    #         axis_id: 'Y'
+    #         size: p.btn_height, p.btn_height
+    #         right: root.right - p.h_padding if app.xy_homing_controls else p.mars
+    #         top: btn_x.y - p.small_padding
+#         CoordinateInput:
+#             id: x_input
+#             name: 'X'
+#             axis_id: 'x'
+#             axis_idx: 0
+#             top: xy_field.y - p.padding
+#             x: p.padding + dp(100)
+#         CoordinateInput:
+#             id: y_input
+#             name: 'Y'
+#             axis_id: 'y'
+#             axis_idx: 1
+#             top: x_input.y - p.padding
+#             x: p.padding + dp(100)
+#         CoordinateInput:
+#             id: z_input
+#             name: 'Z'
+#             axis_id: 'z'
+#             axis_idx: 2
+#             top: y_input.y - p.padding
+#             x: p.padding + dp(100)
+#         CoordinateInput:
+#             id: e_input
+#             name: 'E'
+#             axis_id: 'extruder'
+#             axis_idx: 3
+#             top: z_input.y - p.padding
+#             x: p.padding + dp(100)
 
-<CoordinateInput>:
-
-        # Label:
-        #     id: xy_pos
-        #     text: "X{:.1f} Y{:.1f} ".format(root.mm[0], root.mm[1])
-        #     size_hint: None, None
-        #     size: self.texture_size
-        #     pos: root.x + 7, root.y + 4
-        #     font_size: p.normal_font
-        #     color: (1,1,1,1) if root.pressed else p.nozzle
-        # Label:
-        #     id: z_pos
-        #     text: "Z{:.1f} ".format(root.mm[2])
-        #     size_hint: None, None
-        #     size: self.texture_size
-        #     pos: xy_pos.right, xy_pos.y
-        #     font_size: p.normal_font
-        #     color: p.nozzle
-        # Label:
-        #     id: ext_pos
-        #     text: "E{:.1f}".format(app.pos[3]%100)
-        #     size_hint: None, None
-        #     size: self.texture_size
-        #     pos: z_pos.right, xy_pos.y
-        #     font_size: p.normal_font
-        #     color: p.nozzle
+# <CoordinateInput>:
+#     multiline: False
+#     font_size: p.normal_font
+#     foreground_color: (1,1,1,1)
+#     padding: (15,12,25,12)
+#     height: self.minimum_height
+#     background_color: p.medium_gray
+#     cursor_color: (1,1,1,1)
+#     size_hint: None, None
+#     width: 145
+#     Label:
+#         text: root.name
+#         font_size: p.large_font
+#         text_size: self.size
+#         size: self.texture_size
+#         size_hint: None, None
+#         valign: 'middle'
+#         halign: 'left'
+#         x: p.padding
+#         center_y: root.center_y
     
 <WifiScreen>:
     name: 'WifiScreen'

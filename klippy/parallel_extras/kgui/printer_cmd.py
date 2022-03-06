@@ -20,8 +20,7 @@ def reset_tuning(e, printer):
     send_z_offset(e, printer, 0)
     send_fan(e, printer, 0)
     send_chamber_fan(e, printer, 0)
-    klipper_config = printer.objects['configfile'].read_main_config()
-    send_acceleration(e, printer, klipper_config.getsection('printer').getfloat('max_accel', above=0.))
+    send_acceleration(e, 100)
     reset_pressure_advance(e, printer)
     update(e, printer)
 
@@ -44,8 +43,10 @@ def send_z_offset(e, printer, z_offset):
     get_z_offset(e, printer)
 
 def get_speed(e, printer):
-    speed = printer.objects['gcode_move'].speed_factor*60*100 #speed factor also converts from mm/sec to mm/min
-    printer.reactor.cb(set_attribute, 'speed', speed, process='kgui')
+    motion_status = printer.objects['motion_report'].get_status(e)
+    status = printer.objects['gcode_move'].get_status(e)
+    printer.reactor.cb(set_attribute, 'speed', status['speed_factor']*60*100, process='kgui')#speed factor also converts from mm/sec to mm/min
+    printer.reactor.cb(set_attribute, 'speed', motion_status['live_velocity'], process='kgui')
 def send_speed(e, printer, val):
     val = val/(60.*100.)
     printer.objects['gcode_move'].speed = printer.objects['gcode_move']._get_gcode_speed() * val
@@ -53,8 +54,10 @@ def send_speed(e, printer, val):
     get_speed(e, printer)
 
 def get_flow(e, printer):
-    flow = printer.objects['gcode_move'].extrude_factor*100
-    printer.reactor.cb(set_attribute, 'flow', flow, process='kgui')
+    flow_factor = printer.objects['gcode_move'].extrude_factor*100
+    status = printer.objects['motion_report'].get_status(e)
+    printer.reactor.cb(set_attribute, 'flow_factor', flow_factor, process='kgui')
+    printer.reactor.cb(set_attribute, 'flow', status['live_extruder_velocity'], process='kgui')
 def send_flow(e, printer, val):
     new_extrude_factor = val/100.
     gcode_move = printer.objects['gcode_move']
@@ -107,10 +110,13 @@ def reset_pressure_advance(e, printer):
 
 def get_acceleration(e, printer):
     acceleration = printer.objects['toolhead'].max_accel
+    acceleration_factor = printer.objects['toolhead'].accel_factor*100
     printer.reactor.cb(set_attribute, 'acceleration', acceleration, process='kgui')
-
+    printer.reactor.cb(set_attribute, 'acceleration_factor', acceleration_factor, process='kgui')
 def send_acceleration(e, printer, val):
-    printer.objects['toolhead'].max_accel = val
+    val /= 100
+    printer.objects['toolhead'].max_accel = printer.objects['toolhead'].max_accel * val/printer.objects['toolhead'].accel_factor
+    printer.objects['toolhead'].accel_factor = val
     printer.objects['toolhead']._calc_junction_deviation()
     get_acceleration(e, printer)
 
@@ -163,24 +169,20 @@ def send_motors_off(e, printer):
     get_homing_state(e, printer)
 
 def get_pos(e, printer):
-    pos = printer.objects['toolhead'].get_position()
-    printer.reactor.cb(set_attribute, 'pos', pos, process='kgui')
-def send_pos(e, printer, x=None, y=None, z=None, speed=15):
+    status = printer.objects['motion_report'].get_status(e)
+    printer.reactor.cb(set_attribute, 'pos', status['live_position'], process='kgui')
+def send_pos(e, printer, x=None, y=None, z=None, extruder=None, speed=15):
     new_pos = [x,y,z]
     homed_axes = printer.objects['toolhead'].get_status(e)['homed_axes']
     # check whether axes are still homed
-    new_pos = [new if name in homed_axes else None for new, name in zip(new_pos, 'xyz')]
-    new_pos = _fill_coord(printer, new_pos)
-    printer.objects['gcode'].run_script(f"G1 X{new_pos[0]} Y{new_pos[1]} Z{new_pos[2]} F{speed*60}")
+    cmd = "G1 "
+    for new, name in zip(new_pos, 'xyz'):
+        if name in homed_axes:
+            cmd.append(f"{name}{new} ")
+    if extruder:
+        cmd.append(f"e{extruder}")
+    printer.objects['gcode'].run_script(f"{cmd} F{speed*60}")
     get_pos(e, printer)
-
-def _fill_coord(printer, new_pos):
-    """ Fill in any None entries in 'new_pos' with current toolhead position """
-    pos = list(printer.objects['toolhead'].get_position())
-    for i, new in enumerate(new_pos):
-        if new is not None:
-            pos[i] = new
-    return pos
 
 def get_print_progress(e, printer):
     est_remaining, progress = printer.objects['print_stats'].get_print_time_prediction()

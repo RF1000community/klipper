@@ -65,8 +65,7 @@ class TempSlider(UltraSlider):
         return max(self.x, x)
 
 class CalibrationPopup(BasePopup):
-    def __init__(self):
-        pass
+    pass
 
 class BtnMaterial(RoundButton):
     filament_amount = NumericProperty()

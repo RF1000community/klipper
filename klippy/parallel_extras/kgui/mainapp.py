@@ -75,13 +75,16 @@ class MainApp(App, threading.Thread):
     thumbnail = StringProperty(p.kgui_dir + '/logos/transparent.png')
     led_brightness = NumericProperty()
     # Tuning
-    speed = NumericProperty(100)
-    flow = NumericProperty(100)
+    speed = NumericProperty(0)
+    speed_factor = NumericProperty(100)
+    flow = NumericProperty(0)
+    flow_factor = NumericProperty(100)
     fan_speed = NumericProperty(0)
     chamber_fan_speed = NumericProperty(0)
     chamber_temp = ListProperty([0, 0])
     z_offset = NumericProperty(0)
     acceleration = NumericProperty(0)
+    acceleration_factor = NumericProperty(100)
     pressure_advance = NumericProperty(0)
     # Config
     config_pressure_advance = NumericProperty(0)
@@ -116,6 +119,7 @@ class MainApp(App, threading.Thread):
         self.config_acceleration = config.getsection('printer').getfloat("max_accel", 0)
         self.xy_homing_controls = config.getboolean('xy_homing_controls', True)
         self.variable_acceleration_control = config.getboolean('variable_acceleration_control', False)
+        self.filament_diameter = config.getsection("extruder").getfloat("filament_diameter", 1.75)
         self.led_controls = config.get('led_controls', None)
         self.led_update_time = 0
         if self.led_controls:
