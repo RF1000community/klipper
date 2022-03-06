@@ -97,7 +97,7 @@ class MainApp(App, threading.Thread):
         self.network_manager = NetworkManager()
         self.notify = Notifications()
         self.gcode_metadata = gcode_metadata.load_config(config) # Beware this is not the 'right' config
-        self.temp = {'extruder': [0,0], 'extruder1': [0,0], 'heater_bed': [0,0], 'chamber': [0,0]}
+        self.temp = {'extruder': [0,0], 'extruder1': [0,0], 'heater_bed': [0,0]}
         self.homed = {'x': False, 'y': False, 'z': False}
         self.warned_not_homed = {'x': False, 'y': False, 'z': False}
         self.kv_file = join(p.kgui_dir, "kv/main.kv") # Tell kivy where the root kv file is
