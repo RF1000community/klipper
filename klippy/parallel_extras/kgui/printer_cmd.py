@@ -19,6 +19,7 @@ def reset_tuning(e, printer):
     send_speed(e, printer, 100)
     send_z_offset(e, printer, 0)
     send_fan(e, printer, 0)
+    send_chamber_fan(e, printer, 0)
     klipper_config = printer.objects['configfile'].read_main_config()
     send_acceleration(e, printer, klipper_config.getsection('printer').getfloat('max_accel', above=0.))
     reset_pressure_advance(e, printer)
@@ -72,6 +73,17 @@ def send_fan(e, printer, speed):
         printer.objects['fan'].fan.set_speed_from_command(speed/100)
         get_fan(e, printer)
 
+def get_chamber_fan(e, printer):
+    if "temperature_fan chamber_fan" in printer.objects:
+        state = printer.objects['temperature_fan chamber_fan'].get_status(e)
+        speed = state['speed']*100/printer.objects['temperature_fan chamber_fan'].fan.max_power
+        printer.reactor.cb(set_attribute, 'chamber_fan_speed', speed, process='kgui')
+        printer.reactor.cb(set_attribute, 'chamber_temp', [state['target'], state['temperature']], process='kgui')
+def send_chamber_fan(e, printer, val):
+    if "temperature_fan chamber_fan" in printer.objects:
+        printer.objects['gcode'].run_script(f"SET_TEMPERATURE_FAN_TARGET TEMPERATURE_FAN=chamber_fan TARGET={val}")
+        get_chamber_fan(e, printer)
+
 def get_pressure_advance(e, printer): # gives pressure_advance value of 1. extruder
     pressure_advance = printer.objects['extruder'].get_status(e)['pressure_advance']
     printer.reactor.cb(set_attribute, 'pressure_advance', pressure_advance, process='kgui')
@@ -117,6 +129,7 @@ def update(e, printer):
     get_flow(e, printer)
     get_temp(e, printer)
     get_fan(e, printer)
+    get_chamber_fan(e, printer)
 
 def write_config(e, printer, section, option, value):
     printer.objects['configfile'].set(section, option, value)
@@ -168,14 +181,6 @@ def _fill_coord(printer, new_pos):
         if new is not None:
             pos[i] = new
     return pos
-
-def send_extrude(e, printer, gcode_id, direction):
-    printer.objects['live_move'].start_move('e', direction)
-def send_z_go(e, printer, direction):
-    printer.objects['live_move'].start_move('z', direction)
-def send_lm_stop(e, printer, axis):
-    printer.objects['live_move'].stop_move(axis)
-    get_pos(e, printer)
 
 def get_print_progress(e, printer):
     est_remaining, progress = printer.objects['print_stats'].get_print_time_prediction()

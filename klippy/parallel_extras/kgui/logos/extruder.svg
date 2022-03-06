@@ -21,6 +21,26 @@
      id="defs2">
     <inkscape:path-effect
        effect="powermask"
+       id="path-effect11133"
+       is_visible="true"
+       lpeversion="1"
+       uri="#mask-powermask-path-effect11133"
+       invert="false"
+       hide_mask="false"
+       background="true"
+       background_color="#ffffffff" />
+    <inkscape:path-effect
+       effect="powermask"
+       id="path-effect3571"
+       is_visible="true"
+       lpeversion="1"
+       uri="#mask-powermask-path-effect3571"
+       invert="false"
+       hide_mask="false"
+       background="true"
+       background_color="#ffffffff" />
+    <inkscape:path-effect
+       effect="powermask"
        id="path-effect30313"
        is_visible="true"
        lpeversion="1"
@@ -163,6 +183,81 @@
          values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0 "
          in="fbSourceGraphic" />
     </filter>
+    <mask
+       maskUnits="userSpaceOnUse"
+       id="mask-powermask-path-effect3571">
+      <path
+         id="mask-powermask-path-effect3571_box"
+         style="fill:#ffffff;fill-opacity:1"
+         d="M 8,0.4997924 H 52 V 58.999896 H 8 Z" />
+      <g
+         aria-label="2"
+         id="g3569"
+         style="font-weight:bold;font-size:33.3333px;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';stroke-width:0.894244"
+         inkscape:transform-center-x="9.057112e-06"
+         inkscape:transform-center-y="-2.4804573">
+        <path
+           d="M 38.35773,39.281094 H 22.114256 V 36.05844 l 7.666009,-8.170565 q 1.578774,-1.725258 2.327471,-3.011065 0.764974,-1.285806 0.764974,-2.441403 0,-1.578775 -0.797526,-2.473956 -0.797525,-0.911458 -2.278643,-0.911458 -1.595051,0 -2.522784,1.10677 -0.911458,1.090494 -0.911458,2.880857 h -4.720047 q 0,-2.164712 1.025389,-3.955075 1.041666,-1.790363 2.929685,-2.799476 1.888019,-1.02539 4.280595,-1.02539 3.662106,0 5.680333,1.757811 2.034503,1.757811 2.034503,4.964188 0,1.757811 -0.911457,3.580726 -0.911458,1.822914 -3.124997,4.248042 L 28.168938,35.48878 H 38.35773 Z"
+           id="path3567" />
+      </g>
+    </mask>
+    <filter
+       id="mask-powermask-path-effect3571_inverse"
+       inkscape:label="filtermask-powermask-path-effect3571"
+       style="color-interpolation-filters:sRGB"
+       height="100"
+       width="100"
+       x="-50"
+       y="-50">
+      <feColorMatrix
+         id="mask-powermask-path-effect3571_primitive1"
+         values="1"
+         type="saturate"
+         result="fbSourceGraphic" />
+      <feColorMatrix
+         id="mask-powermask-path-effect3571_primitive2"
+         values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0 "
+         in="fbSourceGraphic" />
+    </filter>
+    <mask
+       maskUnits="userSpaceOnUse"
+       id="mask-powermask-path-effect11133">
+      <path
+         id="mask-powermask-path-effect11133_box"
+         style="fill:#ffffff;fill-opacity:1"
+         d="M 8,0.4997924 H 52 V 58.999896 H 8 Z" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:33.3333px;line-height:1.25;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.894244"
+         x="20.50293"
+         y="39.281094"
+         id="text11131"
+         inkscape:transform-center-x="9.057112e-06"
+         inkscape:transform-center-y="-2.4804573"><tspan
+           sodipodi:role="line"
+           id="tspan11129"
+           x="20.50293"
+           y="39.281094"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:33.3333px;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.894244">1</tspan></text>
+    </mask>
+    <filter
+       id="mask-powermask-path-effect11133_inverse"
+       inkscape:label="filtermask-powermask-path-effect11133"
+       style="color-interpolation-filters:sRGB"
+       height="100"
+       width="100"
+       x="-50"
+       y="-50">
+      <feColorMatrix
+         id="mask-powermask-path-effect11133_primitive1"
+         values="1"
+         type="saturate"
+         result="fbSourceGraphic" />
+      <feColorMatrix
+         id="mask-powermask-path-effect11133_primitive2"
+         values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0 "
+         in="fbSourceGraphic" />
+    </filter>
   </defs>
   <sodipodi:namedview
      inkscape:snap-others="true"
@@ -182,10 +277,10 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:zoom="16"
-     inkscape:cx="0"
-     inkscape:cy="30.875"
+     inkscape:cx="4.875"
+     inkscape:cy="41.0625"
      inkscape:document-units="px"
-     inkscape:current-layer="g26932"
+     inkscape:current-layer="g3579"
      showgrid="true"
      units="px"
      inkscape:window-width="3840"
@@ -231,41 +326,41 @@
      id="layer3"
      inkscape:groupmode="layer">
     <path
-       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 48,5.4997924 H 12 V 39 L 29,54 48,40 V 5.4997924"
-       id="path26201" />
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 47,5.4997924 H 13 V 41 L 30,54 47,41 V 5.4997924"
+       id="path26201"
+       sodipodi:nodetypes="cccccc" />
   </g>
   <g
      style="display:none"
      inkscape:label="Nozzle copy 1"
-     id="g26932"
+     id="g3579"
      inkscape:groupmode="layer">
     <path
-       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 48,5.4997924 H 12 V 39 L 29,54 48,40 V 5.4997924"
-       id="path26930"
-       mask="url(#mask-powermask-path-effect30313)"
-       inkscape:path-effect="#path-effect30313"
-       inkscape:original-d="M 48,5.4997924 H 12 V 39 L 29,54 48,40 V 5.4997924"
-       inkscape:export-filename="C:\Users\konst\Desktop\extruder1.png"
-       inkscape:export-xdpi="128"
-       inkscape:export-ydpi="128" />
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 47,5.4997924 H 13 V 41 L 30,54 47,41 V 5.4997924"
+       id="path3577"
+       sodipodi:nodetypes="cccccc"
+       mask="url(#mask-powermask-path-effect11133)"
+       inkscape:path-effect="#path-effect11133"
+       inkscape:original-d="M 47,5.4997924 H 13 V 41 L 30,54 47,41 V 5.4997924"
+       inkscape:export-filename="C:\Users\konst\Desktop\klippo\klippy\parallel_extras\kgui\logos\extruder2.png"
+       inkscape:export-xdpi="256"
+       inkscape:export-ydpi="256" />
   </g>
   <g
      style="display:inline"
      inkscape:label="Nozzle copy"
-     id="g26903"
+     id="g3337"
      inkscape:groupmode="layer">
     <path
-       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 48,5.4997924 H 12 V 39 L 29,54 48,40 V 5.4997924"
-       id="path26901"
-       mask="url(#mask-powermask-path-effect26917)"
-       inkscape:path-effect="#path-effect26917"
-       inkscape:original-d="M 48,5.4997924 H 12 V 39 L 29,54 48,40 V 5.4997924"
-       inkscape:export-filename="C:\Users\konst\Desktop\extruder2.png"
-       inkscape:export-xdpi="128"
-       inkscape:export-ydpi="128" />
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 47,5.4997924 H 13 V 41 L 30,54 47,41 V 5.4997924"
+       id="path3335"
+       sodipodi:nodetypes="cccccc"
+       mask="url(#mask-powermask-path-effect3571)"
+       inkscape:path-effect="#path-effect3571"
+       inkscape:original-d="M 47,5.4997924 H 13 V 41 L 30,54 47,41 V 5.4997924" />
   </g>
   <g
      style="display:none"
@@ -274,24 +369,26 @@
      inkscape:groupmode="layer">
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:35.7698px;line-height:1.25;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.894244"
-       x="19"
-       y="39"
-       id="text18338"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:33.3333px;line-height:1.25;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.894244"
+       x="20.50293"
+       y="39.281094"
+       id="text18338"
+       inkscape:transform-center-x="9.057112e-06"
+       inkscape:transform-center-y="-2.4804573"><tspan
          sodipodi:role="line"
          id="tspan18336"
-         x="19"
-         y="39"
-         style="stroke-width:0.894244">2</tspan></text>
+         x="20.50293"
+         y="39.281094"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:33.3333px;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.894244">2</tspan></text>
   </g>
   <g
      style="display:none"
      inkscape:label="Number copy 1"
-     id="g26927"
+     id="g3586"
      inkscape:groupmode="layer" />
   <g
      style="display:none"
      inkscape:label="Number copy"
-     id="g26909"
+     id="g3333"
      inkscape:groupmode="layer" />
 </svg>

@@ -8,6 +8,7 @@ from kivy.clock import Clock
 from kivy.properties import ObjectProperty, StringProperty, BooleanProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
+from kivy.uix.widget import Widget
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
@@ -90,6 +91,83 @@ class ConsoleScreen(Screen):
         self.ids.console_label.text += cmd
         self.ids.console_scroll.scroll_y = 0
 
+
+class XyField(Widget):
+
+    pressed = BooleanProperty(False)
+    enabled = BooleanProperty(False)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.point_radius = 10
+        self.app = App.get_running_app()
+        self.printer_dimensions = (self.app.pos_max['x'] - self.app.pos_min['x'],
+                                   self.app.pos_max['y'] - self.app.pos_min['y'])
+        self.app.bind(pos=self.update_with_mm)
+        Clock.schedule_once(self.init_drawing, 0)
+
+    def init_drawing(self, dt):
+        # Calculate bounds of actual field
+        self.origin = [self.x + self.point_radius, self.y + self.point_radius]
+        self.limits = [self.right - self.point_radius, self.top - self.point_radius]
+        self.px = self.origin
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos) and self.enabled:
+            touch.grab(self)
+            self.update_with_px(touch.pos)
+            self.pressed = True
+            return True
+        return False
+
+    def on_touch_move(self, touch):
+        if touch.grab_current is self:
+            self.update_with_px(touch.pos)
+            return True
+        return False
+
+    def on_touch_up(self, touch):
+        if touch.grab_current is self:
+            touch.ungrab(self)
+            self.update_with_px(touch.pos)
+            self.app.reactor.cb(printer_cmd.send_pos, x=self.mm[0], y=self.mm[1], speed=40)
+            self.pressed = False
+            return True
+        return False
+
+    def update_with_px(self, px_input):
+        if self.enabled:
+            px_input = (int(px_input[0]), int(px_input[1]))
+            self.px = self.apply_bounds(px_input[0], px_input[1])
+            self.set_mm_with_px(self.px)
+
+    def update_with_mm(self, instance=None, mm=[0,0,0]):
+        self.set_px_with_mm(mm)
+        self.mm = mm[:3]
+
+    def apply_bounds(self, x, y):
+        if x < self.origin[0]:
+            x = self.origin[0]
+        elif x > self.limits[0]:
+            x = self.limits[0]
+
+        if y < self.origin[1]:
+            y = self.origin[1]
+        elif y > self.limits[1]:
+            y = self.limits[1]
+        return [x, y]
+
+    def set_mm_with_px(self, px):
+        ratio_x = float(px[0] - self.origin[0]) / (self.limits[0] - self.origin[0])
+        ratio_y = float(px[1] - self.origin[1]) / (self.limits[1] - self.origin[1])
+
+        self.mm[0] = self.printer_dimensions[0] * ratio_x
+        self.mm[1] = self.printer_dimensions[1] * ratio_y
+
+    def set_px_with_mm(self, mm):
+        self.px = [(self.limits[0] - self.origin[0]) * float(mm[0]) / self.printer_dimensions[0] + self.origin[0],
+                   (self.limits[1] - self.origin[1]) * float(mm[1]) / self.printer_dimensions[1] + self.origin[1]]
+                
 
 class WifiScreen(Screen):
 
@@ -266,6 +344,9 @@ class ContinuousPrintingScreen(Screen):
                 self.app.reposition,
                 self.app.material_condition)
 
+class MoveScreen(Screen):
+
+    pass
 
 class SITimezone(SetItem):
 

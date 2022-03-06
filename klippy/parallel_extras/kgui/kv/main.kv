@@ -49,7 +49,7 @@ FloatLayout:
         x: root.x
         Label:
             id: state
-            text: "Error" if app.state == "error" else "Initializing" if app.state == "startup" else ""
+            text: "error" if app.state == "error" else "initializing" if app.state == "startup" else "" if app.print_state == "no print job" else app.print_state
             size_hint_x: None
             size: self.texture_size
             font_size: p.normal_font

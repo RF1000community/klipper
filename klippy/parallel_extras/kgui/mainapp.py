@@ -1,4 +1,3 @@
-from ast import Num
 import logging
 import site
 import threading
@@ -80,6 +79,8 @@ class MainApp(App, threading.Thread):
     speed = NumericProperty(100)
     flow = NumericProperty(100)
     fan_speed = NumericProperty(0)
+    chamber_fan_speed = NumericProperty(0)
+    chamber_temp = ListProperty([0, 0])
     z_offset = NumericProperty(0)
     acceleration = NumericProperty(0)
     pressure_advance = NumericProperty(0)
@@ -96,7 +97,7 @@ class MainApp(App, threading.Thread):
         self.network_manager = NetworkManager()
         self.notify = Notifications()
         self.gcode_metadata = gcode_metadata.load_config(config) # Beware this is not the 'right' config
-        self.temp = {'extruder': [0,0], 'extruder1': [0,0], 'heater_bed': [0,0]}
+        self.temp = {'extruder': [0,0], 'extruder1': [0,0], 'heater_bed': [0,0], 'chamber': [0,0]}
         self.homed = {'x': False, 'y': False, 'z': False}
         self.warned_not_homed = {'x': False, 'y': False, 'z': False}
         self.kv_file = join(p.kgui_dir, "kv/main.kv") # Tell kivy where the root kv file is
@@ -134,7 +135,6 @@ class MainApp(App, threading.Thread):
                 self.extruder_count = i
                 break
         # These are loaded a bit late
-        self.reactor.cb(printer_cmd.load_object, "live_move")
         self.reactor.cb(printer_cmd.load_object, "filament_manager")
         self.reactor.cb(printer_cmd.load_object, "print_history")
         super().__init__(**kwargs)
@@ -247,15 +247,6 @@ class MainApp(App, threading.Thread):
     
     def handle_material_mismatch(self, loaded_materials, needed_materials):
         MaterialMismatchPopup(loaded_materials, needed_materials).open()
-
-    def note_live_move(self, axis):
-        if axis in 'xyz' and not (self.homed[axis] or self.warned_not_homed[axis]):
-            self.notify.show("Axis not homed", "Proceed with care!", level="warning", delay=3)
-            self.warned_not_homed['z'] = True
-        self.toolhead_busy = True
-
-    def note_live_move_end(self, axis=None):
-        self.toolhead_busy = False
 
     def set_led_brightness(self, val):
         self.led_brightness = val
