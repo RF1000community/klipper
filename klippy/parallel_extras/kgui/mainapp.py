@@ -41,7 +41,6 @@ site.addsitedir(join(p.klipper_dir, "klippy/extras/")) # gcode_metadata
 import gcode_metadata
 
 class MainApp(App, threading.Thread):
-    # Property for controlling the state as shown in the statusbar
     state = OptionProperty("startup", options=[
         # Every string set has to be in this list
         "startup",
@@ -99,7 +98,6 @@ class MainApp(App, threading.Thread):
         self.gcode_metadata = gcode_metadata.load_config(config) # Beware this is not the 'right' config
         self.temp = {'extruder': [0,0], 'extruder1': [0,0], 'heater_bed': [0,0]}
         self.homed = {'x': False, 'y': False, 'z': False}
-        self.warned_not_homed = {'x': False, 'y': False, 'z': False}
         self.kv_file = join(p.kgui_dir, "kv/main.kv") # Tell kivy where the root kv file is
 
         if TESTING:
@@ -116,8 +114,8 @@ class MainApp(App, threading.Thread):
         # Read config
         self.config_pressure_advance = config.getsection('extruder').getfloat("pressure_advance", 0)
         self.config_acceleration = config.getsection('printer').getfloat("max_accel", 0)
-        self.invert_z_controls = config.getboolean('invert_z_controls', False)
         self.xy_homing_controls = config.getboolean('xy_homing_controls', True)
+        self.variable_acceleration_control = config.getboolean('variable_acceleration_control', False)
         self.led_controls = config.get('led_controls', None)
         self.led_update_time = 0
         if self.led_controls:
@@ -244,7 +242,7 @@ class MainApp(App, threading.Thread):
 
     def handle_material_runout(self, extruder_id):
         FilamentRunoutPopup(extruder_id).open()
-    
+
     def handle_material_mismatch(self, loaded_materials, needed_materials):
         MaterialMismatchPopup(loaded_materials, needed_materials).open()
 

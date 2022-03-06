@@ -51,7 +51,6 @@ git clone https://github.com/D4SK/klippo
 
 ## Additional Config Sections ##
 ```
-# (needed)
 [virtual_sdcard]
 
 # (optional) allow continuous printing
@@ -73,15 +72,12 @@ condition: any # exact | type | any
 # This module works together with the cura_connection plugin
 [filament_manager]
 
-# (recommended) This module allows controlling your printer from cura within the local network
+# This module allows controlling your printer from cura within the local network
 [cura_connection]
 
 # Main UI module 
 # set [stepper_z] to allow for at least 0.5mm of additional movement
 [kgui]
-# Set this to True if the Z-Axis is moving the printbed and not the printhead (e.g. for Ultimaker style printers)
-invert_z_controls: False
-
 
 # Provide these Gcode macros when using filament_manager.
 # The FORCE parameter is needed for all G1 moves to 

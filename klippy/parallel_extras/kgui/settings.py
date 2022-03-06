@@ -167,7 +167,7 @@ class XyField(Widget):
     def set_px_with_mm(self, mm):
         self.px = [(self.limits[0] - self.origin[0]) * float(mm[0]) / self.printer_dimensions[0] + self.origin[0],
                    (self.limits[1] - self.origin[1]) * float(mm[1]) / self.printer_dimensions[1] + self.origin[1]]
-                
+
 
 class WifiScreen(Screen):
 
@@ -344,9 +344,6 @@ class ContinuousPrintingScreen(Screen):
                 self.app.reposition,
                 self.app.material_condition)
 
-class MoveScreen(Screen):
-
-    pass
 
 class SITimezone(SetItem):
 

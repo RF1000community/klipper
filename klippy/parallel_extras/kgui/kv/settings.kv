@@ -17,7 +17,7 @@
         TitleBar:
             title:
                 {'SettingScreen': "Settings", 'ConsoleScreen':"Gcode Console",
-                'WifiScreen': "Wifi", 'UpdateScreen': "System Update", "ContinuousPrintingScreen": "Continuous Printing", "MoveScreen": "Move Printhead"}[screen_man.current]
+                'WifiScreen': "Wifi", 'UpdateScreen': "System Update", "ContinuousPrintingScreen": "Continuous Printing", "MoveScreen": "Move Printhead", "SetupScreen": "Setup"}[screen_man.current]
             enabled: screen_man.current != 'SettingScreen'
             on_release: screen_man.current = 'SettingScreen'
             pos_hint: {'x': 0, 'top': 1}
@@ -37,6 +37,8 @@
                 id: move_screen
             ContinuousPrintingScreen:
                 id: continuous_printing_screen
+            SetupScreen:
+                id: setup_screen
 
 <SettingScreen@Screen>:
     name: 'SettingScreen'
@@ -70,6 +72,7 @@
                 left_title: "Max. printhead Acceleration"
                 right_title: "{:6.0f}mm/s²".format(app.config_acceleration)
                 enabled: app.connected
+                hidden: app.variable_acceleration_control
                 on_release: Factory.AccConfPopup(val=app.config_acceleration).open()
             SetItem:
                 left_title: "Pressure Advance"
@@ -80,14 +83,32 @@
                 left_title: "Wifi"
                 enabled: self.network_manager.available
                 on_release: root.manager.current = "WifiScreen"
-            SITimezone:
-                id: si_timezone
             SetItem:
                 left_title: "Shutdown..."
                 on_release: Factory.PowerPopup().open()
             SIUpdate:
                 left_title: "Update"
                 on_release: root.manager.current = "UpdateScreen"
+            SetItem:
+                left_title: "Setup"
+                on_release: root.manager.current = "SetupScreen"
+
+<SetupScreen@Screen>:
+    name: 'SetupScreen'
+    ScrollView:
+        canvas.before:
+            Color:
+                rgba: p.background
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        BoxLayout:
+            orientation:'vertical'
+            height: self.minimum_height
+            pos: 0, root.height - self.height
+            size_hint_y: None
+            SITimezone:
+                id: si_timezone
             SetItem:
                 left_title: "Change Hostname"
                 right_title: platform.node()
@@ -188,7 +209,7 @@
             on_release: app.material_condition = self.value; root.update()
         Divider:
 
-<MoveScreen>:
+<MoveScreen@Screen>:
     name: "MoveScreen"
     canvas.before:
         Color:
@@ -197,48 +218,49 @@
             pos: 0, 0 
             size: self.size
     FloatLayout:
-        BtnTripleZ:
-            id: btn_tr_Z
-            height: xy_field.height
-            h1: self.height/3
-            h2: self.height/3
-            h3: self.height/3
-            width: p.btn_height*p.disp_vertical_stretch
-            right: root.right - p.h_padding
-            top: root.height - p.padding - p.status_bar_height
         XyField:
             id: xy_field
             size_hint: None, None
-            height: p.btn_height*3
-            width: self.height + dp(40)
+            height: dp(260)
+            width: dp(260)
             x: p.h_padding
-            top: root.height - p.padding - p.status_bar_height
+            top: root.height - p.small_padding # screens are relative layouts
             enabled:
                 app.state == "ready" and app.homed['x'] and app.homed['y'] \
                 and not app.toolhead_busy
-        BtnHome:
-            axis_id: 'X'
-            size: p.btn_height, p.btn_height
-            x: xy_field.right if app.xy_homing_controls else p.mars
-            y: xy_field.y
-        BtnHome:
-            axis_id: 'Y'
-            size: p.btn_height, p.btn_height
-            x: xy_field.right if app.xy_homing_controls else p.mars
-            y: xy_field.y + p.btn_height
         RoundButton:
             id: btn_off
             on_release: app.reactor.cb(printer_cmd.send_motors_off)
             enabled: app.state == "ready"
             size: p.btn_height, p.btn_height
-            x: xy_field.right
-            top: xy_field.top
+            right: root.right - p.h_padding
+            top: root.height # screens are relative layouts
             text: "Off"
             color: (1,1,1,1) if btn_off.enabled else p.btn_disabled
             text_size: self.size
             font_size: p.large_font
             halign: 'center'
             valign: 'middle'
+        BtnHome:
+            id: btn_z
+            axis_id: 'Z'
+            size: p.btn_height, p.btn_height
+            right: root.right - p.h_padding
+            top: btn_off.y - p.small_padding
+        BtnHome:
+            id: btn_x
+            axis_id: 'X'
+            size: p.btn_height, p.btn_height
+            right: root.right - p.h_padding if app.xy_homing_controls else p.mars
+            top: btn_z.y - p.small_padding
+        BtnHome:
+            id: btn_y
+            axis_id: 'Y'
+            size: p.btn_height, p.btn_height
+            right: root.right - p.h_padding if app.xy_homing_controls else p.mars
+            top: btn_x.y - p.small_padding
+
+<CoordinateInput>:
 
         # Label:
         #     id: xy_pos
@@ -391,24 +413,11 @@
     mm: [0, 0, 0]
     px: [0, 0]
     canvas.after:
-        # Outline with xy homing buttons
         Color:
             rgba: p.btn_outline
         Line:
             width: 1
-            rounded_rectangle: (self.x, self.y, self.width + p.btn_height, self.height, p.radius)
-        Line:
-            points:
-                self.right, self.top - p.btn_divider_padding, \
-                self.right, self.y + p.btn_divider_padding
-        Line:
-            points:
-                self.right + p.btn_divider_padding, self.y + 2*p.btn_height, \
-                self.right + p.btn_height - p.btn_divider_padding, self.y + 2*p.btn_height
-        Line:
-            points:
-                self.right + p.btn_divider_padding, self.y + p.btn_height, \
-                self.right + p.btn_height - p.btn_divider_padding, self.y + p.btn_height
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
         Color:
             rgba: p.btn_outline if self.pressed else (0,0,0,0)
         Line:
@@ -422,80 +431,6 @@
         Ellipse:
             pos: self.px[0] - self.point_radius, self.px[1] - self.point_radius
             size: (self.point_radius*2, self.point_radius*2)
-
-<BtnTripleZ@Widget>:
-    h1: 0
-    h2: 0
-    h3: 0
-    size_hint: None, None
-    canvas:
-        Color:
-            rgba: p.btn_outline
-        Line:
-            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
-        Rectangle:
-            pos: self.x + p.btn_divider_padding, self.y + self.h1 - 1
-            size: self.width - 2*p.btn_divider_padding, 1
-        Rectangle:
-            pos: self.x + p.btn_divider_padding, self.y + self.h1 + self.h2 - 1
-            size: self.width - 2*p.btn_divider_padding, 1
-    #:set t 9.5
-    #:set u 19 # Triangle has this size x2
-    BaseButton:
-        on_press:
-            app.reactor.cb(printer_cmd.send_z_go, 1 if app.invert_z_controls else -1), \
-            app.note_live_move('z')
-        on_release: app.reactor.cb(printer_cmd.send_lm_stop, 'z');  app.note_live_move_end('z')
-        enabled: app.state == "ready" and not app.toolhead_busy
-        size: root.width, root.h1
-        pos: root.x, root.y
-        canvas.before:
-            Color:
-                rgba: p.translucent_white if self.pressed else (0,0,0,0)
-            RoundedRectangle:
-                radius: (0,0,p.radius,p.radius)
-                size: self.size
-                pos: self.pos
-            Color:
-                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
-            Triangle:
-                points:
-                    self.center_x - dp(u), self.center_y + dp(t), \
-                    self.center_x + dp(u), self.center_y + dp(t), \
-                    self.center_x, self.center_y - dp(t)
-    BtnHome:
-        axis_id: 'Z'
-        size: root.width, root.h2
-        pos: root.x, root.h1 + root.y
-        canvas.after:
-            Clear
-            Color:
-                rgba: p.translucent_white if self.pressed else (0,0,0,0)
-            Rectangle:
-                size: self.size
-                pos: self.pos
-    BaseButton:
-        on_press:
-            app.reactor.cb(printer_cmd.send_z_go, -1 if app.invert_z_controls else 1), \
-            app.note_live_move('z')
-        on_release: app.reactor.cb(printer_cmd.send_lm_stop, 'z'); app.note_live_move_end('z')
-        enabled: app.state == "ready" and not app.toolhead_busy
-        size: root.width, root.h3
-        pos: root.x, root.top - root.h3
-        canvas.before:
-            Color:
-                rgba: p.translucent_white if self.pressed else (0,0,0,0)
-            RoundedRectangle:
-                radius: (p.radius,p.radius,0,0)
-                size: self.size
-                pos: self.pos
-            Color:
-                rgba: (1,1,1,1) if self.enabled else p.btn_disabled
-            Triangle:
-                points:
-                    self.center_x - dp(u), self.center_y - dp(t), \
-                    self.center_x + dp(u), self.center_y - dp(t), \
-                    self.center_x, self.center_y + dp(t)
 
 <BtnHome@RoundButton>:
     axis_id: 'Z'

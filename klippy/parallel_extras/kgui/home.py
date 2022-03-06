@@ -64,6 +64,10 @@ class TempSlider(UltraSlider):
         x = ((val-self.val_min)/(self.val_max-self.val_min))*self.width + self.x
         return max(self.x, x)
 
+class CalibrationPopup(BasePopup):
+    def __init__(self):
+        pass
+
 class BtnMaterial(RoundButton):
     filament_amount = NumericProperty()
     filament_color = ListProperty([0,0,0,0])
