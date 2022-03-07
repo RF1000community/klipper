@@ -58,7 +58,7 @@ class MainApp(App, threading.Thread):
         "aborted",
         "finished",
         ])
-    homed = DictProperty() # Updated by handle_home_end/start event handler
+    homed = StringProperty("") # Updated by handle_home_end/start event handler
     temp = DictProperty() # {'heater_bed': [setpoint, current], 'extruder': ...}
     connected = BooleanProperty(False) # updated with handle_connect
     jobs = ListProperty()
@@ -68,12 +68,12 @@ class MainApp(App, threading.Thread):
     print_done_time = StringProperty()
     progress = NumericProperty(0)
     pos = ListProperty([0, 0, 0, 0])
-    toolhead_busy = BooleanProperty(False)
     material = DictProperty()
     tbc_to_guid = DictProperty()
     cura_connected = BooleanProperty(False)
     thumbnail = StringProperty(p.kgui_dir + '/logos/transparent.png')
     led_brightness = NumericProperty()
+    extruder_id = StringProperty("extruder")
     # Tuning
     speed = NumericProperty(0)
     speed_factor = NumericProperty(100)
@@ -100,7 +100,6 @@ class MainApp(App, threading.Thread):
         self.notify = Notifications()
         self.gcode_metadata = gcode_metadata.load_config(config) # Beware this is not the 'right' config
         self.temp = {'extruder': [0,0], 'extruder1': [0,0], 'heater_bed': [0,0]}
-        self.homed = {'x': False, 'y': False, 'z': False}
         self.kv_file = join(p.kgui_dir, "kv/main.kv") # Tell kivy where the root kv file is
 
         if TESTING:
@@ -188,9 +187,7 @@ class MainApp(App, threading.Thread):
         ErrorPopup(message = message).open()
 
     def handle_home_end(self, homing_state, rails):
-        self.toolhead_busy = False
-        for rail in rails:
-            self.homed[rail.steppers[0].get_name(short=True)] = True
+        self.reactor.cb(printer_cmd.get_homing_state)
 
     def handle_print_change(self, jobs):
         """

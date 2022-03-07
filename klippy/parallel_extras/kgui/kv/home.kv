@@ -586,7 +586,8 @@
             on_release: app.reactor.cb(printer_cmd.send_temp, slider.val, 'heater_bed'); root.dismiss()
 
 <CalibrationPopup>:
-    size_hint: 0.92, 0.54
+    size_hint: 0.92, 0.7
+    title: "Calibration"
     FloatLayout:
         BtnPCancel:
             text: "Close"

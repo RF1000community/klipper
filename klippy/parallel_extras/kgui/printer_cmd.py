@@ -127,7 +127,6 @@ def send_acceleration(e, printer, val):
 def update(e, printer):
     get_homing_state(e, printer)
     get_print_progress(e, printer)
-    get_pos(e, printer)
     get_pressure_advance(e, printer)
     get_acceleration(e, printer)
     get_z_offset(e, printer)
@@ -158,9 +157,8 @@ def send_temp(e, printer, temp, extruder_id):
     get_temp(e, printer)
 
 def get_homing_state(e, printer):
-    kin_status = printer.objects['toolhead'].kin.get_status(e)
-    homed = {axis: bool(axis in kin_status['homed_axes']) for axis in "xyz"}
-    printer.reactor.cb(set_attribute, 'homed', homed, process='kgui')
+    status = printer.objects['toolhead'].kin.get_status(e)
+    printer.reactor.cb(set_attribute, 'homed', status['homed_axes'], process='kgui')
 def send_home(e, printer, axis):
     printer.objects['gcode'].run_script("G28" + axis.upper())
 
@@ -175,13 +173,19 @@ def send_pos(e, printer, x=None, y=None, z=None, extruder=None, speed=15):
     new_pos = [x,y,z]
     homed_axes = printer.objects['toolhead'].get_status(e)['homed_axes']
     # check whether axes are still homed
-    cmd = "G1 "
+    mv = ""
     for new, name in zip(new_pos, 'xyz'):
-        if name in homed_axes:
-            cmd.append(f"{name}{new} ")
+        if new != None and name in homed_axes:
+            mv += f"{name}{new} "
     if extruder:
-        cmd.append(f"e{extruder}")
-    printer.objects['gcode'].run_script(f"{cmd} F{speed*60}")
+        mv += f"e{extruder}"
+    printer.objects['gcode'].run_script(
+        f"""
+        SAVE_GCODE_STATE NAME=MOVE_STATE
+        M83
+        G1 {mv} F{speed*60}
+        RESTORE_GCODE_STATE NAME=MOVE_STATE
+        """)
     get_pos(e, printer)
 
 def get_print_progress(e, printer):

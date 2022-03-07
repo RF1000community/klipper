@@ -430,7 +430,7 @@
        sodipodi:nodetypes="cccccc" />
   </g>
   <g
-     style="display:none"
+     style="display:inline"
      inkscape:label="Nozzle copy 1"
      id="g2307"
      inkscape:groupmode="layer">
@@ -442,12 +442,12 @@
        mask="url(#mask-powermask-path-effect5624)"
        inkscape:path-effect="#path-effect5624"
        inkscape:original-d="M 45,7 H 15 V 43 L 30,54 45,43 V 7"
-       inkscape:export-filename="C:\Users\konst\Desktop\klippo\klippy\parallel_extras\kgui\logos\extruder2.png"
+       inkscape:export-filename="C:\Users\konst\Desktop\klippo\klippy\parallel_extras\kgui\logos\extruder1.png"
        inkscape:export-xdpi="256"
        inkscape:export-ydpi="256" />
   </g>
   <g
-     style="display:inline"
+     style="display:none"
      inkscape:label="Nozzle copy"
      id="g2303"
      inkscape:groupmode="layer">

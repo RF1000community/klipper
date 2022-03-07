@@ -15,7 +15,6 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 from kivy.uix.tabbedpanel import TabbedPanelItem
-from kivy.uix.textinput import TextInput
 
 from .elements import BasePopup, RectangleButton
 from . import printer_cmd
@@ -93,13 +92,23 @@ class ConsoleScreen(Screen):
         self.ids.console_scroll.scroll_y = 0
 
 class MoveScreen(Screen):
-    pass
-    # def on_pre_enter(self):
-    #     self.updating = Clock.schedule_interval(self.update, 0.2)
-    # def update(self):
-    #     App.get_running_app().reactor.cb(printer_cmd.get_pos)
-    # def on_leave(self):
-    #     Clock.unschedule(self.updating)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        Clock.schedule_once(self.add_text_inputs, 2)
+
+    def add_text_inputs(self, dt):
+        for i, axis, name in zip(range(4), ("x", "y", "z", "extruder"), "XYZE"):
+            self.ids.box.add_widget(CoordinateInput(name=name, axis_id=axis, axis_idx=i))
+
+    def on_pre_enter(self):
+        self.updating = Clock.schedule_interval(self.update, 0.05)
+
+    def update(self, dt):
+        App.get_running_app().reactor.cb(printer_cmd.get_pos)
+
+    def on_leave(self):
+        Clock.unschedule(self.updating)
 
 class XyField(Widget):
 
@@ -113,9 +122,10 @@ class XyField(Widget):
         self.printer_dimensions = (self.app.pos_max['x'] - self.app.pos_min['x'],
                                    self.app.pos_max['y'] - self.app.pos_min['y'])
         self.app.bind(pos=self.update_with_mm)
-        Clock.schedule_once(self.init_drawing, 0)
+        self.bind(x=self.init_drawing)
+        self.bind(y=self.init_drawing)
 
-    def init_drawing(self, dt):
+    def init_drawing(self, *args):
         # Calculate bounds of actual field
         self.origin = [self.x + self.point_radius, self.y + self.point_radius]
         self.limits = [self.right - self.point_radius, self.top - self.point_radius]
@@ -174,28 +184,10 @@ class XyField(Widget):
         self.mm[1] = self.printer_dimensions[1] * ratio_y
 
     def set_px_with_mm(self, mm):
-        self.px = [(self.limits[0] - self.origin[0]) * float(mm[0]) / self.printer_dimensions[0] + self.origin[0],
-                   (self.limits[1] - self.origin[1]) * float(mm[1]) / self.printer_dimensions[1] + self.origin[1]]
+        px = [(self.limits[0] - self.origin[0]) * float(mm[0]) / self.printer_dimensions[0] + self.origin[0],
+              (self.limits[1] - self.origin[1]) * float(mm[1]) / self.printer_dimensions[1] + self.origin[1]]
+        self.px = self.apply_bounds(*px)
 
-# class CoordinateInput(TextInput):
-#     name = StringProperty('X')
-#     axis_id = StringProperty('x')
-#     axis_idx = NumericProperty(0)
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.app = App.get_running_app()
-#         self.reactor = self.app.reactor
-#         self.bind(on_text_validate=self.confirm)
-#         self.app.bind(on_pos=self.update)
-
-#     def update(self, instance, pos):
-#         if not self.focus:
-#             self.text = pos[self.axis_idx]
-
-#     def confirm(self, *args):
-#         pos = {self.axis_id, self.text}
-#         self.reactor.cb(printer_cmd.send_pos, **pos)
-#         self.focus = False
 
 class WifiScreen(Screen):
 
@@ -492,6 +484,7 @@ class HostnamePopup(BasePopup):
 def late_define(dt):
     from kivy.uix.textinput import TextInput
     global HostnameTextInput
+    global CoordinateInput
     class HostnameTextInput(TextInput):
         """
         Modify TextInput to only input lower- and uppercase ASCII letters,
@@ -505,5 +498,24 @@ def late_define(dt):
             max_len = 64 - len(self.text)
             limited = filtered[:max_len]
             return super().insert_text(limited, from_undo=from_undo)
+
+    class CoordinateInput(Label):
+        name = StringProperty('X')
+        axis_id = StringProperty('x')
+        axis_idx = NumericProperty(0)
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.app = App.get_running_app()
+            self.reactor = self.app.reactor
+            self.ids.txt_input.bind(on_text_validate=self.confirm)
+
+        def confirm(self, *args):
+            try:
+                val = float(self.ids.txt_input.text)
+            except:
+                self.ids.txt_input.text = ""
+                return
+            self.reactor.cb(printer_cmd.send_pos, **{self.axis_id: val})
+            self.ids.txt_input.text = ""
 
 Clock.schedule_once(late_define, 0)

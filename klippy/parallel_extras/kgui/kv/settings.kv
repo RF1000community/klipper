@@ -60,7 +60,7 @@
             #     left_title: "Gcode Console"
             #     on_release: root.manager.current = "ConsoleScreen"
             SetItem:
-                left_title: "Manual Move"
+                left_title: "Move Printhead"
                 enabled: app.state == "ready"
                 on_release: root.manager.current = "MoveScreen"
             SetItem:
@@ -107,6 +107,7 @@
             height: self.minimum_height
             pos: 0, root.height - self.height
             size_hint_y: None
+            Divider:
             SITimezone:
                 id: si_timezone
             SetItem:
@@ -165,7 +166,7 @@
         Color:
             rgba: p.background
         Rectangle:
-            pos: 0, 0 
+            pos: 0, 0
             size: self.size
     BoxLayout:
         id: setting_box
@@ -211,104 +212,119 @@
 
 <MoveScreen>:
     name: "MoveScreen"
-    # canvas.before:
-    #     Color:
-    #         rgba: p.background
-    #     Rectangle:
-    #         pos: 0, 0 
-    #         size: self.size
-    # FloatLayout:
-    #     XyField:
-    #         id: xy_field
-    #         size_hint: None, None
-    #         height: dp(260)
-    #         width: dp(260)
-    #         x: p.h_padding
-    #         top: root.height - p.small_padding # screens are relative layouts
-    #         enabled:
-    #             app.state == "ready" and app.homed['x'] and app.homed['y'] \
-    #             and not app.toolhead_busy
-    #     RoundButton:
-    #         id: btn_off
-    #         on_release: app.reactor.cb(printer_cmd.send_motors_off)
-    #         enabled: app.state == "ready"
-    #         size: p.btn_height, p.btn_height
-    #         right: root.right - p.h_padding
-    #         top: root.height # screens are relative layouts
-    #         text: "Off"
-    #         color: (1,1,1,1) if btn_off.enabled else p.btn_disabled
-    #         text_size: self.size
-    #         font_size: p.large_font
-    #         halign: 'center'
-    #         valign: 'middle'
-    #     BtnHome:
-    #         id: btn_z
-    #         axis_id: 'Z'
-    #         size: p.btn_height, p.btn_height
-    #         right: root.right - p.h_padding
-    #         top: btn_off.y - p.small_padding
-    #     BtnHome:
-    #         id: btn_x
-    #         axis_id: 'X'
-    #         size: p.btn_height, p.btn_height
-    #         right: root.right - p.h_padding if app.xy_homing_controls else p.mars
-    #         top: btn_z.y - p.small_padding
-    #     BtnHome:
-    #         id: btn_y
-    #         axis_id: 'Y'
-    #         size: p.btn_height, p.btn_height
-    #         right: root.right - p.h_padding if app.xy_homing_controls else p.mars
-    #         top: btn_x.y - p.small_padding
-#         CoordinateInput:
-#             id: x_input
-#             name: 'X'
-#             axis_id: 'x'
-#             axis_idx: 0
-#             top: xy_field.y - p.padding
-#             x: p.padding + dp(100)
-#         CoordinateInput:
-#             id: y_input
-#             name: 'Y'
-#             axis_id: 'y'
-#             axis_idx: 1
-#             top: x_input.y - p.padding
-#             x: p.padding + dp(100)
-#         CoordinateInput:
-#             id: z_input
-#             name: 'Z'
-#             axis_id: 'z'
-#             axis_idx: 2
-#             top: y_input.y - p.padding
-#             x: p.padding + dp(100)
-#         CoordinateInput:
-#             id: e_input
-#             name: 'E'
-#             axis_id: 'extruder'
-#             axis_idx: 3
-#             top: z_input.y - p.padding
-#             x: p.padding + dp(100)
+    canvas.before:
+        Color:
+            rgba: p.background
+        Rectangle:
+            pos: 0, 0
+            size: self.size
+    FloatLayout:
+        XyField:
+            id: xy_field
+            size_hint: None, None
+            height: p.btn_height*4
+            width: p.btn_height*4
+            right: root.right - p.h_padding
+            top: root.height - p.small_padding # screens are relative layouts
+            enabled:
+                app.state == "ready" and 'x' in app.homed and 'y' in app.homed
+        Btn4x:
+            id: btn_4x
+            top: xy_field.y - p.padding
+            x: xy_field.x
+        RoundButton:
+            id: btn_off
+            on_release: app.reactor.cb(printer_cmd.send_motors_off)
+            enabled: app.state == "ready"
+            size: p.btn_height, p.btn_height
+            right: btn_4x.right
+            top: xy_field.y - p.padding
+            text: "Off"
+            color: (1,1,1,1) if btn_off.enabled else p.btn_disabled
+            text_size: self.size
+            font_size: p.large_font
+            halign: 'center'
+            valign: 'middle'
+        RoundButton:
+            on_release: app.reactor.cb(printer_cmd.run_script, "T0")
+            enabled: app.state == "ready"
+            size: p.btn_height, p.btn_height
+            x: btn_4x.x if not app.xy_homing_controls else p.mars
+            top: xy_field.y - p.padding
+            text: "T0"
+            text_size: self.size
+            font_size: p.large_font
+            halign: 'center'
+            valign: 'middle'
+        RoundButton:
+            on_release: app.reactor.cb(printer_cmd.run_script, "T1")
+            enabled: app.state == "ready"
+            size: p.btn_height, p.btn_height
+            x: btn_4x.x + p.btn_height if not app.xy_homing_controls else p.mars
+            top: xy_field.y - p.padding
+            text: "T1"
+            text_size: self.size
+            font_size: p.large_font
+            halign: 'center'
+            valign: 'middle'
+        BtnHome:
+            id: btn_x
+            axis_id: 'X'
+            size: p.btn_height, p.btn_height
+            x: btn_4x.x if app.xy_homing_controls else p.mars
+            y: btn_4x.y
+        BtnHome:
+            id: btn_y
+            axis_id: 'Y'
+            size: p.btn_height, p.btn_height
+            x: btn_4x.x + p.btn_height if app.xy_homing_controls else p.mars
+            y: btn_4x.y
+        BtnHome:
+            id: btn_z
+            axis_id: 'Z'
+            size: p.btn_height, p.btn_height
+            right: btn_4x.right - p.btn_height
+            y: btn_4x.y
+        BoxLayout:
+            id: box
+            orientation: 'vertical'
+            height: self.minimum_height
+            size_hint_y: None
+            top: xy_field.top
+            x: p.padding
+            spacing: 0
 
-# <CoordinateInput>:
-#     multiline: False
-#     font_size: p.normal_font
-#     foreground_color: (1,1,1,1)
-#     padding: (15,12,25,12)
-#     height: self.minimum_height
-#     background_color: p.medium_gray
-#     cursor_color: (1,1,1,1)
-#     size_hint: None, None
-#     width: 145
-#     Label:
-#         text: root.name
-#         font_size: p.large_font
-#         text_size: self.size
-#         size: self.texture_size
-#         size_hint: None, None
-#         valign: 'middle'
-#         halign: 'left'
-#         x: p.padding
-#         center_y: root.center_y
-    
+<CoordinateInput>:
+    enabled:
+        self.axis_id in app.homed \
+        or (self.axis_id == 'extruder' \
+        and app.temp[app.extruder_id][0] > app.min_extrude_temp \
+        and app.temp[app.extruder_id][1] > app.min_extrude_temp)
+    color: (1,1,1,1) if self.enabled else p.btn_disabled
+    text: self.name + ("" if txt_input.focus else "{:3.2f}".format(app.pos[self.axis_idx]))
+    font_size: p.normal_font + sp(5)
+    text_size: self.size
+    size: dp(200), p.btn_height
+    size_hint: None, None
+    valign: 'middle'
+    halign: 'left'
+    x: p.padding
+    center_y: root.center_y
+    TextInput:
+        id: txt_input
+        multiline: False
+        font_size: p.normal_font + sp(5)
+        x: root.x if root.enabled else p.mars
+        center_y: root.center_y
+        foreground_color: (1,1,1,1)
+        padding: (26,20,26,20)
+        height: self.minimum_height
+        background_color: (0,0,0,0)
+        cursor_color: (1,1,1,1)
+        size_hint: None, None
+        width: dp(140)
+        text_validate_unfocus: True
+
 <WifiScreen>:
     name: 'WifiScreen'
     canvas.before:
@@ -455,8 +471,9 @@
             size: (self.point_radius*2, self.point_radius*2)
 
 <BtnHome@RoundButton>:
+    size: p.btn_height, p.btn_height
     axis_id: 'Z'
-    on_release: app.reactor.cb(printer_cmd.send_home, str(self.axis_id)); app.toolhead_busy = True
+    on_release: app.reactor.cb(printer_cmd.send_home, str(self.axis_id))
     enabled: app.state == "ready"
     canvas:
         Color:
@@ -465,11 +482,6 @@
             source: p.kgui_dir + '/logos/home_axis.png'
             size: dp(66), dp(66)
             pos: self.center_x - dp(32), self.center_y - dp(32)
-        Color:
-            rgba: p.translucent_white if self.pressed else (0,0,0,0)
-        Rectangle:
-            size: self.size
-            pos: self.pos
     Label:
         pos: root.x, root.y - dp(2)
         text: root.axis_id
@@ -483,6 +495,27 @@
         halign: 'center'
         valign: 'middle'
 
+<Btn4x@Widget>:
+    size_hint: None, None
+    size: 4*p.btn_height, p.btn_height
+    canvas:
+        Color:
+            rgba: p.btn_outline
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, p.radius)
+        Line:
+            points:
+                self.x + p.btn_height, self.y + p.btn_divider_padding, \
+                self.x + p.btn_height, self.top - p.btn_divider_padding
+        Line:
+            points:
+                self.x + p.btn_height*2, self.y + p.btn_divider_padding, \
+                self.x + p.btn_height*2, self.top - p.btn_divider_padding
+        Line:
+            points:
+                self.x + p.btn_height*3, self.y + p.btn_divider_padding, \
+                self.x + p.btn_height*3, self.top - p.btn_divider_padding
 # SETITEMS
 
 <SetItem>:
