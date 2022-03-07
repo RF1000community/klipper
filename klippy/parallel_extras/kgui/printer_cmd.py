@@ -39,7 +39,7 @@ def get_z_offset(e, printer):
     z_offset = printer.objects['gcode_move'].homing_position[2]
     printer.reactor.cb(set_attribute, 'z_offset', z_offset, process='kgui')
 def send_z_offset(e, printer, z_offset):
-    printer.objects['gcode'].run_script(f"SET_GCODE_OFFSET Z={z_offset} MOVE=0")
+    printer.objects['gcode'].run_script(f"SET_GCODE_OFFSET Z={z_offset} MOVE=1 MOVE_SPEED=5")
     get_z_offset(e, printer)
 
 def get_speed(e, printer):
