@@ -14,8 +14,7 @@ class ZeroConfHandler:
             # Necessary to be noticed by Cura
             b'type': b'printer',
             b'name': self.module.NAME.encode(),
-            # BOM-number, for now we disguise as an Ultimaker 3
-            b'machine': b'213482',
+            b'machine': self.module.bom_number.encode(),
             b'firmware_version': self.module.VERSION.encode(),
             }
 

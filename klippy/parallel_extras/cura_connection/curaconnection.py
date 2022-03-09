@@ -41,6 +41,7 @@ class CuraConnectionModule:
         self.MATERIAL_PATH = os.path.expanduser("~/materials")
         self.ADDRESS = None
 
+        self.bom_number = config.get('bom_number', "213482") # Use Ultimaker 3 if not provided
         self.content_manager = None
         self.zeroconf_handler = None
         self.server = None
