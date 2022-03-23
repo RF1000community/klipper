@@ -1,0 +1,1567 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="img/favicon.ico">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.3">
+    
+    
+      
+        <title>Load-cell based probe - Klipper documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.edf004c2.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="_klipper3d/css/extra.css">
+    
+    <script>__md_scope=new URL(".",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+
+  <script>window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)},ga.l=+new Date,ga("create","UA-138371409-1","auto"),ga("set","anonymizeIp",!0),ga("send","pageview"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){var e;this.value&&(e=document.location.pathname,ga("send","pageview",e+"?q="+this.value))}),"undefined"!=typeof location$&&location$.subscribe(function(e){ga("send","pageview",e.pathname)})})</script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="blue">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#load-cell-based-probe" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="Klipper documentation" class="md-header__button md-logo" aria-label="Klipper documentation" data-md-component="logo">
+      
+  <img src="img/klipper.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Klipper documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Load-cell based probe
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9v1z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="grey" data-md-color-accent="light-blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Klipper3d/klipper/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Klipper3d/klipper
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="Klipper documentation" class="md-nav__button md-logo" aria-label="Klipper documentation" data-md-component="logo">
+      
+  <img src="img/klipper.svg" alt="logo">
+
+    </a>
+    Klipper documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Klipper3d/klipper/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Klipper3d/klipper
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Overview.html" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Features.html" class="md-nav__link">
+        Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="FAQ.html" class="md-nav__link">
+        Frequently Asked Questions
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Releases.html" class="md-nav__link">
+        Releases
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Config_Changes.html" class="md-nav__link">
+        Configuration Changes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Contact.html" class="md-nav__link">
+        Contact
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7">
+          Installation and Configuration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation and Configuration" data-md-level="1">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          Installation and Configuration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Installation.html" class="md-nav__link">
+        Installation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7_2" type="checkbox" id="__nav_7_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7_2">
+          Configuration Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Configuration Reference" data-md-level="2">
+        <label class="md-nav__title" for="__nav_7_2">
+          <span class="md-nav__icon md-icon"></span>
+          Configuration Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Config_Reference.html" class="md-nav__link">
+        Configuration reference
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Rotation_Distance.html" class="md-nav__link">
+        Rotation distance
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Config_checks.html" class="md-nav__link">
+        Configuration checks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7_4" type="checkbox" id="__nav_7_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7_4">
+          Bed Level
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Bed Level" data-md-level="2">
+        <label class="md-nav__title" for="__nav_7_4">
+          <span class="md-nav__icon md-icon"></span>
+          Bed Level
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Bed_Level.html" class="md-nav__link">
+        Bed leveling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Delta_Calibrate.html" class="md-nav__link">
+        Delta calibration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Probe_Calibrate.html" class="md-nav__link">
+        Probe calibration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="BLTouch.html" class="md-nav__link">
+        BL-Touch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Manual_Level.html" class="md-nav__link">
+        Manual leveling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Bed_Mesh.html" class="md-nav__link">
+        Bed Mesh
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Endstop_Phase.html" class="md-nav__link">
+        Endstop phase
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7_5" type="checkbox" id="__nav_7_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7_5">
+          Resonance Compensation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Resonance Compensation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_7_5">
+          <span class="md-nav__icon md-icon"></span>
+          Resonance Compensation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Resonance_Compensation.html" class="md-nav__link">
+        Resonance Compensation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Measuring_Resonances.html" class="md-nav__link">
+        Measuring Resonances
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Pressure_Advance.html" class="md-nav__link">
+        Pressure advance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="G-Codes.html" class="md-nav__link">
+        G-Codes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7_8" type="checkbox" id="__nav_7_8" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7_8">
+          Command templates
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Command templates" data-md-level="2">
+        <label class="md-nav__title" for="__nav_7_8">
+          <span class="md-nav__icon md-icon"></span>
+          Command templates
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Command_Templates.html" class="md-nav__link">
+        Commands templates
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Status_Reference.html" class="md-nav__link">
+        Status reference
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="TMC_Drivers.html" class="md-nav__link">
+        TMC drivers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Multi_MCU_Homing.html" class="md-nav__link">
+        Multiple Micro-controller Homing and Probing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Slicers.html" class="md-nav__link">
+        Slicers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Skew_Correction.html" class="md-nav__link">
+        Skew correction
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Using_PWM_Tools.html" class="md-nav__link">
+        Using PWM tools
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_8" type="checkbox" id="__nav_8" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_8">
+          Developer Documentation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Developer Documentation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_8">
+          <span class="md-nav__icon md-icon"></span>
+          Developer Documentation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Code_Overview.html" class="md-nav__link">
+        Code overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Kinematics.html" class="md-nav__link">
+        Kinematics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Protocol.html" class="md-nav__link">
+        Protocol
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="API_Server.html" class="md-nav__link">
+        API server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="MCU_Commands.html" class="md-nav__link">
+        MCU commands
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="CANBUS_protocol.html" class="md-nav__link">
+        CANBUS protocol
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Debugging.html" class="md-nav__link">
+        Debugging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Benchmarks.html" class="md-nav__link">
+        Benchmarks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="CONTRIBUTING.html" class="md-nav__link">
+        Contributing to Klipper
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Packaging.html" class="md-nav__link">
+        Packaging Klipper
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_9" type="checkbox" id="__nav_9" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_9">
+          Device Specific Documents
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Device Specific Documents" data-md-level="1">
+        <label class="md-nav__title" for="__nav_9">
+          <span class="md-nav__icon md-icon"></span>
+          Device Specific Documents
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Example_Configs.html" class="md-nav__link">
+        Example configurations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="SDCard_Updates.html" class="md-nav__link">
+        SDCard updates
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="RPi_microcontroller.html" class="md-nav__link">
+        RPi microcontroller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Beaglebone.html" class="md-nav__link">
+        Beaglebone
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Bootloaders.html" class="md-nav__link">
+        Bootloaders
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="CANBUS.html" class="md-nav__link">
+        CANBUS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="TSL1401CL_Filament_Width_Sensor.html" class="md-nav__link">
+        TSL1401CL filament width sensor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Hall_Filament_Width_Sensor.html" class="md-nav__link">
+        Hall filament width sensor
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#mechanical-and-electrical-setup" class="md-nav__link">
+    Mechanical and electrical setup
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#working-principle-of-the-probe-algorithm" class="md-nav__link">
+    Working principle of the probe algorithm
+  </a>
+  
+    <nav class="md-nav" aria-label="Working principle of the probe algorithm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#drift-compensated-measurement-and-averaging" class="md-nav__link">
+    Drift-compensated measurement and averaging
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-phases-of-a-probe-approach" class="md-nav__link">
+    The phases of a probe approach
+  </a>
+  
+    <nav class="md-nav" aria-label="The phases of a probe approach">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fast-approach" class="md-nav__link">
+    Fast approach
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find-fit-start-position" class="md-nav__link">
+    Find fit start position
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-fit" class="md-nav__link">
+    The fit
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accessing-the-load-cell-measured-force-in-other-modules" class="md-nav__link">
+    Accessing the load cell measured force in other modules
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#probing-in-xy-direction-for-cnc-routers" class="md-nav__link">
+    Probing in X/Y direction for CNC routers
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup-for-new-printer-types" class="md-nav__link">
+    Setup for new printer types
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practises" class="md-nav__link">
+    Best practises
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/Klipper3d/klipper/blob/master/docs/LoadCellProbe.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+<h1 id="load-cell-based-probe">Load-cell based probe<a class="headerlink" href="#load-cell-based-probe" title="Permanent link">&para;</a></h1>
+<p>A load-cell based probe offers an offset-free measurement of the precise
+Z coordinate of the contact position between nozzle and print bed. Under certain
+mechanical conditions, a sensitivity can be even achieved in X and Y directions,
+which can be useful for CNC routers. Downside of a load-cell probe compared to
+other probe types is the slower speed and higher complexity.</p>
+<p>Please also read the
+<a href="Config_Reference.html#load_cell_probe">reference of the config section</a>, and the
+<a href="G-Codes.html#load-cell-probe">reference of the g-code commands</a>.</p>
+<h2 id="mechanical-and-electrical-setup">Mechanical and electrical setup<a class="headerlink" href="#mechanical-and-electrical-setup" title="Permanent link">&para;</a></h2>
+<p align="center">
+  <img src="img/load-cell-probe-setup.png" width="30%"/>
+</p>
+
+<p>There may be many possibilities how to realise a probe based on load cells. The
+setup used for testing and developing this algorithm is as follows:</p>
+<ul>
+<li>The hotend is suspended on a pair of load cells such that any force applied
+  on the nozzle by the bed can be measured. This is shown in the picture above:
+  The two load cells are the bars on left and right with the green arrow.</li>
+</ul>
+<ul>
+<li>The two load cells form a rectangle, together with the guiding carriage
+  (shown in red/green/gray in the above image) and a traverse carrying the
+  hotend (the grey bar on top of the load cells).</li>
+</ul>
+<ul>
+<li>The two load cells are connected in parallel to a measurment amplifier and
+  an ADC.</li>
+</ul>
+<ul>
+<li>When the nozzle is not in contact with the bed, the load cells will measure
+  the weight of the hotend and other mechanical parts attached to the cells.</li>
+</ul>
+<ul>
+<li>Since the cells are designed for weighing, the measured signal will change
+  into the negative direction when the nozzle touches the bed (less weight or
+  even upwards pointing force).</li>
+</ul>
+<ul>
+<li>In the picture, the extruder motor is not shown, but it is attached to the
+  carriage directly, not to the load cells. This has the advantage that the
+  load cells can measure the extrusion force, which can be used to optimise
+  print settings manually, or for some advanced algorithms to optimise the
+  print automatically. This presents a major advantage over other probes. The
+  disadvantage is though that high extrusion forces will cause the hotend to
+  move closed to the bed as the load cells bend. This effect does not play a big
+  role, since high extrusion forces anyway indicate issues.</li>
+</ul>
+<h2 id="working-principle-of-the-probe-algorithm">Working principle of the probe algorithm<a class="headerlink" href="#working-principle-of-the-probe-algorithm" title="Permanent link">&para;</a></h2>
+<p>A very basic approach is to move the nozzle in small steps towards the bed and
+measure the force after each step. If the force exceeds a certain threshold, a
+contact between nozzle and bed is assumed. This simple approach leads to very
+coarse results, hence a more sophisticated algorithm is used.</p>
+<p>The load cell measurement is subject to certain instabilities and drifts over
+time for several reasons: The rectangle formed by the two load cells, the
+carraige and the traverse will have some internal tension, which may change
+slightly if forces are applied (e.g. when the nozzle makes contact with the
+bed), or sometimes even if the carriage is just moved. Also thermal effects can
+lead to drifts of the measurement. For this reason, it is important to make the
+algorithm insensitive against changed of the baseline.</p>
+<h3 id="drift-compensated-measurement-and-averaging">Drift-compensated measurement and averaging<a class="headerlink" href="#drift-compensated-measurement-and-averaging" title="Permanent link">&para;</a></h3>
+<p>This can be achieved by a special procedure for each measurement point to be
+taken: After each force measurement, the nozzle is lifted away from the bed a
+bit to measure the baseline. The baseline measurement is then subtracted from
+the force measurement to obtain the drift-compensated result. The distance to
+move away from the bed can be configured through the <code>compensation_z_lift</code>
+parameter.</p>
+<p>To increase precision, averaging can be used for both the force and baseline
+measurement. At both positions, <code>adc_n_average</code> readouts are taken and averaged.
+To make sure no mechanical vibrations can disturb the measurement, the biggest
+difference of all readouts is required to be smaller than <code>max_variance</code>,
+otherwise the readouts are repeated after a short delay
+(<code>delay_exceeding_max_variance</code>).</p>
+<h3 id="the-phases-of-a-probe-approach">The phases of a probe approach<a class="headerlink" href="#the-phases-of-a-probe-approach" title="Permanent link">&para;</a></h3>
+<p>As the drift-compensated measurement takes too long to simply scan in very small
+steps, the follow phases starting with a low-precision fast approach are
+implemented:</p>
+<h4 id="fast-approach">Fast approach<a class="headerlink" href="#fast-approach" title="Permanent link">&para;</a></h4>
+<p>To get fast close to the surface, a simple scan without drift-compensated
+measurements and a relative big step size is chosen. This requires a certain
+optimisation of the parameters <code>step_size</code> and <code>threshold</code>, so that the nozzle
+does not hit the surface too hard and the scan runs fast and reliably enough.
+A single compensated measurement is made for verification, when the threshold is
+exceeded. Only if the bed contact is confirmed, the next phase is started.
+Otherwise the fast approach is continued.</p>
+<h4 id="find-fit-start-position">Find fit start position<a class="headerlink" href="#find-fit-start-position" title="Permanent link">&para;</a></h4>
+<p>Due to possible hysteresis effects, it has been found to be more reliable to
+perform the series of measurements for the fit into the negative z direction.
+For maximum precision, the series should start at a position with a low or zero
+force. Since the fast approach has already moved a bit too far, the nozzle now
+needs to be moved away from the bed again. In the interest of saving time, it is
+important not to move too far away - ideally the nozzle should be right above
+the bed without touching it after this second phase. This is achieved by
+extrapolating the measured force linearily and finding the z position with zero
+force. To avoid overshooting, several iterations of at most <code>step_size/2</code> are
+performed until the force is below <code>fit_threshold</code>.</p>
+<h4 id="the-fit">The fit<a class="headerlink" href="#the-fit" title="Permanent link">&para;</a></h4>
+<p>This final phase will determine the z position of the contact position
+precisely. Starting from the position determined in the last phase, the force
+is measured in dependence of the z position in regular intervals, while moving
+into the negative z direction. Each measurement is dift-compensated as described
+above for maximum precision. The result of this scan is shown in the following
+figure:</p>
+<p align="center">
+  <img src="img/load-cell-probe-fit.svg" width="50%"/>
+</p>
+
+<p>The scan is done while moving into the negative z direction, hence the data
+points on the right side are measured first. Since the start position determiend
+in the last phase is intentionally slightly above the bed, the first few
+measurement points will have measured forces very close to 0 (in the image,
+these are the rightmost 4 measurement points). Once the force exceeds the given
+<code>fit_threshold</code>, as many as <code>fit_points</code> measurements are taken (6 in the
+image). Then, a linear fit is applied (red line in the image) to determine the
+z position at which the nozzle touches the bed but the force is still zero
+(intersection of the dashed lines).</p>
+<p>Finally, the printer will move to the determined z position, such that
+additional commands like <code>G92</code> can be used easily. Also the last measured z
+position can be obtained in g-code macros through
+<code>printer["load_cell_probe"].last_z_result</code>.</p>
+<h4 id="accessing-the-load-cell-measured-force-in-other-modules">Accessing the load cell measured force in other modules<a class="headerlink" href="#accessing-the-load-cell-measured-force-in-other-modules" title="Permanent link">&para;</a></h4>
+<p>Other modules can subscribe to the continuous read out of the load cell to
+receive the current force even while no probe command is executed. Any number of
+modules can subscribe by registering a callback function as follows:</p>
+<div class="highlight"><pre><span></span><code>  self.printer.lookup_object(&#39;load_cell&#39;).subscribe_force(self.force_callback)
+</code></pre></div>
+
+<p>The callback function must expect a single argument (besides <code>self</code>) which is
+the current force. It will be called periodically whenever the ADC sends its
+data. This mechanism is necessary, since ADCs normally allow only one single
+subscriber. The force will be already corrected with the last known compensation
+offset, e.g. from a compensated measurement.</p>
+<p>Also the last measured force can be accessed in g-code macros and display_data
+config sections trough <code>printer["load_cell_probe"].last_force</code>. This value will
+be compensated with the last known offset, too.</p>
+<p>This feature can be used to implement advanced features, especially if also the
+extrusion force can be measured, in case the extruder motor is <em>not</em> suspended
+on the load cells.</p>
+<h4 id="probing-in-xy-direction-for-cnc-routers">Probing in X/Y direction for CNC routers<a class="headerlink" href="#probing-in-xy-direction-for-cnc-routers" title="Permanent link">&para;</a></h4>
+<p>Depending on the exact geometry of the setup, the load cells might also have a
+sensitivity for forces in the X and Y directions. This can be used to implement
+a touch probe for a CNC router. If the milling spindle is suspended on the load
+cells, any shaft with a known diameter can be chucked into the collet and used
+as a probe. For this purpose, the <code>PROBE</code> command supports the optional
+<code>DIRECTION</code> parameter to select other probing directions than the default
+negative z direction.</p>
+<p>Since moving the printer in X/Y direction can influence the baseline of the
+force measurement (see above), the compensation measurement is also done after
+moving the probe away from the workpart in z direction. Usually a much larger
+distance is required in that case to make sure the probe has no contact with the
+workpart any more, hence this can be configured individually through the
+<code>compensation_z_lift_xy</code> parameter.</p>
+<h2 id="setup-for-new-printer-types">Setup for new printer types<a class="headerlink" href="#setup-for-new-printer-types" title="Permanent link">&para;</a></h2>
+<p>So far, this load cell probe algorithm has been setup only on one single class
+of 3D printers, which can double as a CNC router. Hence, a good procedure how
+to set this up on other printer models is not yet known. Still, a few hints are
+provided below to get you started. If you are setting this up on a new printer,
+please share your experience with the community so others can benefit.</p>
+<p>For all configuration parameters, the default values may provide a good
+starting point. They have been optimised for the geometry shown in the above
+picture with two 5kg rated load cells (type TAL220B).</p>
+<ol>
+<li>Make sure the load cell reading is correct. Ideally, place the force readout
+   (<code>printer["load_cell_probe"].last_force</code>) on the display, so it can be
+   monitored throughout the process. Alternatively, the <code>READ_LOAD_CELL</code> can be
+   used. Absolute values do not matter, also the direction of the changes (sign
+   of the differences) should not play any role.</li>
+<li>Observe the idle load cell reading (without force). It should be relatively
+   stable. If fluctuations are too big, increase <code>adc_n_average</code>. Keep in mind
+   that the force shown on the display is not averaged, while the force printed
+   by <code>READ_LOAD_CELL</code> is.</li>
+<li>When pushing the nozzle upwards with a finger, the force readout must
+   change. Small forces (e.g. just touching) already need to result in
+   significant value changes.</li>
+<li>Adjust <code>max_variance</code> to be 3 to 5 times bigger than the idle fluctuations.</li>
+<li>Move the hotend around (though gcode commands) and observe the readings.
+   Choose the <code>threshold</code> for the fast approach to be a bit bigger than the
+   maximum observed fluctuations (peak to peak). Make sure the force
+   represented by the chosen value is far away from any dangerous level for
+   hotend and bed.</li>
+<li>Choose the <code>step_size</code> for the fast approach such that you are comfortable
+   with moving two steps into the negative z direction even when the nozzle
+   already touches the bed. Keep in mind, too small step sizes will slow down
+   the fast approach significantly, while not increasing the precision at all.</li>
+<li>Choose a <code>compensation_z_lift</code> which is bigger than the <code>step_size</code>. A good
+   value might be twice as big.</li>
+<li>For the fit, choose a <code>fit_threshold</code> to be around 2-3 times bigger than the
+   idle fluctuations, but also bigger than the fluctuations while moving the
+   hotend.</li>
+<li>Choosing the ideal <code>fit_step_size</code> may need a bit trial and error. The
+   distance must not be too small for the printer to move precisely. On the
+   other hand, the product <code>fit_points * fit_step_size</code> must be a distance
+   which is safe to move into negative z direction when the nozzle already
+   touches the bed (i.e. <code>fit_points * fit_step_size &lt; step_size</code>). These
+   are the hard boundaries which should not be exceeded. The ideal value may
+   depend on various mechanical and electrical properties of the printer
+   (geometry, load cell type and amplifier). Bigger values may increase
+   precision, if the force changes too little between the measurement points.
+   Too big values may decrease precision again, because the measurements are
+   taken further away from the zero-force contact position to find. For the
+   same reason, increasing <code>fit_points</code> might not increase the precision, since
+   the additional points will be away from the position to find. Measurement
+   errors on these far away points can alter the slope of the fitted line such
+   that the determined result gets wrong.</li>
+<li>Before running the probe for the first time, set <code>max_abs_force</code> to a safe
+    value at which no damage to the printer could occur. Ideally,
+    <code>2*max_abs_force</code> should still be safe as well.</li>
+<li>Move the nozzle to a position around the center of the bed and place it in
+    a short distance over the bed (e.g. 1mm). Execute the <code>PROBE</code> command.
+    Observe both the printer movements and the log output carefully. Keep an
+    eye on the force readings (as printed to the log) and be ready to turn of
+    the printer in case they exceed sane levels.</li>
+<li>Once the first probe run was successful, optimise the fit parameters by
+    using the <code>PROBE_ACCURACY</code> command. If the speed is too slow, you might
+    optimise mainly the fast approach parameters (which do not have any
+    influence on the probe accuracy).</li>
+</ol>
+<h2 id="best-practises">Best practises<a class="headerlink" href="#best-practises" title="Permanent link">&para;</a></h2>
+<p>The probe can be used with the bed_mesh plugin to map the surface of the bed.
+Due to the slowness of the load cell probe, a bed mesh calibration takes
+considerable amount of time. Hence, it is recommended to use a probe measurement
+at a single point to compensate for any changes which do not alter the surface
+of the bed, e.g. when changing the hotend nozzle. For this, the following
+approach is recommended:</p>
+<ul>
+<li>Perform probe measurement at a fixed, known position (e.g. X=Y=100mm).</li>
+<li>Calibate Z endstop position such that the probe result position is Z=0 (at the
+  chosen X/Y coordinate).</li>
+<li>Perform bed mesh calibration and store result to configuration</li>
+<li>When needed (e.g. after swapping the nozzle), repeat the first 2 points to
+  correct for the changed gloal z offset. It is important to use the same
+  X/Y coordinates as before.</li>
+<li>When a new bed mesh calibration is required, repeat all 3 points. Never
+  execute a bed mesh calibration without calibrating the Z endstop position as
+  described in the first two points.</li>
+</ul>
+<p>The following g-code macros implement this:</p>
+<div class="highlight"><pre><span></span><code>[gcode_macro z_offset_from_probe_result]
+gcode:
+    SET_GCODE_OFFSET Z={printer[&quot;load_cell_probe&quot;].last_z_result}
+
+[gcode_macro bed_calibrate]
+gcode:
+    G0 Z10
+    G0 X100 Y100
+    G0 Z2
+    PROBE
+    Z_OFFSET_FROM_PROBE_RESULT
+    Z_OFFSET_APPLY_ENDSTOP
+    SET_KINEMATIC_POSITION Z=0
+    G0 Z2
+    BED_MESH_CALIBRATE
+    SAVE_CONFIG
+
+[gcode_macro z_calibrate]
+gcode:
+    G0 Z10
+    G0 X100 Y100
+    G0 Z2
+    PROBE
+    Z_OFFSET_FROM_PROBE_RESULT
+    Z_OFFSET_APPLY_ENDSTOP
+    G0 Z2
+</code></pre></div>
+
+<p>Execute <code>bed_calibrate</code> to perform a full calibration of the endstop and the
+bed mesh. Later, e.g. after nozzle change, just execute <code>z_calibrate</code> to only
+calibrate the endstop position while keeping the bed mesh unchanged. Note: if
+you need to choose a different X/Y position for the scan, make sure to use the
+same position in both macros.</p>
+
+              
+            </article>
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" data-md-state="hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.top", "search.suggest", "search.highlight", "search.share"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "assets/javascripts/workers/search.0bbba5b5.min.js"}</script>
+    
+    
+      <script src="assets/javascripts/bundle.e1a181d9.min.js"></script>
+      
+    
+  </body>
+</html>
