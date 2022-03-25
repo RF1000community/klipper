@@ -4023,13 +4023,6 @@ SPI bus.
 #   mode does not require micro-controller hardware support (typically
 #   any general purpose pins may be used). The default is to not use
 #   "software spi".
-#cs_pin:
-#   The actual name may vary from device to device. This parameter specifies
-#   the "chip select" output pin which allows to share the same SPI bus with
-#   multiple devices. Each device on the shared bus must have its dedicated
-#   chip select pin. By default, the pin will be pulled low during SPI
-#   transfers which target the device and set to high while idle. The signal
-#   can be inverted by prefixing the pin name with an exclamation mark "!".
 ```
 
 ### Common I2C settings
