@@ -30,6 +30,8 @@ communication with the Klipper developers.
   - [Probe calibrate](Probe_Calibrate.md): Calibration of automatic Z
     probes.
   - [BL-Touch](BLTouch.md): Configure a "BL-Touch" Z probe.
+  - [Load-cell probe (RF1000)](RF1000LoadCellProbe.md): Configure a load-cell based
+    probe (RF1000 community version).
   - [Manual level](Manual_Level.md): Calibration of Z endstops (and
     similar).
   - [Bed Mesh](Bed_Mesh.md): Bed height correction based on XY
