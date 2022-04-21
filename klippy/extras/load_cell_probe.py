@@ -12,6 +12,7 @@ from . import hx71x
 from . import ads1220
 from . import ads131m0x
 from . import probe, manual_probe, trigger_analog, load_cell
+from . import ads1100
 
 np = None  # delay NumPy import until configuration time
 
@@ -668,6 +669,7 @@ class LoadCellPrinterProbe:
         sensors.update(hx71x.HX71X_SENSOR_TYPES)
         sensors.update(ads1220.ADS1220_SENSOR_TYPE)
         sensors.update(ads131m0x.ADS131M0X_SENSOR_TYPES)
+        sensors.update(ads1100.ADS1100_SENSOR_TYPE)
         sensor_class = config.getchoice('sensor_type', sensors)
         sensor = sensor_class(config)
         self._load_cell = load_cell.LoadCell(config, sensor)
