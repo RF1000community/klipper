@@ -859,6 +859,33 @@ babystepping), and subtract if from the probe's z_offset.  This acts
 to take a frequently used babystepping value, and "make it permanent".
 Requires a `SAVE_CONFIG` to take effect.
 
+### [load_cell_probe]
+
+The following commands are available when a
+[load_cell_probe config section](Config_Reference.md#load_cell_probe) is enabled
+(also see the [Load-cell probe guide](LoadCellProbe.md)):
+
+#### PROBE DIRECTON
+`PROBE DIRECTON=<direction>`: Probe in the specified direction. Possible
+directions are: `X+`,`X-`,`Y+`,`Y-`,`Z+`,`Z-`. Default is `Z-`. The other
+choices are useful only for CNC router operation.
+
+#### PROBE_ACCURACY
+`PROBE_ACCURACY SAMPLES=<n> SAMPLE_RETRACT_DIST=<dist> DIRECTION=<dir>`:
+Test accuracy of the probe by performing `n` probe measurements, retracting
+`dist` millimeters in between and comparing the results. The probe direction
+`dir` is passed on to the `PROBE` command, if specified. The number of samples
+defaults to 10, while the retract distance defaults to the
+`sample_retract_dist` value in the config section.
+
+#### READ_LOAD_CELL
+`READ_LOAD_CELL`: Perform averaged measurement and print result to console.
+Useful for testing.
+
+#### COMPENSATE_LOAD_CELL
+`COMPENSATE_LOAD_CELL`: Perform null measurement which will be subtracted
+from future measurements.
+
 ### [query_adc]
 
 The query_adc module is automatically loaded.
