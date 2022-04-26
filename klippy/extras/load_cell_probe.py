@@ -35,6 +35,10 @@ class LoadCellProbe:
 
         self.last_z_result = 0
 
+        # Conversion factor to convert ADC readings into physical units.
+        self.force_calibration = config.getfloat('force_calibration', above=0.)
+
+
         # general parameters
         self.speed = config.getfloat('speed', 50.0, above=0.)
         self.max_retry = config.getint('max_retry', 5, minval=0)
@@ -151,16 +155,17 @@ class LoadCellProbe:
 
 
     def _adc_callback(self, time, value):
+        # convert to physical unit
+        self._last_uncompensated_force = value * self.force_calibration
         # First value after start: use as zero offset
         if self.force_offset == None :
-          self.force_offset = value
+          self.force_offset = self._last_uncompensated_force
         # Compute time difference between samples
         if self._last_time != None :
           self.report_time = time - self._last_time
         self._last_time = time
         # Store zero offset compensated value for display
-        self.last_force = value - self.force_offset
-        self._last_uncompensated_force = value
+        self.last_force = self._last_uncompensated_force - self.force_offset
         # Forward uncompensated value to subscribers
         for sub in self.force_subscribers :
             sub(value)
