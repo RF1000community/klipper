@@ -4,6 +4,11 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
+import logging
+
+class ADS1100Error(Exception):
+    pass
+
 class SensorHx711(object):
     def __init__(self, config):
         try:
@@ -44,6 +49,12 @@ class SensorHx711(object):
         gcode.register_mux_command("QUERY_HX711", "NAME", self._name,
                                    self.cmd_QUERY_HX711,
                                    desc=self.cmd_QUERY_HX711_help)
+        self._callback = None
+
+        # Register setup_pin
+        ppins = self.printer.lookup_object('pins')
+        ppins.register_chip(self._name, self)
+
     def _handle_ready(self):
         self._start_measurement()
     def _build_config(self):
@@ -55,6 +66,9 @@ class SensorHx711(object):
     def _handle_hx711_value(self, params):
         self._last_value = params['value']
         self._start_measurement()
+        logging.info("HX711 value: "+str(params))
+        if self._callback is not None :
+          self._callback(params['#sent_time'], params['value'])
     def _start_measurement(self):
         clock = self._mcu.get_query_slot(self._oid)
         rest_ticks = self._mcu.seconds_to_clock(0.001)
@@ -82,6 +96,20 @@ class SensorHx711(object):
         value = self._line(raw_value)
         gcmd.respond_info("hx711 value(raw_value): %.6f(%u)"
             % (value, raw_value))
+
+
+    def setup_adc_callback(self, report_time, callback):
+        if self._callback is not None:
+          logging.exception("HX711: ADC callback already configured")
+          raise HX711Error
+        if report_time is not None:
+          self.report_time = report_time
+        self._callback = callback
+
+    def setup_pin(self, pin_type, pin_params):
+        if pin_type != 'adc':
+            raise self.printer.config_error("HX711 only supports adc pins")
+        return self
 
 def load_config_prefix(config):
     return SensorHx711(config)

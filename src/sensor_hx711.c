@@ -147,7 +147,7 @@ hx711_task(void)
         switch(hx->state)
         {
             case HX_IDLE:
-                return;
+                //return;
             case HX_START:
                 hx711_set_sclk(hx, 0);
                 hx->data = 0;
@@ -179,6 +179,7 @@ hx711_task(void)
                 hx711_receive_bit(hx);
                 hx711_set_sclk(hx, 1);
                 hx->state = HX_IDLE;
+                hx711_reschedule_timer(hx);
                 break;
         }
     }

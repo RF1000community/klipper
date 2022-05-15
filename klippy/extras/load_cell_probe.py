@@ -7,6 +7,7 @@
 
 from mathutil import linear_regression
 import sys
+import logging
 
 syspath = sys.path
 sys.path = syspath[1:]
@@ -85,8 +86,8 @@ class LoadCellProbe:
         full_step_distance = rotation_distance/full_steps
         
 
-        # Derive parameters
-        # -----------------
+        # Compute derived parameters
+        # --------------------------
         target_force = self.max_abs_force / FORCE_SAFETY_MARGIN
         
         # Threshold is half-way to "target" force
@@ -116,6 +117,7 @@ class LoadCellProbe:
         self._last_time = None
         self.report_time = 0.0001
         self.force_subscribers = []
+        self._last_move_time = 0
 
         # subscribe to ADC callbackin ready event, since ADC module might not
         # yet be available.
@@ -201,6 +203,7 @@ class LoadCellProbe:
         # Compute time difference between samples
         if self._last_time != None :
           self.report_time = time - self._last_time
+          logging.info("report_time = "+str(self.report_time))
         self._last_time = time
         # Store zero offset compensated value for display
         self.last_force = self._last_uncompensated_force - self.force_offset
@@ -211,13 +214,16 @@ class LoadCellProbe:
 
     def _adc_wait_conversion_ready(self):
         # wait shortly after the timer has called _sample_timer
-        self._last_time = self.reactor.pause(self._last_time + self.report_time
-            + 0.0001)
+        #self._last_time = self.reactor.pause(self._last_time + self.report_time
+        #    + 0.0001)
+        self.reactor.pause(self._last_move_time + self.report_time)
 
 
     def _move_z_relative(self, length, wait=True):
         pos = self.tool.get_position()
         self.tool.manual_move([pos[0],pos[1],pos[2]+length], SPEED)
+        self._last_move_time = self.tool.print_time
+        logging.info("_last_move_time = "+str(self._last_move_time))
         if wait:
           self.tool.wait_moves()
 
@@ -227,6 +233,8 @@ class LoadCellProbe:
         pos = self.tool.get_position()
         pos[2] += length
         self.tool.manual_move([pos[0],pos[1],pos[2]], SPEED)
+        self._last_move_time = self.tool.print_time
+        logging.info("_last_move_time = "+str(self._last_move_time))
         if wait:
           self.tool.wait_moves()
 
@@ -235,6 +243,8 @@ class LoadCellProbe:
         pos = self.tool.get_position()
         pos[2] = position
         self.tool.manual_move([pos[0],pos[1],pos[2]], SPEED)
+        self._last_move_time = self.tool.print_time
+        logging.info("_last_move_time = "+str(self._last_move_time))
         if wait:
           self.tool.wait_moves()
 
