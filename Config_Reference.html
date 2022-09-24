@@ -169,6 +169,12 @@
                   </a>
                 </li>
                 
+                <li class="md-select__item">
+                  <a href="/it/" hreflang="it" class="md-select__link">
+                    Italiano
+                  </a>
+                </li>
+                
             </ul>
           </div>
         </div>
@@ -545,6 +551,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#deltesian-kinematics" class="md-nav__link">
+    Deltesian Kinematics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#corexy-kinematics" class="md-nav__link">
     CoreXY Kinematics
   </a>
@@ -826,6 +839,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#exclude_object" class="md-nav__link">
+    [exclude_object]
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -849,6 +869,13 @@
           <li class="md-nav__item">
   <a href="#adxl345" class="md-nav__link">
     [adxl345]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mpu9250" class="md-nav__link">
+    [mpu9250]
   </a>
   
 </li>
@@ -924,6 +951,13 @@
           <li class="md-nav__item">
   <a href="#smart_effector" class="md-nav__link">
     [smart_effector]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_cell_probe" class="md-nav__link">
+    [load_cell_probe]
   </a>
   
 </li>
@@ -1723,6 +1757,20 @@
   
   
     <li class="md-nav__item">
+      <a href="LoadCellProbe.html" class="md-nav__link">
+        Load-cell based probe
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="Manual_Level.html" class="md-nav__link">
         Manual leveling
       </a>
@@ -1966,6 +2014,20 @@
     <li class="md-nav__item">
       <a href="Skew_Correction.html" class="md-nav__link">
         Skew correction
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Exclude_Object.html" class="md-nav__link">
+        Exclude Objects
       </a>
     </li>
   
@@ -2312,6 +2374,21 @@
   
 
     
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Sponsors.html" class="md-nav__link">
+        Sponsors
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -2404,6 +2481,13 @@
           <li class="md-nav__item">
   <a href="#linear-delta-kinematics" class="md-nav__link">
     Linear Delta Kinematics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deltesian-kinematics" class="md-nav__link">
+    Deltesian Kinematics
   </a>
   
 </li>
@@ -2690,6 +2774,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#exclude_object" class="md-nav__link">
+    [exclude_object]
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2713,6 +2804,13 @@
           <li class="md-nav__item">
   <a href="#adxl345" class="md-nav__link">
     [adxl345]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mpu9250" class="md-nav__link">
+    [mpu9250]
   </a>
   
 </li>
@@ -2788,6 +2886,13 @@
           <li class="md-nav__item">
   <a href="#smart_effector" class="md-nav__link">
     [smart_effector]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load_cell_probe" class="md-nav__link">
+    [load_cell_probe]
   </a>
   
 </li>
@@ -3540,8 +3645,7 @@ pins such as "extra_mcu:ar9" may then be used elsewhere in the config
 kinematics:
 #   The type of printer in use. This option may be one of: cartesian,
 #   corexy, corexz, hybrid_corexy, hybrid_corexz, rotary_delta, delta,
-#   polar, winch, or none. This
-#   parameter must be specified.
+#   deltesian, polar, winch, or none. This parameter must be specified.
 max_velocity:
 #   Maximum velocity (in mm/s) of the toolhead (relative to the
 #   print). This parameter must be specified.
@@ -3759,6 +3863,77 @@ radius:
 #horizontal_move_z: 5
 #   The height (in mm) that the head should be commanded to move to
 #   just prior to starting a probe operation. The default is 5.
+</code></pre></div>
+
+<h3 id="deltesian-kinematics">Deltesian Kinematics<a class="headerlink" href="#deltesian-kinematics" title="Permanent link">&para;</a></h3>
+<p>See <a href="https://github.com/Klipper3d/klipper/blob/master/config/example-deltesian.cfg">example-deltesian.cfg</a> for an
+example deltesian kinematics config file.</p>
+<p>Only parameters specific to deltesian printers are described here - see
+<a href="#common-kinematic-settings">common kinematic settings</a> for available
+ parameters.</p>
+<div class="highlight"><pre><span></span><code>[printer]
+kinematics: deltesian
+max_z_velocity:
+#   For deltesian printers, this limits the maximum velocity (in mm/s) of
+#   moves with z axis movement. This setting can be used to reduce the
+#   maximum speed of up/down moves (which require a higher step rate
+#   than other moves on a deltesian printer). The default is to use
+#   max_velocity for max_z_velocity.
+#max_z_accel:
+#   This sets the maximum acceleration (in mm/s^2) of movement along
+#   the z axis. Setting this may be useful if the printer can reach higher
+#   acceleration on XY moves than Z moves (eg, when using input shaper).
+#   The default is to use max_accel for max_z_accel.
+#minimum_z_position: 0
+#   The minimum Z position that the user may command the head to move
+#   to. The default is 0.
+#min_angle: 5
+#   This represents the minimum angle (in degrees) relative to horizontal
+#   that the deltesian arms are allowed to achieve. This parameter is
+#   intended to restrict the arms from becomming completely horizontal,
+#   which would risk accidental inversion of the XZ axis. The default is 5.
+#print_width:
+#   The distance (in mm) of valid toolhead X coordinates. One may use
+#   this setting to customize the range checking of toolhead moves. If
+#   a large value is specified here then it may be possible to command
+#   the toolhead into a collision with a tower. This setting usually
+#   corresponds to bed width (in mm).
+#slow_ratio: 3
+#   The ratio used to limit velocity and acceleration on moves near the
+#   extremes of the X axis. If vertical distance divided by horizontal
+#   distance exceeds the value of slow_ratio, then velocity and
+#   acceleration are limited to half their nominal values. If vertical
+#   distance divided by horizontal distance exceeds twice the value of
+#   the slow_ratio, then velocity and acceleration are limited to one
+#   quarter of their nominal values. The default is 3.
+
+# The stepper_left section is used to describe the stepper controlling
+# the left tower. This section also controls the homing parameters
+# (homing_speed, homing_retract_dist) for all towers.
+[stepper_left]
+position_endstop:
+#   Distance (in mm) between the nozzle and the bed when the nozzle is
+#   in the center of the build area and the endstops are triggered. This
+#   parameter must be provided for stepper_left; for stepper_right this
+#   parameter defaults to the value specified for stepper_left.
+arm_length:
+#   Length (in mm) of the diagonal rod that connects the tower carriage to
+#   the print head. This parameter must be provided for stepper_left; for
+#   stepper_right, this parameter defaults to the value specified for
+#   stepper_left.
+arm_x_length:
+#   Horizontal distance between the print head and the tower when the
+#   printers is homed. This parameter must be provided for stepper_left;
+#   for stepper_right, this parameter defaults to the value specified for
+#   stepper_left.
+
+# The stepper_right section is used to desribe the stepper controlling the
+# right tower.
+[stepper_right]
+
+# The stepper_y section is used to describe the stepper controlling
+# the Y axis in a deltesian robot.
+[stepper_y]
 </code></pre></div>
 
 <h3 id="corexy-kinematics">CoreXY Kinematics<a class="headerlink" href="#corexy-kinematics" title="Permanent link">&para;</a></h3>
@@ -4381,10 +4556,10 @@ information.</p>
 <div class="highlight"><pre><span></span><code>[screws_tilt_adjust]
 #screw1:
 #   The (X, Y) coordinate of the first bed leveling screw. This is a
-#   position to command the nozzle to that is directly above the bed
-#   screw (or as close as possible while still being above the bed).
-#   This is the base screw used in calculations. This parameter must
-#   be provided.
+#   position to command the nozzle to so that the probe is directly
+#   above the bed screw (or as close as possible while still being
+#   above the bed). This is the base screw used in calculations. This
+#   parameter must be provided.
 #screw1_name:
 #   An arbitrary name for the given screw. This name is displayed when
 #   the helper script runs. The default is to use a name based upon
@@ -4523,9 +4698,9 @@ home_xy_position:
 #   than z_hop, then this will lift the head to a height of z_hop. If
 #   the Z axis is not already homed the head is lifted by z_hop.
 #   The default is to not implement Z hop.
-#z_hop_speed: 20.0
+#z_hop_speed: 15.0
 #   Speed (in mm/s) at which the Z axis is lifted prior to homing. The
-#   default is 20mm/s.
+#   default is 15 mm/s.
 #move_to_previous: False
 #   When set to True, the X and Y axes are reset to their previous
 #   positions after Z axis homing. The default is False.
@@ -4679,6 +4854,8 @@ path:
 #   are not supported). One may point this to OctoPrint&#39;s upload
 #   directory (generally ~/.octoprint/uploads/ ). This parameter must
 #   be provided.
+#on_error_gcode:
+#   A list of G-Code commands to execute when an error is reported.
 </code></pre></div>
 
 <h3 id="sdcard_loop">[sdcard_loop]<a class="headerlink" href="#sdcard_loop" title="Permanent link">&para;</a></h3>
@@ -4758,6 +4935,17 @@ allowing per-filament settings and runtime tuning.</p>
 #   override the &quot;default_type&quot;.
 </code></pre></div>
 
+<h3 id="exclude_object">[exclude_object]<a class="headerlink" href="#exclude_object" title="Permanent link">&para;</a></h3>
+<p>Enables support to exclude or cancel individual objects during the printing
+process.</p>
+<p>See the <a href="Exclude_Object.html">exclude objects guide</a> and
+<a href="G-Codes.html#excludeobject">command reference</a>
+for additional information. See the
+<a href="https://github.com/Klipper3d/klipper/blob/master/config/sample-macros.cfg">sample-macros.cfg</a> file for a
+Marlin/RepRapFirmware compatible M486 G-Code macro.</p>
+<div class="highlight"><pre><span></span><code>[exclude_object]
+</code></pre></div>
+
 <h2 id="resonance-compensation">Resonance compensation<a class="headerlink" href="#resonance-compensation" title="Permanent link">&para;</a></h2>
 <h3 id="input_shaper">[input_shaper]<a class="headerlink" href="#input_shaper" title="Permanent link">&para;</a></h3>
 <p>Enables <a href="Resonance_Compensation.html">resonance compensation</a>. Also see
@@ -4825,6 +5013,21 @@ cs_pin:
 #   not recommended to change this rate from the default 3200, and
 #   rates below 800 will considerably affect the quality of resonance
 #   measurements.
+</code></pre></div>
+
+<h3 id="mpu9250">[mpu9250]<a class="headerlink" href="#mpu9250" title="Permanent link">&para;</a></h3>
+<p>Support for mpu9250 and mpu6050 accelerometers (one may define any
+number of sections with an "mpu9250" prefix).</p>
+<div class="highlight"><pre><span></span><code>[mpu9250 my_accelerometer]
+#i2c_address:
+#   Default is 104 (0x68).
+#i2c_mcu:
+#i2c_bus:
+#i2c_speed: 400000
+#   See the &quot;common I2C settings&quot; section for a description of the
+#   above parameters. The default &quot;i2c_speed&quot; is 400000.
+#axes_map: x, y, z
+#   See the &quot;adxl345&quot; section for information on this parameter.
 </code></pre></div>
 
 <h3 id="resonance_tester">[resonance_tester]<a class="headerlink" href="#resonance_tester" title="Permanent link">&para;</a></h3>
@@ -5096,86 +5299,37 @@ z_offset:
 #   See the &quot;probe&quot; section for more information on the parameters above.
 </code></pre></div>
 
+<h3 id="load_cell_probe">[load_cell_probe]<a class="headerlink" href="#load_cell_probe" title="Permanent link">&para;</a></h3>
 <p>Load-cell based probe. One may define this section (instead of a probe
 section) to enable a load-cell based probe. See
 <a href="LoadCellProbe.html">Load-cell probe guide</a> and
-<a href="G-Codes.html#load-cell-probe">command reference</a> for further
-information.</p>
+<a href="G-Codes.html#load_cell_probe">command reference</a> for further
+information. Some of the parameters are determined in a semi-automatic
+<a href="LoadCellProbe.html#setup-for-new-printer-models">calibration procedure</a>.</p>
 <div class="highlight"><pre><span></span><code>[load_cell_probe]
 #
-# general parameters:
+# General parameters:
 #
 adc:
 #   ADC pin which digitizes the load cell signal.
-speed: 50
-#   Speed used for any moves issued by the probe command. Default is 50.
-max_retry: 5
-#   Maximum number of retries if probe failes to get a stable result. Default
-#   is 5.
-max_abs_force: 5000
-#   Maximum absolute value of measured force (in ADC counts), if exceeded
-#   probing will be aborted for safety reasons. Default is 5000.
+adc_rate:
+#   Rate (in samples per second) at which to request the ADC samples.
+max_abs_force:
+#   Maximum absolute value of measured force (in chosen unit), if exceeded
+#   printer will shutdown immediately.
 #
-# force measurement parameters:
+# Parameters determined by semi-automatic procedure described in the
+# load-cell probe guide.
 #
-adc_n_average: 2
-#   Number of ADC measurement to average for each load cell measurement. Default
-#   is 2.
-adc_n_average_precise: (equal to adc_n_average)
-#   Like adc_n_average, but used when more precision is required (e.g. during
-#   the fit). By default equal to adc_n_average.
-max_variance: 15
-#   Maximum spread of single ADC values measured during the averaging. If
-#   exceeded, the measurement is retried after a delay. Default is 15.
-delay_exceeding_max_variance: 0.1
-#   Delay in seconds if max_variance is exceeded. Default is 0.1.
-max_retry_stable_force: 100
-#   Maximum number of retries if max_variance is exceeded. Default is 100.
-#
-# fast approach parameters:
-#
-threshold: 50
-#   Force threshold to stop fast approach.
-step_size: 0.1
-#   Step size in mm for fast approach.
-threshold_xy: (equal to threshold)
-#   Same as threshold but used when probing in X or Y direction. By default
-#   equal to threshold.
-step_size_xy: (equal to step_size)
-#   Same as step_size but used when probing in X or Y direction. By default
-#   equal to step_size.
-#
-# compensated measurement parameters:
-#
-compensation_z_lift: 0.2
-#   Z distance in mm to move away from bed to perform measurement for zero
-#   compensation. Default is 0.2
-compensation_z_lift_xy: 2.0
-#   Same as compensation_z_lift but used when probing in X or Y direction.
-#   Default is 2.0
-#
-# parameters for fit:
-#
-fit_points: 5
-#   Number of measurement points above fit_threshold used for the fit. Defaults
-#   to 5, must be bigger than 2.
-fit_step_size: 0.005
-#   Step size for the fit measurement in mm. Default is 0.005 (5um)
-fit_min_quality: 0.85
-#   Minimum acceptable fit quality. Higher values are better fit quality.
-#   Default is is 0.85.
-fit_threshold: 6
-#   Minimum (zero-compensated) measured force for a data point to be taken into
-#   account for the fit. Default is 6.
-#
-# parameters for PROBE_ACCURACY command:
-#
-sample_retract_dist: 2
-#   Distance in mm to move away from the bed between probe accuracy
-#   measurements. Default is 2.
-lift_speed: (equal to speed)
-#   Speed for the retraction between probe accuracy measurements. By default
-#   equal to speed.
+force_calibration:
+#   Conversion factor to get from ADC value to physical unit. Default value is
+#   1 (no conversion).
+stiffness:
+#   Stiffness/&quot;spring constant&quot;, i.e. force per distance. Default value is a
+#   safe value resulting in very small step sizes.
+noise_level:
+#   Noise level of force measurements (standard deviation, in physical units).
+#   Default value is a safe value just to get started.
 </code></pre></div>
 
 <h2 id="additional-stepper-motors-and-extruders">Additional stepper motors and extruders<a class="headerlink" href="#additional-stepper-motors-and-extruders" title="Permanent link">&para;</a></h2>
@@ -5448,7 +5602,7 @@ temperature sensors that are reported via the M105 command.</p>
 <h2 id="temperature-sensors">Temperature sensors<a class="headerlink" href="#temperature-sensors" title="Permanent link">&para;</a></h2>
 <p>Klipper includes definitions for many types of temperature sensors.
 These sensors may be used in any config section that requires a
-temperature sensor (such as an <code>[extruder]</code> or <code>[heated_bed]</code>
+temperature sensor (such as an <code>[extruder]</code> or <code>[heater_bed]</code>
 section).</p>
 <h3 id="common-thermistors">Common thermistors<a class="headerlink" href="#common-thermistors" title="Permanent link">&para;</a></h3>
 <p>Common thermistors. The following parameters are available in heater
@@ -5715,6 +5869,12 @@ pin:
 #   enough for fans below 10000 RPM at 2 PPR. This must be smaller than
 #   30/(tachometer_ppr*rpm), with some margin, where rpm is the
 #   maximum speed (in RPM) of the fan.
+#enable_pin:
+#   Optional pin to enable power to the fan. This can be useful for fans
+#   with dedicated PWM inputs. Some of these fans stay on even at 0% PWM
+#   input. In such a case, the PWM pin can be used normally, and e.g. a
+#   ground-switched FET(standard fan pin) can be used to control power to
+#   the fan.
 </code></pre></div>
 
 <h3 id="heater_fan">[heater_fan]<a class="headerlink" href="#heater_fan" title="Permanent link">&para;</a></h3>
@@ -5733,6 +5893,7 @@ a shutdown_speed equal to max_power.</p>
 #tachometer_pin:
 #tachometer_ppr:
 #tachometer_poll_interval:
+#enable_pin:
 #   See the &quot;fan&quot; section for a description of the above parameters.
 #heater: extruder
 #   Name of the config section defining the heater that this fan is
@@ -5766,6 +5927,7 @@ watched component.</p>
 #tachometer_pin:
 #tachometer_ppr:
 #tachometer_poll_interval:
+#enable_pin:
 #   See the &quot;fan&quot; section for a description of the above parameters.
 #fan_speed: 1.0
 #   The fan speed (expressed as a value from 0.0 to 1.0) that the fan
@@ -5807,6 +5969,7 @@ information.</p>
 #tachometer_pin:
 #tachometer_ppr:
 #tachometer_poll_interval:
+#enable_pin:
 #   See the &quot;fan&quot; section for a description of the above parameters.
 #sensor_type:
 #sensor_pin:
@@ -5861,6 +6024,7 @@ with the SET_FAN_SPEED <a href="G-Codes.html#fan_generic">gcode command</a>.</p>
 #tachometer_pin:
 #tachometer_ppr:
 #tachometer_poll_interval:
+#enable_pin:
 #   See the &quot;fan&quot; section for a description of the above parameters.
 </code></pre></div>
 
@@ -7325,6 +7489,20 @@ SPI bus.</p>
 <h3 id="common-i2c-settings">Common I2C settings<a class="headerlink" href="#common-i2c-settings" title="Permanent link">&para;</a></h3>
 <p>The following parameters are generally available for devices using an
 I2C bus.</p>
+<p>Note that Klipper's current micro-controller support for i2c is
+generally not tolerant to line noise. Unexpected errors on the i2c
+wires may result in Klipper raising a run-time error. Klipper's
+support for error recovery varies between each micro-controller type.
+It is generally recommended to only use i2c devices that are on the
+same printed circuit board as the micro-controller.</p>
+<p>Most Klipper micro-controller implementations only support an
+<code>i2c_speed</code> of 100000. The Klipper "linux" micro-controller supports a
+400000 speed, but it must be
+<a href="RPi_microcontroller.html#optional-enabling-i2c">set in the operating system</a>
+and the <code>i2c_speed</code> parameter is otherwise ignored. The Klipper
+"rp2040" micro-controller supports a rate of 400000 via the
+<code>i2c_speed</code> parameter. All other Klipper micro-controllers use a
+100000 rate and ignore the <code>i2c_speed</code> parameter.</p>
 <div class="highlight"><pre><span></span><code>#i2c_address:
 #   The i2c address of the device. This must specified as a decimal
 #   number (not in hex). The default depends on the type of device.
@@ -7337,8 +7515,9 @@ I2C bus.</p>
 #   the type of micro-controller.
 #i2c_speed:
 #   The I2C speed (in Hz) to use when communicating with the device.
-#   On some micro-controllers changing this value has no effect. The
-#   default is 100000.
+#   The Klipper implementation on most micro-controllers is hard-coded
+#   to 100000 and changing this value has no effect. The default is
+#   100000.
 </code></pre></div>
 
               

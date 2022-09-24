@@ -98,6 +98,7 @@ nav:
       - Delta_Calibrate.md
       - Probe_Calibrate.md
       - BLTouch.md
+      - LoadCellProbe.md
       - Manual_Level.md
       - Bed_Mesh.md
       - Endstop_Phase.md
@@ -113,6 +114,7 @@ nav:
     - Multi_MCU_Homing.md
     - Slicers.md
     - Skew_Correction.md
+    - Exclude_Object.md
     - Using_PWM_Tools.md
   - Developer Documentation:
     - Code_Overview.md
@@ -134,3 +136,4 @@ nav:
     - CANBUS.md
     - TSL1401CL_Filament_Width_Sensor.md
     - Hall_Filament_Width_Sensor.md
+  - Sponsors.md
