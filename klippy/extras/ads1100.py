@@ -141,7 +141,7 @@ class MCU_ADS1100:
         if self._last_value < self._minval or self._last_value > self._maxval :
           self._error_count += 1
           if self._error_count >= self._range_check_count :
-            self._printer.invoke_shutdown("ADC out of range")
+            self._printer.invoke_shutdown("ADC (ADS1100) out of range")
         else :
           self._error_count = 0
 
