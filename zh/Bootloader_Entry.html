@@ -13,7 +13,7 @@
     
     
       
-        <title>赞助 - Klipper 文档</title>
+        <title>Bootloader Entry - Klipper 文档</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#_1" class="md-skip">
+        <a href="#bootloader-entry" class="md-skip">
           跳转至
         </a>
       
@@ -106,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              赞助
+              Bootloader Entry
             
           </span>
         </div>
@@ -1217,93 +1217,11 @@
 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          赞助
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="Sponsors.html" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="Sponsors.html" class="md-nav__link">
         赞助
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="目录">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      目录
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#bigtreetech" class="md-nav__link">
-    BIGTREETECH
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    赞助
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#klipper" class="md-nav__link">
-    Klipper的开发者们
-  </a>
-  
-    <nav class="md-nav" aria-label="Klipper的开发者们">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#kevin-oconnor" class="md-nav__link">
-    Kevin O'Connor
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#eric-callahan" class="md-nav__link">
-    Eric Callahan
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#klipper_1" class="md-nav__link">
-    相关的Klipper项目
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1335,38 +1253,77 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#bigtreetech" class="md-nav__link">
-    BIGTREETECH
+  <a href="#requesting-the-bootloader" class="md-nav__link">
+    Requesting the bootloader
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    赞助
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#klipper" class="md-nav__link">
-    Klipper的开发者们
-  </a>
-  
-    <nav class="md-nav" aria-label="Klipper的开发者们">
+    <nav class="md-nav" aria-label="Requesting the bootloader">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#kevin-oconnor" class="md-nav__link">
-    Kevin O'Connor
+  <a href="#virtual-serial" class="md-nav__link">
+    Virtual Serial
+  </a>
+  
+    <nav class="md-nav" aria-label="Virtual Serial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#python-with-flash_usb" class="md-nav__link">
+    Python (with flash_usb)
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#eric-callahan" class="md-nav__link">
-    Eric Callahan
+  <a href="#picocom" class="md-nav__link">
+    Picocom
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#physical-serial" class="md-nav__link">
+    Physical serial
+  </a>
+  
+    <nav class="md-nav" aria-label="Physical serial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#shell" class="md-nav__link">
+    Shell
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#canbus" class="md-nav__link">
+    CANBUS
+  </a>
+  
+    <nav class="md-nav" aria-label="CANBUS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#katapults-flashtoolpy" class="md-nav__link">
+    Katapult's flashtool.py
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1376,9 +1333,29 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#klipper_1" class="md-nav__link">
-    相关的Klipper项目
+  <a href="#entering-the-bootloader" class="md-nav__link">
+    Entering the bootloader
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    Notes
+  </a>
+  
+    <nav class="md-nav" aria-label="Notes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stm32-dfu-warning" class="md-nav__link">
+    STM32 DFU Warning
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1394,32 +1371,64 @@
             <article class="md-content__inner md-typeset">
               
                 
-<a href="https://github.com/Klipper3d/klipper/blob/master/docs/Sponsors.md" title="编辑此页" class="md-content__button md-icon">
+<a href="https://github.com/Klipper3d/klipper/blob/master/docs/Bootloader_Entry.md" title="编辑此页" class="md-content__button md-icon">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
 </a>
 
 
-<h1 id="_1">赞助<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
-<p>Klipper是自由软件。我们依赖于赞助商的慷慨支持。请考虑赞助Klipper或支持我们的赞助商。</p>
-<h2 id="bigtreetech">BIGTREETECH<a class="headerlink" href="#bigtreetech" title="Permanent link">&para;</a></h2>
-<p><a href="https://bigtree-tech.com/collections/all-products"><img src="./img/sponsors/BTT_BTT.png" width="200" style="margin:25px"/></a></p>
-<p>BIGTREETECH是Klipper的官方主板赞助商。BIGTREETECH致力于开发创新和有竞争力的产品，更好地服务于3D打印社区。在<a href="https://www.facebook.com/BIGTREETECH">Facebook</a>或<a href="https://twitter.com/BigTreeTech">Twitter</a>上关注他们。</p>
-<h2 id="_2">赞助<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<p><a href="https://obico.io/klipper.html?source=klipper_sponsor"><img src="./img/sponsors/obico-light-horizontal.png" width="200" style="margin:25px" /></a> <a href="https://peopoly.net"><img src="./img/sponsors/peopoly-logo.png" width="200" style="margin:25px" /></a></p>
-<h2 id="klipper">Klipper的开发者们<a class="headerlink" href="#klipper" title="Permanent link">&para;</a></h2>
-<h3 id="kevin-oconnor">Kevin O'Connor<a class="headerlink" href="#kevin-oconnor" title="Permanent link">&para;</a></h3>
-<p>Kevin 是项目原作者和当前Klipper的维护。支持链接在<a href="https://ko-fi.com/koconnor">https://ko-fi.com/koconnor</a> 或者 <a href="https://www.patreon.com/koconnor">https://www.patreon.com/koconnor</a></p>
-<h3 id="eric-callahan">Eric Callahan<a class="headerlink" href="#eric-callahan" title="Permanent link">&para;</a></h3>
-<p>Eric是bed_mesh、spi_flash和其他几个Klipper模块的作者。Eric的支持页面：<a href="https://ko-fi.com/arksine">https://ko-fi.com/arksine</a></p>
-<h2 id="klipper_1">相关的Klipper项目<a class="headerlink" href="#klipper_1" title="Permanent link">&para;</a></h2>
-<p>Klipper经常与其他自由软件一起使用。也请考虑使用或支持这些项目。</p>
-<ul>
-<li><a href="https://github.com/Arksine/moonraker">Moonraker</a></li>
-<li><a href="https://github.com/mainsail-crew/mainsail">Mainsail</a></li>
-<li><a href="https://github.com/fluidd-core/fluidd">Fluidd</a></li>
-<li><a href="https://octoprint.org/">OctoPrint</a></li>
-<li><a href="https://github.com/jordanruthe/KlipperScreen">KlipperScreen</a></li>
-</ul>
+<h1 id="bootloader-entry">Bootloader Entry<a class="headerlink" href="#bootloader-entry" title="Permanent link">&para;</a></h1>
+<p>Klipper can be instructed to reboot into a <a href="Bootloaders.html">Bootloader</a> in one of the following ways:</p>
+<h2 id="requesting-the-bootloader">Requesting the bootloader<a class="headerlink" href="#requesting-the-bootloader" title="Permanent link">&para;</a></h2>
+<h3 id="virtual-serial">Virtual Serial<a class="headerlink" href="#virtual-serial" title="Permanent link">&para;</a></h3>
+<p>If a virtual (USB-ACM) serial port is in use, pulsing DTR while at 1200 baud will request the bootloader.</p>
+<h4 id="python-with-flash_usb">Python (with <code>flash_usb</code>)<a class="headerlink" href="#python-with-flash_usb" title="Permanent link">&para;</a></h4>
+<p>To enter the bootloader using python (using <code>flash_usb</code>):</p>
+<div class="highlight"><pre><span></span><code>&gt;<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>klipper/scripts
+&gt;<span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;import flash_usb as u; u.enter_bootloader(&quot;&lt;DEVICE&gt;&quot;)&#39;</span>
+Entering<span class="w"> </span>bootloader<span class="w"> </span>on<span class="w"> </span>&lt;DEVICE&gt;
+</code></pre></div>
+
+<p>Where <code>&lt;DEVICE&gt;</code> is your serial device, such as <code>/dev/serial.by-id/usb-Klipper[...]</code> or <code>/dev/ttyACM0</code></p>
+<p>Note that if this fails, no output will be printed, success is indicated by printing <code>Entering bootloader on &lt;DEVICE&gt;</code>.</p>
+<h4 id="picocom">Picocom<a class="headerlink" href="#picocom" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>picocom<span class="w"> </span>-b<span class="w"> </span><span class="m">1200</span><span class="w"> </span>&lt;DEVICE&gt;
+&lt;Ctrl-A&gt;&lt;Ctrl-P&gt;
+</code></pre></div>
+
+<p>Where <code>&lt;DEVICE&gt;</code> is your serial device, such as <code>/dev/serial.by-id/usb-Klipper[...]</code> or <code>/dev/ttyACM0</code></p>
+<p><code>&lt;Ctrl-A&gt;&lt;Ctrl-P&gt;</code> means holding <code>Ctrl</code>, pressing and releasing <code>a</code>, pressing and releasing <code>p</code>, then releasing <code>Ctrl</code></p>
+<h3 id="physical-serial">Physical serial<a class="headerlink" href="#physical-serial" title="Permanent link">&para;</a></h3>
+<p>If a physical serial port is being used on the MCU (even if a USB serial adapter is being used to connect to it), sending the string <code>&lt;SPACE&gt;&lt;FS&gt;&lt;SPACE&gt;Request Serial Bootloader!!&lt;SPACE&gt;~</code>.</p>
+<p><code>&lt;SPACE&gt;</code> is an ASCII literal space, 0x20.</p>
+<p><code>&lt;FS&gt;</code> is the ASCII File Separator, 0x1c.</p>
+<p>Note that this is not a valid message as per the <a href="Protocol.html#micro-controller-interface">MCU Protocol</a>, but sync characters(<code>~</code>) are still respected.</p>
+<p>Because this message must be the only thing in the "block" it is received in, prefixing an extra sync character can increase reliability if other tools were previously accessing the serial port.</p>
+<h4 id="shell">Shell<a class="headerlink" href="#shell" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>stty<span class="w"> </span>&lt;BAUD&gt;<span class="w"> </span>&lt;<span class="w"> </span>/dev/&lt;DEVICE&gt;
+<span class="nb">echo</span><span class="w"> </span><span class="s1">$&#39;~ \x1c Request Serial Bootloader!! ~&#39;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>/dev/&lt;DEVICE&gt;
+</code></pre></div>
+
+<p>Where <code>&lt;DEVICE&gt;</code> is your serial port, such as <code>/dev/ttyS0</code>, or <code>/dev/serial/by-id/gpio-serial2</code>, and</p>
+<p><code>&lt;BAUD&gt;</code> is the baud rate of the serial port, such as <code>115200</code>.</p>
+<h3 id="canbus">CANBUS<a class="headerlink" href="#canbus" title="Permanent link">&para;</a></h3>
+<p>If CANBUS is in use, a special <a href="CANBUS_protocol.html#admin-messages">admin message</a> will request the bootloader. This message will be respected even if the device already has a nodeid, and will also be processed if the mcu is shutdown.</p>
+<p>This method also applies to devices operating in <a href="CANBUS.html#usb-to-can-bus-bridge-mode">CANBridge</a> mode.</p>
+<h4 id="katapults-flashtoolpy">Katapult's flashtool.py<a class="headerlink" href="#katapults-flashtoolpy" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>python3<span class="w"> </span>./katapult/scripts/flashtool.py<span class="w"> </span>-i<span class="w"> </span>&lt;CAN_IFACE&gt;<span class="w"> </span>-u<span class="w"> </span>&lt;UUID&gt;<span class="w"> </span>-r
+</code></pre></div>
+
+<p>Where <code>&lt;CAN_IFACE&gt;</code> is the can interface to use. If using <code>can0</code>, both the <code>-i</code> and <code>&lt;CAN_IFACE&gt;</code> may be omitted.</p>
+<p><code>&lt;UUID&gt;</code> is the UUID of your CAN device.</p>
+<p>See the <a href="CANBUS.html#finding-the-canbus_uuid-for-new-micro-controllers">CANBUS Documentation</a> for information on finding the CAN UUID of your devices.</p>
+<h2 id="entering-the-bootloader">Entering the bootloader<a class="headerlink" href="#entering-the-bootloader" title="Permanent link">&para;</a></h2>
+<p>When klipper receives one of the above bootloader requests:</p>
+<p>If Katapult (formerly known as CANBoot) is available, klipper will request that Katapult stay active on the next boot, then reset the MCU (therefore entering Katapult).</p>
+<p>If Katapult is not available, klipper will then try to enter a platform-specific bootloader, such as STM32's DFU mode(<a href="#stm32-dfu-warning">see note</a>).</p>
+<p>In short, Klipper will reboot to Katapult if installed, then a hardware specific bootloader if available.</p>
+<p>For details about the specific bootloaders on various platforms see <a href="Bootloaders.html">Bootloaders</a></p>
+<h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
+<h3 id="stm32-dfu-warning">STM32 DFU Warning<a class="headerlink" href="#stm32-dfu-warning" title="Permanent link">&para;</a></h3>
+<p>Note that on some boards, like the Octopus Pro v1, entering DFU mode can cause undesired actions (such as powering the heater while in DFU mode). It is recommended to disconnect heaters, and otherwise prevent undesired operations when using DFU mode. Consult the documentation for your board for more details.</p>
 
               
             </article>
@@ -1434,26 +1443,6 @@
       </main>
       
         <footer class="md-footer">
-  
-    <nav class="md-footer__inner md-grid" aria-label="页脚">
-      
-        
-        <a href="Hall_Filament_Width_Sensor.html" class="md-footer__link md-footer__link--prev" aria-label="上一页: 霍尔耗材线径传感器" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                上一页
-              </span>
-              霍尔耗材线径传感器
-            </div>
-          </div>
-        </a>
-      
-      
-    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
