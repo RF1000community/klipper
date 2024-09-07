@@ -144,6 +144,12 @@ BOARD_DEFS = {
         "conversion_script": "scripts/update_chitu.py",
         "firmware_path": "update.cbd",
         'skip_verify': True
+    },
+    'mks-skipr': {
+        'mcu': "stm32f407xx",
+        'spi_bus': "swspi",
+        'spi_pins': "PC11,PC12,PC10",
+        "cs_pin": "PC9"
     }
 }
 
