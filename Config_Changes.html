@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.3">
+      <meta name="generator" content="mkdocs-1.2.4, mkdocs-material-8.1.3">
     
     
       
@@ -46,8 +46,8 @@
   
 
 
-  <script>window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)},ga.l=+new Date,ga("create","UA-138371409-1","auto"),ga("set","anonymizeIp",!0),ga("send","pageview"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){var e;this.value&&(e=document.location.pathname,ga("send","pageview",e+"?q="+this.value))}),"undefined"!=typeof location$&&location$.subscribe(function(e){ga("send","pageview",e.pathname)})})</script>
-  <script async src="https://www.google-analytics.com/analytics.js"></script>
+  <script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config","G-VEN1PGNQL4"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){this.value&&gtag("event","search",{search_term:this.value})}),"undefined"!=typeof location$&&location$.subscribe(function(e){gtag("config","G-VEN1PGNQL4",{page_path:e.pathname})})})</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-VEN1PGNQL4"></script>
 
 
     
@@ -449,10 +449,57 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7_1" type="checkbox" id="__nav_7_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7_1">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_7_1">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="Installation.html" class="md-nav__link">
         Installation
       </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="OctoPrint.html" class="md-nav__link">
+        OctoPrint for Klipper
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
     </li>
   
 
@@ -1210,6 +1257,20 @@
   
   
     <li class="md-nav__item">
+      <a href="Bootloader_Entry.html" class="md-nav__link">
+        Bootloader Entry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="CANBUS.html" class="md-nav__link">
         CANBUS
       </a>
@@ -1254,6 +1315,20 @@
     <li class="md-nav__item">
       <a href="Hall_Filament_Width_Sensor.html" class="md-nav__link">
         Hall filament width sensor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Eddy_Probe.html" class="md-nav__link">
+        Eddy Current Inductive probe
       </a>
     </li>
   
@@ -1337,6 +1412,52 @@ are not backwards compatible. It is a good idea to review this
 document when upgrading the Klipper software.</p>
 <p>All dates in this document are approximate.</p>
 <h2 id="changes">Changes<a class="headerlink" href="#changes" title="Permanent link">&para;</a></h2>
+<p>20240415: The <code>on_error_gcode</code> parameter in the <code>[virtual_sdcard]</code>
+config section now has a default. If this parameter is not specified
+it now defaults to <code>TURN_OFF_HEATERS</code>. If the previous behavior is
+desired (take no default action on an error during a virtual_sdcard
+print) then define <code>on_error_gcode</code> with an empty value.</p>
+<p>20240313: The <code>max_accel_to_decel</code> parameter in the <code>[printer]</code> config
+section has been deprecated. The <code>ACCEL_TO_DECEL</code> parameter of the
+<code>SET_VELOCITY_LIMIT</code> command has been deprecated. The
+<code>printer.toolhead.max_accel_to_decel</code> status has been removed. Use the
+<a href="Config_Reference.html#printer">minimum_cruise_ratio parameter</a>
+instead. The deprecated features will be removed in the near future,
+and using them in the interim may result in subtly different behavior.</p>
+<p>20240215: Several deprecated features have been removed. Using "NTC
+100K beta 3950" as a thermistor name has been removed (deprecated on
+20211110). The <code>SYNC_STEPPER_TO_EXTRUDER</code> and
+<code>SET_EXTRUDER_STEP_DISTANCE</code> commands have been removed, and the
+extruder <code>shared_heater</code> config option has been removed (deprecated on
+20220210). The bed_mesh <code>relative_reference_index</code> option has been
+removed (deprecated on 20230619).</p>
+<p>20240123: The output_pin SET_PIN CYCLE_TIME parameter has been
+removed. Use the new
+<a href="Config_Reference.html#pwm_cycle_time">pwm_cycle_time</a> module if it is
+necessary to dynamically change a pwm pin's cycle time.</p>
+<p>20240123: The output_pin <code>maximum_mcu_duration</code> parameter is
+deprecated. Use a <a href="Config_Reference.html#pwm_tool">pwm_tool config section</a>
+instead. The option will be removed in the near future.</p>
+<p>20240123: The output_pin <code>static_value</code> parameter is deprecated.
+Replace with <code>value</code> and <code>shutdown_value</code> parameters.  The option will
+be removed in the near future.</p>
+<p>20231216: The <code>[hall_filament_width_sensor]</code> is changed to trigger filament runout
+when the thickness of the filament exceeds <code>max_diameter</code>. The maximum diameter
+defaults to <code>default_nominal_filament_diameter + max_difference</code>. See
+<a href="Config_Reference.html#hall_filament_width_sensor">[hall_filament_width_sensor] configuration
+reference</a> for more details.</p>
+<p>20231207: Several undocumented config parameters in the <code>[printer]</code>
+config section have been removed (the buffer_time_low,
+buffer_time_high, buffer_time_start, and move_flush_time parameters).</p>
+<p>20231110: Klipper v0.12.0 released.</p>
+<p>20230826: If <code>safe_distance</code> is set or calculated to be 0 in <code>[dual_carriage]</code>,
+the carriages proximity checks will be disabled as per documentation. A user
+may wish to configure <code>safe_distance</code> explicitly to prevent accidental crashes
+of the carriages with each other. Additionally, the homing order of the primary
+and the dual carriage is changed in some configurations (certain configurations
+when both carriages home in the same direction, see
+<a href="Config_Reference.html#dual_carriage">[dual_carriage] configuration reference</a>
+for more details).</p>
 <p>20230810: The flash-sdcard.sh script now supports both variants of the
 Bigtreetech SKR-3, STM32H743 and STM32H723. For this, the original tag
 of btt-skr-3 now has changed to be either btt-skr-3-h743 or btt-skr-3-h723.</p>
