@@ -256,7 +256,7 @@ class LoadCellProbe:
         pos[2] = result
         self._last_z_result = result
         self._results.append(pos)
-        return self._results[0]
+        return self._results[-1]
 
     def pull_probed_results(self):
         return self._results
