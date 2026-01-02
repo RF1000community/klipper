@@ -186,6 +186,12 @@ BOARD_DEFS = {
         'skip_verify': False,
         'firmware_path': 'qd_mcu.bin',
         'current_firmware_path': 'qd_mcu.CUR'
+    },
+    'mks-skipr': {
+        'mcu': "stm32f407xx",
+        'spi_bus': "swspi",
+        'spi_pins': "PC11,PC12,PC10",
+        "cs_pin": "PC9"
     }
 }
 
