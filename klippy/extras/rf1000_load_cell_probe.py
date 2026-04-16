@@ -16,6 +16,7 @@ sys.path = syspath[1:]
 import statistics
 
 from . import probe
+from . import manual_probe
 
 sys.path = syspath
 
@@ -259,7 +260,8 @@ class LoadCellProbe:
         gcmd.respond_info("FINISHED toolhead Z = %f" % result)
         pos[2] = result
         self._last_z_result = result
-        self._results.append(self._probe_offsets.create_probe_result(pos))
+        offsets = self._probe_offsets.get_offsets()
+        self._results.append(manual_probe.create_probe_result(pos, offsets))
         return pos
 
     def pull_probed_results(self):
