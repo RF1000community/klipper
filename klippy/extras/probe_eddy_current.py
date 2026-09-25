@@ -736,12 +736,12 @@ class EddyDescend:
         conv_freq = self._sensor_helper.convert_frequency_to_raw(trigger_freq)
         self._trigger_analog.set_trigger('gt', conv_freq)
     # Probe session interface
-    def start_probe_session(self, gcmd):
+    def start_probe_session(self, gcmd, direction=None):
         self._calibration.verify_calibrated()
         self._prep_trigger_analog()
         self._gather = EddyGatherSamples(self._printer, self._sensor_helper)
         return self
-    def run_probe(self, gcmd):
+    def run_probe(self, gcmd, direction=None):
         toolhead = self._printer.lookup_object('toolhead')
         pos = toolhead.get_position()
         pos[2] = self._z_min_position
@@ -885,11 +885,11 @@ class EddyTap:
     def get_last_tap_info(self):
         return self._last_tap
     # Probe session interface
-    def start_probe_session(self, gcmd):
+    def start_probe_session(self, gcmd, direction=None):
         self._prep_trigger_analog_tap(gcmd)
         self._gather = EddyGatherSamples(self._printer, self._sensor_helper)
         return self
-    def run_probe(self, gcmd):
+    def run_probe(self, gcmd, direction=None):
         toolhead = self._printer.lookup_object('toolhead')
         pos = toolhead.get_position()
         pos[2] = self._z_min_position
@@ -1063,13 +1063,16 @@ class PrinterEddyProbe:
         return self.probe_offsets.get_offsets(gcmd)
     def get_status(self, eventtime):
         return self.cmd_helper.get_status(eventtime)
-    def start_probe_session(self, gcmd):
+    def start_probe_session(self, gcmd, direction=None):
+        if direction is not None and direction not in ('z-', 'z+'):
+            raise gcmd.error(
+                "Probe DIRECTION %s not supported by eddy probe" % (direction,))
         method = gcmd.get('METHOD', 'automatic').lower()
         if method in ('scan', 'rapid_scan'):
             return self.eddy_scan.start_probe_session(gcmd)
         elif method == 'tap':
-            return self.eddy_tap_session.start_probe_session(gcmd)
-        return self.eddy_descend_session.start_probe_session(gcmd)
+            return self.eddy_tap_session.start_probe_session(gcmd, direction)
+        return self.eddy_descend_session.start_probe_session(gcmd, direction)
     def register_drift_compensation(self, comp):
         self.calibration.register_drift_compensation(comp)
 

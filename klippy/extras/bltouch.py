@@ -170,7 +170,7 @@ class BLTouchProbe:
             self.gcode.respond_info(msg + '; retrying.')
             self._send_cmd('reset', duration=RETRY_RESET_TIME)
     # Probe session
-    def start_probe_session(self, gcmd):
+    def start_probe_session(self, gcmd, direction=None):
         self.homing_helper.clear_trigger_positions()
         if not self.stow_on_each_sample:
             self.multi = 'FIRST'
@@ -199,10 +199,12 @@ class BLTouchProbe:
         if self.multi == 'OFF':
             self._verify_raise_probe()
         self._sync_print_time()
-    def run_probe(self, gcmd):
+    def run_probe(self, gcmd, direction=None):
+        if direction is None:
+            direction = 'z-'
         self._probe_prepare()
         try:
-            self.homing_helper.descend_until_trigger(gcmd)
+            self.homing_helper.descend_until_trigger(gcmd, direction)
         except self.printer.command_error as e:
             self._probe_finish()
             raise
@@ -297,8 +299,8 @@ class PrinterBLTouch:
         return self.probe_offsets.get_offsets(gcmd)
     def get_status(self, eventtime):
         return self.cmd_helper.get_status(eventtime)
-    def start_probe_session(self, gcmd):
-        return self.probe_session.start_probe_session(gcmd)
+    def start_probe_session(self, gcmd, direction=None):
+        return self.probe_session.start_probe_session(gcmd, direction)
 
 def load_config(config):
     blt = PrinterBLTouch(config)

@@ -13,6 +13,12 @@ consider reducing the Z axis minimum position so the probe
 can travel further (the Z minimum position can be negative).
 """
 
+# Probing direction map: direction string -> (axis index, sense)
+# sense +1 moves towards the axis maximum, -1 towards the axis minimum
+probe_directions = {'z-': [2, -1], 'z+': [2, +1],
+                    'x-': [0, -1], 'x+': [0, +1],
+                    'y-': [1, -1], 'y+': [1, +1]}
+
 # Calculate the average Z from a set of positions
 def calc_probe_z_average(positions, method='average'):
     if method != 'median':
@@ -50,6 +56,7 @@ class ProbeCommandHelper:
                                desc=self.cmd_QUERY_PROBE_help)
         # PROBE command
         self.last_probe_position = gcode.Coord((0., 0., 0.))
+        self.last_test_position = gcode.Coord((0., 0., 0.))
         self.last_z_result = 0.
         gcode.register_command('PROBE', self.cmd_PROBE,
                                desc=self.cmd_PROBE_help)
@@ -71,6 +78,7 @@ class ProbeCommandHelper:
         return {'name': self.name,
                 'last_query': self.last_state,
                 'last_probe_position': self.last_probe_position,
+                'last_test_position': self.last_test_position,
                 'last_z_result': self.last_z_result}
     cmd_QUERY_PROBE_help = "Return the status of the z-probe"
     def cmd_QUERY_PROBE(self, gcmd):
@@ -81,14 +89,21 @@ class ProbeCommandHelper:
         res = self.query_endstop(print_time)
         self.last_state = res
         gcmd.respond_info("probe: %s" % (["open", "TRIGGERED"][not not res],))
-    cmd_PROBE_help = "Probe Z-height at current XY position"
+    cmd_PROBE_help = "Probe along the configured/provided direction"
     def cmd_PROBE(self, gcmd):
-        pos = run_single_probe(self.probe, gcmd)
-        gcmd.respond_info("Result: at %.3f,%.3f estimate contact at z=%.6f"
-                          % (pos.bed_x, pos.bed_y, pos.bed_z))
+        params = self.probe.get_probe_params(gcmd)
+        direction = params.get('direction', 'z-')
+        pos = run_single_probe(self.probe, gcmd, direction)
+        axis, sense = probe_directions[direction]
+        bed = (pos.bed_x, pos.bed_y, pos.bed_z)
+        gcmd.respond_info("Result: at %.3f,%.3f estimate contact at %c=%.6f"
+                          % (pos.bed_x, pos.bed_y, 'xyz'[axis], bed[axis]))
         gcode = self.printer.lookup_object('gcode')
         self.last_probe_position = gcode.Coord((pos.bed_x, pos.bed_y,
                                                 pos.bed_z))
+        # Raw toolhead position at probe trigger (what EDGE_TOUCH etc. use)
+        self.last_test_position = gcode.Coord((pos.test_x, pos.test_y,
+                                               pos.test_z))
         x_offset, y_offset, z_offset = self.probe.get_offsets(gcmd)
         self.last_z_result = pos.bed_z + z_offset # Deprecated
     def probe_calibrate_finalize(self, mpresult):
@@ -121,9 +136,11 @@ class ProbeCommandHelper:
         self.probe_calibrate_info = (ppos, self.probe.get_offsets(gcmd))
         manual_probe.ManualProbeHelper(self.printer, gcmd,
                                        self.probe_calibrate_finalize)
-    cmd_PROBE_ACCURACY_help = "Probe Z-height accuracy at current XY position"
+    cmd_PROBE_ACCURACY_help = "Probe accuracy along the provided direction"
     def cmd_PROBE_ACCURACY(self, gcmd):
         params = self.probe.get_probe_params(gcmd)
+        direction = params.get('direction', 'z-')
+        axis, sense = probe_directions[direction]
         sample_count = gcmd.get_int("SAMPLES", 10, minval=1)
         toolhead = self.printer.lookup_object('toolhead')
         start_pos = toolhead.get_position()
@@ -133,40 +150,44 @@ class ProbeCommandHelper:
                           % (start_pos[0], start_pos[1], start_pos[2],
                              sample_count, params['sample_retract_dist'],
                              params['probe_speed'], params['lift_speed']))
-        # Create dummy gcmd with SAMPLES=1
+        # Dummy gcmd with SAMPLES=1 (keeps DIRECTION if present)
         fo_params = dict(gcmd.get_command_parameters())
         fo_params['SAMPLES'] = '1'
         gcode = self.printer.lookup_object('gcode')
         fo_gcmd = gcode.create_gcode_command("", "", fo_params)
         # Probe bed sample_count times
-        probe_session = self.probe.start_probe_session(fo_gcmd)
+        probe_session = self.probe.start_probe_session(fo_gcmd, direction)
         probe_num = 0
         while probe_num < sample_count:
             # Probe position
-            probe_session.run_probe(fo_gcmd)
+            probe_session.run_probe(fo_gcmd, direction)
             probe_num += 1
-            # Retract
-            lift_z = toolhead.get_position()[2] + params['sample_retract_dist']
-            liftpos = [start_pos[0], start_pos[1], lift_z]
+            # Retract away from the probed boundary
+            curpos = toolhead.get_position()
+            liftpos = list(curpos)
+            liftpos[axis] = curpos[axis] - sense * params['sample_retract_dist']
             self._move(liftpos, params['lift_speed'])
         positions = probe_session.pull_probed_results()
         probe_session.end_probe_session()
-        # Calculate maximum, minimum and average values
-        max_value = max([p.bed_z for p in positions])
-        min_value = min([p.bed_z for p in positions])
+        # Max/min/average values on the probed axis
+        vals = [(p.bed_x, p.bed_y, p.bed_z)[axis] for p in positions]
+        max_value = max(vals)
+        min_value = min(vals)
         range_value = max_value - min_value
-        avg_value = calc_probe_z_average(positions, 'average').bed_z
-        median = calc_probe_z_average(positions, 'median').bed_z
+        avg = calc_probe_z_average(positions, 'average')
+        median = calc_probe_z_average(positions, 'median')
+        avg_value = (avg.bed_x, avg.bed_y, avg.bed_z)[axis]
+        median_value = (median.bed_x, median.bed_y, median.bed_z)[axis]
         # calculate the standard deviation
         deviation_sum = 0
-        for i in range(len(positions)):
-            deviation_sum += pow(positions[i].bed_z - avg_value, 2.)
-        sigma = (deviation_sum / len(positions)) ** 0.5
+        for v in vals:
+            deviation_sum += pow(v - avg_value, 2.)
+        sigma = (deviation_sum / len(vals)) ** 0.5
         # Show information
         gcmd.respond_info(
             "probe accuracy results: maximum %.6f, minimum %.6f, range %.6f, "
             "average %.6f, median %.6f, standard deviation %.6f" % (
-            max_value, min_value, range_value, avg_value, median, sigma))
+            max_value, min_value, range_value, avg_value, median_value, sigma))
     cmd_Z_OFFSET_APPLY_PROBE_help = "Adjust the probe's z_offset"
     def cmd_Z_OFFSET_APPLY_PROBE(self, gcmd):
         gcode_move = self.printer.lookup_object("gcode_move")
@@ -252,12 +273,42 @@ class DescendToEndstopHelper:
         self.param_helper = param_helper
         self.always_check_movement = always_check_movement
         self.z_min_position = lookup_minimum_z(config)
+        # Axis boundaries (indexed by axis then sense); X/Y may not work on
+        # all kinematics (e.g. delta).
+        self.axis_range = self._setup_axis_range(config)
         self.results = []
         LookupZSteppers(config, self.mcu_probe.add_stepper)
-    def descend_until_trigger(self, gcmd):
+    def _setup_axis_range(self, config):
+        zconfig = manual_probe.lookup_z_endstop_config(config)
+        axis_range = {}
+        for axis, axis_char in enumerate('xyz'):
+            if axis == 2:
+                minmax = [self.z_min_position, None]
+                if zconfig is not None:
+                    minmax[1] = zconfig.getfloat('position_max', 0.,
+                                                 note_valid=False)
+            else:
+                try:
+                    sconfig = config.getsection('stepper_%c' % (axis_char,))
+                    minmax = [sconfig.getfloat('position_min', 0.,
+                                               note_valid=False),
+                              sconfig.getfloat('position_max',
+                                               note_valid=False)]
+                except config.error:
+                    # Skip if no stepper/position_max (non-cartesian);
+                    # probing that direction fails at probe time.
+                    continue
+            axis_range[axis] = {-1: minmax[0], +1: minmax[1]}
+        return axis_range
+    def descend_until_trigger(self, gcmd, direction='z-'):
         toolhead = self.printer.lookup_object('toolhead')
+        axis, sense = probe_directions[direction]
         pos = toolhead.get_position()
-        pos[2] = self.z_min_position
+        if axis in self.axis_range and self.axis_range[axis][sense] is not None:
+            pos[axis] = self.axis_range[axis][sense]
+        else:
+            raise self.printer.command_error(
+                "Direction %s not supported on this axis range" % (direction,))
         speed = self.param_helper.get_probe_params(gcmd)['probe_speed']
         phoming = self.printer.lookup_object('homing')
         check_movement = (self.always_check_movement
@@ -290,9 +341,12 @@ class ProbeParameterHelper:
         self.samples_result = config.getchoice('samples_result', atypes,
                                                'average')
         self.samples_tolerance = config.getfloat('samples_tolerance', 0.100,
-                                                 minval=0.)
+                                                  minval=0.)
         self.samples_retries = config.getint('samples_tolerance_retries', 0,
                                              minval=0)
+        # Probing direction (default: down towards Z minimum)
+        self.direction = config.getchoice('direction',
+                                          list(probe_directions), 'z-')
     def get_probe_params(self, gcmd=None):
         if gcmd is None:
             gcmd = self.dummy_gcode_cmd
@@ -306,13 +360,20 @@ class ProbeParameterHelper:
         samples_retries = gcmd.get_int("SAMPLES_TOLERANCE_RETRIES",
                                        self.samples_retries, minval=0)
         samples_result = gcmd.get("SAMPLES_RESULT", self.samples_result)
+        direction = gcmd.get("DIRECTION", self.direction).lower()
+        if direction not in probe_directions:
+            raise gcmd.error("Invalid DIRECTION '%s'" % (direction,))
+        axis, sense = probe_directions[direction]
         return {'probe_speed': probe_speed,
                 'lift_speed': lift_speed,
                 'samples': samples,
                 'sample_retract_dist': sample_retract_dist,
                 'samples_tolerance': samples_tolerance,
                 'samples_tolerance_retries': samples_retries,
-                'samples_result': samples_result}
+                'samples_result': samples_result,
+                'direction': direction,
+                'axis': axis,
+                'sense': sense}
 
 # Helper to track multiple probe attempts in a single command
 class SampleAveragingHelper:
@@ -335,10 +396,11 @@ class SampleAveragingHelper:
     def _probe_state_error(self):
         raise self.printer.command_error(
             "Internal probe error - start/end probe session mismatch")
-    def start_probe_session(self, gcmd):
+    def start_probe_session(self, gcmd, direction=None):
         if self.hw_probe_session is not None:
             self._probe_state_error()
-        self.hw_probe_session = self.start_session_cb(gcmd)
+        self._direction = direction
+        self.hw_probe_session = self.start_session_cb(gcmd, direction)
         self.results = []
         return self
     def end_probe_session(self):
@@ -351,10 +413,13 @@ class SampleAveragingHelper:
     def _probe(self, gcmd):
         toolhead = self.printer.lookup_object('toolhead')
         curtime = self.printer.get_reactor().monotonic()
-        if 'z' not in toolhead.get_status(curtime)['homed_axes']:
+        params = self.param_helper.get_probe_params(gcmd)
+        direction = params.get('direction', 'z-')
+        axis = params.get('axis', probe_directions[direction][0])
+        if 'xyz'[axis] not in toolhead.get_status(curtime)['homed_axes']:
             raise self.printer.command_error("Must home before probe")
         try:
-            self.hw_probe_session.run_probe(gcmd)
+            self.hw_probe_session.run_probe(gcmd, direction)
             epos = self.hw_probe_session.pull_probed_results()[0]
         except self.printer.command_error as e:
             reason = str(e)
@@ -367,37 +432,49 @@ class SampleAveragingHelper:
         epos = results[0]
         # Report results
         if gcmd.get_command() != "G28":
+            bed_pos = (epos.bed_x, epos.bed_y, epos.bed_z)
             gcode = self.printer.lookup_object('gcode')
-            gcode.respond_info("probe: at %.3f,%.3f bed will contact at z=%.6f"
-                               % (epos.bed_x, epos.bed_y, epos.bed_z))
+            gcode.respond_info(
+                "probe: at %.3f,%.3f bed will contact at %c=%.6f"
+                % (epos.bed_x, epos.bed_y, 'xyz'[axis], bed_pos[axis]))
         return epos
-    def run_probe(self, gcmd):
+    def run_probe(self, gcmd, direction=None):
         if self.hw_probe_session is None:
             self._probe_state_error()
+        if direction is None:
+            direction = self._direction
         params = self.param_helper.get_probe_params(gcmd)
+        if direction is not None:
+            direction = direction.lower()
+            if direction not in probe_directions:
+                raise gcmd.error("Invalid DIRECTION '%s'" % (direction,))
+            axis, sense = probe_directions[direction]
+            params = dict(params, direction=direction, axis=axis, sense=sense)
         toolhead = self.printer.lookup_object('toolhead')
-        probexy = toolhead.get_position()[:2]
         retries = 0
         positions = []
         sample_count = params['samples']
+        axis = params['axis']
+        sense = params['sense']
         while len(positions) < sample_count:
             # Probe position
             pos = self._probe(gcmd)
             positions.append(pos)
             # Check samples tolerance
-            z_positions = [p.bed_z for p in positions]
-            if max(z_positions)-min(z_positions) > params['samples_tolerance']:
+            vals = [(p.bed_x, p.bed_y, p.bed_z)[axis] for p in positions]
+            if max(vals)-min(vals) > params['samples_tolerance']:
                 if retries >= params['samples_tolerance_retries']:
                     raise gcmd.error("Probe samples exceed samples_tolerance")
                 gcmd.respond_info("Probe samples exceed tolerance. Retrying...")
                 retries += 1
                 positions = []
-            # Retract
+            # Retract away from the probed boundary
             if len(positions) < sample_count:
-                cur_z = toolhead.get_position()[2]
-                toolhead.manual_move(
-                    probexy + [cur_z + params['sample_retract_dist']],
-                    params['lift_speed'])
+                curpos = toolhead.get_position()
+                liftpos = list(curpos)
+                liftpos[axis] = (curpos[axis]
+                                 - sense * params['sample_retract_dist'])
+                toolhead.manual_move(liftpos, params['lift_speed'])
         # Calculate result
         epos = calc_probe_z_average(positions, params['samples_result'])
         self.results.append(epos)
@@ -529,9 +606,9 @@ class ProbePointsHelper:
         self._manual_probe_start()
 
 # Helper to obtain a single probe measurement
-def run_single_probe(probe, gcmd):
-    probe_session = probe.start_probe_session(gcmd)
-    probe_session.run_probe(gcmd)
+def run_single_probe(probe, gcmd, direction=None):
+    probe_session = probe.start_probe_session(gcmd, direction)
+    probe_session.run_probe(gcmd, direction)
     pos = probe_session.pull_probed_results()[0]
     probe_session.end_probe_session()
     return pos
@@ -561,6 +638,7 @@ class ProbeEndstopWrapper:
             config, self.mcu_endstop, probe_offsets, param_helper)
         # multi probes state
         self.multi = 'OFF'
+        self._direction = 'z-'
     def _raise_probe(self):
         toolhead = self.printer.lookup_object('toolhead')
         start_pos = toolhead.get_position()
@@ -575,7 +653,9 @@ class ProbeEndstopWrapper:
         if toolhead.get_position()[:3] != start_pos[:3]:
             raise self.printer.command_error(
                 "Toolhead moved during probe activate_gcode script")
-    def start_probe_session(self, gcmd):
+    def start_probe_session(self, gcmd, direction=None):
+        if direction is not None:
+            self._direction = direction
         self.homing_helper.clear_trigger_positions()
         if not self.stow_on_each_sample:
             self.multi = 'FIRST'
@@ -588,10 +668,12 @@ class ProbeEndstopWrapper:
     def _probe_finish(self):
         if self.multi == 'OFF':
             self._raise_probe()
-    def run_probe(self, gcmd):
+    def run_probe(self, gcmd, direction=None):
+        if direction is None:
+            direction = self._direction
         self._probe_prepare()
         try:
-            self.homing_helper.descend_until_trigger(gcmd)
+            self.homing_helper.descend_until_trigger(gcmd, direction)
         except self.printer.command_error as e:
             self._probe_finish()
             raise
@@ -624,8 +706,8 @@ class PrinterProbe:
         return self.probe_offsets.get_offsets(gcmd)
     def get_status(self, eventtime):
         return self.cmd_helper.get_status(eventtime)
-    def start_probe_session(self, gcmd):
-        return self.probe_session.start_probe_session(gcmd)
+    def start_probe_session(self, gcmd, direction=None):
+        return self.probe_session.start_probe_session(gcmd, direction)
 
 def load_config(config):
     return PrinterProbe(config)

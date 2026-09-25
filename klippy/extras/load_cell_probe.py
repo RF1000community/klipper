@@ -246,14 +246,14 @@ def check_sensor_errors(results, printer):
     return samples
 
 
-# compute Z position at a given print_time using stepper history
-def _lookup_z_pos(toolhead, pos_time):
+# Position of the given axis from the stepper history at pos_time
+def _lookup_axis_pos(toolhead, pos_time, axis=2):
     kin = toolhead.get_kinematics()
     steppers = kin.get_steppers()
     kin_spos = {s.get_name(): s.mcu_to_commanded_position(
                                 s.get_past_mcu_position(pos_time))
                 for s in steppers}
-    return kin.calc_position(kin_spos)[2]
+    return kin.calc_position(kin_spos)[axis]
 
 
 class LoadCellProbeConfigHelper:
@@ -318,10 +318,36 @@ class LoadCellProbingMove:
         self._config_helper = config_helper
         self._mcu = mcu_trigger_analog.get_mcu()
         self._z_min_position = probe.lookup_minimum_z(config)
+        # Axis boundaries (indexed by axis then sense); X/Y may not work on
+        # all kinematics (e.g. delta).
+        self._axis_range = self._setup_axis_range(config)
         dispatch = mcu_trigger_analog.get_dispatch()
         probe.LookupZSteppers(config, dispatch.add_stepper)
         # internal state tracking
         self._tare_counts = 0
+
+    def _setup_axis_range(self, config):
+        zconfig = manual_probe.lookup_z_endstop_config(config)
+        axis_range = {}
+        for axis, axis_char in enumerate('xyz'):
+            if axis == 2:
+                minmax = [self._z_min_position, None]
+                if zconfig is not None:
+                    minmax[1] = zconfig.getfloat('position_max', 0.,
+                                                 note_valid=False)
+            else:
+                try:
+                    sconfig = config.getsection('stepper_%c' % (axis_char,))
+                    minmax = [sconfig.getfloat('position_min', 0.,
+                                               note_valid=False),
+                              sconfig.getfloat('position_max',
+                                               note_valid=False)]
+                except config.error:
+                    # Skip if no stepper/position_max (non-cartesian);
+                    # probing that direction fails at probe time.
+                    continue
+            axis_range[axis] = {-1: minmax[0], +1: minmax[1]}
+        return axis_range
 
     def _start_collector(self):
         toolhead = self._printer.lookup_object('toolhead')
@@ -357,24 +383,30 @@ class LoadCellProbingMove:
         trigger_frac_grams = int(trigger_val * FRAC_GRAMS_CONV)
         self._mcu_trigger_analog.set_trigger("abs_ge", trigger_frac_grams)
 
-    # Probe towards z_min until the trigger_analog on the MCU triggers
-    def probing_move(self, gcmd):
+    # Move towards the axis boundary until the trigger_analog triggers
+    def probing_move(self, gcmd, direction='z-'):
         # do not permit probing if the load cell is not calibrated
         if not self._load_cell.is_calibrated():
             raise self._printer.command_error("Load Cell not calibrated")
         # tare the sensor just before probing
         self._pause_and_tare(gcmd)
         # get params for the homing move
+        axis, sense = probe.probe_directions[direction]
         toolhead = self._printer.lookup_object('toolhead')
         pos = toolhead.get_position()
-        pos[2] = self._z_min_position
+        if axis in self._axis_range and \
+                self._axis_range[axis][sense] is not None:
+            pos[axis] = self._axis_range[axis][sense]
+        else:
+            raise self._printer.command_error(
+                "Direction %s not supported on this axis range" % (direction,))
         speed = self._param_helper.get_probe_params(gcmd)['probe_speed']
         phoming = self._printer.lookup_object('homing')
         # start collector after tare samples are consumed
         collector = self._start_collector()
         # do homing move
         epos = phoming.probing_move(self._mcu_trigger_analog, pos, speed)
-        return epos, collector
+        return axis, epos, collector
 
     # Wait for the MCU to trigger with no movement
     def probing_test(self, gcmd, timeout):
@@ -409,9 +441,12 @@ class TappingMove:
             "load_cell_probe", name, header)
         self._best_fit = LCBestFit(self._printer)
 
-    def run_tap(self, gcmd):
+    def run_tap(self, gcmd, direction=None):
+        if direction is None:
+            direction = 'z-'
         # do the descending move
-        epos, collector = self._load_cell_probing_move.probing_move(gcmd)
+        axis, epos, collector = \
+            self._load_cell_probing_move.probing_move(gcmd, direction)
         # collect samples from the tap
         toolhead = self._printer.lookup_object('toolhead')
 
@@ -425,8 +460,10 @@ class TappingMove:
         params = \
             self._load_cell_probing_move._param_helper.get_probe_params(gcmd)
         lift_dist = params['load_cell_retract_dist']
+        sense = probe.probe_directions[direction][1]
         lift_pos = toolhead.get_position()
-        lift_pos[2] += lift_dist
+        # Lift away from the probed boundary (negative sense lifts in +axis)
+        lift_pos[axis] += -sense * lift_dist
         toolhead.manual_move(lift_pos, params['lift_speed'])
 
         # Collect samples until the end of the ascent
@@ -435,10 +472,10 @@ class TappingMove:
         samples = check_sensor_errors(results, self._printer)
 
         # Perform fit on the ascent data
-        corrected_z = self._analyze_ascent(gcmd, samples, ascent_start_time,
-                                            toolhead, epos[2])
-        # Replace the probe result with the fitted Z position
-        epos[2] = corrected_z
+        corrected_pos = self._analyze_ascent(gcmd, samples, ascent_start_time,
+                                             toolhead, epos[axis], axis)
+        # Use the fitted position on the probed axis as the result
+        epos[axis] = corrected_pos
 
         # Analyze the tap data
         ppa = TapAnalysis(samples)
@@ -446,7 +483,7 @@ class TappingMove:
         self._clients.send({'tap': ppa.to_dict()})
 
         self._is_last_result_valid = True
-        self._last_result = epos[2]
+        self._last_result = epos[axis]
         return epos, self._is_last_result_valid
 
     def get_status(self, eventtime):
@@ -456,14 +493,14 @@ class TappingMove:
         }
 
     def _analyze_ascent(self, gcmd, all_samples, ascent_start_time, toolhead,
-                        raw_z):
+                        raw_axis_pos, axis):
         # Collect samples actually belonging to the ascent. We use a limited
         # time window to minimise the influence of baseline wandering.
         data = []
         for s in all_samples:
             if s[0] >= ascent_start_time and \
                s[0] <= ascent_start_time + ASCENT_DATA_WINDOW_SECONDS:
-                data.append((s[1], _lookup_z_pos(toolhead, s[0])))
+                data.append((s[1], _lookup_axis_pos(toolhead, s[0], axis)))
 
         if self._load_cell_probing_move._mcu.is_fileoutput():
             # In debugging mode: inject dummy data
@@ -494,8 +531,8 @@ class TappingMove:
         gcmd.respond_info("Load cell probe fit: n_below=%d n_above=%d"
                           " z_contact=%.4f raw=%.4f delta=%.4f"
                           " depress_slope=%.4f" % (
-                          below_count, above_count, z_contact, raw_z,
-                          raw_z - z_contact, depress_slope))
+                          below_count, above_count, z_contact, raw_axis_pos,
+                          raw_axis_pos - z_contact, depress_slope))
 
         if self._load_cell_probing_move._mcu.is_fileoutput():
             # In debugging mode: check fit result
@@ -594,16 +631,20 @@ class TapSession:
         self._probe_params_helper = probe_params_helper
         # Session state
         self._results = []
+        self._direction = None
 
-    def start_probe_session(self, gcmd):
+    def start_probe_session(self, gcmd, direction=None):
+        self._direction = direction
         return self
 
     def end_probe_session(self):
         self._results = []
 
     # probe until a single good sample is returned or retries are exhausted
-    def run_probe(self, gcmd):
-        epos, is_good = self._tapping_move.run_tap(gcmd)
+    def run_probe(self, gcmd, direction=None):
+        if direction is None:
+            direction = self._direction
+        epos, is_good = self._tapping_move.run_tap(gcmd, direction)
         offsets = self._probe_offsets.get_offsets()
         res = manual_probe.create_probe_result(epos, offsets)
         self._results.append(res)
@@ -706,8 +747,8 @@ class LoadCellPrinterProbe:
     def get_offsets(self, gcmd=None):
         return self._probe_offsets.get_offsets(gcmd)
 
-    def start_probe_session(self, gcmd):
-        return self._probe_session.start_probe_session(gcmd)
+    def start_probe_session(self, gcmd, direction=None):
+        return self._probe_session.start_probe_session(gcmd, direction)
 
     def get_status(self, eventtime):
         status = self._cmd_helper.get_status(eventtime)

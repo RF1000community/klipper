@@ -20,5 +20,13 @@ G1 Z5 X0 Y0
 # Do regular probe
 PROBE
 
+# Probe along explicit directions through the load-cell tap path
+PROBE DIRECTION=X+
+PROBE DIRECTION=X-
+PROBE DIRECTION=Y+
+PROBE DIRECTION=Y-
+PROBE DIRECTION=Z-
+PROBE_ACCURACY DIRECTION=X+ SAMPLES=3
+
 # Move again
 G1 Z9

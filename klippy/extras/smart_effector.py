@@ -86,13 +86,14 @@ class SmartEffectorProbe:
         if self.probe_accel:
             self.gcode.run_script_from_command(
                     "M204 S%.3f" % (self.old_max_accel,))
-    def start_probe_session(self, gcmd):
-        self.probe_session = self.probe_wrapper.start_probe_session(gcmd)
+    def start_probe_session(self, gcmd, direction=None):
+        self.probe_session = self.probe_wrapper.start_probe_session(
+            gcmd, direction)
         return self
-    def run_probe(self, gcmd):
+    def run_probe(self, gcmd, direction=None):
         self._probe_prepare()
         try:
-            self.probe_session.run_probe(gcmd)
+            self.probe_session.run_probe(gcmd, direction)
         except self.printer.command_error as e:
             self._probe_finish()
             raise
@@ -174,8 +175,8 @@ class PrinterSmartEffector:
         return self.probe_offsets.get_offsets(gcmd)
     def get_status(self, eventtime):
         return self.cmd_helper.get_status(eventtime)
-    def start_probe_session(self, gcmd):
-        return self.probe_session.start_probe_session(gcmd)
+    def start_probe_session(self, gcmd, direction=None):
+        return self.probe_session.start_probe_session(gcmd, direction)
 
 def load_config(config):
     smart_effector = PrinterSmartEffector(config)

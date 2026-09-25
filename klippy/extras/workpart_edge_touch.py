@@ -79,7 +79,6 @@ class WorkpartEdgeTouch:
 
 
     def cmd_EDGE_TOUCH(self, gcmd):
-        toolhead = self.printer.lookup_object('toolhead')
         configfile = self.printer.lookup_object('configfile')
 
         dirpara = gcmd.get("DIRECTION")
@@ -87,9 +86,13 @@ class WorkpartEdgeTouch:
           raise gcmd.error("DIRECTION parameter has illegal value.")
         (axis,direction) = DIRECTION_CHOICE_LIST[dirpara]
 
+        # Use the most recent probe's contact point, not the toolhead position
+        probe = self.printer.lookup_object('probe')
+        eventtime = self.printer.get_reactor().monotonic()
+        probe_pos = probe.get_status(eventtime)['last_test_position']
+        pos = (probe_pos.x, probe_pos.y, probe_pos.z)
+
         # update dictionary of scans
-        toolhead = self.printer.lookup_object('toolhead')
-        pos = toolhead.get_position()
         theScan = { 'direction': direction,
                     'pos': pos }
         self.scans[axis].append(theScan)

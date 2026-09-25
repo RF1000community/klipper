@@ -1,0 +1,11 @@
+# Test that an invalid PROBE DIRECTION raises an error
+CONFIG probe_direction.cfg
+DICTIONARY atmega2560.dict
+SHOULD_FAIL
+
+# Start by homing the printer.
+G28
+G1 F6000
+
+# An unrecognised DIRECTION value must raise a command error
+PROBE DIRECTION=foo
